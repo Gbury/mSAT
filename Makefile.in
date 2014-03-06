@@ -1,0 +1,180 @@
+##########################################################################
+#                                                                        #
+#                             Alt-Ergo Zero                              #
+#                                                                        #
+#                  Sylvain Conchon and Alain Mebsout                     #
+#                  Universite Paris-Sud 11                               #
+#                                                                        #
+#  Copyright 2011. This file is distributed under the terms of the       #
+#  Apache Software License version 2.0                                   #
+#                                                                        #
+##########################################################################
+
+QUIET=""
+
+# where to install the binaries
+DESTDIR=
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+BINDIR=$(DESTDIR)@bindir@
+LIBDIR=$(DESTDIR)@libdir@/alt-ergo-zero
+
+# where to install the man page
+MANDIR=$(DESTDIR)@mandir@
+
+# other variables set by ./configure
+OCAMLC   = @OCAMLC@
+OCAMLOPT = @OCAMLOPT@
+OCAMLDEP = @OCAMLDEP@
+OCAMLLEX = @OCAMLLEX@
+OCAMLYACC= @OCAMLYACC@
+OCAMLLIB = @OCAMLLIB@
+OCAMLBEST= @OCAMLBEST@
+OCAMLVERSION = @OCAMLVERSION@
+OCAMLWIN32 = @OCAMLWIN32@
+EXE = @EXE@
+LIBEXT = @LIBEXT@
+OBJEXT = @OBJEXT@
+
+INCLUDES = -I common/ -I smt/
+
+BFLAGS = -dtypes -g $(INCLUDES) -annot
+OFLAGS = -dtypes $(INCLUDES) -annot -for-pack Aez
+
+BIBBYTE=nums.cma unix.cma
+
+BIBOPT=$(BIBBYTE:.cma=.cmxa)
+
+# main target
+#############
+
+NAME = aez
+
+CMA  = aez.cma
+CMXA = aez.cmxa
+
+all: $(OCAMLBEST)
+byte: $(CMA) 
+opt: $(CMA) $(CMXA)  
+
+# bytecode and native-code compilation
+######################################
+
+SMTCMO = smt/exception.cmo smt/symbols.cmo \
+	 smt/ty.cmo smt/term.cmo smt/literal.cmo \
+         smt/solver_types.cmo smt/explanation.cmo \
+         smt/polynome.cmo smt/uf.cmo smt/use.cmo \
+	 smt/intervals.cmo smt/fm.cmo smt/arith.cmo smt/sum.cmo \
+         smt/combine.cmo smt/cc.cmo smt/solver.cmo smt/smt.cmo
+
+COMMONCMO = common/timer.cmo common/hashcons.cmo common/hstring.cmo\
+	    common/vec.cmo common/heap.cmo common/iheap.cmo
+
+CMO = $(COMMONCMO) $(SMTCMO)
+
+CMX = $(CMO:.cmo=.cmx)
+
+$(CMA): aez.cmo
+	$(OCAMLC) -a $(BFLAGS) -o $@ $^
+
+$(CMXA): aez.cmx
+	$(OCAMLOPT) -a $(OFLAGS) $(INCLUDES) -o $@ $^
+
+aez.cmo: smt/smt.cmi
+aez.cmo: $(CMO)
+	$(OCAMLC) $(BFLAGS) -pack -o $@ $(CMO)
+
+aez.cmx: smt/smt.cmi
+aez.cmx: $(CMX)
+	$(OCAMLOPT) $(INCLUDES) -pack -o $@ $(CMX)
+
+
+
+# generic rules
+###############
+
+.SUFFIXES: .mli .ml .cmi .cmo .cmx .mll .mly
+
+.mli.cmi:
+	@true compile -w a $(BFLAGS) $< 
+	$(if $(QUIET),@echo 'Compiling $@' &&) $(OCAMLC) -c $(BFLAGS) $<
+
+.ml.cmo:
+	$(if $(QUIET),@echo 'Compiling $@' &&) $(OCAMLC) -c $(BFLAGS) $<
+	@true compile -w a $(BFLAGS) $< 
+
+.ml.o:
+	@true compile -w a $(BFLAGS) $< 
+	$(if $(QUIET),@echo 'Compiling $@' &&) $(OCAMLOPT) -c $(OFLAGS) $<
+
+.ml.cmx:
+	$(if $(QUIET),@echo 'Compiling $@' &&) $(OCAMLOPT) -c $(OFLAGS) $<
+	@true compile -w a $(BFLAGS) $< 
+
+.mll.ml:
+	$(if $(QUIET),@echo 'Compiling $<' &&) $(OCAMLLEX) $< > /dev/null
+
+.mly.ml:
+	$(if $(QUIET),@echo 'Compiling $<' &&) $(OCAMLYACC) -v $< 
+
+.mly.mli:
+	$(if $(QUIET),@echo 'Compiling $<' &&) $(OCAMLYACC) -v $< 
+
+# Emacs tags
+############
+
+tags:
+	find . -name "*.ml*" | sort -r | xargs \
+	etags "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \
+              "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
+
+# installation
+##############
+
+INSTALL_LIBDIR=$(DESTDIR)$(OCAMLLIB)/alt-ergo-zero
+
+install: install-$(OCAMLBEST)
+
+install-byte: 
+	mkdir -p $(INSTALL_LIBDIR)
+	cp -f aez.cm[iot] $(CMA) $(INSTALL_LIBDIR)
+
+install-opt: 
+	mkdir -p $(INSTALL_LIBDIR)
+	cp -f aez.cm[iot] $(CMA) $(INSTALL_LIBDIR)
+	cp -f aez$(LIBEXT) aez.cmx $(CMXA) $(INSTALL_LIBDIR)
+
+ocamlfind-install:
+	ocamlfind install aez META $(BUILD)aez.cmi $(BCMA) $(BCMXA) $(BUILD)aez.a
+
+ocamlfind-remove:
+	ocamlfind remove aez
+
+doc: smt/smt.mli
+	mkdir -p $(doc)
+	ocamldoc -html -d doc/ -I smt -I common smt/smt.mli
+#######
+
+clean:: 
+	@rm -f *.cm[itox] *.cmti *.o *~ *.annot
+	@rm -f common/*.cm[itox] common/*.cmti common/*.o common/*~ common/*.annot
+	@rm -f smt/*.cm[itox] smt/*.cmti  smt/*.o smt/*~ smt/*.annot
+	@rm -f $(GENERATED) *.output
+	@rm -f $(NAME).byte $(NAME).opt
+
+# depend
+########
+
+.depend depend:: $(GENERATED)
+	@rm -f .depend
+	@$(OCAMLDEP) -slash -I common/ common/*.ml common/*.mli > .depend
+	@$(OCAMLDEP) -I common/ -I smt/ smt/*.ml smt/*.mli >> .depend
+	@$(OCAMLDEP) -I common/ -I smt/ -slash *.ml *.mli >> .depend
+
+
+include .depend

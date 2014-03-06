@@ -1,0 +1,81 @@
+##########################################################################
+#                                                                        #
+#                                  Cubicle                               #
+#             Combining model checking algorithms and SMT solvers        #
+#                                                                        #
+#                  Sylvain Conchon and Alain Mebsout                     #
+#                  Universite Paris-Sud 11                               #
+#                                                                        #
+#  Copyright 2011. This file is distributed under the terms of the       #
+#  Apache Software License version 2.0                                   #
+#                                                                        #
+##########################################################################
+
+AC_INIT(smt/smt.mli)
+
+AC_CHECK_PROGS(OCAMLC,ocp-ocamlc.opt ocamlc.opt,no)
+if test "$OCAMLC" = no ; then
+	AC_MSG_ERROR(Cannot find ocamlc.)
+fi
+
+OCAMLVERSION=`$OCAMLC -version`
+echo "ocaml version is $OCAMLVERSION"
+OCAMLLIB=`$OCAMLC -where`
+echo "ocaml library path is $OCAMLLIB"
+
+AC_CHECK_PROGS(OCAMLOPT,ocp-ocamlopt.opt ocamlopt.opt,no)
+OCAMLBEST=byte
+if test "$OCAMLOPT" = no ; then
+	AC_MSG_WARN(Cannot find ocamlopt; bytecode compilation only.)
+else
+        OCAMLBEST=opt
+fi
+
+AC_CHECK_PROG(OCAMLDEP,ocamldep,ocamldep,no)
+if test "$OCAMLDEP" = no ; then
+	AC_MSG_ERROR(Cannot find ocamldep.)
+fi
+
+AC_CHECK_PROG(OCAMLLEX,ocamllex,ocamllex,no)
+if test "$OCAMLLEX" = no ; then
+    AC_MSG_ERROR(Cannot find ocamllex.)
+fi
+
+AC_CHECK_PROG(OCAMLYACC,ocamlyacc,ocamlyacc,no)
+if test "$OCAMLYACC" = no ; then
+	AC_MSG_ERROR(Cannot find ocamlyacc.)
+fi
+
+AC_MSG_CHECKING(platform)
+if echo "let _ = Sys.os_type" | ocaml | grep -q Win32; then
+    echo "Windows platform"
+    AC_MSG_RESULT(Win32)
+    OCAMLWIN32=yes
+    EXE=.exe
+    LIBEXT=.lib
+    OBJEXT=.obj
+else
+    echo "Unix platform"
+    OCAMLWIN32=no
+    EXE=
+    LIBEXT=.a
+    OBJEXT=.o
+fi
+
+AC_SUBST(OCAMLC)
+AC_SUBST(OCAMLOPT)
+AC_SUBST(OCAMLDEP)
+AC_SUBST(OCAMLLEX)
+AC_SUBST(OCAMLYACC)
+AC_SUBST(OCAMLBEST)
+AC_SUBST(OCAMLVERSION)
+AC_SUBST(OCAMLLIB)
+AC_SUBST(ALTERGOLIB)
+AC_SUBST(FUNCTORYLIB)
+AC_SUBST(OCAMLWIN32)
+AC_SUBST(EXE)
+AC_SUBST(LIBEXT)
+AC_SUBST(OBJEXT)
+
+AC_OUTPUT(Makefile)
+chmod a-w Makefile

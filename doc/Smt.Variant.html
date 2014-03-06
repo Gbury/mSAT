@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Smt.Symbol.html">
+<link rel="next" href="Smt.Term.html">
+<link rel="Up" href="Smt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Smt" rel="Chapter" href="Smt.html">
+<link title="Hstring" rel="Chapter" href="Hstring.html"><title>Smt.Variant</title>
+</head>
+<body>
+<div class="navbar"><a href="Smt.Symbol.html">Previous</a>
+&nbsp;<a href="Smt.html">Up</a>
+&nbsp;<a href="Smt.Term.html">Next</a>
+</div>
+<center><h1>Module <a href="type_Smt.Variant.html">Smt.Variant</a></h1></center>
+<br>
+<pre><span class="keyword">module</span> Variant: <code class="code">sig</code> <a href="Smt.Variant.html">..</a> <code class="code">end</code></pre><span id="3_Variants"><h3>Variants</h3></span>
+<p>
+
+    The types of symbols (when they are enumerated data types) can be refined
+    to substypes of their original type (i.e. a subset of their constructors).<br>
+<hr width="100%">
+<pre><span id="VALinit"><span class="keyword">val</span> init</span> : <code class="type">(<a href="Smt.Symbol.html#TYPEt">Smt.Symbol.t</a> * <a href="Smt.Type.html#TYPEt">Smt.Type.t</a>) list -> unit</code></pre><div class="info">
+<code class="code">init l</code> where <code class="code">l</code> is a list of pairs <code class="code">(s, ty)</code> initializes the
+      type (and associated constructors) of each <code class="code">s</code> to its original type <code class="code">ty</code>.
+<p>
+
+      This function must be called with a list of all symbols before
+      attempting to refine the types.<br>
+</div>
+<pre><span id="VALclose"><span class="keyword">val</span> close</span> : <code class="type">unit -> unit</code></pre><div class="info">
+<code class="code">close ()</code> will compute the smallest type possible for each symbol.
+<p>
+
+      This function must be called when all information has been added.<br>
+</div>
+<pre><span id="VALassign_constr"><span class="keyword">val</span> assign_constr</span> : <code class="type"><a href="Smt.Symbol.html#TYPEt">Smt.Symbol.t</a> -> <a href="Hstring.html#TYPEt">Hstring.t</a> -> unit</code></pre><div class="info">
+<code class="code">assign_constr s cstr</code> will add the constraint that the constructor 
+        <code class="code">cstr</code> must be in the type of <code class="code">s</code><br>
+</div>
+<pre><span id="VALassign_var"><span class="keyword">val</span> assign_var</span> : <code class="type"><a href="Smt.Symbol.html#TYPEt">Smt.Symbol.t</a> -> <a href="Smt.Symbol.html#TYPEt">Smt.Symbol.t</a> -> unit</code></pre><div class="info">
+<code class="code">assign_var x y</code> will add the constraint that the type of <code class="code">y</code> is a
+        subtype of <code class="code">x</code> (use this function when <code class="code">x := y</code> appear in your 
+        program<br>
+</div>
+<pre><span id="VALprint"><span class="keyword">val</span> print</span> : <code class="type">unit -> unit</code></pre><div class="info">
+<code class="code">print ()</code> will output the computed refined types on std_err. This
+        function is here only for debugging purposes. Use it afer <code class="code">close ()</code>.<br>
+</div>
+<pre><span id="VALget_variants"><span class="keyword">val</span> get_variants</span> : <code class="type"><a href="Smt.Symbol.html#TYPEt">Smt.Symbol.t</a> -> Hstring.HSet.t</code></pre><div class="info">
+<code class="code">get_variants s</code> returns a set of constructors, which is the refined
+      type of <code class="code">s</code>.<br>
+</div>
+</body></html>

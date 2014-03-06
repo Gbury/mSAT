@@ -1,0 +1,13 @@
+*.annot
+*.cma
+*.cmi
+*.cmo
+*.cmx
+*.cmxa
+*.cmxs
+*.o
+*.a
+*.log
+*.status
+Makefile
+.*.swp
