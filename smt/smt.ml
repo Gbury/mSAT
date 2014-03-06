@@ -459,7 +459,7 @@ end
   let ( @ ) = `Use_rev_append_instead   (* prevent use of non-tailrec append *)
 
   let make_or = function
-    | [] -> assert false
+    | [] -> f_false
     | [a] -> a
     | l -> Comb (Or, l)
 
