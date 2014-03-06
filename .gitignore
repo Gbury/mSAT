@@ -11,3 +11,5 @@
 *.status
 Makefile
 .*.swp
+TAGS
+.session
