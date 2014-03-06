@@ -217,6 +217,23 @@ and Formula : sig
   (** [make cmb [f_1; ...; f_n]] creates the formula
       [(f_1 <cmb> ... <cmb> f_n)].*)
 
+  val make_pred : ?sign:bool -> Term.t -> t
+  (** [make_pred p] builds the atomic formula [p = true].
+      @param sign the polarity of the atomic formula *)
+
+  val make_not : t -> t
+  val make_and : t list -> t
+  val make_or : t list -> t
+  val make_imply : t -> t -> t
+  val make_equiv : t -> t -> t
+  val make_xor : t -> t -> t
+  val make_eq : Term.t -> Term.t -> t
+  val make_neq : Term.t -> Term.t -> t
+  val make_le : Term.t -> Term.t -> t
+  val make_lt : Term.t -> Term.t -> t
+  val make_ge : Term.t -> Term.t -> t
+  val make_gt : Term.t -> Term.t -> t
+
   val make_cnf : t -> Literal.LT.t list list
   (** [make_cnf f] returns a conjunctive normal form of [f] under the form: a
       list (which is a conjunction) of lists (which are disjunctions) of
@@ -273,7 +290,7 @@ module type Solver = sig
 
   val assume : ?profiling:bool -> id:int -> Formula.t -> unit
   (** [assume ~profiling:b f id] adds the formula [f] to the context of the
-      solver with idetifier [id].
+      solver with identifier [id].
       This function only performs unit propagation.
       
       @param profiling if set to [true] then profiling information (time) will
@@ -292,6 +309,16 @@ module type Solver = sig
       {b Raises} {! Unsat} [[id_1; ...; id_n]] if the context is unsatisfiable.
       [id_1, ..., id_n] is the unsat core (returned as the identifiers of the
       formulas given to the solver). *)
+
+  val eval : Term.t -> bool
+  (** [eval lit] returns the current truth value for the literal. The term
+      must be a boolean proposition that occurred in the problem,
+      because the only information returned by [eval] is its boolean
+      truth value in the current model (no theories!).
+
+      @raise Invalid_argument if the context is not checked or if it's
+        unsatisfiable.
+      @raise Error if the term isn't a known propositional atom. *)
 
   val save_state : unit -> state
   (** [save_state ()] returns a {b copy} of the current state of the solver.*)

@@ -21,6 +21,7 @@ module Make (Dummy : sig end) : sig
   val assume : Literal.LT.t list list -> cnumber : int -> unit
   val clear : unit -> unit
 
+  val eval : Literal.LT.t -> bool
   val save : unit -> state
   val restore : state -> unit
 

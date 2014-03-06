@@ -1026,5 +1026,8 @@ let restore { env = s_env; st_cpt_mk_var = st_cpt_mk_var; st_ma = st_ma } =
   Solver_types.cpt_mk_var := st_cpt_mk_var;
   Solver_types.ma := st_ma
 
-
+  let eval lit =
+    let var, negated = make_var lit in
+    let truth = var.pa.is_true in
+    if negated then not truth else truth
 end

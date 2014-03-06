@@ -320,6 +320,20 @@ and Formula : sig
   val make : combinator -> t list -> t
   val make_cnf : t -> Literal.LT.t list list
 
+  val make_pred : ?sign:bool -> Term.t -> t
+  val make_not : t -> t
+  val make_and : t list -> t
+  val make_or : t list -> t
+  val make_imply : t -> t -> t
+  val make_equiv : t -> t -> t
+  val make_xor : t -> t -> t
+  val make_eq : Term.t -> Term.t -> t
+  val make_neq : Term.t -> Term.t -> t
+  val make_le : Term.t -> Term.t -> t
+  val make_lt : Term.t -> Term.t -> t
+  val make_ge : Term.t -> Term.t -> t
+  val make_gt : Term.t -> Term.t -> t
+
   val print_list : string -> Format.formatter -> t list -> unit
   val print : Format.formatter -> t -> unit
 
@@ -388,7 +402,7 @@ end
 	      Literal.Eq (t1, t2)
 	    | Neq, ts -> 
 	      let ts = 
-		List.map (function Term.T x -> x | _ -> assert false) ts in
+		List.rev_map (function Term.T x -> x | _ -> assert false) ts in
 	      Literal.Distinct (false, ts)
 	    | Le, [Term.T t1; Term.T t2] ->
 	      Literal.Builtin (true, Hstring.make "<=", [t1; t2])
@@ -401,25 +415,48 @@ end
 
   let make_lit op l = lift_ite [] op l
 
+  let make_pred ?(sign=true) p =
+    if sign
+      then make_lit Eq [p; Term.t_true]
+      else make_lit Eq [p; Term.t_false]
+
+  let make_eq t1 t2 = make_lit Eq [t1; t2]
+  let make_neq t1 t2 = make_lit Neq [t1; t2]
+  let make_le t1 t2 = make_lit Le [t1; t2]
+  let make_lt t1 t2 = make_lit Lt [t1; t2]
+  let make_ge t1 t2 = make_lit Le [t2; t1]
+  let make_gt t1 t2 = make_lit Lt [t2; t1]
+  let make_not f = make Not [f]
+  let make_and l = make And l
+  let make_imply f1 f2 = make Imp [f1; f2]
+  let make_equiv f1 f2 = make And [ make_imply f1 f2; make_imply f2 f1]
+  let make_xor f1 f2 = make Or [ make And [ make Not [f1]; f2 ];
+                                 make And [ f1; make Not [f2] ] ]
+
+  (* simplify formula *)
   let rec sform = function
     | Comb (Not, [Lit a]) -> Lit (Literal.LT.neg a)
     | Comb (Not, [Comb (Not, [f])]) -> sform f
     | Comb (Not, [Comb (Or, l)]) ->
-	let nl = List.map (fun a -> sform (Comb (Not, [a]))) l in
+	let nl = List.rev_map (fun a -> sform (Comb (Not, [a]))) l in
 	Comb (And, nl)
     | Comb (Not, [Comb (And, l)]) ->  
-	let nl = List.map (fun a -> sform (Comb (Not, [a]))) l in
+	let nl = List.rev_map (fun a -> sform (Comb (Not, [a]))) l in
 	Comb (Or, nl)
     | Comb (Not, [Comb (Imp, [f1; f2])]) -> 
 	Comb (And, [sform f1; sform (Comb (Not, [f2]))])
     | Comb (And, l) -> 
-	Comb (And, List.map sform l)
+	Comb (And, List.rev_map sform l)
     | Comb (Or, l) -> 
-	Comb (Or, List.map sform l)
+	Comb (Or, List.rev_map sform l)
     | Comb (Imp, [f1; f2]) -> 
 	Comb (Or, [sform (Comb (Not, [f1])); sform f2])
-    | Comb (Imp, _) -> assert false
-    | f -> f
+    | Comb ((Imp | Not), _) -> assert false
+    | Lit _ as f -> f
+
+
+  let ( @@ ) l1 l2 = List.rev_append l1 l2
+  let ( @ ) = `Use_rev_append_instead   (* prevent use of non-tailrec append *)
 
   let make_or = function
     | [] -> assert false
@@ -430,11 +467,11 @@ end
     let l = 
       if l_or = [] then l_and
       else
-	List.map 
+	List.rev_map
 	  (fun x -> 
 	     match x with 
 	       | Lit _ -> Comb (Or, x::l_or)
-	       | Comb (Or, l) -> Comb (Or, l@l_or)
+	       | Comb (Or, l) -> Comb (Or, l @@ l_or)
 	       | _ -> assert false
 	  ) l_and 
     in
@@ -442,13 +479,13 @@ end
 
   let rec flatten_or = function
     | [] -> []
-    | Comb (Or, l)::r -> l@(flatten_or r)
+    | Comb (Or, l)::r -> l @@ (flatten_or r)
     | Lit a :: r -> (Lit a)::(flatten_or r)
     | _ -> assert false
     
   let rec flatten_and = function
     | [] -> []
-    | Comb (And, l)::r -> l@(flatten_and r)
+    | Comb (And, l)::r -> l @@ (flatten_and r)
     | a :: r -> a::(flatten_and r)
     
 
@@ -456,7 +493,7 @@ end
     match f with
       | Comb (Or, l) -> 
 	  begin
-	    let l = List.map cnf l in
+	    let l = List.rev_map cnf l in
 	    let l_and, l_or = 
 	      List.partition (function Comb(And,_) -> true | _ -> false) l in
 	    match l_and with
@@ -477,11 +514,8 @@ end
 		  end
 	  end
       | Comb (And, l) -> 
-	  Comb (And, List.map cnf l)
+	  Comb (And, List.rev_map cnf l)
       | f -> f    
-
-
-  let ( @@ ) l1 l2 = List.rev_append l1 l2
 
   let rec mk_cnf = function
     | Comb (And, l) ->
@@ -537,6 +571,9 @@ end
     let acc_or = ref []
     let acc_and = ref []
 
+    (* build a clause by flattening (if sub-formulas have the
+       same combinator) and proxy-ing sub-formulas that have the
+       opposite operator. *)
     let rec cnf f = match f with
       | Lit a -> None, [a]
       | Comb (Not, [Lit a]) -> None, [Literal.LT.neg a]
@@ -546,9 +583,9 @@ end
             (fun (_, acc) f ->
               match cnf f with
                 | _, [] -> assert false
-                | cmb, [a] -> cmb, a :: acc
+                | cmb, [a] -> Some And, a :: acc
                 | Some And, l ->
-                    Some And, l @ acc
+                    Some And, l @@ acc
                     (* let proxy = mk_proxy () in *)
                     (* acc_and := (proxy, l) :: !acc_and; *)
                     (* proxy :: acc *)
@@ -556,6 +593,7 @@ end
                     let proxy = mk_proxy () in
                     acc_or := (proxy, l) :: !acc_or;
                     Some And, proxy :: acc
+                | None, l -> Some And, l @@ acc
                 | _ -> assert false
             ) (None, []) l
 
@@ -564,9 +602,9 @@ end
             (fun (_, acc) f ->
               match cnf f with
                 | _, [] -> assert false
-                | cmb, [a] -> cmb, a :: acc
+                | cmb, [a] -> Some Or, a :: acc
                 | Some Or, l ->
-                    Some Or, l @ acc
+                    Some Or, l @@ acc
                     (* let proxy = mk_proxy () in *)
                     (* acc_or := (proxy, l) :: !acc_or; *)
                     (* proxy :: acc *)
@@ -574,6 +612,7 @@ end
                     let proxy = mk_proxy () in
                     acc_and := (proxy, l) :: !acc_and;
                     Some Or, proxy :: acc
+                | None, l -> Some Or, l @@ acc
                 | _ -> assert false
             ) (None, []) l
             
@@ -585,11 +624,15 @@ end
         | _ -> [snd (cnf f)]
       in
       let proxies = ref [] in
+      (* encore clauses that make proxies in !acc_and equivalent to
+         their clause *)
       let acc =
         List.fold_left
           (fun acc (p,l) ->
             proxies := p :: !proxies;
             let np = Literal.LT.neg p in
+            (* build clause [cl = l1 & l2 & ... & ln => p] where [l = [l1;l2;..]]
+               also add clauses [p => l1], [p => l2], etc. *)
             let cl, acc =
               List.fold_left
                 (fun (cl,acc) a -> (Literal.LT.neg a :: cl), [np; a] :: acc)
@@ -597,10 +640,14 @@ end
             cl :: acc
           )acc !acc_and
       in
+      (* encore clauses that make proxies in !acc_or equivalent to
+         their clause *)
       let acc =
         List.fold_left
           (fun acc (p,l) ->
             proxies := p :: !proxies;
+            (* add clause [p => l1 | l2 | ... | ln], and add clauses
+              [l1 => p], [l2 => p], etc. *)
             let acc = List.fold_left (fun acc a -> [p; Literal.LT.neg a]::acc)
               acc l in
             (Literal.LT.neg p :: l) :: acc
@@ -612,11 +659,11 @@ end
       acc_or := [];
       acc_and := [];
       cnf (sform f)
-
-    (* Naive CNF *)
-    let make_cnf f = mk_cnf (sform f)
   end
 
+  (* Naive CNF XXX remove???
+  let make_cnf f = mk_cnf (sform f)
+  *)
 end
 
 exception Unsat of int list
@@ -633,6 +680,8 @@ module type Solver = sig
   val assume : ?profiling:bool -> id:int -> Formula.t -> unit
   val check : ?profiling:bool -> unit -> unit
 
+
+  val eval : Term.t -> bool
   val save_state : unit -> state
   val restore_state : state -> unit
   val entails : ?profiling:bool -> id:int -> Formula.t -> bool
@@ -656,7 +705,7 @@ module Make (Dummy : sig end) = struct
     List.iter 
       (fun c -> 
         eprintf "%a@." (Formula.print_list "or") 
-          (List.map (fun x -> Formula.Lit x) c)) uc;
+          (List.rev_map (fun x -> Formula.Lit x) c)) uc;
     eprintf "@.";
     try 
       clear ();
@@ -671,7 +720,7 @@ module Make (Dummy : sig end) = struct
           assert false
 
   let export_unsatcore cl = 
-    let uc = List.map (fun {Solver_types.atoms=atoms} ->
+    let uc = List.rev_map (fun {Solver_types.atoms=atoms} ->
       let l = ref [] in
       for i = 0 to Vec.size atoms - 1 do
         l := (Vec.get atoms i).Solver_types.lit :: !l
@@ -711,8 +760,16 @@ module Make (Dummy : sig end) = struct
       | Solver.Unsat ex -> 
 	  if profiling then Time.pause ();
 	  raise (Unsat (export_unsatcore2 ex))
-            
+
   type state = CSolver.state
+
+  let eval t =
+    match t with
+    | Term.T t' ->
+        let lit = Literal.LT.mk_pred t' in
+        CSolver.eval lit
+    | Term.Tite _ ->
+        failwith "cannot evaluate \"if-then-else\" term"
 
   let save_state = CSolver.save
 

@@ -158,12 +158,16 @@ ocamlfind-remove:
 doc: smt/smt.mli
 	mkdir -p $(doc)
 	ocamldoc -html -d doc/ -I smt -I common smt/smt.mli
+
 #######
+test:
+	ocamlfind ocamlopt -package num,unix -linkpkg aez.cmxa tests/eval.ml -o tests/eval.native
 
 clean:: 
 	@rm -f *.cm[itox] *.cmti *.o *~ *.annot
 	@rm -f common/*.cm[itox] common/*.cmti common/*.o common/*~ common/*.annot
 	@rm -f smt/*.cm[itox] smt/*.cmti  smt/*.o smt/*~ smt/*.annot
+	@rm -f tests/*.cm[itox] tests/*.cmti  tests/*.o tests/*~ tests/*.annot
 	@rm -f $(GENERATED) *.output
 	@rm -f $(NAME).byte $(NAME).opt
 
