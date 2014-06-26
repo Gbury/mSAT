@@ -149,8 +149,8 @@ install-opt:
 	cp -f aez.cm[iot] $(CMA) $(INSTALL_LIBDIR)
 	cp -f aez$(LIBEXT) aez.cmx $(CMXA) $(INSTALL_LIBDIR)
 
-ocamlfind-install:
-	ocamlfind install aez META $(BUILD)aez.cmi $(BCMA) $(BCMXA) $(BUILD)aez.a
+ocamlfind-install: all
+	ocamlfind install aez META $(BUILD)aez.cmi $(CMA) $(CMXA) $(BUILD)aez.a
 
 ocamlfind-remove:
 	ocamlfind remove aez
