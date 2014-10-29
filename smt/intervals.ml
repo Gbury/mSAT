@@ -539,7 +539,7 @@ let power n u =
 
 
 let num_of_float x =
-  if x = infinity or x = neg_infinity then raise Not_a_float;
+  if x = infinity || x = neg_infinity then raise Not_a_float;
   let (f, n) = frexp x in
   let z =
     Big_int.big_int_of_string
