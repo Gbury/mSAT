@@ -3,26 +3,33 @@
 (*                                  Cubicle                               *)
 (*             Combining model checking algorithms and SMT solvers        *)
 (*                                                                        *)
-(*                  Mohamed Iguernelala                                   *)
-(*                  Universite Paris-Sud 11                               *)
+(*                  Sylvain Conchon and Alain Mebsout                     *)
+(*                  Stephane Lescuyer                                     *)
+(*                  INRIA, Universite Paris-Sud 11                        *)
 (*                                                                        *)
 (*  Copyright 2011. This file is distributed under the terms of the       *)
 (*  Apache Software License version 2.0                                   *)
 (*                                                                        *)
 (**************************************************************************)
 
-exception Sat
-exception Unsat of Solver_types.clause list
+module type S = sig
 
-module Make (Dummy : sig end) : sig
-  type state
+    type t
+    type exp
+    type atom
 
-  val solve : unit -> unit
-  val assume : Literal.LT.t list list -> cnumber : int -> unit
-  val clear : unit -> unit
+    val empty : t
+    val singleton : atom -> t
 
-  val eval : Literal.LT.t -> bool
-  val save : unit -> state
-  val restore : state -> unit
+    val union : t -> t -> t
+    val merge : t -> t -> t
 
+    val iter_atoms : (atom -> unit)  -> t -> unit
+    val fold_atoms : (atom -> 'a -> 'a )  -> t -> 'a -> 'a
+
+    val fresh_exp : unit -> int
+    val add_fresh : int -> t -> t
+    val remove_fresh : int -> t -> t option
+
+    val print : Format.formatter -> t -> unit
 end

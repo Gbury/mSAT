@@ -10,11 +10,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Solver_types
 open Format
 
-module Th = Cc.Make(Combine.CX)
-module Ex = Explanation
+module Make(F : Formula_intf.S)(Th : Theory_intf.S with type formula = F.t) = struct
+
+module Stypes =  Solver_types.Make(F)
+module Ex = Explanation.Make(Stypes)
+
+open Stypes
 
 exception Sat
 exception Unsat of clause list
@@ -130,17 +133,12 @@ type env =
 
 
 exception Conflict of clause
-module Make (Dummy : sig end) = struct
-
-  module Solver_types = Solver_types.Make(struct end)
-
-  open Solver_types
 
   type state =
       {
         env : env;
         st_cpt_mk_var: int;
-        st_ma : var Literal.LT.Map.t;
+        st_ma : var F.Map.t;
       }
 
 
@@ -413,7 +411,7 @@ let expensive_theory_propagate () = None
   (*   ignore(Th.expensive_processing env.tenv); *)
   (*   if D1.d then eprintf "expensive_theory_propagate => None@."; *)
   (*   None *)
-  (* with Exception.Inconsistent dep ->  *)
+  (* with Th.Inconsistent dep ->  *)
   (*   if D1.d then eprintf "expensive_theory_propagate => Inconsistent@."; *)
   (*   Some dep *)
 
@@ -436,11 +434,11 @@ let theory_propagate () =
     let full_model = nb_assigns() = env.nb_init_vars in
     env.tenv <-
       List.fold_left
-      (fun t (a,ex) -> let t,_,_ = Th.assume ~cs:true a ex t in t)
+      (fun t (a,ex) -> let t = Th.assume ~cs:true a ex t in t)
       env.tenv !facts;
     if full_model then expensive_theory_propagate ()
     else None
-  with Exception.Inconsistent dep ->
+  with Th.Inconsistent dep ->
     (* eprintf "th inconsistent : %a @." Ex.print dep; *)
     Some dep
 
@@ -697,12 +695,12 @@ let check_inconsistence_of dep =
     let env = ref (Th.empty()) in ();
     Ex.iter_atoms
       (fun atom ->
-    	let t,_,_ = Th.assume ~cs:true atom.lit (Ex.singleton atom) !env in
+    	let t = Th.assume ~cs:true atom.lit (Ex.singleton atom) !env in
     	env := t)
       dep;
     (* ignore (Th.expensive_processing !env); *)
     assert false
-  with Exception.Inconsistent _ -> ()
+  with Th.Inconsistent _ -> ()
 
 let theory_analyze dep =
   let atoms, sz, max_lvl, c_hist =
@@ -1030,4 +1028,5 @@ let restore { env = s_env; st_cpt_mk_var = st_cpt_mk_var; st_ma = st_ma } =
     let var, negated = make_var lit in
     let truth = var.pa.is_true in
     if negated then not truth else truth
+
 end

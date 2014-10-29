@@ -21,6 +21,7 @@ let is_le n = Hstring.compare n ale = 0
 let is_lt n = Hstring.compare n alt = 0
 let is_gt n = Hstring.compare n agt = 0
 
+module Make (F : Formula_intf.S) = struct
 
 type var =
     {  vid : int;
@@ -34,7 +35,7 @@ type var =
 
 and atom =
     { var : var;
-      lit : Literal.LT.t;
+      lit : F.t;
       neg : atom;
       mutable watched : clause Vec.t;
       mutable is_true : bool;
@@ -52,9 +53,7 @@ and reason = clause option
 
 and premise = clause list
 
-module Make (Dummy : sig end) = struct
-
-let dummy_lit = Literal.LT.make (Literal.Eq(Term.vrai,Term.vrai))
+let dummy_lit = F.dummy
 
 let rec dummy_var =
   { vid = -101;
@@ -80,8 +79,7 @@ and dummy_clause =
     learnt = false;
     cpremise = [] }
 
-
-module MA = Literal.LT.Map
+module MA = F.Map
 
 let ale = Hstring.make "<="
 let alt = Hstring.make "<"
@@ -90,53 +88,7 @@ let is_le n = Hstring.compare n ale = 0
 let is_lt n = Hstring.compare n alt = 0
 let is_gt n = Hstring.compare n agt = 0
 
-let normal_form lit =
-  match Literal.LT.view lit with
-    | Literal.Eq (t1,t2)  when Term.equal t2 Term.faux ->
-      Literal.LT.make (Literal.Eq(t1,Term.vrai)), true
-
-    | Literal.Eq (t1,t2)  when Term.equal t1 Term.faux ->
-      Literal.LT.make (Literal.Eq(t2,Term.vrai)), true
-
-
-    | Literal.Distinct(false, [t1;t2])  when Term.equal t1 Term.faux ->
-      Literal.LT.make (Literal.Eq(t2,Term.vrai)), false
-
-    | Literal.Distinct(false, [t1;t2])  when Term.equal t2 Term.faux ->
-      Literal.LT.make (Literal.Eq(t1,Term.vrai)), false
-
-    | Literal.Distinct(false, [t1;t2])  when Term.equal t1 Term.vrai ->
-      Literal.LT.make (Literal.Eq(t2,Term.vrai)), true
-
-    | Literal.Distinct(false, [t1;t2])  when Term.equal t2 Term.vrai ->
-      Literal.LT.make (Literal.Eq(t1,Term.vrai)), true
-
-    | Literal.Distinct(false,[_;_]) -> Literal.LT.neg lit, true
-
-    | Literal.Builtin(true,n,[t1;t2]) when is_gt n ->
-      Literal.LT.neg lit, true
-
-    | Literal.Builtin(false,n,[t1;t2]) when is_le n ->
-      Literal.LT.neg lit, true
-    | _ -> lit, false
-
-
-(* let normal_form lit = *)
-(*   match Literal.LT.view lit with *)
-(*     | Literal.Eq (t1,t2)  -> *)
-(*         if Term.equal t2 Term.faux || Term.equal t1 Term.faux then *)
-(*           Literal.LT.neg lit, true *)
-(*         else *)
-(*           lit, false *)
-
-(*     | Literal.Distinct(false,[_;_]) -> Literal.LT.neg lit, true *)
-(*     | Literal.Builtin(true,n,[t1;t2]) when Builtin.is_gt n -> *)
-(*   Literal.LT.neg lit, true *)
-
-(*     | Literal.Builtin(false,n,[t1;t2]) when Builtin.is_le n -> *)
-(*   Literal.LT.neg lit, true *)
-(*     | _ -> lit, false *)
-
+let normal_form = F.norm
 
 let cpt_mk_var = ref 0
 let ma = ref MA.empty
@@ -165,7 +117,7 @@ let make_var =
 	  aid = cpt_fois_2 (* aid = vid*2 *) }
       and na =
 	{ var = var;
-	  lit = Literal.LT.neg lit;
+	  lit = F.neg lit;
 	  watched = Vec.make 10 dummy_clause;
 	  neg = pa;
 	  is_true = false;
@@ -222,10 +174,6 @@ let clear () =
   cpt_mk_var := 0;
   ma := MA.empty
 
-end
-
-
-
 module Debug = struct
 
   let sign a = if a==a.var.pa then "" else "-"
@@ -253,9 +201,8 @@ module Debug = struct
 
   let atom fmt a =
     fprintf fmt "%s%d%s [lit:%a] vpremise={{%a}}"
-      (sign a) (a.var.vid+1) (value a) Literal.LT.print a.lit
+      (sign a) (a.var.vid+1) (value a) F.print a.lit
       premise a.var.vpremise
-
 
   let atoms_list fmt l = List.iter (fprintf fmt "%a ; " atom) l
   let atoms_array fmt arr = Array.iter (fprintf fmt "%a ; " atom) arr
@@ -268,6 +215,6 @@ module Debug = struct
   let clause fmt {name=name; atoms=arr; cpremise=cp} =
     fprintf fmt "%s:{ %a} cpremise={{%a}}" name atoms_vec arr premise cp
 
-
+end
 
 end
