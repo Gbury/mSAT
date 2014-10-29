@@ -1,12 +1,11 @@
 # copyright (c) 2014, guillaume bury
 
 LOG=build.log
-COMP=ocamlbuild -log $(LOG)
-OCAMLFIND= -use-ocamlfind -tag package\(zarith\)
+COMP=ocamlbuild -log $(LOG) -use-ocamlfind -package zarith,unix -classic-display
 FLAGS=
 DIRS=-Is smt,common
 DOC=lib.docdir/index.html
-LIB=sat.cma
+LIB=msat.cma msat.cmxa msat.cmxs
 GENERATED=$(MAIN) $(BIN) gmon.out
 
 all:$(LIB)
