@@ -29,4 +29,8 @@ install: all
 uninstall:
 	ocamlfind remove msat
 
-.PHONY: clean doc all install uninstall
+reinstall: all
+	ocamlfind remove msat || true
+	ocamlfind install msat $(TO_INSTALL)
+
+.PHONY: clean doc all install uninstall reinstall
