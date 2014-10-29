@@ -3,7 +3,7 @@
 LOG=build.log
 COMP=ocamlbuild -log $(LOG) -use-ocamlfind -package num,zarith,unix -classic-display
 FLAGS=
-DIRS=-Is smt,common
+DIRS=-Is sat,smt,common
 DOC=msat.docdir/index.html
 
 NAME=msat

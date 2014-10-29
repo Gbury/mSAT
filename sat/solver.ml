@@ -14,7 +14,7 @@ open Format
 
 module Make(F : Formula_intf.S)(Th : Theory_intf.S with type formula = F.t) = struct
 
-module Stypes =  Solver_types.Make(F)
+module Stypes = Solver_types.Make(F)
 module Ex = Explanation.Make(Stypes)
 
 open Stypes
@@ -22,8 +22,6 @@ open Stypes
 exception Sat
 exception Unsat of clause list
 exception Restart
-
-
 
 type env =
     {

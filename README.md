@@ -19,8 +19,17 @@ This program is distributed under the Apache Software License version
 
 
 ## INSTALLATION
-============
 
-You will need ocamlfind.
+### Via opam
+
+Once the package is on [opam](http://opam.ocaml.org), just `opam install msat`.
+For the development version, use:
+
+    opam pin add msat https://github.com/Gbury/mSAT.git
+
+### Manual installation You will need ocamlfind. The command is:
+
+    make install
+
 
 
