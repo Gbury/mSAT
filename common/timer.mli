@@ -14,7 +14,7 @@
 module type S = sig
   val start : unit -> unit
   val pause : unit -> unit
-  val get : unit -> float    
+  val get : unit -> float
 end
 
 module Make (X : sig end) : S

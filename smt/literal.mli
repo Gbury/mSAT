@@ -18,8 +18,8 @@ module type OrderedType = sig
   val print : Format.formatter -> t -> unit
 end
 
-type 'a view = 
-  | Eq of 'a * 'a 
+type 'a view =
+  | Eq of 'a * 'a
   | Distinct of bool * 'a list
   | Builtin of bool * Hstring.t * 'a list
 

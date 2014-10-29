@@ -18,7 +18,7 @@ exception Not_a_num
 exception Maybe_zero
 
 module type S = sig
-  type r 
+  type r
   val compare : r -> r-> int
   val term_embed : Term.t -> r
   val mult : r -> r -> r
@@ -27,9 +27,9 @@ end
 
 module type T = sig
 
-  type r 
+  type r
   type t
-  
+
   val compare : t -> t -> int
   val hash : t -> int
 
@@ -47,7 +47,7 @@ module type T = sig
   val subst : r -> t -> t -> t
   val remove : r -> t -> t
   val to_list : t -> (num * r) list * num
-    
+
   val print : Format.formatter -> t -> unit
   val type_info : t -> Ty.t
   val is_monomial : t -> (num * r * num) option
@@ -56,7 +56,7 @@ module type T = sig
   val ppmc_denominators : t -> num
   (* PGCD des numerateurs des coefficients excepte la constante *)
   val pgcd_numerators : t -> num
-  (* retourne un polynome sans constante et sa constante 
+  (* retourne un polynome sans constante et sa constante
      et la constante multiplicative:
      normal_form p = (p',c,d) <=> p = (p' + c) * d *)
   val normal_form : t -> t * num * num

@@ -22,26 +22,26 @@ and t = view
 module H = struct
   type t = view
   let equal t1 t2 = try
-    Sy.equal t1.f t2.f 
-    && List.for_all2 (==) t1.xs t2.xs 
+    Sy.equal t1.f t2.f
+    && List.for_all2 (==) t1.xs t2.xs
     && Ty.equal t1.ty t2.ty
   with Invalid_argument _ -> false
-      
+
   let hash t =
-    abs (List.fold_left 
-	   (fun acc x-> acc*19 +x.tag) (Sy.hash t.f + Ty.hash t.ty) 
+    abs (List.fold_left
+	   (fun acc x-> acc*19 +x.tag) (Sy.hash t.f + Ty.hash t.ty)
 	   t.xs)
   let tag tag x = {x with tag = tag}
 end
 
 module T = Make(H)
-  
+
 let view t = t
 
-let rec print fmt t = 
+let rec print fmt t =
   let {f=x; xs=l; ty=ty} = view t in
   match x, l with
-    | Sy.Op op, [e1; e2] -> 
+    | Sy.Op op, [e1; e2] ->
 	fprintf fmt "(%a %a %a)" print e1 Sy.print x print e2
     | _, [] -> fprintf fmt "%a" Sy.print x
     | _, _ -> fprintf fmt "%a(%a)" Sy.print x print_list l
@@ -72,11 +72,11 @@ let is_int t = (view t).ty= Ty.Tint
 let is_real t = (view t).ty= Ty.Treal
 
 let equal t1 t2 =  t1 == t2
-  
+
 let hash t = t.tag
-  
-module Set = 
+
+module Set =
   Set.Make(struct type t' = t type t=t' let compare=compare end)
-    
-module Map = 
+
+module Map =
   Map.Make(struct type t' = t type t=t' let compare=compare end)

@@ -21,7 +21,7 @@ end
 
 module type S = sig
   type t
-  type elem 
+  type elem
 
   val empty : t
   val pop : t -> elem * t

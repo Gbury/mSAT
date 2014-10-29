@@ -13,7 +13,7 @@
 
 open Format
 
-let ale = Hstring.make "<=" 
+let ale = Hstring.make "<="
 let alt = Hstring.make "<"
 let agt = Hstring.make ">"
 
@@ -31,8 +31,8 @@ type var =
        mutable level : int;
        mutable reason: reason;
        mutable vpremise : premise}
-      
-and atom = 
+
+and atom =
     { var : var;
       lit : Literal.LT.t;
       neg : atom;
@@ -40,9 +40,9 @@ and atom =
       mutable is_true : bool;
       aid : int }
 
-and clause = 
-    { name : string; 
-      mutable atoms : atom Vec.t ; 
+and clause =
+    { name : string;
+      mutable atoms : atom Vec.t ;
       mutable activity : float;
       mutable removed : bool;
       learnt : bool;
@@ -59,21 +59,21 @@ let dummy_lit = Literal.LT.make (Literal.Eq(Term.vrai,Term.vrai))
 let rec dummy_var =
   { vid = -101;
     pa = dummy_atom;
-    na = dummy_atom; 
+    na = dummy_atom;
     level = -1;
     reason = None;
     weight = -1.;
     seen = false;
     vpremise = [] }
-and dummy_atom = 
-  { var = dummy_var; 
+and dummy_atom =
+  { var = dummy_var;
     lit = dummy_lit;
     watched = {Vec.dummy=dummy_clause; data=[||]; sz=0};
     neg = dummy_atom;
     is_true = false;
     aid = -102 }
-and dummy_clause = 
-  { name = ""; 
+and dummy_clause =
+  { name = "";
     atoms = {Vec.dummy=dummy_atom; data=[||]; sz=0};
     activity = -1.;
     removed = false;
@@ -82,8 +82,8 @@ and dummy_clause =
 
 
 module MA = Literal.LT.Map
-  
-let ale = Hstring.make "<=" 
+
+let ale = Hstring.make "<="
 let alt = Hstring.make "<"
 let agt = Hstring.make ">"
 let is_le n = Hstring.compare n ale = 0
@@ -132,7 +132,7 @@ let normal_form lit =
 (*     | Literal.Distinct(false,[_;_]) -> Literal.LT.neg lit, true *)
 (*     | Literal.Builtin(true,n,[t1;t2]) when Builtin.is_gt n -> *)
 (*   Literal.LT.neg lit, true *)
-    
+
 (*     | Literal.Builtin(false,n,[t1;t2]) when Builtin.is_le n -> *)
 (*   Literal.LT.neg lit, true *)
 (*     | _ -> lit, false *)
@@ -143,33 +143,33 @@ let ma = ref MA.empty
 let make_var =
   fun lit ->
     let lit, negated = normal_form lit in
-    try MA.find lit !ma, negated 
+    try MA.find lit !ma, negated
     with Not_found ->
       let cpt_fois_2 = !cpt_mk_var lsl 1 in
-      let rec var  = 
-	{ vid = !cpt_mk_var; 
+      let rec var  =
+	{ vid = !cpt_mk_var;
 	  pa = pa;
-	  na = na; 
+	  na = na;
 	  level = -1;
 	  reason = None;
 	  weight = 0.;
 	  seen = false;
 	  vpremise = [];
 	}
-      and pa = 
-	{ var = var; 
+      and pa =
+	{ var = var;
 	  lit = lit;
-	  watched = Vec.make 10 dummy_clause; 
+	  watched = Vec.make 10 dummy_clause;
 	  neg = na;
 	  is_true = false;
 	  aid = cpt_fois_2 (* aid = vid*2 *) }
-      and na = 
+      and na =
 	{ var = var;
 	  lit = Literal.LT.neg lit;
 	  watched = Vec.make 10 dummy_clause;
 	  neg = pa;
 	  is_true = false;
-	  aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in 
+	  aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in
       ma := MA.add lit var !ma;
       incr cpt_mk_var;
       var, negated
@@ -178,9 +178,9 @@ let made_vars_info () = !cpt_mk_var, MA.fold (fun lit var acc -> var::acc)!ma []
 
 let add_atom lit =
   let var, negated = make_var lit in
-  if negated then var.na else var.pa 
+  if negated then var.na else var.pa
 
-let make_clause name ali sz_ali is_learnt premise = 
+let make_clause name ali sz_ali is_learnt premise =
   let atoms = Vec.from_list ali sz_ali dummy_atom in
   { name  = name;
     atoms = atoms;
@@ -188,23 +188,23 @@ let make_clause name ali sz_ali is_learnt premise =
     learnt = is_learnt;
     activity = 0.;
     cpremise = premise}
-    
+
 let fresh_lname =
-  let cpt = ref 0 in 
+  let cpt = ref 0 in
   fun () -> incr cpt; "L" ^ (string_of_int !cpt)
 
 let fresh_dname =
-  let cpt = ref 0 in 
+  let cpt = ref 0 in
   fun () -> incr cpt; "D" ^ (string_of_int !cpt)
-    
+
 let fresh_name =
-  let cpt = ref 0 in 
+  let cpt = ref 0 in
   fun () -> incr cpt; "C" ^ (string_of_int !cpt)
 
 
 
 module Clause = struct
-      
+
   let size c = Vec.size c.atoms
   let pop c = Vec.pop c.atoms
   let shrink c i = Vec.shrink  c.atoms i
@@ -227,32 +227,32 @@ end
 
 
 module Debug = struct
-    
+
   let sign a = if a==a.var.pa then "" else "-"
-      
+
   let level a =
-    match a.var.level, a.var.reason with 
+    match a.var.level, a.var.reason with
       | n, _ when n < 0 -> assert false
       | 0, Some c -> sprintf "->0/%s" c.name
       | 0, None   -> "@0"
       | n, Some c -> sprintf "->%d/%s" n c.name
       | n, None   -> sprintf "@@%d" n
 
-  let value a = 
+  let value a =
     if a.is_true then sprintf "[T%s]" (level a)
     else if a.neg.is_true then sprintf "[F%s]" (level a)
     else ""
 
-  let value_ms_like a = 
+  let value_ms_like a =
     if a.is_true then sprintf ":1%s" (level a)
     else if a.neg.is_true then sprintf ":0%s" (level a)
     else ":X"
 
-  let premise fmt v = 
+  let premise fmt v =
     List.iter (fun {name=name} -> fprintf fmt "%s," name) v
 
-  let atom fmt a = 
-    fprintf fmt "%s%d%s [lit:%a] vpremise={{%a}}" 
+  let atom fmt a =
+    fprintf fmt "%s%d%s [lit:%a] vpremise={{%a}}"
       (sign a) (a.var.vid+1) (value a) Literal.LT.print a.lit
       premise a.var.vpremise
 
@@ -260,7 +260,7 @@ module Debug = struct
   let atoms_list fmt l = List.iter (fprintf fmt "%a ; " atom) l
   let atoms_array fmt arr = Array.iter (fprintf fmt "%a ; " atom) arr
 
-  let atoms_vec fmt vec = 
+  let atoms_vec fmt vec =
     for i = 0 to Vec.size vec - 1 do
       fprintf fmt "%a ; " atom (Vec.get vec i)
     done

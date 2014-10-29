@@ -14,22 +14,22 @@
 module type S = sig
   val start : unit -> unit
   val pause : unit -> unit
-  val get : unit -> float    
+  val get : unit -> float
 end
 
 module Make (X : sig end) = struct
 
   open Unix
-    
+
   let u = ref 0.0
 
   let cpt = ref 0.0
-    
+
   let start () = u:=(times()).tms_utime
 
   let pause () = cpt := !cpt +. ((times()).tms_utime -. !u)
 
-  let get () = 
+  let get () =
     !cpt
 
 end

@@ -74,31 +74,31 @@ end
 
 (** {3 Function symbols} *)
 module Symbol : sig
-    
+
   type t = Hstring.t
   (** The type of function symbols *)
-    
+
   val declare : Hstring.t -> Type.t list -> Type.t -> unit
   (** [declare s [arg_1; ... ; arg_n] out] declares a new function
       symbol with type [ (arg_1, ... , arg_n) -> out] *)
-    
+
   val type_of : t -> Type.t list * Type.t
     (** [type_of x] returns the type of x. *)
-    
+
   val has_abstract_type : t -> bool
     (** [has_abstract_type x] is [true] if the type of x is abstract. *)
-    
+
   val has_type_proc : t -> bool
   (** [has_type_proc x] is [true] if x has the type of a process
       identifier. *)
-        
+
   val declared : t -> bool
   (** [declared x] is [true] if [x] is already declared. *)
-      
+
 end
 
 (** {3 Variants}
-   
+
     The types of symbols (when they are enumerated data types) can be refined
     to substypes of their original type (i.e. a subset of their constructors).
 *)
@@ -107,7 +107,7 @@ module Variant : sig
   val init : (Symbol.t * Type.t) list -> unit
   (** [init l] where [l] is a list of pairs [(s, ty)] initializes the
       type (and associated constructors) of each [s] to its original type [ty].
-      
+
       This function must be called with a list of all symbols before
       attempting to refine the types. *)
 
@@ -117,12 +117,12 @@ module Variant : sig
       This function must be called when all information has been added.*)
 
   val assign_constr : Symbol.t -> Hstring.t -> unit
-    (** [assign_constr s cstr] will add the constraint that the constructor 
+    (** [assign_constr s cstr] will add the constraint that the constructor
         [cstr] must be in the type of [s] *)
 
   val assign_var : Symbol.t -> Symbol.t -> unit
     (** [assign_var x y] will add the constraint that the type of [y] is a
-        subtype of [x] (use this function when [x := y] appear in your 
+        subtype of [x] (use this function when [x := y] appear in your
         program *)
 
   val print : unit -> unit
@@ -143,10 +143,10 @@ module rec Term : sig
   (** The type of terms *)
 
   (** The type of operators *)
-  type operator = 
+  type operator =
     | Plus (** [+] *)
     | Minus (** [-] *)
-    | Mult (** [*] *) 
+    | Mult (** [*] *)
     | Div (** [/] *)
     | Modulo (** [mod] *)
 
@@ -186,22 +186,22 @@ end
 and Formula : sig
 
   (** The type of comparators: *)
-  type comparator = 
+  type comparator =
     | Eq  (** equality ([=]) *)
     | Neq (** disequality ([<>]) *)
     | Le  (** inequality ([<=]) *)
     | Lt  (** strict inequality ([<]) *)
 
   (** The type of operators *)
-  type combinator = 
+  type combinator =
     | And (** conjunction *)
     | Or  (** disjunction *)
     | Imp (** implication *)
     | Not (** negation *)
 
   (** The type of ground formulas *)
-  type t = 
-    | Lit of Literal.LT.t  
+  type t =
+    | Lit of Literal.LT.t
     | Comb of combinator * t list
 
   val f_true : t
@@ -267,11 +267,11 @@ module type Solver = sig
       assume f_n;
       check ();]}
   *)
-    
+
   type state
   (** The type of the internal state of the solver (see {!save_state} and
       {!restore_state}).*)
-    
+
 
   (** {2 Profiling functions} *)
 
@@ -292,20 +292,20 @@ module type Solver = sig
   (** [assume ~profiling:b f id] adds the formula [f] to the context of the
       solver with identifier [id].
       This function only performs unit propagation.
-      
+
       @param profiling if set to [true] then profiling information (time) will
       be computed (expensive because of system calls).
-      
+
       {b Raises} {! Unsat} if the context becomes inconsistent after unit
       propagation. *)
 
   val check : ?profiling:bool -> unit -> unit
   (** [check ()] runs Alt-Ergo Zero on its context. If [()] is
       returned then the context is satifiable.
-      
+
       @param profiling if set to [true] then profiling information (time) will
       be computed (expensive because of system calls).
-      
+
       {b Raises} {! Unsat} [[id_1; ...; id_n]] if the context is unsatisfiable.
       [id_1, ..., id_n] is the unsat core (returned as the identifiers of the
       formulas given to the solver). *)

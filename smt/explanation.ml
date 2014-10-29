@@ -12,14 +12,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Solver_types 
+open Solver_types
 open Format
 
 type exp = Atom of Solver_types.atom | Fresh of int
 
-module S = 
+module S =
   Set.Make
-    (struct 
+    (struct
        type t = exp
        let compare a b = match a,b with
 	 | Atom _, Fresh _ -> -1
@@ -27,25 +27,25 @@ module S =
 	 | Fresh i1, Fresh i2 -> i1 - i2
 	 | Atom a, Atom b -> a.aid - b.aid
      end)
-  
+
 type t = S.t
 
 let singleton e = S.singleton (Atom e)
-    
+
 let empty = S.empty
 
 let union s1 s2 = S.union s1 s2
 
-let iter_atoms f s = 
+let iter_atoms f s =
   S.iter (fun e -> match e with
     | Fresh _ -> ()
     | Atom a -> f a) s
 
-let fold_atoms f s acc = 
+let fold_atoms f s acc =
   S.fold (fun e acc -> match e with
     | Fresh _ -> acc
     | Atom a -> f a acc) s acc
-      
+
 let merge e1 e2 = e1
 
 
@@ -61,9 +61,9 @@ let remove_fresh i s =
 let add_fresh i = S.add (Fresh i)
 
 
-let print fmt ex = 
+let print fmt ex =
   fprintf fmt "{";
-  S.iter (function 
+  S.iter (function
     | Atom a -> fprintf fmt "%a, " Debug.atom a
-    | Fresh i -> fprintf fmt "Fresh%d " i) ex; 
+    | Fresh i -> fprintf fmt "Fresh%d " i) ex;
   fprintf fmt "}"

@@ -42,7 +42,7 @@ val power : int -> t -> t
 
 val sqrt : t -> t
 
-val root : int -> t -> t 
+val root : int -> t -> t
 
 val add : t -> t -> t
 

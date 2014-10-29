@@ -13,9 +13,9 @@
 
 open Hashcons
 
-module S = 
-  Hashcons.Make_consed(struct include String 
-		       let hash = Hashtbl.hash 
+module S =
+  Hashcons.Make_consed(struct include String
+		       let hash = Hashtbl.hash
 		       let equal = (=)     end)
 
 module HS = struct
@@ -38,7 +38,7 @@ module HS = struct
     | [] -> raise Not_found
     | (y, v) :: l -> if equal x y then v else list_assoc x l
 
-  let rec list_mem_assoc x = function 
+  let rec list_mem_assoc x = function
     | [] -> false
     | (y, _) :: l -> compare x y = 0 || list_mem_assoc x l
 
@@ -65,7 +65,7 @@ module HS = struct
     | [] -> false
     | d :: l -> compare_couple c d  = 0 || list_mem_couple c l
 
-  let print fmt s = 
+  let print fmt s =
     Format.fprintf fmt "%s" (view s)
 
 end

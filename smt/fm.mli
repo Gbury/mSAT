@@ -17,7 +17,7 @@ module type EXTENDED_Polynome = sig
   val alien_of : t -> r
 end
 
-module Make 
+module Make
   (X : Sig.X)
-  (P : EXTENDED_Polynome with type r = X.r) 
+  (P : EXTENDED_Polynome with type r = X.r)
   : Sig.RELATION with type r = X.r

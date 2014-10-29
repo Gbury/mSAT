@@ -26,8 +26,8 @@ module type S = sig
 
   val find_r : t -> R.r -> R.r * Explanation.t
 
-  val union : 
-    t -> R.r -> R.r -> Explanation.t -> 
+  val union :
+    t -> R.r -> R.r -> Explanation.t ->
     t * (R.r * (R.r * R.r * Explanation.t) list * R.r) list
 
   val distinct : t -> R.r list -> Explanation.t -> t

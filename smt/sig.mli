@@ -15,11 +15,11 @@ type answer = Yes of Explanation.t | No
 
 type 'a literal = LSem of 'a Literal.view | LTerm of Literal.LT.t
 
-type 'a input =  
+type 'a input =
     'a Literal.view * Literal.LT.t option * Explanation.t
 
-type 'a result = { 
-  assume : ('a literal * Explanation.t) list;  
+type 'a result = {
+  assume : ('a literal * Explanation.t) list;
   remove: ('a literal * Explanation.t) list;
 }
 
@@ -28,14 +28,14 @@ module type RELATION = sig
   type r
 
   val empty : unit -> t
-  
+
   val assume : t -> (r input) list -> t * r result
 
   val query : t -> r input -> answer
 
   val case_split : t -> (r Literal.view * Explanation.t * Num.num) list
     (** case_split env returns a list of equalities *)
-    
+
   val add : t -> r -> t
     (** add a representant to take into account *)
 
@@ -64,7 +64,7 @@ module type THEORY = sig
   val term_extract : r -> Term.t option
 
   val type_info : t -> Ty.t
-    
+
   val embed : r -> t
 
   (** Give the leaves of a term of the theory *)
@@ -108,31 +108,31 @@ module type X = sig
   type r
 
   val make : Term.t -> r * Literal.LT.t list
-  
+
   val type_info : r -> Ty.t
-  
+
   val compare : r -> r -> int
-  
+
   val equal : r -> r -> bool
 
   val hash : r -> int
-  
+
   val leaves : r -> r list
-  
+
   val subst : r -> r -> r -> r
-  
+
   val solve : r -> r ->  (r * r) list
-  
+
   val term_embed : Term.t -> r
 
-  val term_extract : r -> Term.t option 
-  
+  val term_extract : r -> Term.t option
+
   val unsolvable   : r -> bool
 
   val fully_interpreted : Symbols.t -> bool
-  
+
   val print : Format.formatter -> r -> unit
-  
+
   module Rel : RELATION with type r = r
 
 end

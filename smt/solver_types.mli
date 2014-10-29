@@ -13,7 +13,7 @@
 
 
 
-type var = 
+type var =
     { vid : int;
       pa : atom;
       na : atom;
@@ -22,8 +22,8 @@ type var =
       mutable level : int;
       mutable reason : reason;
       mutable vpremise : premise }
-    
-and atom = 
+
+and atom =
     { var : var;
       lit : Literal.LT.t;
       neg : atom;
@@ -31,7 +31,7 @@ and atom =
       mutable is_true : bool;
       aid : int }
 
-and clause = 
+and clause =
     { name : string;
       mutable atoms : atom Vec.t;
       mutable activity : float;
@@ -54,7 +54,7 @@ val dummy_clause : clause
 
 val make_var : Literal.LT.t -> var * bool
 
-val add_atom : Literal.LT.t -> atom 
+val add_atom : Literal.LT.t -> atom
 
 val make_clause : string -> atom list -> int -> bool -> premise-> clause
 
@@ -73,9 +73,9 @@ val clear : unit -> unit
 end
 
 module Debug: sig
-    
+
   val atom : Format.formatter -> atom -> unit
-    
+
   val clause : Format.formatter -> clause -> unit
 
 end

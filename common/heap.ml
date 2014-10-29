@@ -21,8 +21,8 @@ end
 
 module type S = sig
   type t
-  type elem 
-    
+  type elem
+
   val empty : t
   val pop : t -> elem * t
   val add : t -> elem list -> t
@@ -37,22 +37,22 @@ module Make ( X : OrderType ) = struct
 
   let empty = Empty
 
-  let rec fusion t1 t2 = 
+  let rec fusion t1 t2 =
     match t1, t2 with
       | _ , Empty -> t1
       | Empty , _ -> t2
       | Node (m1, g1, d1), Node (m2, g2, d2) ->
 	  if X.compare m1 m2 <= 0 then Node (m1, d1, fusion g1 t2)
 	  else Node (m2, d2, fusion g2 t1)
-	    
+	
   let pop = function
     | Empty -> raise EmptyHeap
     | Node(m, g, d) -> m, fusion g d
 	
-  let add h l = 
+  let add h l =
     List.fold_left (fun h x -> fusion (Node(x, Empty, Empty)) h ) h l
-    
-  let elements h = 
+
+  let elements h =
     let rec elements_aux acc = function
       | Empty -> acc
       | Node (m1 ,g1 ,d1) -> elements_aux (m1 :: acc) (fusion g1 d1)

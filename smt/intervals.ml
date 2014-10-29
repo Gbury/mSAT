@@ -16,9 +16,9 @@ open Format
 
 module Ex = Explanation
 
-type borne = 
-  | Strict of (num * Ex.t) 
-  | Large of (num * Ex.t) 
+type borne =
+  | Strict of (num * Ex.t)
+  | Large of (num * Ex.t)
   | Pinfty | Minfty
 
 let compare_bornes b1 b2 =
@@ -26,33 +26,33 @@ let compare_bornes b1 b2 =
     | Minfty, Minfty | Pinfty, Pinfty -> 0
     | Minfty, _ | _, Pinfty -> -1
     | Pinfty, _ | _, Minfty -> 1
-    | Strict (v1, _), Strict (v2, _) | Large (v1, _), Large (v2, _) 
-    | Strict (v1, _), Large (v2, _) | Large (v1, _), Strict (v2, _) -> 
+    | Strict (v1, _), Strict (v2, _) | Large (v1, _), Large (v2, _)
+    | Strict (v1, _), Large (v2, _) | Large (v1, _), Strict (v2, _) ->
       compare_num v1 v2
 
 let compare_bu_bl b1 b2 =
   match b1, b2 with
-    | (Minfty | Pinfty), _ | _,(Minfty | Pinfty) 
-    | Strict _, Strict _ | Large _, Large _ -> 
-      compare_bornes b1 b2 
+    | (Minfty | Pinfty), _ | _,(Minfty | Pinfty)
+    | Strict _, Strict _ | Large _, Large _ ->
+      compare_bornes b1 b2
     | Strict (v1, _), Large (v2, _) | Large (v1, _), Strict (v2, _) ->
       let c = compare_num v1 v2 in
       if c = 0 then -1 else c
-      
+
 let compare_bl_bu b1 b2 =
   match b1, b2 with
-    | (Minfty | Pinfty), _ | _,(Minfty | Pinfty) 
-    | Strict _, Strict _ | Large _, Large _ -> 
-      compare_bornes b1 b2 
+    | (Minfty | Pinfty), _ | _,(Minfty | Pinfty)
+    | Strict _, Strict _ | Large _, Large _ ->
+      compare_bornes b1 b2
     | Strict (v1, _), Large (v2, _) | Large (v1, _), Strict (v2, _) ->
       let c = compare_num v1 v2 in
       if c = 0 then 1 else c
 
-let compare_bl_bl b1 b2 = 
-  match b1, b2 with 
-    | (Minfty | Pinfty), _ | _,(Minfty | Pinfty) 
-    | Strict _, Strict _ | Large _, Large _ -> 
-      compare_bornes b1 b2 
+let compare_bl_bl b1 b2 =
+  match b1, b2 with
+    | (Minfty | Pinfty), _ | _,(Minfty | Pinfty)
+    | Strict _, Strict _ | Large _, Large _ ->
+      compare_bornes b1 b2
     | Strict (v1, _), Large (v2, _) ->
       let c = compare_num v1 v2 in
       if c = 0 then 1 else c
@@ -62,9 +62,9 @@ let compare_bl_bl b1 b2 =
 
 let compare_bu_bu b1 b2 =
   match b1, b2 with
-    | (Minfty | Pinfty), _ | _,(Minfty | Pinfty) 
-    | Strict _, Strict _ | Large _, Large _ -> 
-      compare_bornes b1 b2 
+    | (Minfty | Pinfty), _ | _,(Minfty | Pinfty)
+    | Strict _, Strict _ | Large _, Large _ ->
+      compare_bornes b1 b2
     | Strict (v1, _), Large (v2, _) ->
       let c = compare_num v1 v2 in
       if c = 0 then -1 else c
@@ -72,7 +72,7 @@ let compare_bu_bu b1 b2 =
       let c = compare_num v1 v2 in
       if c = 0 then 1 else c
 
-type t = { 
+type t = {
   ints : (borne * borne) list;
   is_int : bool;
   expl: Ex.t
@@ -83,23 +83,23 @@ exception NotConsistent of Ex.t
 exception Not_a_float
 
 let print_borne fmt = function
-  | Minfty -> fprintf fmt "-inf" 
+  | Minfty -> fprintf fmt "-inf"
   | Pinfty -> fprintf fmt "+inf"
   | Strict (v, e) | Large (v, e) ->
       fprintf fmt "%s" (string_of_num v)
-      
+
 let print_interval fmt (b1,b2) =
   let c1, c2 = match b1, b2 with
     | Large _, Large _ -> '[', ']'
     | Large _, _ -> '[', '['
     | _, Large _ -> ']', ']'
     | _, _ -> ']', '['
-  in 	    
+  in 	
   fprintf fmt "%c%a;%a%c" c1 print_borne b1 print_borne b2 c2
-    
-let print fmt {ints = ints; is_int = b; expl = e } = 
+
+let print fmt {ints = ints; is_int = b; expl = e } =
   List.iter (fun i -> fprintf fmt "%a" print_interval i) ints
-  
+
 
 let undefined ty = {
   ints = [Minfty, Pinfty];
@@ -108,7 +108,7 @@ let undefined ty = {
 }
 
 let point b ty e = {
-  ints = [Large (b, e), Large (b, e)]; 
+  ints = [Large (b, e), Large (b, e)];
   is_int = ty  = Ty.Tint;
   expl = Ex.empty
 }
@@ -132,7 +132,7 @@ let is_point { ints = l; expl = e } =
     | _ -> None
 
 let add_expl_zero i expl =
-  let res = List.map (fun x -> 
+  let res = List.map (fun x ->
     match x with
       | (Large ((Num.Int 0), e1) , Large ((Num.Int 0), e2)) ->
         (Large ((Num.Int 0), Ex.union e1 expl),
@@ -143,10 +143,10 @@ let add_expl_zero i expl =
 let check_one_interval b1 b2 is_int =
     match b1, b2 with
       | Pinfty, _ | _, Minfty  -> raise (EmptyInterval Ex.empty)
-      | (Strict (v1, e1) | Large (v1,e1)), 
+      | (Strict (v1, e1) | Large (v1,e1)),
         (Strict (v2, e2) | Large (v2, e2)) ->
-	  let c = compare_num v1 v2 in 
-	  if c > 0 then raise 
+	  let c = compare_num v1 v2 in
+	  if c > 0 then raise
 	    (EmptyInterval (Ex.union e2 e1));
 	  if c = 0 then begin
 	    match b1, b2 with
@@ -156,7 +156,7 @@ let check_one_interval b1 b2 is_int =
 	  end
       | _ -> ()
 
-let min_borne b1 b2 = 
+let min_borne b1 b2 =
   match b1, b2 with
     | Minfty , _ | _ , Minfty -> Minfty
     | b , Pinfty | Pinfty, b -> b
@@ -164,31 +164,31 @@ let min_borne b1 b2 =
 	let c = compare_num v1 v2 in
 	if c < 0 then b1
 	else if c > 0 then b2
-	else match b1, b2 with 
+	else match b1, b2 with
 	  | (Strict _ as b) , _ | _, (Strict _ as b) -> b
 	  | _, _ -> b1
- 
-let max_borne b1 b2 = 
+
+let max_borne b1 b2 =
   match b1, b2 with
     | Pinfty , _ | _ , Pinfty -> Pinfty
     | b , Minfty | Minfty, b -> b
-    | (Strict (v1, _) | Large (v1, _)) , (Strict (v2, _) | Large (v2, _)) -> 
+    | (Strict (v1, _) | Large (v1, _)) , (Strict (v2, _) | Large (v2, _)) ->
 	let c = compare_num v1 v2 in
 	if c > 0 then b1
 	else if c < 0 then b2
-	else match b1, b2 with 
+	else match b1, b2 with
 	  | (Strict _ as b) , _ | _, (Strict _ as b) -> b
 	  | _, _ -> b1
 	
 let pos_borne b1 =
   compare_bornes b1 (borne_of true Ex.empty (Int 0)) >= 0
-let pos_borne_strict b1 = 
+let pos_borne_strict b1 =
   compare_bornes b1 (borne_of true Ex.empty (Int 0)) > 0
-let neg_borne b1 = 
+let neg_borne b1 =
   compare_bornes b1 (borne_of true Ex.empty (Int 0)) <= 0
-let neg_borne_strict b1 = 
+let neg_borne_strict b1 =
   compare_bornes b1 (borne_of true Ex.empty (Int 0)) < 0
-let zero_borne b1 = 
+let zero_borne b1 =
   compare_bornes b1 (borne_of true Ex.empty (Int 0)) = 0
 
 exception Found of Sig.answer
@@ -196,12 +196,12 @@ exception Found of Sig.answer
 let doesnt_contain_0 {ints=l} =
   try
     let max = List.fold_left
-      (fun old_u (l, u) -> 
+      (fun old_u (l, u) ->
 	if neg_borne l && pos_borne u then raise (Found Sig.No);
-	if neg_borne_strict old_u && pos_borne_strict l then 
-	  raise (Found 
-		   (Sig.Yes 
-		      (Ex.union 
+	if neg_borne_strict old_u && pos_borne_strict l then
+	  raise (Found
+		   (Sig.Yes
+		      (Ex.union
 			 (explain_borne old_u) (explain_borne l))));
 	u) Minfty l in
     if neg_borne_strict max then Sig.Yes (explain_borne max)
@@ -219,11 +219,11 @@ let is_strict_smaller i1 i2 =
 	  then raise Exit
 	) i1 i2;
 	false
-      with 
+      with
 	| Exit -> true
 	| Invalid_argument _ -> List.length i1 > List.length i2
 
-let is_strict_smaller {ints=i1} {ints=i2} = 
+let is_strict_smaller {ints=i1} {ints=i2} =
   is_strict_smaller i1 i2
 
 
@@ -247,7 +247,7 @@ let add_borne b1 b2 =
     | Minfty, Pinfty | Pinfty, Minfty -> assert false
     | Minfty, _ | _, Minfty -> Minfty
     | Pinfty, _ | _, Pinfty -> Pinfty
-    | Large (v1, e1), Large (v2, e2) -> 
+    | Large (v1, e1), Large (v2, e2) ->
       Large (v1 +/ v2, Ex.union e1 e2)
     | (Large (v1, e1) | Strict (v1, e1)), (Large (v2, e2) | Strict (v2, e2)) ->
       Strict (v1 +/ v2, Ex.union e1 e2)
@@ -260,9 +260,9 @@ let add_interval l (b1,b2) =
     ) l []
 
 let add {ints = l1; is_int = is_int; expl = e1} {ints = l2; expl = e2}=
-  let l = 
+  let l =
     List.fold_left
-      (fun l bs -> let i = add_interval l1 bs in i@l) [] l2 
+      (fun l bs -> let i = add_interval l1 bs in i@l) [] l2
   in
   union { ints = l ; is_int = is_int; expl = Ex.union e1 e2 }
 
@@ -274,7 +274,7 @@ let minus_borne = function
 
 let scale_borne n b =
   assert (n >=/ Int 0);
-  if n =/ Int 0 then 
+  if n =/ Int 0 then
     match b with
     | Pinfty | Minfty -> Large (Int 0, Ex.empty)
     | Large (_, e) | Strict (_, e) ->  Large (Int 0, e)
@@ -293,24 +293,24 @@ let scale_interval n (b1,b2) =
 let scale n uints =
   let l = List.map (scale_interval n) uints.ints in
   union { uints with ints = l; expl = uints.expl }
-	    
+	
 let mult_borne b1 b2 =
   match b1,b2 with
     | Minfty, Pinfty | Pinfty, Minfty -> assert false
     | Minfty, b | b, Minfty ->
-	if compare_bornes b (borne_of true Ex.empty (Int 0)) = 0 
+	if compare_bornes b (borne_of true Ex.empty (Int 0)) = 0
         then b
 	else if pos_borne b then Minfty
 	else Pinfty
     | Pinfty, b | b, Pinfty ->
-	if compare_bornes b (borne_of true Ex.empty (Int 0)) = 0 
+	if compare_bornes b (borne_of true Ex.empty (Int 0)) = 0
         then b
 	else if pos_borne b then Pinfty
 	else Minfty
     | Strict (v1, e1), Strict (v2, e2) | Strict (v1, e1), Large (v2, e2)
-    | Large (v1, e1), Strict (v2, e2) -> 
+    | Large (v1, e1), Strict (v2, e2) ->
       Strict (v1 */ v2, Ex.union e1 e2)
-    | Large (v1, e1), Large (v2, e2) -> 
+    | Large (v1, e1), Large (v2, e2) ->
       Large (v1 */ v2, Ex.union e1 e2)
 
 let mult_borne_inf b1 b2 =
@@ -323,10 +323,10 @@ let mult_borne_sup b1 b2 =
     | Minfty, Pinfty | Pinfty, Minfty -> Pinfty
     | _, _ -> mult_borne b1 b2
 
-type interval_class = 
-  | P of Ex.t 
-  | M of Ex.t 
-  | N of Ex.t 
+type interval_class =
+  | P of Ex.t
+  | M of Ex.t
+  | N of Ex.t
   | Z
 
 let class_of (l,u) =
@@ -338,17 +338,17 @@ let class_of (l,u) =
 let mult_bornes (a,b) (c,d) =
   (* see util/intervals_mult.png *)
   match class_of (a,b), class_of (c,d) with
-    | P e1, P e2 -> 
+    | P e1, P e2 ->
       mult_borne_inf a c, mult_borne_sup b d, Ex.union e1 e2
-    | P e1, M e2 -> 
+    | P e1, M e2 ->
       mult_borne_inf b c, mult_borne_sup b d, Ex.union e1 e2
-    | P e1, N e2 -> 
+    | P e1, N e2 ->
       mult_borne_inf b c, mult_borne_sup a d, Ex.union e1 e2
-    | M e1, P e2 -> 
+    | M e1, P e2 ->
       mult_borne_inf a d, mult_borne_sup b d, Ex.union e1 e2
-    | M e1, M e2 -> 
+    | M e1, M e2 ->
       min_borne (mult_borne_inf a d) (mult_borne_inf b c),
-      max_borne (mult_borne_sup a c) (mult_borne_sup b d), 
+      max_borne (mult_borne_sup a c) (mult_borne_sup b d),
       Ex.union e1 e2
     | M e1, N e2 ->
       mult_borne_inf b c, mult_borne_sup a c, Ex.union e1 e2
@@ -360,7 +360,7 @@ let mult_bornes (a,b) (c,d) =
       mult_borne_inf b d, mult_borne_sup a c, Ex.union e1 e2
     | Z, (P _ | M _ | N _ | Z) -> (a, b, Ex.empty)
     | (P _ | M _ | N _ ), Z -> (c, d, Ex.empty)
-      
+
 let rec power_borne_inf p b =
   match p with
     | 1 -> b
@@ -396,14 +396,14 @@ let power_bornes p (b1,b2) =
       | p when p mod 2 = 0 -> (power_borne_inf p b2, power_borne_sup p b1)
       | _ -> (power_borne_inf p b1, power_borne_sup p b2)
   else assert false
-    
+
 let int_of_borne_inf b =
   match b with
     | Minfty | Pinfty -> b
     | Large (v, e) -> Large (ceiling_num v, e)
     | Strict (v, e) ->
 	let v' = ceiling_num v in
-	if v' >/ v then Large (v', e) else Large (v +/ (Int 1), e) 
+	if v' >/ v then Large (v', e) else Large (v +/ (Int 1), e)
 
 let int_of_borne_sup b =
   match b with
@@ -411,7 +411,7 @@ let int_of_borne_sup b =
     | Large (v, e) -> Large (floor_num v, e)
     | Strict (v, e) ->
 	let v' = floor_num v in
-	if v' </ v then Large (v', e) else Large (v -/ (Int 1), e) 
+	if v' </ v then Large (v', e) else Large (v -/ (Int 1), e)
 
 let int_div_of_borne_inf b =
   match b with
@@ -419,7 +419,7 @@ let int_div_of_borne_inf b =
     | Large (v, e) -> Large (floor_num v, e)
     | Strict (v, e) ->
 	let v' = floor_num v in
-	if v' >/ v then Large (v', e) else Large (v +/ (Int 1), e) 
+	if v' >/ v then Large (v', e) else Large (v +/ (Int 1), e)
 
 let int_div_of_borne_sup b =
   match b with
@@ -429,10 +429,10 @@ let int_div_of_borne_sup b =
 	let v' = floor_num v in
 	if v' </ v then Large (v', e) else Large (v -/ (Int 1), e)
 
-let int_bornes l u = 
+let int_bornes l u =
   int_of_borne_inf l, int_of_borne_sup u
 
-let int_div_bornes l u = 
+let int_div_bornes l u =
   int_div_of_borne_inf l, int_div_of_borne_sup u
 
 
@@ -442,7 +442,7 @@ let intersect ({ints=l1; expl=e1; is_int=is_int} as uints1)
   let rec step (l1,l2) acc expl =
     match l1, l2 with
       | (lo1,up1)::r1, (lo2,up2)::r2 ->
-	let (lo1,up1), (lo2,up2) = 
+	let (lo1,up1), (lo2,up2) =
 	  if is_int then (int_bornes lo1 up1), (int_bornes lo2 up2)
 	  else (lo1,up1), (lo2,up2) in
 	let cll = compare_bl_bl lo1 lo2 in
@@ -457,7 +457,7 @@ let intersect ({ints=l1; expl=e1; is_int=is_int} as uints1)
 	      let lor1 = add_expl_to_borne lor1 nexpl in
 	      let r1 = (lor1,upr1)::rr1 in
 	      step (r1, l2) acc expl
-	else if clu > 0 then 
+	else if clu > 0 then
 	  let nexpl  = Ex.union (explain_borne up2) (explain_borne lo1) in
 	  match r2 with
 	    | [] -> step (l1, r2) acc (Ex.union nexpl expl)
@@ -465,15 +465,15 @@ let intersect ({ints=l1; expl=e1; is_int=is_int} as uints1)
 	      let lor2 = add_expl_to_borne lor2 nexpl in
 	      let r2 = (lor2,upr2)::rr2 in
 	      step (l1, r2) acc expl
-	else if cll = 0 && cuu = 0 then 
+	else if cll = 0 && cuu = 0 then
 	  step (r1, r2) ((lo1,up1)::acc) expl
-	else if cll <= 0 && cuu >= 0 then 
+	else if cll <= 0 && cuu >= 0 then
 	  step (l1, r2) ((lo2,up2)::acc) expl
-	else if cll >= 0 && cuu <= 0 then 
+	else if cll >= 0 && cuu <= 0 then
 	  step (r1, l2) ((lo1,up1)::acc) expl
-	else if cll <= 0 && cuu <= 0 && cul >= 0 then 
+	else if cll <= 0 && cuu <= 0 && cul >= 0 then
 	  step (r1, l2) ((lo2,up1)::acc) expl
-	else if cll >= 0 && cuu >= 0 && clu <= 0 then 
+	else if cll >= 0 && cuu >= 0 && clu <= 0 then
 	  step (l1, r2) ((lo1,up2)::acc) expl
 	else assert false
       | [], _ | _, [] ->  List.rev acc, expl
@@ -484,13 +484,13 @@ let intersect ({ints=l1; expl=e1; is_int=is_int} as uints1)
 
 
 let new_borne_sup expl b ~is_le uints =
-  intersect 
+  intersect
     { ints = [Minfty, (borne_of is_le expl b)];
       is_int = uints.is_int;
       expl = Ex.empty } uints
 
 let new_borne_inf expl b ~is_le uints =
-  intersect 
+  intersect
     { ints = [(borne_of is_le expl b), Pinfty];
       is_int = uints.is_int;
       expl = Ex.empty } uints
@@ -509,28 +509,28 @@ let complement ({ints=l; expl=e} as uints) =
 	  | _ -> b2 in
 	if bu = Minfty then step r bl acc
 	else step r bl ((prev, bu)::acc)
-      | [] -> 
+      | [] ->
 	if prev = Pinfty then List.rev acc
 	else List.rev ((prev, Pinfty)::acc)
   in
   { uints with ints = step l Minfty [] }
-    
+
 
 let exclude uints1 uints2 =
-  intersect (complement uints1) uints2 
+  intersect (complement uints1) uints2
 
 let mult u1 u2 =
-  let resl, expl = 
+  let resl, expl =
     List.fold_left
       (fun (l', expl) b1 ->
-	List.fold_left 
+	List.fold_left
 	  (fun (l, ex) b2 ->
 	    let bl, bu, ex' = mult_bornes b1 b2 in
 	    (bl, bu)::l, Ex.union ex ex') (l', expl) u2.ints)
       ([], Ex.empty) u1.ints
   in
   union { ints=resl; is_int = u1.is_int;
-	  expl = Ex.union expl 
+	  expl = Ex.union expl
                  (Ex.union u1.expl u2.expl) }
 
 let power n u =
@@ -553,7 +553,7 @@ let num_of_float x =
   let factor = (Int 2) **/ (Int (n - 52)) in
   (Big_int z) */ factor
 
-let root_num a n = 
+let root_num a n =
   if a </ (Int 0) then assert false
   else if a =/ (Int 0) then (Int 0)
   else if n = 2 then num_of_float (sqrt (float_of_num a))
@@ -629,7 +629,7 @@ let rec root n ({ints = l; is_int = is_int; expl = e} as u) =
 	  (root_interval is_int bs n)@l'
 	) [] l in
     union { ints = l; is_int = is_int; expl = e }
-      
+
 let finite_size {ints = l; is_int = is_int} =
   if (not is_int) then None
   else
@@ -644,7 +644,7 @@ let finite_size {ints = l; is_int = is_int} =
 	  ) (Int 0) l in
       Some n
     with Exit -> None
-		 
+		
 let borne_inf = function
   | {ints = (Large (v, ex), _)::_} -> v, ex
   | _ -> invalid_arg "Intervals.borne_inf : No finite lower bound"
@@ -655,7 +655,7 @@ let inv_borne_inf b is_int ~other =
   match b with
     | Pinfty -> assert false
     | Minfty ->
-      if is_int then Large (Int 0,  explain_borne other) 
+      if is_int then Large (Int 0,  explain_borne other)
       else Strict (Int 0, explain_borne other)
     | Strict (Int 0, e) | Large (Int 0, e) -> Pinfty
     | Strict (v, e) -> Strict (Int 1 // v, e)
@@ -677,10 +677,10 @@ let inv_bornes (l, u) is_int =
 
 let inv ({ints=l; is_int=is_int} as u) =
   try
-    let l' = List.fold_left 
+    let l' = List.fold_left
       (fun acc (l,u) ->
-	if (pos_borne_strict l && pos_borne_strict u) 
-	  || (neg_borne_strict l && neg_borne_strict u) then 
+	if (pos_borne_strict l && pos_borne_strict u)
+	  || (neg_borne_strict l && neg_borne_strict u) then
 	  (inv_bornes (l, u) is_int) :: acc
 	else raise Exit
       ) [] l in
@@ -696,8 +696,8 @@ let div i1 i2 =
       | Sig.No -> i1
     in
     let ({ints=l; is_int=is_int} as i) = mult i1 inv_i2 in
-    let l = 
-      if is_int then 
+    let l =
+      if is_int then
 	List.map (fun (l,u) -> int_div_bornes l u) l
       else l in
     { i with ints = l }

@@ -13,8 +13,8 @@
 
 open Hashcons
 
-type 'a view = 
-  | Eq of 'a * 'a 
+type 'a view =
+  | Eq of 'a * 'a
   | Distinct of bool * 'a list
   | Builtin of bool * Hstring.t * 'a list
 
@@ -45,7 +45,7 @@ module type S = sig
 
   module Map : Map.S with type key = t
   module Set : Set.S with type elt = t
-    
+
 end
 
 module Make (X : OrderedType) : S with type elt = X.t = struct
@@ -53,36 +53,36 @@ module Make (X : OrderedType) : S with type elt = X.t = struct
   type elt = X.t
   type t = (X.t view) hash_consed
 
-  module V = struct 
-    type t = X.t view 
+  module V = struct
+    type t = X.t view
 	
-    let equal a1 a2 = 
+    let equal a1 a2 =
       match a1, a2 with
-	| Eq(t1, t2), Eq(u1, u2) -> 
+	| Eq(t1, t2), Eq(u1, u2) ->
 	    (X.compare t1 u1 = 0 && X.compare t2 u2 = 0) ||
 	    (X.compare t1 u2 = 0 && X.compare t2 u1 = 0)
 	| Distinct (b1,lt1), Distinct (b2,lt2) ->
-	    (try 
-	       b1 = b2 && 
+	    (try
+	       b1 = b2 &&
 		List.for_all2 (fun x y -> X.compare x y = 0) lt1 lt2
 	     with Invalid_argument _ -> false)
-	| Builtin(b1, n1, l1), Builtin(b2, n2, l2) -> 
-	    (try 
-	       b1 = b2 && Hstring.equal n1 n2 
-		&& 
+	| Builtin(b1, n1, l1), Builtin(b2, n2, l2) ->
+	    (try
+	       b1 = b2 && Hstring.equal n1 n2
+		&&
 		List.for_all2 (fun x y -> X.compare x y = 0) l1 l2
 	     with Invalid_argument _ -> false)
 	| _ -> false
-	    
+	
     let hash a = match a with
       | Eq(t1, t2) -> abs (19 * (X.hash t1 + X.hash t2))
       | Distinct (b,lt) ->
 	  let x = if b then 7 else 23 in
 	  abs (17 * List.fold_left (fun acc t -> (X.hash t) + acc ) x lt)
-      | Builtin(b, n, l) -> 
+      | Builtin(b, n, l) ->
 	  let x = if b then 7 else 23 in
-	  abs 
-	    (List.fold_left 
+	  abs
+	    (List.fold_left
 	       (fun acc t-> acc*13 + X.hash t) (Hstring.hash n+x) l)
   end
 
@@ -92,9 +92,9 @@ module Make (X : OrderedType) : S with type elt = X.t = struct
   let equal a1 a2 = a1 == a2
   let hash a1 = a1.tag
 
-  module T = struct 
-    type t' = t 
-    type t = t' 
+  module T = struct
+    type t' = t
+    type t = t'
     let compare=compare
     let equal = equal
     let hash = hash
@@ -112,11 +112,11 @@ module Make (X : OrderedType) : S with type elt = X.t = struct
     | Builtin(b, n, l) -> make (Builtin (not b, n, l))
 
   module Labels = Hashtbl.Make(T)
-    
+
   let labels = Labels.create 100007
-    
+
   let add_label lbl t = Labels.replace labels t lbl
-    
+
   let label t = try Labels.find labels t with Not_found -> Hstring.empty
 
   let print_list fmt = function
@@ -124,18 +124,18 @@ module Make (X : OrderedType) : S with type elt = X.t = struct
     | z :: l ->
 	Format.fprintf fmt "%a" X.print z;
 	List.iter (Format.fprintf fmt ", %a" X.print) l
-    
-  let ale = Hstring.make "<=" 
+
+  let ale = Hstring.make "<="
   let alt = Hstring.make "<"
 
-  let print fmt a = 
+  let print fmt a =
     let lbl = Hstring.view (label a) in
     let lbl = if lbl = "" then lbl else lbl^":" in
     match view a with
-      | Eq (z1, z2) -> 
+      | Eq (z1, z2) ->
 	  if equal z1 z2 then Format.fprintf fmt "True"
 	  else Format.fprintf fmt "%s%a=%a" lbl X.print z1 X.print z2
-      | Distinct (b,(z::l)) -> 
+      | Distinct (b,(z::l)) ->
 	  let b = if b then "~" else "" in
 	  Format.fprintf fmt "%s%s%a" lbl b X.print z;
 	  List.iter (fun x -> Format.fprintf fmt "<>%a" X.print x) l
@@ -156,7 +156,7 @@ module Make (X : OrderedType) : S with type elt = X.t = struct
 	  let b = if b then "" else "~" in
 	  Format.fprintf fmt "%s%s%s(%a)" lbl b (Hstring.view n) print_list l
       | _ -> assert false
-    
+
   module Set = Set.Make(T)
   module Map = Map.Make(T)
 
@@ -182,28 +182,28 @@ module LT : S_Term = struct
   module L = Make(Term)
   include L
 
-  let mk_pred t = make (Eq (t, Term.vrai) ) 
-    
+  let mk_pred t = make (Eq (t, Term.vrai) )
+
   let vrai = mk_pred Term.vrai
   let faux = mk_pred Term.faux
 
   let neg a = match view a with
-    | Eq(t1, t2) when Term.equal t2 Term.faux -> 
+    | Eq(t1, t2) when Term.equal t2 Term.faux ->
       make (Eq (t1, Term.vrai))
-    | Eq(t1, t2) when Term.equal t2 Term.vrai -> 
+    | Eq(t1, t2) when Term.equal t2 Term.vrai ->
       make (Eq (t1, Term.faux))
     | _ -> L.neg a
 
-(* let terms_of a = 
-   let l = match view a with 
-     | Eq (t1, t2) -> [t1; t2] 
-     | Distinct (_, l) | Builtin (_, _, l) -> l 
+(* let terms_of a =
+   let l = match view a with
+     | Eq (t1, t2) -> [t1; t2]
+     | Distinct (_, l) | Builtin (_, _, l) -> l
    in
    List.fold_left Term.subterms Term.Set.empty l
 *)
 
- module SS = Symbols.Set     
-(* let vars_of a = 
+ module SS = Symbols.Set
+(* let vars_of a =
    Term.Set.fold (fun t -> SS.union (Term.vars_of t)) (terms_of a) SS.empty
 *)
 end

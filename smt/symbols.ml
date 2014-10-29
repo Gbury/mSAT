@@ -13,13 +13,13 @@
 
 open Hashcons
 
-type operator = 
-  | Plus | Minus | Mult | Div | Modulo 
+type operator =
+  | Plus | Minus | Mult | Div | Modulo
 
 type name_kind = Ac | Constructor | Other
 
-type t = 
-  | True 
+type t =
+  | True
   | False
   | Name of Hstring.t * name_kind
   | Int of Hstring.t
@@ -47,7 +47,7 @@ let compare_kind k1 k2 = match k1, k2 with
   | Constructor, Constructor -> 0
 
 let compare s1 s2 =  match s1, s2 with
-  | Name (n1,k1), Name (n2,k2) -> 
+  | Name (n1,k1), Name (n2,k2) ->
       let c = compare_kind k1 k2 in
       if c = 0 then Hstring.compare n1 n2 else c
   | Name _, _ ->  -1
@@ -59,7 +59,7 @@ let compare s1 s2 =  match s1, s2 with
   | Int _, _ -> -1
   | _ ,Int _ -> 1
   | _  -> Pervasives.compare s1 s2
-  
+
 let equal s1 s2 = compare s1 s2 = 0
 
 let hash = function
@@ -73,8 +73,8 @@ let to_string =  function
   | Var x -> "*var* "^(Hstring.view x)
   | Int n -> Hstring.view n
   | Real n -> Hstring.view n
-  | Op Plus -> "+" 
-  | Op Minus -> "-" 
+  | Op Plus -> "+"
+  | Op Minus -> "-"
   | Op Mult -> "*"
   | Op Div -> "/"
   | Op Modulo -> "%"
@@ -86,6 +86,6 @@ let print fmt s = Format.fprintf fmt "%s" (to_string s)
 module Map =
   Map.Make(struct type t' = t type t=t' let compare=compare end)
 
-module Set = 
+module Set =
   Set.Make(struct type t' = t type t=t' let compare=compare end)
 

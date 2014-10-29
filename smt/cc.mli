@@ -20,7 +20,7 @@ module type S = sig
   module TimerCC : Timer.S
 
   val empty : unit -> t
-  val assume : cs:bool -> 
+  val assume : cs:bool ->
     Literal.LT.t -> Explanation.t -> t -> t * Term.Set.t * int
   val query : Literal.LT.t -> t -> Sig.answer
   val class_of : t -> Term.t -> Term.t list

@@ -14,14 +14,14 @@
 (** {b Hash-consed strings}
 
     Hash-consing is a technique to share values that are structurally
-    equal. More details on 
+    equal. More details on
     {{:http://en.wikipedia.org/wiki/Hash_consing} Wikipedia} and
     {{:http://www.lri.fr/~filliatr/ftp/publis/hash-consing2.pdf} here}.
 
     This module provides an easy way to use hash-consing for strings.
 *)
 
-open Hashcons 
+open Hashcons
 
 type t = string hash_consed
 (** The type of Hash-consed string *)
