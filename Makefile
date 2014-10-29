@@ -1,11 +1,14 @@
 # copyright (c) 2014, guillaume bury
 
 LOG=build.log
-COMP=ocamlbuild -log $(LOG) -use-ocamlfind -package zarith,unix -classic-display
+COMP=ocamlbuild -log $(LOG) -use-ocamlfind -package num,zarith,unix -classic-display
 FLAGS=
 DIRS=-Is smt,common
 DOC=lib.docdir/index.html
-LIB=msat.cma msat.cmxa msat.cmxs
+
+NAME=msat
+
+LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 GENERATED=$(MAIN) $(BIN) gmon.out
 
 all:$(LIB)
@@ -19,3 +22,13 @@ doc:
 clean:
 	$(COMP) -clean
 	rm -f $(GENERATED)
+
+TO_INSTALL=META $(addprefix _build/,$(LIB))
+
+install: all
+	ocamlfind install msat $(TO_INSTALL)
+
+uninstall:
+	ocamlfind remove msat
+
+.PHONY: clean doc all install uninstall
