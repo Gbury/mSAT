@@ -9,7 +9,6 @@ DOC=lib.docdir/index.html
 NAME=msat
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
-GENERATED=$(MAIN) $(BIN) gmon.out
 
 all:$(LIB)
 
@@ -21,7 +20,6 @@ doc:
 
 clean:
 	$(COMP) -clean
-	rm -f $(GENERATED)
 
 TO_INSTALL=META $(addprefix _build/,$(LIB))
 
