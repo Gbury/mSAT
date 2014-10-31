@@ -34,8 +34,5 @@ module type S = sig
   val add_label : Hstring.t -> t -> unit
 
   val print : Format.formatter -> t -> unit
-
-  module Map : Map.S with type key = t
-
 end
 

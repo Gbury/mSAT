@@ -28,7 +28,7 @@ module Make(Stypes : Solver_types.S) = struct
         | Atom _, Fresh _ -> -1
         | Fresh _, Atom _ -> 1
         | Fresh i1, Fresh i2 -> i1 - i2
-        | Atom a, Atom b -> a.aid - b.aid
+        | Atom a, Atom b -> Stypes.(a.aid - b.aid)
     end)
 
   type t = S.t

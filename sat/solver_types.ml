@@ -83,7 +83,7 @@ module Make (F : Formula_intf.S) = struct
       learnt = false;
       cpremise = [] }
 
-  module MA = F.Map
+  module MA = Map.Make(F)
   type varmap = var MA.t
 
   let ale = Hstring.make "<="
@@ -157,19 +157,6 @@ module Make (F : Formula_intf.S) = struct
   let fresh_name =
     let cpt = ref 0 in
     fun () -> incr cpt; "C" ^ (string_of_int !cpt)
-
-
-
-  module Clause = struct
-
-    let size c = Vec.size c.atoms
-    let pop c = Vec.pop c.atoms
-    let shrink c i = Vec.shrink  c.atoms i
-    let last c = Vec.last c.atoms
-    let get c i = Vec.get c.atoms i
-    let set c i v = Vec.set c.atoms i v
-
-  end
 
   let to_float i = float_of_int i
 

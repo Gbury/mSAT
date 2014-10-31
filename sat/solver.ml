@@ -951,3 +951,4 @@ module Make (F : Formula_intf.S)
     if negated then not truth else truth
 
 end
+
