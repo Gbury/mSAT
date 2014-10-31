@@ -48,8 +48,8 @@ module type S = sig
     and premise = clause list
 
     val cpt_mk_var : int ref
-    module Map : Map.S with type key = formula
-    val ma : var Map.t ref
+    type varmap
+    val ma : varmap ref
 
     val dummy_var : var
     val dummy_atom : atom

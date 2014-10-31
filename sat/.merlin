@@ -2,3 +2,4 @@ S ./
 S ../common/
 
 B ../_build/
+B ../_build/common/

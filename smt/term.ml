@@ -62,8 +62,8 @@ let compare t1 t2 =
 
 let make s l ty = T.hashcons {f=s;xs=l;ty=ty;tag=0 (* dumb_value *) }
 
-let vrai = make (Sy.True) [] Ty.Tbool
-let faux = make (Sy.False) [] Ty.Tbool
+let true_ = make (Sy.True) [] Ty.Tbool
+let false_ = make (Sy.False) [] Ty.Tbool
 
 let int i = make (Sy.int i) [] Ty.Tint
 let real r = make (Sy.real r) [] Ty.Treal

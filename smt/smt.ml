@@ -274,8 +274,8 @@ end
       lift_ite sb l ty
     with Not_found -> raise (Error (UnknownSymb s))
 
-  let t_true = T AETerm.vrai
-  let t_false = T AETerm.faux
+  let t_true = T AETerm.true_
+  let t_false = T AETerm.false_
 
   let rec is_int = function
     | T t -> AETerm.is_int t
@@ -365,8 +365,8 @@ end
     | [f] -> print fmt f
     | f::l -> fprintf fmt "%a %s %a" print f sep (print_list sep) l
 
-  let f_true = Lit Literal.LT.vrai
-  let f_false = Lit Literal.LT.faux
+  let f_true = Lit Literal.LT.true_
+  let f_false = Lit Literal.LT.false_
 
   let make comb l = Comb (comb, l)
 
@@ -565,7 +565,7 @@ end
         [] Ty.Tbool
       in
       incr cpt;
-      Literal.LT.make (Literal.Eq (t, AETerm.vrai))
+      Literal.LT.make (Literal.Eq (t, AETerm.true_))
 
   module Tseitin (Dummy : sig end)= struct
     let acc_or = ref []

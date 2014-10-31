@@ -17,12 +17,14 @@ module type S = sig
 
   type t
 
-  val vrai : t
-  val faux : t
+  val true_ : t
+  val false_ : t
   val dummy : t
 
   val neg : t -> t
+
   val norm : t -> t * bool
+  (** Returns a 'normalized' form of the formula, possibly negated *)
 
   val hash : t -> int
   val equal : t -> t -> bool
@@ -34,7 +36,6 @@ module type S = sig
   val print : Format.formatter -> t -> unit
 
   module Map : Map.S with type key = t
-  module Set : Set.S with type elt = t
 
 end
 

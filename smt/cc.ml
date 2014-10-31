@@ -189,13 +189,13 @@ module Make (X : Sig.X) = struct
 	    | _ -> []
 
   let contra_congruence  =
-    let vrai,_ = X.make T.vrai in
-    let faux, _ = X.make T.faux in
+    let true_,_ = X.make T.true_ in
+    let false_, _ = X.make T.false_ in
     fun env r ex ->
-      if X.equal (fst (Uf.find_r env.uf r)) vrai then
-	  new_facts_by_contra_congruence env r T.faux ex
-      else if X.equal (fst (Uf.find_r env.uf r)) faux then
-	  new_facts_by_contra_congruence env r T.vrai ex
+      if X.equal (fst (Uf.find_r env.uf r)) true_ then
+	  new_facts_by_contra_congruence env r T.false_ ex
+      else if X.equal (fst (Uf.find_r env.uf r)) false_ then
+	  new_facts_by_contra_congruence env r T.true_ ex
       else []
 
   let clean_use =
@@ -518,7 +518,7 @@ module Make (X : Sig.X) = struct
     let t = { gamma = env; gamma_finite = env; choices = [] } in
     let t, _, _ =
       assume ~cs:false
-        (A.LT.make (A.Distinct (false, [T.vrai; T.faux]))) Ex.empty t
+        (A.LT.make (A.Distinct (false, [T.true_; T.false_]))) Ex.empty t
     in t
 
 end

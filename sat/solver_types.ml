@@ -21,7 +21,11 @@ let is_le n = Hstring.compare n ale = 0
 let is_lt n = Hstring.compare n alt = 0
 let is_gt n = Hstring.compare n agt = 0
 
+module type S = Solver_types_intf.S
+
 module Make (F : Formula_intf.S) = struct
+
+type formula = F.t
 
 type var =
     {  vid : int;
@@ -35,7 +39,7 @@ type var =
 
 and atom =
     { var : var;
-      lit : F.t;
+      lit : formula;
       neg : atom;
       mutable watched : clause Vec.t;
       mutable is_true : bool;
@@ -80,6 +84,7 @@ and dummy_clause =
     cpremise = [] }
 
 module MA = F.Map
+type varmap = var MA.t
 
 let ale = Hstring.make "<="
 let alt = Hstring.make "<"
@@ -174,8 +179,6 @@ let clear () =
   cpt_mk_var := 0;
   ma := MA.empty
 
-module Debug = struct
-
   let sign a = if a==a.var.pa then "" else "-"
 
   let level a =
@@ -196,25 +199,23 @@ module Debug = struct
     else if a.neg.is_true then sprintf ":0%s" (level a)
     else ":X"
 
-  let premise fmt v =
+  let pp_premise fmt v =
     List.iter (fun {name=name} -> fprintf fmt "%s," name) v
 
-  let atom fmt a =
+  let pp_atom fmt a =
     fprintf fmt "%s%d%s [lit:%a] vpremise={{%a}}"
       (sign a) (a.var.vid+1) (value a) F.print a.lit
-      premise a.var.vpremise
+      pp_premise a.var.vpremise
 
-  let atoms_list fmt l = List.iter (fprintf fmt "%a ; " atom) l
-  let atoms_array fmt arr = Array.iter (fprintf fmt "%a ; " atom) arr
+  let pp_atoms_list fmt l = List.iter (fprintf fmt "%a ; " pp_atom) l
+  let pp_atoms_array fmt arr = Array.iter (fprintf fmt "%a ; " pp_atom) arr
 
-  let atoms_vec fmt vec =
+  let pp_atoms_vec fmt vec =
     for i = 0 to Vec.size vec - 1 do
-      fprintf fmt "%a ; " atom (Vec.get vec i)
+      fprintf fmt "%a ; " pp_atom (Vec.get vec i)
     done
 
-  let clause fmt {name=name; atoms=arr; cpremise=cp} =
-    fprintf fmt "%s:{ %a} cpremise={{%a}}" name atoms_vec arr premise cp
-
-end
+  let pp_clause fmt {name=name; atoms=arr; cpremise=cp} =
+    fprintf fmt "%s:{ %a} cpremise={{%a}}" name pp_atoms_vec arr pp_premise cp
 
 end

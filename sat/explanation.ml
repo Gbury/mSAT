@@ -14,6 +14,8 @@
 
 open Format
 
+module type S = Explanation_intf.S
+
 module Make(Stypes : Solver_types.S) = struct
 
     type atom = Stypes.atom

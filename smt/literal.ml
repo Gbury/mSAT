@@ -168,8 +168,8 @@ module type S_Term = sig
 
   val mk_pred : Term.t -> t
 
-  val vrai : t
-  val faux : t
+  val true_ : t
+  val false_ : t
 
 (*  val terms_of : t -> Term.Set.t
   val vars_of : t -> Symbols.Set.t
@@ -182,16 +182,16 @@ module LT : S_Term = struct
   module L = Make(Term)
   include L
 
-  let mk_pred t = make (Eq (t, Term.vrai) )
+  let mk_pred t = make (Eq (t, Term.true_) )
 
-  let vrai = mk_pred Term.vrai
-  let faux = mk_pred Term.faux
+  let true_ = mk_pred Term.true_
+  let false_ = mk_pred Term.false_
 
   let neg a = match view a with
-    | Eq(t1, t2) when Term.equal t2 Term.faux ->
-      make (Eq (t1, Term.vrai))
-    | Eq(t1, t2) when Term.equal t2 Term.vrai ->
-      make (Eq (t1, Term.faux))
+    | Eq(t1, t2) when Term.equal t2 Term.false_ ->
+      make (Eq (t1, Term.true_))
+    | Eq(t1, t2) when Term.equal t2 Term.true_ ->
+      make (Eq (t1, Term.false_))
     | _ -> L.neg a
 
 (* let terms_of a =

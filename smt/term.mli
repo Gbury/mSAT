@@ -17,8 +17,8 @@ type view = private {f: Symbols.t ; xs: t list; ty: Ty.t; tag : int}
 val view : t -> view
 val make : Symbols.t -> t list -> Ty.t -> t
 
-val vrai : t
-val faux : t
+val true_ : t
+val false_ : t
 val int : string -> t
 val real : string -> t
 

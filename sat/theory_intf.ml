@@ -15,13 +15,11 @@
 module type S = sig
     type t
     type formula
+    type explanation
 
-    module St : Solver_types.S with type formula = formula
-    module Ex : Explanation.S with type atom = St.atom
-
-    exception Inconsistent of Ex.t
+    exception Inconsistent of explanation
 
     val empty : unit -> t
-    val assume : cs:bool -> formula -> Ex.t -> t -> t
+    val assume : cs:bool -> formula -> explanation -> t -> t
 end
 

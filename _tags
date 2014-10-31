@@ -1,2 +1,3 @@
 <smt/*.cmx>: for-pack(Msat)
+<sat/*.cmx>: for-pack(Msat)
 

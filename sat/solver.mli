@@ -11,9 +11,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Make (F : Formula_intf.S)(Th : Theory_intf.S with type formula = F.t) : sig
-
-    module St : Solver_types.S with type formula = F.t
+module Make (F : Formula_intf.S)
+            (St : Solver_types.S with type formula = F.t)
+            (Ex : Explanation.S with type atom = St.atom)
+            (Th : Theory_intf.S with type formula = F.t and type explanation = Ex.t) : sig
 
     exception Sat
     exception Unsat of St.clause list
@@ -29,3 +30,4 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S with type formula = F.t) : s
     val restore : state -> unit
 
 end
+

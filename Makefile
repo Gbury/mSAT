@@ -18,6 +18,9 @@ $(LIB):
 doc:
 	$(COMP) $(FLAGS) $(DIRS) $(DOC)
 
+log:
+	cat _build/$(LOG) || true
+
 clean:
 	$(COMP) -clean
 

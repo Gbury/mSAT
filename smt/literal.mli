@@ -53,8 +53,8 @@ module type S_Term = sig
   include S with type elt = Term.t
 
   val mk_pred : Term.t -> t
-  val vrai : t
-  val faux : t
+  val true_ : t
+  val false_ : t
 
 end
 
