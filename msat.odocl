@@ -4,19 +4,19 @@ sat/Solver
 sat/Solver_types
 sat/Theory_intf
 
-smt/Arith
-smt/Cc
-smt/Combine
-smt/Exception
-smt/Fm
-smt/Intervals
-smt/Literal
-smt/Polynome
-smt/Smt
-smt/Sum
-smt/Symbols
-smt/Term
-smt/Ty
-smt/Uf
-smt/Use
+#smt/Arith
+#smt/Cc
+#smt/Combine
+#smt/Exception
+#smt/Fm
+#smt/Intervals
+#smt/Literal
+#smt/Polynome
+#smt/Smt
+#smt/Sum
+#smt/Symbols
+#smt/Term
+#smt/Ty
+#smt/Uf
+#smt/Use
 
