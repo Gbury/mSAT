@@ -19,15 +19,15 @@ module Make (F : Formula_intf.S)
   exception Sat
   exception Unsat of St.clause list
 
-  type state
+  type t
 
   val solve : unit -> unit
   val assume : F.t list list -> cnumber : int -> unit
   val clear : unit -> unit
 
   val eval : F.t -> bool
-  val save : unit -> state
-  val restore : state -> unit
+  val save : unit -> t
+  val restore : t -> unit
 
 end
 

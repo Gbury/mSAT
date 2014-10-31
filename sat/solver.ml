@@ -98,6 +98,8 @@ module Make (F : Formula_intf.S)
     st_ma : varmap;
   }
 
+  type t = state
+
   let env = {
     is_unsat = false;
     unsat_core = [] ;
