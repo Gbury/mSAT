@@ -18,6 +18,6 @@ module type EXTENDED_Polynome = sig
 end
 
 module Make
-  (X : Sig.X)
-  (P : EXTENDED_Polynome with type r = X.r)
+    (X : Sig.X)
+    (P : EXTENDED_Polynome with type r = X.r)
   : Sig.RELATION with type r = X.r

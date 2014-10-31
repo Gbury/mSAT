@@ -15,7 +15,7 @@
 module Type (X : Sig.X ): Polynome.T with type r = X.r
 
 module Make
-  (X : Sig.X)
-  (P : Polynome.T with type r = X.r)
-  (C : Sig.C with type t = P.t and type r = X.r) : Sig.THEORY
+    (X : Sig.X)
+    (P : Polynome.T with type r = X.r)
+    (C : Sig.C with type t = P.t and type r = X.r) : Sig.THEORY
   with type r = X.r and type t = P.t

@@ -83,10 +83,10 @@ module Symbol : sig
       symbol with type [ (arg_1, ... , arg_n) -> out] *)
 
   val type_of : t -> Type.t list * Type.t
-    (** [type_of x] returns the type of x. *)
+  (** [type_of x] returns the type of x. *)
 
   val has_abstract_type : t -> bool
-    (** [has_abstract_type x] is [true] if the type of x is abstract. *)
+  (** [has_abstract_type x] is [true] if the type of x is abstract. *)
 
   val has_type_proc : t -> bool
   (** [has_type_proc x] is [true] if x has the type of a process
@@ -117,17 +117,17 @@ module Variant : sig
       This function must be called when all information has been added.*)
 
   val assign_constr : Symbol.t -> Hstring.t -> unit
-    (** [assign_constr s cstr] will add the constraint that the constructor
-        [cstr] must be in the type of [s] *)
+  (** [assign_constr s cstr] will add the constraint that the constructor
+      [cstr] must be in the type of [s] *)
 
   val assign_var : Symbol.t -> Symbol.t -> unit
-    (** [assign_var x y] will add the constraint that the type of [y] is a
-        subtype of [x] (use this function when [x := y] appear in your
-        program *)
+  (** [assign_var x y] will add the constraint that the type of [y] is a
+      subtype of [x] (use this function when [x := y] appear in your
+      program *)
 
   val print : unit -> unit
-    (** [print ()] will output the computed refined types on std_err. This
-        function is here only for debugging purposes. Use it afer [close ()].*)
+  (** [print ()] will output the computed refined types on std_err. This
+      function is here only for debugging purposes. Use it afer [close ()].*)
 
   val get_variants : Symbol.t -> Hstring.HSet.t
   (** [get_variants s] returns a set of constructors, which is the refined
@@ -261,11 +261,11 @@ module type Solver = sig
       functor {! Smt.Make}.
 
       A typical use of this solver is to do the following :{[
-      clear ();
-      assume f_1;
-      ...
-      assume f_n;
-      check ();]}
+        clear ();
+        assume f_1;
+        ...
+          assume f_n;
+        check ();]}
   *)
 
   type state

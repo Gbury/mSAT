@@ -61,12 +61,12 @@ module Make ( R : Sig.X ) = struct
   module SetR = Set.Make(struct type t = R.r let compare = R.compare end)
 
   module SetRR = Set.Make(struct
-    type t = R.r * R.r
-    let compare (r1, r1') (r2, r2') =
-      let c = R.compare r1 r2 in
-      if c <> 0 then c
-      else  R.compare r1' r2'
-  end)
+      type t = R.r * R.r
+      let compare (r1, r1') (r2, r2') =
+        let c = R.compare r1 r2 in
+        if c <> 0 then c
+        else  R.compare r1' r2'
+    end)
 
 
   type t = {
@@ -104,56 +104,56 @@ module Make ( R : Sig.X ) = struct
     let lookup_by_t t env =
       try MapR.find (MapT.find t env.make) env.repr
       with Not_found ->
-	assert false (*R.make t, Ex.empty*) (* XXXX *)
-	
+        assert false (*R.make t, Ex.empty*) (* XXXX *)
+
     let lookup_by_r r env =
       try MapR.find r env.repr with Not_found -> r, Ex.empty
-	
+
     let lookup_for_neqs env r =
       try MapR.find r env.neqs with Not_found -> MapL.empty
-	
+
     let add_to_classes t r classes =
       MapR.add r
-	(SetT.add t (try MapR.find r classes with Not_found -> SetT.empty))
-	classes
-	
+        (SetT.add t (try MapR.find r classes with Not_found -> SetT.empty))
+        classes
+
     let update_classes c nc classes =
       let s1 = try MapR.find c classes with Not_found -> SetT.empty in
       let s2 = try MapR.find nc classes with Not_found -> SetT.empty in
       MapR.remove c (MapR.add nc (SetT.union s1 s2) classes)
-	
+
     let add_to_gamma r c gamma =
       L.fold_left
-	(fun gamma x ->
-	  let s = try MapR.find x gamma with Not_found -> SetR.empty in
-	  MapR.add x (SetR.add r s) gamma) gamma (R.leaves c)
-	
+        (fun gamma x ->
+           let s = try MapR.find x gamma with Not_found -> SetR.empty in
+           MapR.add x (SetR.add r s) gamma) gamma (R.leaves c)
+
     (* r1 = r2 => neqs(r1) \uplus neqs(r2) *)
     let update_neqs r1 r2 dep env =
       let nq_r1 = lookup_for_neqs env r1 in
       let nq_r2 = lookup_for_neqs env r2 in
       let mapl =
-	MapL.fold
-	  (fun l1 ex1 mapl ->
-	     try
-	       let ex2 = MapL.find l1 mapl in
-	       let ex = Ex.union (Ex.union ex1 ex2) dep in (* VERIF *)
-	       raise (Inconsistent ex)
-	     with Not_found ->
-	       MapL.add l1 (Ex.union ex1 dep) mapl)
-	  nq_r1 nq_r2
+        MapL.fold
+          (fun l1 ex1 mapl ->
+             try
+               let ex2 = MapL.find l1 mapl in
+               let ex = Ex.union (Ex.union ex1 ex2) dep in (* VERIF *)
+               raise (Inconsistent ex)
+             with Not_found ->
+               MapL.add l1 (Ex.union ex1 dep) mapl)
+          nq_r1 nq_r2
       in
       MapR.add r2 mapl (MapR.add r1 mapl env.neqs)
 
     let filter_leaves r =
       L.fold_left (fun p r -> SetR.add r p) SetR.empty (R.leaves r)
-	
+
     let canon_empty st env = 	
       SetR.fold
-	(fun p ((z, ex) as acc) ->
-          let q, ex_q = lookup_by_r p env in
-	  if R.equal p q then acc else (p,q)::z, Ex.union ex_q ex)
-	st ([], Ex.empty)
+        (fun p ((z, ex) as acc) ->
+           let q, ex_q = lookup_by_r p env in
+           if R.equal p q then acc else (p,q)::z, Ex.union ex_q ex)
+        st ([], Ex.empty)
 
     let canon_aux rx = List.fold_left (fun r (p,v) -> R.subst p v r) rx
 
@@ -173,67 +173,67 @@ module Make ( R : Sig.X ) = struct
       let in_repr = MapR.mem p env.repr in
       let in_neqs = MapR.mem p env.neqs in
       { env with
-	repr    =
-	  if in_repr then env.repr
-	  else MapR.add p (p, Ex.empty) env.repr;
-	classes =
-	  if in_repr then env.classes
-	  else update_classes p p env.classes;
-	gamma   =
-	  if in_repr then env.gamma
-	  else add_to_gamma p p env.gamma ;
-	neqs    =
-	  if in_neqs then env.neqs
-	  else update_neqs p p Ex.empty env }
+        repr    =
+          if in_repr then env.repr
+          else MapR.add p (p, Ex.empty) env.repr;
+        classes =
+          if in_repr then env.classes
+          else update_classes p p env.classes;
+        gamma   =
+          if in_repr then env.gamma
+          else add_to_gamma p p env.gamma ;
+        neqs    =
+          if in_neqs then env.neqs
+          else update_neqs p p Ex.empty env }
 
     let init_term env t =
       let mkr, ctx = R.make t in
       let rp, ex = normal_form env mkr in
       {	make    = MapT.add t mkr env.make;
-	repr    = MapR.add mkr (rp,ex) env.repr;
-	classes = add_to_classes t rp env.classes;
-	gamma   = add_to_gamma mkr rp env.gamma;
-	neqs    =
-	  if MapR.mem rp env.neqs then env.neqs (* pourquoi ce test *)
-	  else MapR.add rp MapL.empty env.neqs}, ctx
-	
-	
+        repr    = MapR.add mkr (rp,ex) env.repr;
+        classes = add_to_classes t rp env.classes;
+        gamma   = add_to_gamma mkr rp env.gamma;
+        neqs    =
+          if MapR.mem rp env.neqs then env.neqs (* pourquoi ce test *)
+          else MapR.add rp MapL.empty env.neqs}, ctx
+
+
     let update_aux dep set env=
       SetRR.fold
-	(fun (rr, nrr) env ->
-	   { env with
-	       neqs = update_neqs rr nrr dep env ;
-	       classes = update_classes rr nrr env.classes})
-	set env
+        (fun (rr, nrr) env ->
+           { env with
+             neqs = update_neqs rr nrr dep env ;
+             classes = update_classes rr nrr env.classes})
+        set env
 
     let apply_sigma_uf env (p, v, dep) =
       assert (MapR.mem p env.gamma);
       let use_p = MapR.find p env.gamma in
       try
-	let env, tch, neqs_to_up = SetR.fold
-	  (fun r (env, touched, neqs_to_up) ->
-	     let rr, ex = MapR.find r env.repr in
-	     let nrr = R.subst p v rr in
-	     if R.equal rr nrr then env, touched, neqs_to_up
-	     else
-	       let ex  = Ex.union ex dep in
-               let env =
-		 {env with
-		   repr = MapR.add r (nrr, ex) env.repr;
-		   gamma = add_to_gamma r nrr env.gamma }
-	       in
-	       env, (r, nrr, ex)::touched, SetRR.add (rr, nrr) neqs_to_up
-	  ) use_p (env, [], SetRR.empty) in
-	(* Correction : Do not update neqs twice for the same r *)
-	update_aux dep neqs_to_up env, tch
-	
+        let env, tch, neqs_to_up = SetR.fold
+            (fun r (env, touched, neqs_to_up) ->
+               let rr, ex = MapR.find r env.repr in
+               let nrr = R.subst p v rr in
+               if R.equal rr nrr then env, touched, neqs_to_up
+               else
+                 let ex  = Ex.union ex dep in
+                 let env =
+                   {env with
+                    repr = MapR.add r (nrr, ex) env.repr;
+                    gamma = add_to_gamma r nrr env.gamma }
+                 in
+                 env, (r, nrr, ex)::touched, SetRR.add (rr, nrr) neqs_to_up
+            ) use_p (env, [], SetRR.empty) in
+        (* Correction : Do not update neqs twice for the same r *)
+        update_aux dep neqs_to_up env, tch
+
       with Not_found -> assert false
-	
+
     let apply_sigma eqs env tch ((p, v, dep) as sigma) =
       let env = init_leaf env p in
       let env, touched = apply_sigma_uf env sigma in
       env, ((p, touched, v) :: tch)
-	
+
   end
 
   let add env t =
@@ -257,10 +257,10 @@ module Make ( R : Sig.X ) = struct
     end
     else
       begin
-	ignore (Env.update_neqs rr1 rr2 dep env);
+        ignore (Env.update_neqs rr1 rr2 dep env);
         try R.solve rr1 rr2
-	with Unsolvable ->
-	  raise (Inconsistent dep)
+        with Unsolvable ->
+          raise (Inconsistent dep)
       end
 
   let rec ac_x eqs env tch =
@@ -280,45 +280,45 @@ module Make ( R : Sig.X ) = struct
     let d = Lit.make (Literal.Distinct (false,rl)) in
     let env, _, newds =
       List.fold_left
-	(fun (env, mapr, newds) r ->
-	   let rr, ex = Env.find_or_normal_form env r in
-	   try
-	     let exr = MapR.find rr mapr in
-	     raise (Inconsistent (Ex.union ex exr))
-	   with Not_found ->
-	     let uex = Ex.union ex dep in
-	     let mdis =
-	       try MapR.find rr env.neqs with Not_found -> MapL.empty in
-	     let mdis =
-	       try
-		 MapL.add d (Ex.merge uex (MapL.find d mdis)) mdis
-	       with Not_found ->
-		 MapL.add d uex mdis
-	     in
-	     let env = Env.init_leaf env rr in
+        (fun (env, mapr, newds) r ->
+           let rr, ex = Env.find_or_normal_form env r in
+           try
+             let exr = MapR.find rr mapr in
+             raise (Inconsistent (Ex.union ex exr))
+           with Not_found ->
+             let uex = Ex.union ex dep in
+             let mdis =
+               try MapR.find rr env.neqs with Not_found -> MapL.empty in
+             let mdis =
+               try
+                 MapL.add d (Ex.merge uex (MapL.find d mdis)) mdis
+               with Not_found ->
+                 MapL.add d uex mdis
+             in
+             let env = Env.init_leaf env rr in
              let env = {env with neqs = MapR.add rr mdis env.neqs} in
              env, MapR.add rr uex mapr, (rr, ex, mapr)::newds
-	)
-	(env, MapR.empty, [])
-	rl
+        )
+        (env, MapR.empty, [])
+        rl
     in
     List.fold_left
       (fun env (r1, ex1, mapr) ->
-	 MapR.fold (fun r2 ex2 env ->
-		      let ex = Ex.union ex1 (Ex.union ex2 dep) in
-		      try match R.solve r1 r2 with
-			| [a, b] ->
-			    if (R.equal a r1 && R.equal b r2) ||
-			      (R.equal a r2 && R.equal b r1) then env
-			    else
-			      distinct env [a; b] ex
-			| []  ->
-			  raise (Inconsistent ex)
-			| _   -> env
-		      with Unsolvable -> env) mapr env)
+         MapR.fold (fun r2 ex2 env ->
+             let ex = Ex.union ex1 (Ex.union ex2 dep) in
+             try match R.solve r1 r2 with
+               | [a, b] ->
+                 if (R.equal a r1 && R.equal b r2) ||
+                    (R.equal a r2 && R.equal b r1) then env
+                 else
+                   distinct env [a; b] ex
+               | []  ->
+                 raise (Inconsistent ex)
+               | _   -> env
+             with Unsolvable -> env) mapr env)
       env newds
 
-			
+
   let are_equal env t1 t2 =
     let r1, ex_r1 = Env.lookup_by_t t1 env in
     let r2, ex_r2 = Env.lookup_by_t t2 env in
@@ -336,9 +336,9 @@ module Make ( R : Sig.X ) = struct
     let d = Lit.make (Literal.Distinct (false,lr)) in
     try
       List.iter (fun r ->
-	let mdis = MapR.find r env.neqs in
-	ignore (MapL.find d mdis)
-      ) lr;
+          let mdis = MapR.find r env.neqs in
+          ignore (MapL.find d mdis)
+        ) lr;
       true
     with Not_found -> false
 

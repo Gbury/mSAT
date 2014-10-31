@@ -65,4 +65,4 @@ module type T = sig
 end
 
 module Make (X : S) : T with type r = X.r
-	
+

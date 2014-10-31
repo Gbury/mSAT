@@ -64,18 +64,18 @@ module Type = struct
   let declare t constrs =
     if H.mem decl_types t then raise (Error (DuplicateTypeName t));
     match constrs with
-      | [] ->
-	  H.add decl_types t (Ty.Tabstract t)
-      | _ ->
-	  let ty = Ty.Tsum (t, constrs) in
-	  H.add decl_types t ty;
-	  List.iter (fun c -> declare_constructor t c) constrs
+    | [] ->
+      H.add decl_types t (Ty.Tabstract t)
+    | _ ->
+      let ty = Ty.Tsum (t, constrs) in
+      H.add decl_types t ty;
+      List.iter (fun c -> declare_constructor t c) constrs
 
   let all_constructors () =
     H.fold (fun _ c acc -> match c with
-      | Symbols.Name (h, Symbols.Constructor), _, _ -> h :: acc
-      | _ -> acc
-    ) decl_symbs [htrue; hfalse]
+        | Symbols.Name (h, Symbols.Constructor), _, _ -> h :: acc
+        | _ -> acc
+      ) decl_symbs [htrue; hfalse]
 
   let constructors ty =
     if Hstring.equal ty type_bool then [htrue; hfalse]
@@ -93,7 +93,7 @@ module Symbol = struct
     if H.mem decl_symbs f then raise (Error (DuplicateTypeName f));
     List.iter
       (fun t ->
-	if not (H.mem decl_types t) then raise (Error (UnknownType t)) )
+         if not (H.mem decl_types t) then raise (Error (UnknownType t)) )
       (ret::args);
     H.add decl_symbs f (Symbols.name f, args, ret)
 
@@ -104,22 +104,22 @@ module Symbol = struct
     if not res then begin
       eprintf "Not declared : %a in@." Hstring.print s;
       H.iter (fun hs (sy, _, _) ->
-	eprintf "%a (=?%b) -> %a@." Hstring.print hs
-	  (Hstring.compare hs s = 0)
-	  Symbols.print sy)
-	  decl_symbs;
-      end;
-      res
+          eprintf "%a (=?%b) -> %a@." Hstring.print hs
+            (Hstring.compare hs s = 0)
+            Symbols.print sy)
+        decl_symbs;
+    end;
+    res
 
   let not_builtin ty = Hstring.equal ty Type.type_proc ||
-    not (Hstring.equal ty Type.type_int || Hstring.equal ty Type.type_real ||
-	   Hstring.equal ty Type.type_bool || Hstring.equal ty Type.type_proc)
+                       not (Hstring.equal ty Type.type_int || Hstring.equal ty Type.type_real ||
+                            Hstring.equal ty Type.type_bool || Hstring.equal ty Type.type_proc)
 
   let has_abstract_type s =
     let _, ret = type_of s in
     match H.find decl_types ret with
-      | Ty.Tabstract _ -> true
-      | _ -> false
+    | Ty.Tabstract _ -> true
+    | _ -> false
 
   let has_type_proc s =
     Hstring.equal (snd (type_of s)) Type.type_proc
@@ -147,27 +147,27 @@ module Variant = struct
   let assign_var x y =
     if not (Hstring.equal x y) then
       add assignments x y
-	
+
   let rec compute () =
     let flag = ref false in
     let visited = ref HSet.empty in
     let rec dfs x s =
       if not (HSet.mem x !visited) then
-	begin
-	  visited := HSet.add x !visited;
-	  HSet.iter
-	    (fun y ->
-	      let c_x = find constructors x in
-	      let c_y = find constructors y in
-	      let c = HSet.union c_x c_y in
-	      if not (HSet.equal c c_x) then
-		begin
-		     H.replace constructors x c;
-		     flag := true
-		end;
-	      dfs y (find assignments y)
-	    ) s
-	end
+        begin
+          visited := HSet.add x !visited;
+          HSet.iter
+            (fun y ->
+               let c_x = find constructors x in
+               let c_y = find constructors y in
+               let c = HSet.union c_x c_y in
+               if not (HSet.equal c c_x) then
+                 begin
+                   H.replace constructors x c;
+                   flag := true
+                 end;
+               dfs y (find assignments y)
+            ) s
+        end
     in
     H.iter dfs assignments;
     if !flag then compute ()
@@ -176,12 +176,12 @@ module Variant = struct
     HSet.iter (fun c -> Format.eprintf "%a, " Hstring.print c) s
 
   let print () =
-      H.iter
-	(fun x c ->
-	  Format.eprintf "%a = {%a}@." Hstring.print x hset_print c)
-	constructors
-	
-	
+    H.iter
+      (fun x c ->
+         Format.eprintf "%a = {%a}@." Hstring.print x hset_print c)
+      constructors
+
+
   let get_variants = H.find constructors
 
   let set_of_list = List.fold_left (fun s x -> HSet.add x s) HSet.empty
@@ -190,12 +190,12 @@ module Variant = struct
     compute ();
     List.iter
       (fun (x, nty) ->
-	if not (H.mem constructors x) then
-	  let ty = H.find decl_types nty in
-	  match ty with
-	    | Ty.Tsum (_, l) ->
-	      H.add constructors x (set_of_list l)
-	    | _ -> ()) l;
+         if not (H.mem constructors x) then
+           let ty = H.find decl_types nty in
+           match ty with
+           | Ty.Tsum (_, l) ->
+             H.add constructors x (set_of_list l)
+           | _ -> ()) l;
     H.clear assignments
 
   let update_decl_types s =
@@ -203,9 +203,9 @@ module Variant = struct
     let l = ref [] in
     HSet.iter
       (fun x ->
-	l := x :: !l;
-	let vx = Hstring.view x in
-	nty := if !nty = "" then vx else !nty ^ "|" ^ vx) s;
+         l := x :: !l;
+         let vx = Hstring.view x in
+         nty := if !nty = "" then vx else !nty ^ "|" ^ vx) s;
     let nty = Hstring.make !nty in
     let ty = Ty.Tsum (nty, List.rev !l) in
     H.replace decl_types nty ty;
@@ -215,9 +215,9 @@ module Variant = struct
     compute ();
     H.iter
       (fun x s ->
-	let nty = update_decl_types s in
-	let sy, args, _ = H.find decl_symbs x in
-	H.replace decl_symbs x (sy, args, nty))
+         let nty = update_decl_types s in
+         let sy, args, _ = H.find decl_symbs x in
+         H.replace decl_symbs x (sy, args, nty))
       constructors
 
 end
@@ -288,11 +288,11 @@ end
   let make_arith op t1 t2 =
     let op =
       match op with
-	| Plus -> Symbols.Plus
-	| Minus -> Symbols.Minus
-	| Mult ->  Symbols.Mult
-	| Div -> Symbols.Div
-	| Modulo -> Symbols.Modulo
+      | Plus -> Symbols.Plus
+      | Minus -> Symbols.Minus
+      | Mult ->  Symbols.Mult
+      | Div -> Symbols.Div
+      | Modulo -> Symbols.Modulo
     in
     let ty =
       if is_int t1 && is_int t2 then Ty.Tint
@@ -352,14 +352,14 @@ end
 
   let rec print fmt phi =
     match phi with
-      | Lit a -> Literal.LT.print fmt a
-      | Comb (Not, [f]) ->
-	  fprintf fmt "not (%a)" print f
-      | Comb (And, l) -> fprintf fmt "(%a)" (print_list "and") l
-      | Comb (Or, l) ->  fprintf fmt "(%a)" (print_list "or") l
-      | Comb (Imp, [f1; f2]) ->
-	  fprintf fmt "(%a => %a)" print f1 print f2
-      | _ -> assert false
+    | Lit a -> Literal.LT.print fmt a
+    | Comb (Not, [f]) ->
+      fprintf fmt "not (%a)" print f
+    | Comb (And, l) -> fprintf fmt "(%a)" (print_list "and") l
+    | Comb (Or, l) ->  fprintf fmt "(%a)" (print_list "or") l
+    | Comb (Imp, [f1; f2]) ->
+      fprintf fmt "(%a => %a)" print f1 print f2
+    | _ -> assert false
   and print_list sep fmt = function
     | [] -> ()
     | [f] -> print fmt f
@@ -379,46 +379,46 @@ end
     try
       let left, (c, t1, t2), right = Term.first_ite l in
       begin
-	match value env c with
-	  | Some true ->
-	    lift_ite (c::env) op (left@(t1::right))
-	  | Some false ->
-	    lift_ite ((make Not [c])::env) op (left@(t2::right))
-	  | None ->
-	    Comb
-	      (And,
-	       [Comb
-		   (Imp, [c; lift_ite (c::env) op (left@(t1::right))]);
-		Comb (Imp,
-		      [(make Not [c]);
-		       lift_ite
-			 ((make Not [c])::env) op (left@(t2::right))])])
+        match value env c with
+        | Some true ->
+          lift_ite (c::env) op (left@(t1::right))
+        | Some false ->
+          lift_ite ((make Not [c])::env) op (left@(t2::right))
+        | None ->
+          Comb
+            (And,
+             [Comb
+                (Imp, [c; lift_ite (c::env) op (left@(t1::right))]);
+              Comb (Imp,
+                    [(make Not [c]);
+                     lift_ite
+                       ((make Not [c])::env) op (left@(t2::right))])])
       end
     with Not_found ->
       begin
-	let lit =
-	  match op, l with
-	    | Eq, [Term.T t1; Term.T t2] ->
-	      Literal.Eq (t1, t2)
-	    | Neq, ts ->
-	      let ts =
-		List.rev_map (function Term.T x -> x | _ -> assert false) ts in
-	      Literal.Distinct (false, ts)
-	    | Le, [Term.T t1; Term.T t2] ->
-	      Literal.Builtin (true, Hstring.make "<=", [t1; t2])
-	    | Lt, [Term.T t1; Term.T t2] ->
-	      Literal.Builtin (true, Hstring.make "<", [t1; t2])
-	    | _ -> assert false
-	in
-	Lit (Literal.LT.make lit)
+        let lit =
+          match op, l with
+          | Eq, [Term.T t1; Term.T t2] ->
+            Literal.Eq (t1, t2)
+          | Neq, ts ->
+            let ts =
+              List.rev_map (function Term.T x -> x | _ -> assert false) ts in
+            Literal.Distinct (false, ts)
+          | Le, [Term.T t1; Term.T t2] ->
+            Literal.Builtin (true, Hstring.make "<=", [t1; t2])
+          | Lt, [Term.T t1; Term.T t2] ->
+            Literal.Builtin (true, Hstring.make "<", [t1; t2])
+          | _ -> assert false
+        in
+        Lit (Literal.LT.make lit)
       end
 
   let make_lit op l = lift_ite [] op l
 
   let make_pred ?(sign=true) p =
     if sign
-      then make_lit Eq [p; Term.t_true]
-      else make_lit Eq [p; Term.t_false]
+    then make_lit Eq [p; Term.t_true]
+    else make_lit Eq [p; Term.t_false]
 
   let make_eq t1 t2 = make_lit Eq [t1; t2]
   let make_neq t1 t2 = make_lit Neq [t1; t2]
@@ -438,19 +438,19 @@ end
     | Comb (Not, [Lit a]) -> Lit (Literal.LT.neg a)
     | Comb (Not, [Comb (Not, [f])]) -> sform f
     | Comb (Not, [Comb (Or, l)]) ->
-	let nl = List.rev_map (fun a -> sform (Comb (Not, [a]))) l in
-	Comb (And, nl)
+      let nl = List.rev_map (fun a -> sform (Comb (Not, [a]))) l in
+      Comb (And, nl)
     | Comb (Not, [Comb (And, l)]) ->
-	let nl = List.rev_map (fun a -> sform (Comb (Not, [a]))) l in
-	Comb (Or, nl)
+      let nl = List.rev_map (fun a -> sform (Comb (Not, [a]))) l in
+      Comb (Or, nl)
     | Comb (Not, [Comb (Imp, [f1; f2])]) ->
-	Comb (And, [sform f1; sform (Comb (Not, [f2]))])
+      Comb (And, [sform f1; sform (Comb (Not, [f2]))])
     | Comb (And, l) ->
-	Comb (And, List.rev_map sform l)
+      Comb (And, List.rev_map sform l)
     | Comb (Or, l) ->
-	Comb (Or, List.rev_map sform l)
+      Comb (Or, List.rev_map sform l)
     | Comb (Imp, [f1; f2]) ->
-	Comb (Or, [sform (Comb (Not, [f1])); sform f2])
+      Comb (Or, [sform (Comb (Not, [f1])); sform f2])
     | Comb ((Imp | Not), _) -> assert false
     | Lit _ as f -> f
 
@@ -467,13 +467,13 @@ end
     let l =
       if l_or = [] then l_and
       else
-	List.rev_map
-	  (fun x ->
-	     match x with
-	       | Lit _ -> Comb (Or, x::l_or)
-	       | Comb (Or, l) -> Comb (Or, l @@ l_or)
-	       | _ -> assert false
-	  ) l_and
+        List.rev_map
+          (fun x ->
+             match x with
+             | Lit _ -> Comb (Or, x::l_or)
+             | Comb (Or, l) -> Comb (Or, l @@ l_or)
+             | _ -> assert false
+          ) l_and
     in
     Comb (And, l)
 
@@ -491,47 +491,47 @@ end
 
   let rec cnf f =
     match f with
-      | Comb (Or, l) ->
-	  begin
-	    let l = List.rev_map cnf l in
-	    let l_and, l_or =
-	      List.partition (function Comb(And,_) -> true | _ -> false) l in
-	    match l_and with
-	      | [ Comb(And, l_conj) ] ->
-		  let u = flatten_or l_or in
-		  distrib l_conj u
+    | Comb (Or, l) ->
+      begin
+        let l = List.rev_map cnf l in
+        let l_and, l_or =
+          List.partition (function Comb(And,_) -> true | _ -> false) l in
+        match l_and with
+        | [ Comb(And, l_conj) ] ->
+          let u = flatten_or l_or in
+          distrib l_conj u
 
-	      | Comb(And, l_conj) :: r ->
-		  let u = flatten_or l_or in
-		  cnf (Comb(Or, (distrib l_conj u)::r))
+        | Comb(And, l_conj) :: r ->
+          let u = flatten_or l_or in
+          cnf (Comb(Or, (distrib l_conj u)::r))
 
-	      | _ ->
-		  begin
-		    match flatten_or l_or with
-		      | [] -> assert false
-		      | [r] -> r
-		      | v -> Comb (Or, v)
-		  end
-	  end
-      | Comb (And, l) ->
-	  Comb (And, List.rev_map cnf l)
-      | f -> f
+        | _ ->
+          begin
+            match flatten_or l_or with
+            | [] -> assert false
+            | [r] -> r
+            | v -> Comb (Or, v)
+          end
+      end
+    | Comb (And, l) ->
+      Comb (And, List.rev_map cnf l)
+    | f -> f
 
   let rec mk_cnf = function
     | Comb (And, l) ->
       List.fold_left (fun acc f ->  (mk_cnf f) @@ acc) [] l
-	
+
     | Comb (Or, [f1;f2]) ->
       let ll1 = mk_cnf f1 in
       let ll2 = mk_cnf f2 in
       List.fold_left
-	(fun acc l1 -> (List.rev_map (fun l2 -> l1 @@ l2)ll2) @@ acc) [] ll1
+        (fun acc l1 -> (List.rev_map (fun l2 -> l1 @@ l2)ll2) @@ acc) [] ll1
 
     | Comb (Or, f1 :: l) ->
       let ll1 = mk_cnf f1 in
       let ll2 = mk_cnf (Comb (Or, l)) in
       List.fold_left
-	(fun acc l1 -> (List.rev_map (fun l2 -> l1 @@ l2)ll2) @@ acc) [] ll1
+        (fun acc l1 -> (List.rev_map (fun l2 -> l1 @@ l2)ll2) @@ acc) [] ll1
 
     | Lit a -> [[a]]
     | Comb (Not, [Lit a]) -> [[Literal.LT.neg a]]
@@ -540,19 +540,19 @@ end
 
   let rec unfold mono f =
     match f with
-      | Lit a -> a::mono
-      | Comb (Not, [Lit a]) ->
-	  (Literal.LT.neg a)::mono
-      | Comb (Or, l) ->
-	  List.fold_left unfold mono l
-      | _ -> assert false
-	
+    | Lit a -> a::mono
+    | Comb (Not, [Lit a]) ->
+      (Literal.LT.neg a)::mono
+    | Comb (Or, l) ->
+      List.fold_left unfold mono l
+    | _ -> assert false
+
   let rec init monos f =
     match f with
-      | Comb (And, l) ->
-	  List.fold_left init monos l
-      | f -> (unfold [] f)::monos
-	
+    | Comb (And, l) ->
+      List.fold_left init monos l
+    | f -> (unfold [] f)::monos
+
   let make_cnf f =
     let sfnc = cnf (sform f) in
     init [] sfnc
@@ -561,8 +561,8 @@ end
     let cpt = ref 0 in
     fun () ->
       let t = AETerm.make
-        (Symbols.name (Hstring.make ("PROXY__"^(string_of_int !cpt))))
-        [] Ty.Tbool
+          (Symbols.name (Hstring.make ("PROXY__"^(string_of_int !cpt))))
+          [] Ty.Tbool
       in
       incr cpt;
       Literal.LT.make (Literal.Eq (t, AETerm.true_))
@@ -579,42 +579,42 @@ end
       | Comb (Not, [Lit a]) -> None, [Literal.LT.neg a]
 
       | Comb (And, l) ->
-          List.fold_left
-            (fun (_, acc) f ->
-              match cnf f with
-                | _, [] -> assert false
-                | cmb, [a] -> Some And, a :: acc
-                | Some And, l ->
-                    Some And, l @@ acc
-                    (* let proxy = mk_proxy () in *)
-                    (* acc_and := (proxy, l) :: !acc_and; *)
-                    (* proxy :: acc *)
-                | Some Or, l ->
-                    let proxy = mk_proxy () in
-                    acc_or := (proxy, l) :: !acc_or;
-                    Some And, proxy :: acc
-                | None, l -> Some And, l @@ acc
-                | _ -> assert false
-            ) (None, []) l
+        List.fold_left
+          (fun (_, acc) f ->
+             match cnf f with
+             | _, [] -> assert false
+             | cmb, [a] -> Some And, a :: acc
+             | Some And, l ->
+               Some And, l @@ acc
+             (* let proxy = mk_proxy () in *)
+             (* acc_and := (proxy, l) :: !acc_and; *)
+             (* proxy :: acc *)
+             | Some Or, l ->
+               let proxy = mk_proxy () in
+               acc_or := (proxy, l) :: !acc_or;
+               Some And, proxy :: acc
+             | None, l -> Some And, l @@ acc
+             | _ -> assert false
+          ) (None, []) l
 
       | Comb (Or, l) ->
-          List.fold_left
-            (fun (_, acc) f ->
-              match cnf f with
-                | _, [] -> assert false
-                | cmb, [a] -> Some Or, a :: acc
-                | Some Or, l ->
-                    Some Or, l @@ acc
-                    (* let proxy = mk_proxy () in *)
-                    (* acc_or := (proxy, l) :: !acc_or; *)
-                    (* proxy :: acc *)
-                | Some And, l ->
-                    let proxy = mk_proxy () in
-                    acc_and := (proxy, l) :: !acc_and;
-                    Some Or, proxy :: acc
-                | None, l -> Some Or, l @@ acc
-                | _ -> assert false
-            ) (None, []) l
+        List.fold_left
+          (fun (_, acc) f ->
+             match cnf f with
+             | _, [] -> assert false
+             | cmb, [a] -> Some Or, a :: acc
+             | Some Or, l ->
+               Some Or, l @@ acc
+             (* let proxy = mk_proxy () in *)
+             (* acc_or := (proxy, l) :: !acc_or; *)
+             (* proxy :: acc *)
+             | Some And, l ->
+               let proxy = mk_proxy () in
+               acc_and := (proxy, l) :: !acc_and;
+               Some Or, proxy :: acc
+             | None, l -> Some Or, l @@ acc
+             | _ -> assert false
+          ) (None, []) l
 
       | _ -> assert false
 
@@ -629,15 +629,15 @@ end
       let acc =
         List.fold_left
           (fun acc (p,l) ->
-            proxies := p :: !proxies;
-            let np = Literal.LT.neg p in
-            (* build clause [cl = l1 & l2 & ... & ln => p] where [l = [l1;l2;..]]
-               also add clauses [p => l1], [p => l2], etc. *)
-            let cl, acc =
-              List.fold_left
-                (fun (cl,acc) a -> (Literal.LT.neg a :: cl), [np; a] :: acc)
-                ([p],acc) l in
-            cl :: acc
+             proxies := p :: !proxies;
+             let np = Literal.LT.neg p in
+             (* build clause [cl = l1 & l2 & ... & ln => p] where [l = [l1;l2;..]]
+                also add clauses [p => l1], [p => l2], etc. *)
+             let cl, acc =
+               List.fold_left
+                 (fun (cl,acc) a -> (Literal.LT.neg a :: cl), [np; a] :: acc)
+                 ([p],acc) l in
+             cl :: acc
           )acc !acc_and
       in
       (* encore clauses that make proxies in !acc_or equivalent to
@@ -645,12 +645,12 @@ end
       let acc =
         List.fold_left
           (fun acc (p,l) ->
-            proxies := p :: !proxies;
-            (* add clause [p => l1 | l2 | ... | ln], and add clauses
-              [l1 => p], [l2 => p], etc. *)
-            let acc = List.fold_left (fun acc a -> [p; Literal.LT.neg a]::acc)
-              acc l in
-            (Literal.LT.neg p :: l) :: acc
+             proxies := p :: !proxies;
+             (* add clause [p => l1 | l2 | ... | ln], and add clauses
+                [l1 => p], [l2 => p], etc. *)
+             let acc = List.fold_left (fun acc a -> [p; Literal.LT.neg a]::acc)
+                 acc l in
+             (Literal.LT.neg p :: l) :: acc
           ) acc !acc_or
       in
       acc
@@ -662,7 +662,7 @@ end
   end
 
   (* Naive CNF XXX remove???
-  let make_cnf f = mk_cnf (sform f)
+     let make_cnf f = mk_cnf (sform f)
   *)
 end
 
@@ -704,8 +704,8 @@ module Make (Dummy : sig end) = struct
     eprintf "Unsat Core : @.";
     List.iter
       (fun c ->
-        eprintf "%a@." (Formula.print_list "or")
-          (List.rev_map (fun x -> Formula.Lit x) c)) uc;
+         eprintf "%a@." (Formula.print_list "or")
+           (List.rev_map (fun x -> Formula.Lit x) c)) uc;
     eprintf "@.";
     try
       clear ();
@@ -714,18 +714,18 @@ module Make (Dummy : sig end) = struct
       eprintf "Not an unsat core !!!@.";
       assert false
     with
-      | Solver.Unsat _ -> ();
-      | Solver.Sat  ->
-          eprintf "Sat: Not an unsat core !!!@.";
-          assert false
+    | Solver.Unsat _ -> ();
+    | Solver.Sat  ->
+      eprintf "Sat: Not an unsat core !!!@.";
+      assert false
 
   let export_unsatcore cl =
     let uc = List.rev_map (fun {Solver_types.atoms=atoms} ->
-      let l = ref [] in
-      for i = 0 to Vec.size atoms - 1 do
-        l := (Vec.get atoms i).Solver_types.lit :: !l
-      done;
-      !l) cl
+        let l = ref [] in
+        for i = 0 to Vec.size atoms - 1 do
+          l := (Vec.get atoms i).Solver_types.lit :: !l
+        done;
+        !l) cl
     in (* check_unsatcore uc; *)
     uc
 
@@ -736,7 +736,7 @@ module Make (Dummy : sig end) = struct
     let s =
       List.fold_left
         (fun s {Solver_types.name = n} ->
-	  try SInt.add (int_of_string n) s with _ -> s) SInt.empty cl
+           try SInt.add (int_of_string n) s with _ -> s) SInt.empty cl
     in
     SInt.elements s
 
@@ -756,20 +756,20 @@ module Make (Dummy : sig end) = struct
       CSolver.solve ();
       if profiling then Time.pause ()
     with
-      | Solver.Sat -> if profiling then Time.pause ()
-      | Solver.Unsat ex ->
-	  if profiling then Time.pause ();
-	  raise (Unsat (export_unsatcore2 ex))
+    | Solver.Sat -> if profiling then Time.pause ()
+    | Solver.Unsat ex ->
+      if profiling then Time.pause ();
+      raise (Unsat (export_unsatcore2 ex))
 
   type state = CSolver.state
 
   let eval t =
     match t with
     | Term.T t' ->
-        let lit = Literal.LT.mk_pred t' in
-        CSolver.eval lit
+      let lit = Literal.LT.mk_pred t' in
+      CSolver.eval lit
     | Term.Tite _ ->
-        failwith "cannot evaluate \"if-then-else\" term"
+      failwith "cannot evaluate \"if-then-else\" term"
 
   let save_state = CSolver.save
 

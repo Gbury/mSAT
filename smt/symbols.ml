@@ -48,8 +48,8 @@ let compare_kind k1 k2 = match k1, k2 with
 
 let compare s1 s2 =  match s1, s2 with
   | Name (n1,k1), Name (n2,k2) ->
-      let c = compare_kind k1 k2 in
-      if c = 0 then Hstring.compare n1 n2 else c
+    let c = compare_kind k1 k2 in
+    if c = 0 then Hstring.compare n1 n2 else c
   | Name _, _ ->  -1
   | _, Name _ -> 1
   | Var n1, Var n2 -> Hstring.compare n1 n2
@@ -67,7 +67,7 @@ let hash = function
   | Name (n,_) -> Hstring.hash n * 19
   | Var n (*| Int n*) -> Hstring.hash n * 19 + 1
   | s -> Hashtbl.hash s
-	
+
 let to_string =  function
   | Name (n,_) -> Hstring.view n
   | Var x -> "*var* "^(Hstring.view x)

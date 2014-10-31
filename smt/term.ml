@@ -22,15 +22,15 @@ and t = view
 module H = struct
   type t = view
   let equal t1 t2 = try
-    Sy.equal t1.f t2.f
-    && List.for_all2 (==) t1.xs t2.xs
-    && Ty.equal t1.ty t2.ty
-  with Invalid_argument _ -> false
+      Sy.equal t1.f t2.f
+      && List.for_all2 (==) t1.xs t2.xs
+      && Ty.equal t1.ty t2.ty
+    with Invalid_argument _ -> false
 
   let hash t =
     abs (List.fold_left
-	   (fun acc x-> acc*19 +x.tag) (Sy.hash t.f + Ty.hash t.ty)
-	   t.xs)
+           (fun acc x-> acc*19 +x.tag) (Sy.hash t.f + Ty.hash t.ty)
+           t.xs)
   let tag tag x = {x with tag = tag}
 end
 
@@ -41,10 +41,10 @@ let view t = t
 let rec print fmt t =
   let {f=x; xs=l; ty=ty} = view t in
   match x, l with
-    | Sy.Op op, [e1; e2] ->
-	fprintf fmt "(%a %a %a)" print e1 Sy.print x print e2
-    | _, [] -> fprintf fmt "%a" Sy.print x
-    | _, _ -> fprintf fmt "%a(%a)" Sy.print x print_list l
+  | Sy.Op op, [e1; e2] ->
+    fprintf fmt "(%a %a %a)" print e1 Sy.print x print e2
+  | _, [] -> fprintf fmt "%a" Sy.print x
+  | _, _ -> fprintf fmt "%a(%a)" Sy.print x print_list l
 
 and print_list fmt = function
   | [] -> ()
@@ -54,7 +54,7 @@ and print_list fmt = function
 let compare t1 t2 =
   let c = Pervasives.compare t2.tag t1.tag in
   if c = 0 then c else
-  match (view t1).f, (view t2).f with
+    match (view t1).f, (view t2).f with
     | (Sy.True | Sy.False ), (Sy.True | Sy.False ) -> c
     | (Sy.True | Sy.False ), _ -> -1
     | _, (Sy.True | Sy.False ) -> 1

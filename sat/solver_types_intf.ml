@@ -12,68 +12,68 @@
 (**************************************************************************)
 
 module type S = sig
-    type formula
+  type formula
 
-    type var = {
-        vid : int;
-        pa : atom;
-        na : atom;
-        mutable weight : float;
-        mutable seen : bool;
-        mutable level : int;
-        mutable reason : reason;
-        mutable vpremise : premise
-    }
+  type var = {
+    vid : int;
+    pa : atom;
+    na : atom;
+    mutable weight : float;
+    mutable seen : bool;
+    mutable level : int;
+    mutable reason : reason;
+    mutable vpremise : premise
+  }
 
-    and atom = {
-        var : var;
-        lit : formula;
-        neg : atom;
-        mutable watched : clause Vec.t;
-        mutable is_true : bool;
-        aid : int
-    }
+  and atom = {
+    var : var;
+    lit : formula;
+    neg : atom;
+    mutable watched : clause Vec.t;
+    mutable is_true : bool;
+    aid : int
+  }
 
-    and clause = {
-        name : string;
-        mutable atoms : atom Vec.t;
-        mutable activity : float;
-        mutable removed : bool;
-        learnt : bool;
-        cpremise : premise
-    }
+  and clause = {
+    name : string;
+    mutable atoms : atom Vec.t;
+    mutable activity : float;
+    mutable removed : bool;
+    learnt : bool;
+    cpremise : premise
+  }
 
-    and reason = clause option
+  and reason = clause option
 
-    and premise = clause list
+  and premise = clause list
 
-    val cpt_mk_var : int ref
-    type varmap
-    val ma : varmap ref
+  val cpt_mk_var : int ref
+  type varmap
+  val ma : varmap ref
 
-    val dummy_var : var
-    val dummy_atom : atom
-    val dummy_clause : clause
+  val dummy_var : var
+  val dummy_atom : atom
+  val dummy_clause : clause
 
-    val make_var : formula -> var * bool
+  val make_var : formula -> var * bool
 
-    val add_atom : formula -> atom
+  val add_atom : formula -> atom
 
-    val make_clause : string -> atom list -> int -> bool -> premise -> clause
+  val make_clause : string -> atom list -> int -> bool -> premise -> clause
 
-    val fresh_name : unit -> string
+  val fresh_name : unit -> string
 
-    val fresh_lname : unit -> string
+  val fresh_lname : unit -> string
 
-    val fresh_dname : unit -> string
+  val fresh_dname : unit -> string
 
-    val to_float : int -> float
+  val to_float : int -> float
 
-    val to_int : float -> int
-    val made_vars_info : unit -> int * var list
-    val clear : unit -> unit
+  val to_int : float -> int
+  val made_vars_info : unit -> int * var list
+  val clear : unit -> unit
 
-    val pp_atom : Format.formatter -> atom -> unit
-    val pp_clause : Format.formatter -> clause -> unit
+  val pp_atom : Format.formatter -> atom -> unit
+  val pp_clause : Format.formatter -> clause -> unit
 end
 

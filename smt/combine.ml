@@ -36,7 +36,7 @@ struct
 
   let embed1 x = X1 x
   let embed5 x = X5 x
-	
+
   let is_int v =
     let ty  = match v with
       | X1 x -> X1.type_info x
@@ -54,10 +54,10 @@ struct
 
   and comparei a b =
     match a, b with
-      | X1 x, X1 y -> X1.compare x y
-      | X5 x, X5 y -> X5.compare x y
-      | Term x  , Term y  -> Term.compare x y
-      | _                 -> assert false
+    | X1 x, X1 y -> X1.compare x y
+    | X5 x, X5 y -> X5.compare x y
+    | Term x  , Term y  -> Term.compare x y
+    | _                 -> assert false
 
   and theory_num x = Obj.tag (Obj.repr x)
 
@@ -72,23 +72,23 @@ struct
 
   let print fmt r =
     match r with
-      | X1 t    -> fprintf fmt "%a" X1.print t
-      | X5 t    -> fprintf fmt "%a" X5.print t
-      | Term t  -> fprintf fmt "%a" Term.print t
+    | X1 t    -> fprintf fmt "%a" X1.print t
+    | X5 t    -> fprintf fmt "%a" X5.print t
+    | Term t  -> fprintf fmt "%a" Term.print t
 
   let leaves r =
     match r with
-      | X1 t -> X1.leaves t
-      | X5 t -> X5.leaves t
-      | Term _ -> [r]
+    | X1 t -> X1.leaves t
+    | X5 t -> X5.leaves t
+    | Term _ -> [r]
 
   let term_embed t = Term t
 
   let term_extract r =
     match r with
-      | X1 _ -> X1.term_extract r
-      | X5 _ -> X5.term_extract r
-      | Term t -> Some t
+    | X1 _ -> X1.term_extract r
+    | X5 _ -> X5.term_extract r
+    | Term t -> Some t
 
   let subst p v r =
     if equal p v then r
@@ -100,66 +100,66 @@ struct
   let make t =
     let {Term.f=sb} = Term.view t in
     match X1.is_mine_symb sb, X5.is_mine_symb sb with
-      | true, false -> X1.make t
-      | false, true  -> X5.make t
-      | false, false -> Term t, []
-      | _ -> assert false
-	
+    | true, false -> X1.make t
+    | false, true  -> X5.make t
+    | false, false -> Term t, []
+    | _ -> assert false
+
   let fully_interpreted sb =
     match X1.is_mine_symb sb, X5.is_mine_symb sb with
-      | true, false -> X1.fully_interpreted sb
-      | false, true -> X5.fully_interpreted sb
-      | false, false -> false
-      | _ -> assert false
+    | true, false -> X1.fully_interpreted sb
+    | false, true -> X5.fully_interpreted sb
+    | false, false -> false
+    | _ -> assert false
 
   let add_mr =
     List.fold_left
       (fun solved (p,v) ->
-	 MR.add p (v::(try MR.find p solved with Not_found -> [])) solved)
+         MR.add p (v::(try MR.find p solved with Not_found -> [])) solved)
 
   let unsolvable = function
     | X1 x -> X1.unsolvable x
     | X5 x -> X5.unsolvable x
     | Term _  -> true
-	
+
   let partition tag =
     List.partition
       (fun (u,t) ->
-	 (theory_num u = tag || unsolvable u) &&
-	   (theory_num t = tag || unsolvable t))
+         (theory_num u = tag || unsolvable u) &&
+         (theory_num t = tag || unsolvable t))
 
   let rec solve_list  solved l =
     List.fold_left
       (fun solved (a,b) ->
-	 let cmp = compare a b in
-	 if cmp = 0 then solved else
-	   match a , b with
-	       (* both sides are empty *)
-	     | Term _ , Term _  ->
-		 add_mr solved (unsolvable_values cmp  a b)
-		
-	     (* only one side is empty *)
-	     | (a, b)
-                 when unsolvable a || unsolvable b ||  compare_tag a b = 0 ->
-		 let a,b = if unsolvable a then b,a else a,b in
-		 let cp , sol = partition (theory_num a) (solvei  b a) in
-		 solve_list  (add_mr solved cp) sol
-		
-	     (* both sides are not empty *)
-	     | a , b -> solve_theoryj  solved a b
+         let cmp = compare a b in
+         if cmp = 0 then solved else
+           match a , b with
+           (* both sides are empty *)
+           | Term _ , Term _  ->
+             add_mr solved (unsolvable_values cmp  a b)
+
+           (* only one side is empty *)
+           | (a, b)
+             when unsolvable a || unsolvable b ||  compare_tag a b = 0 ->
+             let a,b = if unsolvable a then b,a else a,b in
+             let cp , sol = partition (theory_num a) (solvei  b a) in
+             solve_list  (add_mr solved cp) sol
+
+           (* both sides are not empty *)
+           | a , b -> solve_theoryj  solved a b
       ) solved l
 
   and unsolvable_values cmp a b =
     match a, b with
-      (* Clash entre theories: On peut avoir ces pbs ? *)
-      | X1 _, X5 _
-      | X5 _, X1 _
-       -> assert false
+    (* Clash entre theories: On peut avoir ces pbs ? *)
+    | X1 _, X5 _
+    | X5 _, X1 _
+      -> assert false
 
-      (* theorie d'un cote, vide de l'autre *)
-      | X1 _, _ | _, X1 _ -> X1.solve a b
-      | X5 _, _ | _, X5 _ -> X5.solve a b
-      | Term _, Term _ -> [if cmp > 0 then a,b else b,a]
+    (* theorie d'un cote, vide de l'autre *)
+    | X1 _, _ | _, X1 _ -> X1.solve a b
+    | X5 _, _ | _, X5 _ -> X5.solve a b
+    | Term _, Term _ -> [if cmp > 0 then a,b else b,a]
 
   and solve_theoryj solved xi xj =
     let cp , sol = partition (theory_num xj) (solvei  xi xj) in
@@ -167,34 +167,34 @@ struct
 
   and solvei  a b =
     match b with
-      | X1 _ -> X1.solve  a b
-      | X5 _ -> X5.solve  a b
-      | Term _ -> assert false
+    | X1 _ -> X1.solve  a b
+    | X5 _ -> X5.solve  a b
+    | Term _ -> assert false
 
   let rec solve_rec  mt ab =
     let mr = solve_list  mt ab in
     let mr , ab =
       MR.fold
-	(fun p lr ((mt,ab) as acc) -> match lr with
-	     [] -> assert false
-	   | [_] -> acc
-	   | x::lx ->
-	       MR.add p [x] mr , List.rev_map (fun y-> (x,y)) lx)	
-	mr (mr,[])
+        (fun p lr ((mt,ab) as acc) -> match lr with
+             [] -> assert false
+           | [_] -> acc
+           | x::lx ->
+             MR.add p [x] mr , List.rev_map (fun y-> (x,y)) lx)	
+        mr (mr,[])
     in
     if ab = [] then mr else solve_rec  mr ab
 
   let solve  a b =
     MR.fold
       (fun p lr ret ->
-	 match lr with [r] -> (p ,r)::ret | _ -> assert false)
+         match lr with [r] -> (p ,r)::ret | _ -> assert false)
       (solve_rec  MR.empty [a,b]) []
 
   let rec type_info = function
     | X1 t   -> X1.type_info t
     | X5 t   -> X5.type_info t
     | Term t -> let {Term.ty = ty} = Term.view t in ty
-	
+
   module Rel = struct
     type elt = r
     type r = elt
@@ -203,7 +203,7 @@ struct
       r1: X1.Rel.t;
       r5: X5.Rel.t;
     }
-	
+
     let empty _ = {
       r1=X1.Rel.empty ();
       r5=X5.Rel.empty ();
@@ -214,12 +214,12 @@ struct
       let env5, { assume = a5; remove = rm5} = X5.Rel.assume env.r5 sa in
       {r1=env1; r5=env5},
       { assume = a1@a5; remove = rm1@rm5;}
-	
+
     let query env a =
       match X1.Rel.query env.r1 a with
-	| Yes _ as ans -> ans
-	| No -> X5.Rel.query env.r5 a
-	
+      | Yes _ as ans -> ans
+      | No -> X5.Rel.query env.r5 a
+
     let case_split env =
       let seq1 = X1.Rel.case_split env.r1 in
       let seq5 = X5.Rel.case_split env.r5 in
@@ -237,17 +237,17 @@ and TX1 : Polynome.T with type r = CX.r = Arith.Type(CX)
 and X1 : Sig.THEORY  with type t = TX1.t and type r = CX.r =
   Arith.Make(CX)(TX1)
     (struct
-       type t = TX1.t
-       type r = CX.r
-       let extract = CX.extract1
-       let embed =  CX.embed1
-       let assume env _ _ = env, {Sig.assume = []; remove = []}
-     end)
+      type t = TX1.t
+      type r = CX.r
+      let extract = CX.extract1
+      let embed =  CX.embed1
+      let assume env _ _ = env, {Sig.assume = []; remove = []}
+    end)
 
 and X5 : Sig.THEORY with type r = CX.r and type t = CX.r Sum.abstract =
   Sum.Make
     (struct
-       include CX
-       let extract = extract5
-       let embed = embed5
-     end)
+      include CX
+      let extract = extract5
+      let embed = embed5
+    end)

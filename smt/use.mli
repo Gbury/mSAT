@@ -21,18 +21,18 @@ type elt = ST.t * SA.t
 
 module Make :
   functor (X : Sig.X) ->
-sig
+  sig
 
-  type t
-  val empty : t
-  val find : X.r -> t -> elt
-  val add : X.r -> elt -> t -> t
-  val mem : X.r -> t -> bool
-  val print : t -> unit
-  val up_add : t -> ST.elt -> X.r -> X.r list -> t
+    type t
+    val empty : t
+    val find : X.r -> t -> elt
+    val add : X.r -> elt -> t -> t
+    val mem : X.r -> t -> bool
+    val print : t -> unit
+    val up_add : t -> ST.elt -> X.r -> X.r list -> t
 
-  val congr_add : t -> X.r list -> ST.t
+    val congr_add : t -> X.r list -> ST.t
 
-  val up_close_up :t -> X.r -> X.r -> t
-  val congr_close_up : t -> X.r -> X.r list -> elt
-end
+    val up_close_up :t -> X.r -> X.r -> t
+    val congr_close_up : t -> X.r -> X.r list -> elt
+  end

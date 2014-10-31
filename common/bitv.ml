@@ -150,15 +150,15 @@ let blit_bits a i m v n =
     let d = m + j - bpi in
     if d > 0 then begin
       Array.unsafe_set v i'
-	(((keep_lowest_bits (a lsr i) (bpi - j)) lsl j) lor
-	 (keep_lowest_bits (Array.unsafe_get v i') j));
+        (((keep_lowest_bits (a lsr i) (bpi - j)) lsl j) lor
+         (keep_lowest_bits (Array.unsafe_get v i') j));
       Array.unsafe_set v (succ i')
-	((keep_lowest_bits (a lsr (i + bpi - j)) d) lor
-	 (keep_highest_bits (Array.unsafe_get v (succ i')) (bpi - d)))
+        ((keep_lowest_bits (a lsr (i + bpi - j)) d) lor
+         (keep_highest_bits (Array.unsafe_get v (succ i')) (bpi - d)))
     end else
       Array.unsafe_set v i'
-	(((keep_lowest_bits (a lsr i) m) lsl j) lor
-	 ((Array.unsafe_get v i') land (low_mask.(j) lor high_mask.(-d))))
+        (((keep_lowest_bits (a lsr i) m) lsl j) lor
+         ((Array.unsafe_get v i') land (low_mask.(j) lor high_mask.(-d))))
 
 (*s [blit_int] implements [blit_bits] in the particular case when
     [i=0] and [m=bpi] i.e. when we blit all the bits of [a]. *)
@@ -170,7 +170,7 @@ let blit_int a v n =
   else begin
     Array.unsafe_set v i
       ( (keep_lowest_bits (Array.unsafe_get v i) j) lor
-       ((keep_lowest_bits a (bpi - j)) lsl j));
+        ((keep_lowest_bits a (bpi - j)) lsl j));
     Array.unsafe_set v (succ i)
       ((keep_highest_bits (Array.unsafe_get v (succ i)) (bpi - j)) lor
        (a lsr (bpi - j)))
@@ -193,15 +193,15 @@ let unsafe_blit v1 ofs1 v2 ofs2 len =
       blit_bits (Array.unsafe_get v1 bi) bj (bpi - bj) v2 ofs2;
       let n = ref (ofs2 + bpi - bj) in
       for i = succ bi to pred ei do
-	blit_int (Array.unsafe_get v1 i) v2 !n;
-	n := !n + bpi
+        blit_int (Array.unsafe_get v1 i) v2 !n;
+        n := !n + bpi
       done;
       blit_bits (Array.unsafe_get v1 ei) 0 (succ ej) v2 !n
     end
 
 let blit v1 ofs1 v2 ofs2 len =
   if len < 0 or ofs1 < 0 or ofs1 + len > v1.length
-             or ofs2 < 0 or ofs2 + len > v2.length
+     or ofs2 < 0 or ofs2 + len > v2.length
   then invalid_arg "Bitv.blit";
   unsafe_blit v1.bits ofs1 v2.bits ofs2 len
 
@@ -261,8 +261,8 @@ let blit_zeros v ofs len =
       blit_bits 0 bj (bpi - bj) v ofs;
       let n = ref (ofs + bpi - bj) in
       for i = succ bi to pred ei do
-	blit_int 0 v !n;
-	n := !n + bpi
+        blit_int 0 v !n;
+        n := !n + bpi
       done;
       blit_bits 0 0 (succ ej) v !n
     end
@@ -277,8 +277,8 @@ let blit_ones v ofs len =
       blit_bits max_int bj (bpi - bj) v ofs;
       let n = ref (ofs + bpi - bj) in
       for i = succ bi to pred ei do
-	blit_int max_int v !n;
-	n := !n + bpi
+        blit_int max_int v !n;
+        n := !n + bpi
       done;
       blit_bits max_int 0 (succ ej) v !n
     end
@@ -345,11 +345,11 @@ let foldi_right f v x =
 let iteri_true_naive f v =
   Array.iteri
     (fun i n -> if n != 0 then begin
-       let i_bpi = i * bpi in
-       for j = 0 to bpi - 1 do
-	 if n land (Array.unsafe_get bit_j j) > 0 then f (i_bpi + j)
-       done
-     end)
+         let i_bpi = i * bpi in
+         for j = 0 to bpi - 1 do
+           if n land (Array.unsafe_get bit_j j) > 0 then f (i_bpi + j)
+         done
+       end)
     v.bits
 
 (*s Number of trailing zeros (on a 32-bit machine) *)
@@ -364,11 +364,11 @@ let iteri_true_ntz32 f v =
     (fun i n ->
        let i_bpi = i * bpi in
        let rec visit x =
-	 if x != 0 then begin
-	   let b = x land (-x) in
-	   f (i_bpi + ntz32 b);
-	   visit (x - b)
-	 end
+         if x != 0 then begin
+           let b = x land (-x) in
+           f (i_bpi + ntz32 b);
+           visit (x - b)
+         end
        in
        visit n)
     v.bits
@@ -384,11 +384,11 @@ let iteri_true_ntz64 f v =
     (fun i n ->
        let i_bpi = i * bpi in
        let rec visit x =
-	 if x != 0 then begin
-	   let b = x land (-x) in
-	   f (i_bpi + ntz64 b);
-	   visit (x - b)
-	 end
+         if x != 0 then begin
+           let b = x land (-x) in
+           f (i_bpi + ntz64 b);
+           visit (x - b)
+         end
        in
        visit n)
     v.bits
@@ -547,9 +547,9 @@ module S(I : sig val least_first : bool end) = struct
     for i = 0 to n - 1 do
       let c = String.unsafe_get s i in
       if c = '1' then
-	unsafe_set v (if I.least_first then i else n-1-i) true
+        unsafe_set v (if I.least_first then i else n-1-i) true
       else
-	if c <> '0' then invalid_arg "Bitv.of_string"
+      if c <> '0' then invalid_arg "Bitv.of_string"
     done;
     v
 
@@ -660,90 +660,90 @@ let to_int_s v =
 (* [Int32] *)
 let of_int32_us i = match Sys.word_size with
   | 32 -> { length = 31;
-	    bits = [| (Int32.to_int i) land max_int;
-		      let hi = Int32.shift_right_logical i 30 in
-		      (Int32.to_int hi) land 1 |] }
+            bits = [| (Int32.to_int i) land max_int;
+                      let hi = Int32.shift_right_logical i 30 in
+                      (Int32.to_int hi) land 1 |] }
   | 64 -> { length = 31; bits = [| (Int32.to_int i) land 0x7fffffff |] }
   | _ -> assert false
 let to_int32_us v =
   if v.length < 31 then invalid_arg "Bitv.to_int32_us";
   match Sys.word_size with
-    | 32 ->
-	Int32.logor (Int32.of_int v.bits.(0))
-	            (Int32.shift_left (Int32.of_int (v.bits.(1) land 1)) 30)
-    | 64 ->
-	Int32.of_int (v.bits.(0) land 0x7fffffff)
-    | _ -> assert false
+  | 32 ->
+    Int32.logor (Int32.of_int v.bits.(0))
+      (Int32.shift_left (Int32.of_int (v.bits.(1) land 1)) 30)
+  | 64 ->
+    Int32.of_int (v.bits.(0) land 0x7fffffff)
+  | _ -> assert false
 
 (* this is 0xffffffff (ocaml >= 3.08 checks for literal overflow) *)
 let ffffffff = (0xffff lsl 16) lor 0xffff
 
 let of_int32_s i = match Sys.word_size with
   | 32 -> { length = 32;
-	    bits = [| (Int32.to_int i) land max_int;
-		      let hi = Int32.shift_right_logical i 30 in
-		      (Int32.to_int hi) land 3 |] }
+            bits = [| (Int32.to_int i) land max_int;
+                      let hi = Int32.shift_right_logical i 30 in
+                      (Int32.to_int hi) land 3 |] }
   | 64 -> { length = 32; bits = [| (Int32.to_int i) land ffffffff |] }
   | _ -> assert false
 let to_int32_s v =
   if v.length < 32 then invalid_arg "Bitv.to_int32_s";
   match Sys.word_size with
-    | 32 ->
-	Int32.logor (Int32.of_int v.bits.(0))
-	            (Int32.shift_left (Int32.of_int (v.bits.(1) land 3)) 30)
-    | 64 ->
-	Int32.of_int (v.bits.(0) land ffffffff)
-    | _ -> assert false
+  | 32 ->
+    Int32.logor (Int32.of_int v.bits.(0))
+      (Int32.shift_left (Int32.of_int (v.bits.(1) land 3)) 30)
+  | 64 ->
+    Int32.of_int (v.bits.(0) land ffffffff)
+  | _ -> assert false
 
 (* [Int64] *)
 let of_int64_us i = match Sys.word_size with
   | 32 -> { length = 63;
-	    bits = [| (Int64.to_int i) land max_int;
-		      (let mi = Int64.shift_right_logical i 30 in
-		       (Int64.to_int mi) land max_int);
-		      let hi = Int64.shift_right_logical i 60 in
-		      (Int64.to_int hi) land 1 |] }
+            bits = [| (Int64.to_int i) land max_int;
+                      (let mi = Int64.shift_right_logical i 30 in
+                       (Int64.to_int mi) land max_int);
+                      let hi = Int64.shift_right_logical i 60 in
+                      (Int64.to_int hi) land 1 |] }
   | 64 -> { length = 63;
-	    bits = [| (Int64.to_int i) land max_int;
-		      let hi = Int64.shift_right_logical i 62 in
-		      (Int64.to_int hi) land 1 |] }
+            bits = [| (Int64.to_int i) land max_int;
+                      let hi = Int64.shift_right_logical i 62 in
+                      (Int64.to_int hi) land 1 |] }
   | _ -> assert false
 let to_int64_us v =
   if v.length < 63 then invalid_arg "Bitv.to_int64_us";
   match Sys.word_size with
-    | 32 ->
-	Int64.logor (Int64.of_int v.bits.(0))
-        (Int64.logor (Int64.shift_left (Int64.of_int v.bits.(1)) 30)
-                     (Int64.shift_left (Int64.of_int (v.bits.(2) land 7)) 60))
-    | 64 ->
-	Int64.logor (Int64.of_int v.bits.(0))
-                    (Int64.shift_left (Int64.of_int (v.bits.(1) land 1)) 62)
-    | _ ->
-        assert false
+  | 32 ->
+    Int64.logor (Int64.of_int v.bits.(0))
+      (Int64.logor (Int64.shift_left (Int64.of_int v.bits.(1)) 30)
+         (Int64.shift_left (Int64.of_int (v.bits.(2) land 7)) 60))
+  | 64 ->
+    Int64.logor (Int64.of_int v.bits.(0))
+      (Int64.shift_left (Int64.of_int (v.bits.(1) land 1)) 62)
+  | _ ->
+    assert false
 
 let of_int64_s i = match Sys.word_size with
   | 32 -> { length = 64;
-	    bits = [| (Int64.to_int i) land max_int;
-		      (let mi = Int64.shift_right_logical i 30 in
-		       (Int64.to_int mi) land max_int);
-		      let hi = Int64.shift_right_logical i 60 in
-		      (Int64.to_int hi) land 3 |] }
+            bits = [| (Int64.to_int i) land max_int;
+                      (let mi = Int64.shift_right_logical i 30 in
+                       (Int64.to_int mi) land max_int);
+                      let hi = Int64.shift_right_logical i 60 in
+                      (Int64.to_int hi) land 3 |] }
   | 64 -> { length = 64;
             bits = [| (Int64.to_int i) land max_int;
                       let hi = Int64.shift_right_logical i 62 in
-		      (Int64.to_int hi) land 3 |] }
+                      (Int64.to_int hi) land 3 |] }
   | _ -> assert false
 let to_int64_s v =
   if v.length < 64 then invalid_arg "Bitv.to_int64_s";
   match Sys.word_size with
-    | 32 ->
-	Int64.logor (Int64.of_int v.bits.(0))
-        (Int64.logor (Int64.shift_left (Int64.of_int v.bits.(1)) 30)
-                     (Int64.shift_left (Int64.of_int (v.bits.(2) land 15)) 60))
-    | 64 ->
-	Int64.logor (Int64.of_int v.bits.(0))
-                    (Int64.shift_left (Int64.of_int (v.bits.(1) land 3)) 62)
-    | _ -> assert false
+  | 32 ->
+    Int64.logor (Int64.of_int v.bits.(0))
+      (Int64.logor (Int64.shift_left (Int64.of_int v.bits.(1)) 30)
+         (Int64.shift_left (Int64.of_int (v.bits.(2) land 15)) 60))
+  | 64 ->
+    Int64.logor (Int64.of_int v.bits.(0))
+      (Int64.shift_left (Int64.of_int (v.bits.(1) land 3)) 62)
+  | _ -> assert false
 
 (* [Nativeint] *)
 let select_of f32 f64 = match Sys.word_size with

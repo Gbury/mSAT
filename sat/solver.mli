@@ -12,22 +12,22 @@
 (**************************************************************************)
 
 module Make (F : Formula_intf.S)
-            (St : Solver_types.S with type formula = F.t)
-            (Ex : Explanation.S with type atom = St.atom)
-            (Th : Theory_intf.S with type formula = F.t and type explanation = Ex.t) : sig
+    (St : Solver_types.S with type formula = F.t)
+    (Ex : Explanation.S with type atom = St.atom)
+    (Th : Theory_intf.S with type formula = F.t and type explanation = Ex.t) : sig
 
-    exception Sat
-    exception Unsat of St.clause list
+  exception Sat
+  exception Unsat of St.clause list
 
-    type state
+  type state
 
-    val solve : unit -> unit
-    val assume : F.t list list -> cnumber : int -> unit
-    val clear : unit -> unit
+  val solve : unit -> unit
+  val assume : F.t list list -> cnumber : int -> unit
+  val clear : unit -> unit
 
-    val eval : F.t -> bool
-    val save : unit -> state
-    val restore : state -> unit
+  val eval : F.t -> bool
+  val save : unit -> state
+  val restore : state -> unit
 
 end
 

@@ -13,13 +13,13 @@
 (**************************************************************************)
 
 module type S = sig
-    type t
-    type formula
-    type explanation
+  type t
+  type formula
+  type explanation
 
-    exception Inconsistent of explanation
+  exception Inconsistent of explanation
 
-    val empty : unit -> t
-    val assume : cs:bool -> formula -> explanation -> t -> t
+  val empty : unit -> t
+  val assume : cs:bool -> formula -> explanation -> t -> t
 end
 

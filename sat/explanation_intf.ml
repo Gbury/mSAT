@@ -14,22 +14,22 @@
 
 module type S = sig
 
-    type t
-    type exp
-    type atom
+  type t
+  type exp
+  type atom
 
-    val empty : t
-    val singleton : atom -> t
+  val empty : t
+  val singleton : atom -> t
 
-    val union : t -> t -> t
-    val merge : t -> t -> t
+  val union : t -> t -> t
+  val merge : t -> t -> t
 
-    val iter_atoms : (atom -> unit)  -> t -> unit
-    val fold_atoms : (atom -> 'a -> 'a )  -> t -> 'a -> 'a
+  val iter_atoms : (atom -> unit)  -> t -> unit
+  val fold_atoms : (atom -> 'a -> 'a )  -> t -> 'a -> 'a
 
-    val fresh_exp : unit -> int
-    val add_fresh : int -> t -> t
-    val remove_fresh : int -> t -> t option
+  val fresh_exp : unit -> int
+  val add_fresh : int -> t -> t
+  val remove_fresh : int -> t -> t option
 
-    val print : Format.formatter -> t -> unit
+  val print : Format.formatter -> t -> unit
 end

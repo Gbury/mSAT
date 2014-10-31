@@ -16,7 +16,7 @@ type answer = Yes of Explanation.t | No
 type 'a literal = LSem of 'a Literal.view | LTerm of Literal.LT.t
 
 type 'a input =
-    'a Literal.view * Literal.LT.t option * Explanation.t
+  'a Literal.view * Literal.LT.t option * Explanation.t
 
 type 'a result = {
   assume : ('a literal * Explanation.t) list;
@@ -34,10 +34,10 @@ module type RELATION = sig
   val query : t -> r input -> answer
 
   val case_split : t -> (r Literal.view * Explanation.t * Num.num) list
-    (** case_split env returns a list of equalities *)
+  (** case_split env returns a list of equalities *)
 
   val add : t -> r -> t
-    (** add a representant to take into account *)
+  (** add a representant to take into account *)
 
 end
 

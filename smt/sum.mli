@@ -21,5 +21,5 @@ module type ALIEN = sig
 end
 
 module Make
-  (X : ALIEN) : Sig.THEORY with type r = X.r and type t = X.r abstract
+    (X : ALIEN) : Sig.THEORY with type r = X.r and type t = X.r abstract
 

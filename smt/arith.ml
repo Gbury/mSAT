@@ -35,9 +35,9 @@ module Type (X:Sig.X) : Polynome.T with type r =  X.r = struct
 end
 
 module Make
-  (X : Sig.X)
-  (P : Polynome.T with type r = X.r)
-  (C : Sig.C with type t = P.t and type r = X.r) = struct
+    (X : Sig.X)
+    (P : Polynome.T with type r = X.r)
+    (C : Sig.C with type t = P.t and type r = X.r) = struct
 
   type t = P.t
 
@@ -47,8 +47,8 @@ module Make
 
   let is_mine_a a =
     match A.LT.view a with
-      | A.Builtin (_,p,_) -> is_le p || is_lt p
-      | _ -> false
+    | A.Builtin (_,p,_) -> is_le p || is_lt p
+    | _ -> false
 
   let is_mine_symb = function
     | Sy.Int _ | Sy.Real _
@@ -60,7 +60,7 @@ module Make
     ty = Ty.Tint || ty = Ty.Treal
 
   let unsolvable _ = false
-	
+
   let empty_polynome ty = P.create [] (Int 0) ty
 
   let is_mine p = match P.is_monomial p with
@@ -103,68 +103,68 @@ module Make
 
   let mk_euc_division p p2 t1 t2 ctx =
     match P.to_list p2 with
-      | [], coef_p2 ->
-          let md = T.make (Sy.Op Sy.Modulo) [t1;t2] Ty.Tint in
-          let r, ctx' = X.make md in
-          let rp = P.mult (P.create [] ((Int 1) //coef_p2) Ty.Tint) (embed r) in
-          P.sub p rp, ctx' @ ctx
-      | _ -> assert false
+    | [], coef_p2 ->
+      let md = T.make (Sy.Op Sy.Modulo) [t1;t2] Ty.Tint in
+      let r, ctx' = X.make md in
+      let rp = P.mult (P.create [] ((Int 1) //coef_p2) Ty.Tint) (embed r) in
+      P.sub p rp, ctx' @ ctx
+    | _ -> assert false
 
   let rec mke coef p t ctx =
     let {T.f = sb ; xs = xs; ty = ty} = T.view t in
     match sb, xs with
-      | (Sy.Int n | Sy.Real n), _  ->
-	  let c = coef */ (num_of_string (Hstring.view n)) in
-	  P.add (P.create [] c ty) p, ctx
+    | (Sy.Int n | Sy.Real n), _  ->
+      let c = coef */ (num_of_string (Hstring.view n)) in
+      P.add (P.create [] c ty) p, ctx
 
-      | Sy.Op Sy.Mult, [t1;t2] ->
-	  let p1, ctx = mke coef (empty_polynome ty) t1 ctx in
-	  let p2, ctx = mke (Int 1) (empty_polynome ty) t2 ctx in
-	  P.add p (P.mult p1 p2), ctx
+    | Sy.Op Sy.Mult, [t1;t2] ->
+      let p1, ctx = mke coef (empty_polynome ty) t1 ctx in
+      let p2, ctx = mke (Int 1) (empty_polynome ty) t2 ctx in
+      P.add p (P.mult p1 p2), ctx
 
-      | Sy.Op Sy.Div, [t1;t2] ->
-	  let p1, ctx = mke coef (empty_polynome ty) t1 ctx in
-	  let p2, ctx = mke (Int 1) (empty_polynome ty) t2 ctx in
-	  let p3, ctx =
-	    try
-              let p, approx = P.div p1 p2 in
-              if approx then mk_euc_division p p2 t1 t2 ctx
-              else p, ctx
-	    with Division_by_zero | Polynome.Maybe_zero ->
-              P.create [coef, X.term_embed t] (Int 0) ty, ctx
-	  in
-	  P.add p p3, ctx
-		
-      | Sy.Op Sy.Plus , [t1;t2] ->
-	  let p2, ctx = mke coef p t2 ctx in
-	  mke coef p2 t1 ctx
+    | Sy.Op Sy.Div, [t1;t2] ->
+      let p1, ctx = mke coef (empty_polynome ty) t1 ctx in
+      let p2, ctx = mke (Int 1) (empty_polynome ty) t2 ctx in
+      let p3, ctx =
+        try
+          let p, approx = P.div p1 p2 in
+          if approx then mk_euc_division p p2 t1 t2 ctx
+          else p, ctx
+        with Division_by_zero | Polynome.Maybe_zero ->
+          P.create [coef, X.term_embed t] (Int 0) ty, ctx
+      in
+      P.add p p3, ctx
 
-      | Sy.Op Sy.Minus , [t1;t2] ->
-	  let p2, ctx = mke (minus_num coef) p t2 ctx in
-	  mke coef p2 t1 ctx
+    | Sy.Op Sy.Plus , [t1;t2] ->
+      let p2, ctx = mke coef p t2 ctx in
+      mke coef p2 t1 ctx
 
-      | Sy.Op Sy.Modulo , [t1;t2] ->
-	  let p1, ctx = mke coef (empty_polynome ty) t1 ctx in
-	  let p2, ctx = mke (Int 1) (empty_polynome ty) t2 ctx in
-          let p3, ctx =
-            try P.modulo p1 p2, ctx
-            with e ->
-	      let t = T.make mod_symb [t1; t2] Ty.Tint in
-              let ctx = match e with
-                | Division_by_zero | Polynome.Maybe_zero -> ctx
-                | Polynome.Not_a_num -> mk_modulo t t1 t2 ctx
-                | _ -> assert false
-              in
-              P.create [coef, X.term_embed t] (Int 0) ty, ctx
-	  in
-	  P.add p p3, ctx
-	
-      | _ ->
-	let a, ctx' = X.make t in
-	let ctx = ctx' @ ctx in
-	match C.extract a with
-	  | Some p' -> P.add p (P.mult (P.create [] coef ty) p'), ctx
-	  | _ -> P.add p (P.create [coef, a] (Int 0) ty), ctx
+    | Sy.Op Sy.Minus , [t1;t2] ->
+      let p2, ctx = mke (minus_num coef) p t2 ctx in
+      mke coef p2 t1 ctx
+
+    | Sy.Op Sy.Modulo , [t1;t2] ->
+      let p1, ctx = mke coef (empty_polynome ty) t1 ctx in
+      let p2, ctx = mke (Int 1) (empty_polynome ty) t2 ctx in
+      let p3, ctx =
+        try P.modulo p1 p2, ctx
+        with e ->
+          let t = T.make mod_symb [t1; t2] Ty.Tint in
+          let ctx = match e with
+            | Division_by_zero | Polynome.Maybe_zero -> ctx
+            | Polynome.Not_a_num -> mk_modulo t t1 t2 ctx
+            | _ -> assert false
+          in
+          P.create [coef, X.term_embed t] (Int 0) ty, ctx
+      in
+      P.add p p3, ctx
+
+    | _ ->
+      let a, ctx' = X.make t in
+      let ctx = ctx' @ ctx in
+      match C.extract a with
+      | Some p' -> P.add p (P.mult (P.create [] coef ty) p'), ctx
+      | _ -> P.add p (P.create [coef, a] (Int 0) ty), ctx
 
   let arith_to_ac p = p
 (*
@@ -206,17 +206,17 @@ module Make
 
   and nb_vars_in_alien r =
     match C.extract r with
-      | Some p ->
-	  let l, _ = P.to_list p in
-          List.fold_left (fun acc (a, x) -> max acc (nb_vars_in_alien x)) 0 l
-      | None -> 1
+    | Some p ->
+      let l, _ = P.to_list p in
+      List.fold_left (fun acc (a, x) -> max acc (nb_vars_in_alien x)) 0 l
+    | None -> 1
 
   let max_list_ = function
     | [] -> 0
     | [ _, x ] -> nb_vars_in_alien x
     | (_, x) :: l ->
-	let acc = nb_vars_in_alien x in
-	List.fold_left (fun acc (_, x) -> max acc (nb_vars_in_alien x)) acc l
+      let acc = nb_vars_in_alien x in
+      List.fold_left (fun acc (_, x) -> max acc (nb_vars_in_alien x)) acc l
 
   let type_info p = P.type_info p
 
@@ -230,8 +230,8 @@ module Make
   let rec leaves p =
     let s =
       List.fold_left
-	(fun s (_, a) -> XS.union (xs_of_list (X.leaves a)) s)
-	XS.empty (fst (P.to_list p))
+        (fun s (_, a) -> XS.union (xs_of_list (X.leaves a)) s)
+        XS.empty (fst (P.to_list p))
     in
     XS.elements s
 
@@ -242,12 +242,12 @@ module Make
     let p  =
       List.fold_left
         (fun p (ai, xi) ->
-	   let xi' = X.subst x t xi in
-	   let p' = match C.extract xi' with
-	     | Some p' -> P.mult (P.create [] ai ty) p'
-	     | _ -> P.create [ai, xi'] (Int 0) ty
-	   in
-	   P.add p p')
+           let xi' = X.subst x t xi in
+           let p' = match C.extract xi' with
+             | Some p' -> P.mult (P.create [] ai ty) p'
+             | _ -> P.create [ai, xi'] (Int 0) ty
+           in
+           P.add p p')
         (P.create [] c ty) l
     in
     check_int (Exception.Unsolvable) p;
@@ -265,8 +265,8 @@ module Make
       if m </ Int 0 then
         if m >=/ minus_num b then m +/ b else assert false
       else
-        if m <=/ b then m else assert false
-	
+      if m <=/ b then m else assert false
+
     in
     if m </ b // (Int 2) then m else m -/ b
 
@@ -287,22 +287,22 @@ module Make
     List.fold_left
       (fun (l, sb) (b, y) ->
          if X.compare y x > 0 then
-	   let k = X.term_embed (fresh_name ()) in
-	   (b, k) :: l, (y, embed k)::sb
-	 else (b, y) :: l, sb)
+           let k = X.term_embed (fresh_name ()) in
+           (b, k) :: l, (y, embed k)::sb
+         else (b, y) :: l, sb)
       ([], []) l
 
   let is_mine_p = List.map (fun (x,p) -> x, is_mine p)
 
   let extract_min = function
-      | [] -> assert false
-      | [c] -> c, []
-      | (a, x) :: s ->
-	  List.fold_left
-	     (fun ((a, x), l) (b, y) ->
-		if abs_num a <=/ abs_num b then
-		  (a, x), ((b, y) :: l)
-		else (b, y), ((a, x):: l)) ((a, x),[]) s
+    | [] -> assert false
+    | [c] -> c, []
+    | (a, x) :: s ->
+      List.fold_left
+        (fun ((a, x), l) (b, y) ->
+           if abs_num a <=/ abs_num b then
+             (a, x), ((b, y) :: l)
+           else (b, y), ((a, x):: l)) ((a, x),[]) s
 
 
   (* Decision Procedures. Page 131 *)
@@ -316,26 +316,26 @@ module Make
     let l, sbs = subst_bigger x l in
     let p = P.create l b Ty.Tint in
     match a with
-      | Int 0 -> assert false
-      | Int 1 ->
-          (* 3.1. si a = 1 alors on a une substitution entiere pour x *)
-          let p = mult_const p (Int (-1)) in
-          (x, is_mine p) :: (is_mine_p sbs)
+    | Int 0 -> assert false
+    | Int 1 ->
+      (* 3.1. si a = 1 alors on a une substitution entiere pour x *)
+      let p = mult_const p (Int (-1)) in
+      (x, is_mine p) :: (is_mine_p sbs)
 
-      | Int (-1) ->
-          (* 3.2. si a = -1 alors on a une subst entiere pour x*)
-          (x,is_mine p) :: (is_mine_p sbs)
-      | _        ->
-          (* 4. sinon, (|a| <> 1) et a <> 0 *)
-          (* 4.1. on rend le coef a positif s'il ne l'est pas deja *)
-          let a, l, b =
-            if compare_num a (Int 0) < 0  then
-	      (minus_num a,
-	       List.map (fun (a,x) -> minus_num a,x) l, (minus_num b))
-            else (a, l, b)
-          in
-          (* 4.2. on reduit le systeme *)
-          omega_sigma sbs a x l b
+    | Int (-1) ->
+      (* 3.2. si a = -1 alors on a une subst entiere pour x*)
+      (x,is_mine p) :: (is_mine_p sbs)
+    | _        ->
+      (* 4. sinon, (|a| <> 1) et a <> 0 *)
+      (* 4.1. on rend le coef a positif s'il ne l'est pas deja *)
+      let a, l, b =
+        if compare_num a (Int 0) < 0  then
+          (minus_num a,
+           List.map (fun (a,x) -> minus_num a,x) l, (minus_num b))
+        else (a, l, b)
+      in
+      (* 4.2. on reduit le systeme *)
+      omega_sigma sbs a x l b
 
   and omega_sigma sbs a x l b =
 
@@ -390,9 +390,9 @@ module Make
     try
       let a, x = P.choose p in
       let p =
-	P.mult
-	  (P.create [] ((Int (-1)) // a) (P.type_info p))
-	  (P.remove x p)
+        P.mult
+          (P.create [] ((Int (-1)) // a) (P.type_info p))
+          (P.remove x p)
       in
       [x, is_mine p]
     with Not_found -> is_null p
@@ -420,16 +420,16 @@ module Make
 
   let fully_interpreted sb =
     match sb with
-      | Sy.Op (Sy.Plus | Sy.Minus) -> true
-      | _ -> false
+    | Sy.Op (Sy.Plus | Sy.Minus) -> true
+    | _ -> false
 
   let term_extract _ = None
 
   module Rel = Fm.Make (X)
-    (struct
-       include P
-       let poly_of = embed
-       let alien_of = is_mine
-     end)
+      (struct
+        include P
+        let poly_of = embed
+        let alien_of = is_mine
+      end)
 
 end

@@ -15,8 +15,8 @@ open Hashcons
 
 module S =
   Hashcons.Make_consed(struct include String
-		       let hash = Hashtbl.hash
-		       let equal = (=)     end)
+    let hash = Hashtbl.hash
+    let equal = (=)     end)
 
 module HS = struct
 
@@ -53,13 +53,13 @@ module HS = struct
 
   let rec compare_list l1 l2 =
     match l1, l2 with
-      | [], [] -> 0
-      | [], _ -> -1
-      | _, [] -> 1
-      | x::r1, y::r2 ->
-	let c = compare x y in
-	if c <> 0 then c
-	else compare_list r1 r2
+    | [], [] -> 0
+    | [], _ -> -1
+    | _, [] -> 1
+    | x::r1, y::r2 ->
+      let c = compare x y in
+      if c <> 0 then c
+      else compare_list r1 r2
 
   let rec list_mem_couple c = function
     | [] -> false

@@ -84,13 +84,13 @@ module Make (X : S) = struct
            | Int 1  -> "+", "", ""
            | Int -1 -> "-", "", ""
            | n ->
-               if n >/ Int 0 then "+", string_of_num n, "*"
-               else "-", string_of_num (minus_num n), "*"
+             if n >/ Int 0 then "+", string_of_num n, "*"
+             else "-", string_of_num (minus_num n), "*"
          in
          fprintf fmt "%s%s%s%a" s n op X.print x
       )p.m;
     let s, n = if p.c >=/ Int 0 then "+", string_of_num p.c
-    else "-", string_of_num (minus_num p.c) in
+      else "-", string_of_num (minus_num p.c) in
     fprintf fmt "%s%s" s n
 
 
@@ -107,19 +107,19 @@ module Make (X : S) = struct
   let create l c ty =
     let m =
       List.fold_left
-	(fun m (n, x) ->
-	   let n' = n +/ (find x m) in
-	   if n' =/ (Int 0) then M.remove x m else M.add x n' m) M.empty l
+        (fun m (n, x) ->
+           let n' = n +/ (find x m) in
+           if n' =/ (Int 0) then M.remove x m else M.add x n' m) M.empty l
     in
     { m = m; c = c; ty = ty }
 
   let add p1 p2 =
     let m =
       M.fold
-	(fun x a m ->
-	   let a' = (find x m) +/ a in
-	   if a' =/ (Int 0) then M.remove x m  else M.add x a' m)
-	p2.m p1.m
+        (fun x a m ->
+           let a' = (find x m) +/ a in
+           if a' =/ (Int 0) then M.remove x m  else M.add x a' m)
+        p2.m p1.m
     in
     { m = m; c = p1.c +/ p2.c; ty = p1.ty }
 
@@ -132,7 +132,7 @@ module Make (X : S) = struct
     let acx = mult_const p.c ax in
     let m =
       M.fold
-	(fun xi ai m -> M.add (X.mult x xi) (a */ ai) m) p.m acx.m
+        (fun xi ai m -> M.add (X.mult x xi) (a */ ai) m) p.m acx.m
     in
     { acx with m = m}
 
@@ -149,11 +149,11 @@ module Make (X : S) = struct
       else
         let p = mult_const ((Int 1) // p2.c) p1 in
         match M.is_empty p.m, p.ty with
-          | true, Ty.Tint  -> {p with c = floor_num p.c}, false
-          | true, Ty.Treal  ->  p, false
-          | false, Ty.Tint ->  p, true
-          | false, Ty.Treal ->  p, false
-          | _ -> assert false
+        | true, Ty.Tint  -> {p with c = floor_num p.c}, false
+        | true, Ty.Treal  ->  p, false
+        | false, Ty.Tint ->  p, true
+        | false, Ty.Treal ->  p, false
+        | _ -> assert false
     else raise Maybe_zero
 
 
@@ -161,8 +161,8 @@ module Make (X : S) = struct
     if M.is_empty p2.m then
       if p2.c =/ Int 0 then raise Division_by_zero
       else
-        if M.is_empty p1.m then { p1 with c = mod_num p1.c p2.c }
-        else raise Not_a_num
+      if M.is_empty p1.m then { p1 with c = mod_num p1.c p2.c }
+      else raise Not_a_num
     else raise Maybe_zero
 
   let find x p = M.find x p.m
@@ -173,9 +173,9 @@ module Make (X : S) = struct
     let tn= ref None in
     (*version I : prend le premier element de la table*)
     (try M.iter
-       (fun x a -> tn := Some (a, x); raise Exit) p.m with Exit -> ());
+           (fun x a -> tn := Some (a, x); raise Exit) p.m with Exit -> ());
     (*version II : prend le dernier element de la table i.e. le plus grand
-    M.iter (fun x a -> tn := Some (a, x)) p.m;*)
+      M.iter (fun x a -> tn := Some (a, x)) p.m;*)
     match !tn with Some p -> p | _ -> raise Not_found
 
   let subst x p1 p2 =
@@ -195,11 +195,11 @@ module Make (X : S) = struct
   let is_monomial p  =
     try
       M.fold
-	(fun x a r ->
-	   match r with
-	     | None -> Some (a, x, p.c)
-	     | _ -> raise Exit)
-	p.m None
+        (fun x a r ->
+           match r with
+           | None -> Some (a, x, p.c)
+           | _ -> raise Exit)
+        p.m None
     with Exit -> None
 
   let denominator = function

@@ -20,9 +20,9 @@ module ST = T.Set
 (* module SA = Literal.LT.Set *)
 
 module SA = Set.Make(struct
-  type t = Literal.LT.t * Explanation.t
-  let compare (s1,_) (s2,_) = Literal.LT.compare s1 s2
-end)
+    type t = Literal.LT.t * Explanation.t
+    let compare (s1,_) (s2,_) = Literal.LT.compare s1 s2
+  end)
 
 type elt = ST.t * SA.t
 
@@ -46,19 +46,19 @@ module Make (X : Sig.X) = struct
 
   let add_term k t mp =
     let g_t,g_a = find k mp in add k (ST.add t g_t,g_a) mp
-				
+
   let up_add g t rt lvs =
     let g = if mem rt g then g else add rt (ST.empty, SA.empty) g in
     L.fold_left (fun g x -> add_term x t g) g lvs
 
   let congr_add g lvs =
     match lvs with
-	[]    -> ST.empty
-      | x::ls ->
-	  L.fold_left
-	    (fun acc y -> ST.inter (fst(find y g)) acc)
-	    (fst(find x g)) ls
-	
+      []    -> ST.empty
+    | x::ls ->
+      L.fold_left
+        (fun acc y -> ST.inter (fst(find y g)) acc)
+        (fst(find x g)) ls
+
   let up_close_up g p v =
     let lvs = leaves v in
     let g_p = find p g in
@@ -66,9 +66,9 @@ module Make (X : Sig.X) = struct
 
   let congr_close_up g p touched =
     let inter = function
-	[] -> (ST.empty, SA.empty)
+        [] -> (ST.empty, SA.empty)
       | rx::l ->
-	  L.fold_left (fun acc x ->inter_tpl acc (find x g))(find rx g) l
+        L.fold_left (fun acc x ->inter_tpl acc (find x g))(find rx g) l
     in
     L.fold_left
       (fun (st,sa) tch -> union_tpl (st,sa)(inter (leaves tch)))
