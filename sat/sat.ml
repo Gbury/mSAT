@@ -21,7 +21,7 @@ module Fsat = struct
     let make i = if i > 0 then unsafe_make i else dummy
 
     let neg a = { a with pos = not a.pos }
-    let norm a = a, false
+    let norm a = unsafe_make a.var, not a.pos
 
     let hash = Hashtbl.hash
     let equal = (=)
@@ -57,14 +57,15 @@ module Tsat = struct
     (* We don't have anything to do since the SAT Solver already
      * does propagation and conflict detection *)
 
-    type t = unit
+    type t = int
     type formula = Fsat.t
     type explanation = Exp.t
 
     exception Inconsistent of explanation
 
-    let empty () = ()
-    let assume ~cs:_ _ _ _ = ()
+    let dummy = -1
+    let empty () = 0
+    let assume ~cs:_ _ _ _ = 0
 end
 
 module Make(Dummy : sig end) = struct

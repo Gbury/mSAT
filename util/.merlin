@@ -3,6 +3,7 @@ S ../sat/
 S ../common/
 
 B ../_build/
+B ../_build/util/
 B ../_build/sat/
 B ../_build/smt/
 B ../_build/common/

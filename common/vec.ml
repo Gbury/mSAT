@@ -113,6 +113,11 @@ let sort t f =
   Array.fast_sort f sub_arr;
   t.data <- sub_arr
 
+let iter f t =
+    for i = 0 to size t - 1 do
+        f (get t i)
+    done
+
 (*
 template<class V, class T>
 static inline void remove(V& ts, const T& t)

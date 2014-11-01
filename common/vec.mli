@@ -36,3 +36,4 @@ val move_to : 'a t -> 'a t -> unit
 val remove : 'a t -> 'a -> unit
 val fast_remove : 'a t -> 'a -> unit
 val sort : 'a t -> ('a -> 'a -> int) -> unit
+val iter : ('a -> unit) -> 'a t -> unit

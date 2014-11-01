@@ -19,7 +19,10 @@ module type S = sig
 
   exception Inconsistent of explanation
 
+  val dummy : t
   val empty : unit -> t
   val assume : cs:bool -> formula -> explanation -> t -> t
+  (** Any valid theory, either the empty one, or one returned by assume, should
+      be different from the dummy one. *)
 end
 

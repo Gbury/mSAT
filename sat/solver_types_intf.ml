@@ -73,7 +73,7 @@ module type S = sig
   val made_vars_info : unit -> int * var list
   val clear : unit -> unit
 
-  val pp_atom : Format.formatter -> atom -> unit
-  val pp_clause : Format.formatter -> clause -> unit
+  val pp_atom : Buffer.t -> atom -> unit
+  val pp_clause : Buffer.t -> clause -> unit
 end
 

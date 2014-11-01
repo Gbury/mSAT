@@ -7,10 +7,13 @@ let init () =
         [v.(0); v.(1)];
         [S.neg v.(0); v.(2)];
         [S.neg v.(1); v.(2)];
+      ];
+      [
         [v.(3); v.(4)];
         [S.neg v.(3); S.neg v.(2)];
         [S.neg v.(4); S.neg v.(2)];
-    ] ]
+      ]
+    ]
 
 let print_assign fmt () =
     S.iter_atoms (fun a ->
@@ -20,6 +23,7 @@ let print_assign fmt () =
     )
 
 let main () =
+    Log.set_debug 10;
     Format.printf "Hello World !@.";
     List.iter (fun l ->
         List.iter (fun c -> Format.printf "Adding : %a@."

@@ -65,7 +65,7 @@ module Make(Stypes : Solver_types.S) = struct
   let print fmt ex =
     fprintf fmt "{";
     S.iter (function
-        | Atom a -> fprintf fmt "%a, " Stypes.pp_atom a
+        | Atom a -> fprintf fmt "%s, " (Log.on_buffer Stypes.pp_atom a)
         | Fresh i -> fprintf fmt "Fresh%d " i) ex;
     fprintf fmt "}"
 

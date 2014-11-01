@@ -136,7 +136,7 @@ module Make (F : Formula_intf.S)
     nb_init_clauses = 0;
     model = Vec.make 0 dummy_var;
     tenv = Th.empty();
-    tenv_queue = Vec.make 100 (Th.empty());
+    tenv_queue = Vec.make 100 Th.dummy;
     tatoms_queue = Queue.create ();
   }
 
@@ -187,11 +187,16 @@ module Make (F : Formula_intf.S)
 
   let new_decision_level() =
     Vec.push env.trail_lim (Vec.size env.trail);
-    Vec.push env.tenv_queue env.tenv (* save the current tenv *)
+    Vec.push env.tenv_queue env.tenv; (* save the current tenv *)
+    Log.debug 5 "New decision level : %d (%d in env queue)(%d in trail)"
+        (Vec.size env.trail_lim) (Vec.size env.tenv_queue) (Vec.size env.trail);
+    ()
 
   let attach_clause c =
     Vec.push (Vec.get c.atoms 0).neg.watched c;
     Vec.push (Vec.get c.atoms 1).neg.watched c;
+    Log.debug 8 "%a <-- %a" St.pp_atom (Vec.get c.atoms 0).neg St.pp_clause c;
+    Log.debug 8 "%a <-- %a" St.pp_atom (Vec.get c.atoms 1).neg St.pp_clause c;
     if c.learnt then
       env.learnts_literals <- env.learnts_literals + Vec.size c.atoms
     else
@@ -220,6 +225,7 @@ module Make (F : Formula_intf.S)
 
   (* annule tout jusqu'a lvl *exclu*  *)
   let cancel_until lvl =
+    Log.debug 5 "Bactracking to decision level %d (excluded)" lvl;
     if decision_level () > lvl then begin
       env.qhead <- Vec.get env.trail_lim lvl;
       for c = Vec.size env.trail - 1 downto env.qhead do
@@ -232,6 +238,7 @@ module Make (F : Formula_intf.S)
         insert_var_order a.var
       done;
       Queue.clear env.tatoms_queue;
+      Log.debug 0 "Getting env : %d / %d" lvl (Vec.size env.tenv_queue);
       env.tenv <- Vec.get env.tenv_queue lvl; (* recover the right tenv *)
       Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
       Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - lvl);
@@ -245,8 +252,8 @@ module Make (F : Formula_intf.S)
     if v.level>= 0 then  begin
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit ()
-    end
-    else v
+    end else
+        v
 
   let enqueue a lvl reason =
     assert (not a.is_true && not a.neg.is_true &&
@@ -256,7 +263,7 @@ module Make (F : Formula_intf.S)
     a.is_true <- true;
     a.var.level <- lvl;
     a.var.reason <- reason;
-    (*eprintf "enqueue: %a@." Debug.atom a; *)
+    Log.debug 8 "Enqueue: %a" pp_atom a;
     Vec.push env.trail a
 
   let progress_estimate () =
@@ -274,7 +281,7 @@ module Make (F : Formula_intf.S)
   let propagate_in_clause a c i watched new_sz =
     let atoms = c.atoms in
     let first = Vec.get atoms 0 in
-    if first == a.neg then begin (* le litiral false_ doit etre dans .(1) *)
+    if first == a.neg then begin (* le literal faux doit etre dans .(1) *)
       Vec.set atoms 0 (Vec.get atoms 1);
       Vec.set atoms 1 first
     end;
@@ -293,6 +300,7 @@ module Make (F : Formula_intf.S)
             Vec.set atoms 1 ak;
             Vec.set atoms k a.neg;
             Vec.push ak.neg.watched c;
+            Log.debug 8 "New watcher (%a) for clause : %a" St.pp_atom ak.neg St.pp_clause c;
             raise Exit
           end
         done;
@@ -304,18 +312,23 @@ module Make (F : Formula_intf.S)
             Vec.set watched !new_sz (Vec.get watched k);
             incr new_sz;
           done;
+          Log.debug 3 "Conflict found : %a" St.pp_clause c;
           raise (Conflict c)
         end
         else begin
           (* la clause est unitaire *)
           Vec.set watched !new_sz c;
           incr new_sz;
+          Log.debug 5 "Unit clause : %a" St.pp_clause c;
           enqueue first (decision_level ()) (Some c)
         end
       with Exit -> ()
 
   let propagate_atom a res =
+    Log.debug 8 "Propagating %a" St.pp_atom a;
     let watched = a.watched in
+    Log.debug 10 "Watching %a :" St.pp_atom a;
+    Vec.iter (fun c -> Log.debug 10 "  %a" St.pp_clause c) watched;
     let new_sz_w = ref 0 in
     begin
       try
@@ -379,7 +392,6 @@ module Make (F : Formula_intf.S)
     env.propagations <- env.propagations + !num_props;
     env.simpDB_props <- env.simpDB_props - !num_props;
     !res
-
 
   let analyze c_clause =
     let pathC  = ref 0 in
@@ -495,6 +507,7 @@ module Make (F : Formula_intf.S)
       l := List.rev_append v.vpremise !l;
       match v.reason with None -> () | Some c -> l := c :: !l
     done;
+    (*
     if false then begin
       eprintf "@.>>UNSAT Deduction made from:@.";
       List.iter
@@ -502,6 +515,7 @@ module Make (F : Formula_intf.S)
            eprintf "    %a@." pp_clause hc
         )!l;
     end;
+    *)
     let uc = HUC.create 17 in
     let rec roots todo =
       match todo with
@@ -520,6 +534,7 @@ module Make (F : Formula_intf.S)
         | prems -> roots prems; roots r
     in roots !l;
     let unsat_core = HUC.fold (fun c _ l -> c :: l) uc [] in
+    (*
     if false then begin
       eprintf "@.>>UNSAT_CORE:@.";
       List.iter
@@ -527,6 +542,7 @@ module Make (F : Formula_intf.S)
            eprintf "    %a@." pp_clause hc
         )unsat_core;
     end;
+    *)
     env.is_unsat <- true;
     env.unsat_core <- unsat_core;
     raise (Unsat unsat_core)
@@ -540,6 +556,7 @@ module Make (F : Formula_intf.S)
            match v.reason with None -> l | Some c -> c :: l
         ) dep []
     in
+    (*
     if false then begin
       eprintf "@.>>T-UNSAT Deduction made from:@.";
       List.iter
@@ -547,6 +564,7 @@ module Make (F : Formula_intf.S)
            eprintf "    %a@." pp_clause hc
         )l;
     end;
+    *)
     let uc = HUC.create 17 in
     let rec roots todo =
       match todo with
@@ -565,6 +583,7 @@ module Make (F : Formula_intf.S)
         | prems -> roots prems; roots r
     in roots l;
     let unsat_core = HUC.fold (fun c _ l -> c :: l) uc [] in
+    (*
     if false then begin
       eprintf "@.>>T-UNSAT_CORE:@.";
       List.iter
@@ -572,6 +591,7 @@ module Make (F : Formula_intf.S)
            eprintf "    %a@." pp_clause hc
         ) unsat_core;
     end;
+    *)
     env.is_unsat <- true;
     env.unsat_core <- unsat_core;
     raise (Unsat unsat_core)
@@ -739,7 +759,7 @@ module Make (F : Formula_intf.S)
           let next = pick_branch_lit () in
           let current_level = decision_level () in
           assert (next.level < 0);
-          (* eprintf "decide: %a@." Debug.atom next.pa; *)
+          Log.debug 5 "Deciding on %a" St.pp_atom next.pa;
           enqueue next.pa current_level None
     done
 
@@ -825,7 +845,6 @@ module Make (F : Formula_intf.S)
         let clause = make_clause name atoms size false init in
         attach_clause clause;
         Vec.push env.clauses clause;
-
         if a.neg.is_true then begin
           let lvl = List.fold_left (fun m a -> max m a.var.level) 0 atoms in
           cancel_until lvl;

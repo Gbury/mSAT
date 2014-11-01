@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
+open Printf
 
 let ale = Hstring.make "<="
 let alt = Hstring.make "<"
@@ -186,23 +186,23 @@ module Make (F : Formula_intf.S) = struct
     else if a.neg.is_true then sprintf ":0%s" (level a)
     else ":X"
 
-  let pp_premise fmt v =
-    List.iter (fun {name=name} -> fprintf fmt "%s," name) v
+  let pp_premise b v =
+    List.iter (fun {name=name} -> bprintf b "%s," name) v
 
-  let pp_atom fmt a =
-    fprintf fmt "%s%d%s [lit:%a] vpremise={{%a}}"
-      (sign a) (a.var.vid+1) (value a) F.print a.lit
+  let pp_atom b a =
+    bprintf b "%s%d%s [lit:%s] vpremise={{%a}}"
+      (sign a) (a.var.vid+1) (value a) (Log.on_fmt F.print a.lit)
       pp_premise a.var.vpremise
 
-  let pp_atoms_list fmt l = List.iter (fprintf fmt "%a ; " pp_atom) l
-  let pp_atoms_array fmt arr = Array.iter (fprintf fmt "%a ; " pp_atom) arr
+  let pp_atoms_list b l = List.iter (bprintf b "%a ; " pp_atom) l
+  let pp_atoms_array b arr = Array.iter (bprintf b "%a ; " pp_atom) arr
 
-  let pp_atoms_vec fmt vec =
+  let pp_atoms_vec b vec =
     for i = 0 to Vec.size vec - 1 do
-      fprintf fmt "%a ; " pp_atom (Vec.get vec i)
+      bprintf b "%a ; " pp_atom (Vec.get vec i)
     done
 
-  let pp_clause fmt {name=name; atoms=arr; cpremise=cp} =
-    fprintf fmt "%s:{ %a} cpremise={{%a}}" name pp_atoms_vec arr pp_premise cp
+  let pp_clause b {name=name; atoms=arr; cpremise=cp} =
+    bprintf b "%s:{ %a} cpremise={{%a}}" name pp_atoms_vec arr pp_premise cp
 
 end
