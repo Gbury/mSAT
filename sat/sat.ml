@@ -1,6 +1,7 @@
 (* Copyright 2014 Guillaume Bury *)
 
 module Fsat = struct
+  exception Dummy
   exception Out_of_int
 
   (* Until the constant true_ and false_ are not needed anymore,
@@ -9,6 +10,8 @@ module Fsat = struct
 
   let max_lit = min max_int (- min_int)
   let max_index = ref 0
+
+  let make i = if i <> 0 then i else raise Dummy
 
   let dummy = 0
 
@@ -64,6 +67,8 @@ end
 module Make(Dummy : sig end) = struct
   module SatSolver = Solver.Make(Fsat)(Stypes)(Exp)(Tsat)
 
+  exception Bad_atom
+
   type res =
     | Sat
     | Unsat
@@ -73,8 +78,19 @@ module Make(Dummy : sig end) = struct
   type atom = Fsat.t
   type state = SatSolver.t
 
+  let new_atom () =
+      try
+          Fsat.create ()
+      with Fsat.Out_of_int ->
+          raise Bad_atom
+
+  let make i =
+      try
+          Fsat.make i
+      with Fsat.Dummy ->
+          raise Bad_atom
+
   let neg = Fsat.neg
-  let new_atom = Fsat.create
 
   let hash = Fsat.hash
   let equal = Fsat.equal

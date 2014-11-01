@@ -1,25 +1,32 @@
 
 module S = Sat.Make(struct end)
 
-let anon_fun = fun _ -> ()
-let usage = "Coming soon..."
-let argspec = [
+(* Arguments parsing *)
+let file = ref ""
+
+let input_file = fun s -> file := s
+let usage = "Usage : main [options] <file>"
+let argspec = Arg.align [
     "-v", Arg.Int (fun i -> Log.set_debug i),
-    "Sets the debug verbose level";
+    "<lvl> Sets the debug verbose level";
 ]
 
-(* Temp until lexer/parsezr is set up *)
-let init () =
-  let v = Array.init 5 (fun _ -> S.new_atom ()) in
-  [ [
-    [v.(0); v.(1)];
-    [S.neg v.(0); v.(2)];
-    [S.neg v.(1); v.(2)];
-    [v.(3); v.(4)];
-    [S.neg v.(3); S.neg v.(2)];
-    [S.neg v.(4); S.neg v.(2)];
-    ]
-  ]
+(* Entry file parsing *)
+let get_cnf () =
+    let chan = open_in !file in
+    let lexbuf = Lexing.from_channel chan in
+    let l = Parsedimacs.file Lexdimacs.token lexbuf in
+    List.map (List.map S.make) l
+
+let print_cnf cnf =
+    Format.printf "CNF :@\n";
+    List.iter (fun c ->
+        Format.fprintf Format.std_formatter "%a;@\n"
+        (fun fmt -> List.iter (fun a ->
+            Format.fprintf fmt "%a@ " S.print_atom a
+            )
+        ) c
+    ) cnf
 
 (* Iterate over all variables created *)
 let print_assign fmt () =
@@ -30,14 +37,14 @@ let print_assign fmt () =
     )
 
 let main () =
-  Arg.parse argspec anon_fun usage;
-  List.iter (fun l ->
-      List.iter (fun c -> Format.printf "Adding : %a@."
-                    (fun _ -> List.iter (fun a -> Format.printf "%a " S.print_atom a)) c) l;
-      S.assume l;
-      match S.solve () with
-      | S.Sat -> Format.printf "Sat@\n%a@." print_assign ()
-      | S.Unsat -> Format.printf "Unsat@.") (init ());
+  Arg.parse argspec input_file usage;
+  if !file = "" then begin
+      Arg.usage argspec usage;
+      exit 2
+  end;
+  let cnf = get_cnf () in
+  print_cnf cnf;
+  ()
 ;;
 
 main ()
