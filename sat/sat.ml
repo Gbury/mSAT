@@ -5,47 +5,40 @@ module Fsat = struct
 
   (* Until the constant true_ and false_ are not needed anymore,
    * wa can't simply use sigend integers to represent literals *)
-  type t = {
-    (* Invariant : var >= 0 *)
-    var : int;
-    pos : bool;
-  }
+  type t = int
 
+  let max_lit = min max_int (- min_int)
   let max_index = ref 0
 
-  let true_ = { var = 0; pos = true }
-  let false_ = { var = 0; pos = false }
-  let dummy = { var = -1; pos = true }
+  let dummy = 0
 
-  let unsafe_make i = { var = i; pos = true }
-  let make i = if i > 0 then unsafe_make i else dummy
-
-  let neg a = { a with pos = not a.pos }
-  let norm a = unsafe_make a.var, not a.pos
+  let neg a = - a
+  let norm a = abs a, a < 0
 
   let hash = Hashtbl.hash
   let equal = (=)
   let compare = Pervasives.compare
 
-  let label a = Hstring.make ""
+  let _str = Hstring.make ""
+  let label a = _str
   let add_label _ _ = ()
 
   let create, iter =
     let create () =
-      if !max_index <> max_int then
-        (incr max_index; unsafe_make !max_index)
+      if !max_index <> max_lit then
+          (incr max_index; !max_index)
       else
         raise Out_of_int
     in
     let iter: (t -> unit) -> unit = fun f ->
       for j = 1 to !max_index do
-        f (unsafe_make j)
+        f j
       done
     in
     create, iter
 
   let print fmt a =
-    Format.fprintf fmt "%s%d" (if not a.pos then "~" else "") a.var
+    Format.fprintf fmt "%s%d" (if a < 0 then "~" else "") (abs a)
 
 end
 

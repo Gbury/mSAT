@@ -238,7 +238,6 @@ module Make (F : Formula_intf.S)
         insert_var_order a.var
       done;
       Queue.clear env.tatoms_queue;
-      Log.debug 0 "Getting env : %d / %d" lvl (Vec.size env.tenv_queue);
       env.tenv <- Vec.get env.tenv_queue lvl; (* recover the right tenv *)
       Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
       Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - lvl);
@@ -620,18 +619,20 @@ module Make (F : Formula_intf.S)
       | [] -> assert false
       | [fuip] ->
         assert (blevel = 0);
+        Log.debug 2 "Unit clause learnt : %a" St.pp_atom fuip;
         fuip.var.vpremise <- history;
         enqueue fuip 0 None
       | fuip :: _ ->
         let name = fresh_lname () in
         let lclause = make_clause name learnt size true history in
+        Log.debug 2 "New clause learnt : %a" St.pp_clause lclause;
         Vec.push env.learnts lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
         enqueue fuip blevel (Some lclause)
     end;
     var_decay_activity ();
-    clause_decay_activity()
+    clause_decay_activity ()
 
   let check_inconsistence_of dep =
     try
