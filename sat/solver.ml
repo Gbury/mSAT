@@ -189,7 +189,7 @@ module Make (F : Formula_intf.S)
     Vec.push env.trail_lim (Vec.size env.trail);
     Vec.push env.tenv_queue env.tenv; (* save the current tenv *)
     Log.debug 5 "New decision level : %d (%d in env queue)(%d in trail)"
-        (Vec.size env.trail_lim) (Vec.size env.tenv_queue) (Vec.size env.trail);
+      (Vec.size env.trail_lim) (Vec.size env.tenv_queue) (Vec.size env.trail);
     ()
 
   let attach_clause c =
@@ -253,7 +253,7 @@ module Make (F : Formula_intf.S)
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit ()
     end else
-        v
+      v
 
   let enqueue a lvl reason =
     assert (not a.is_true && not a.neg.is_true &&

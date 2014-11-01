@@ -114,9 +114,9 @@ let sort t f =
   t.data <- sub_arr
 
 let iter f t =
-    for i = 0 to size t - 1 do
-        f (get t i)
-    done
+  for i = 0 to size t - 1 do
+    f (get t i)
+  done
 
 (*
 template<class V, class T>
