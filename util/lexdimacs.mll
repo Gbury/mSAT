@@ -11,6 +11,6 @@ rule token = parse
   | 'p'                     { P }
   | "cnf"                   { CNF }
   | '\n'                    { EOL }
-  | "c " [^ '\n']* '\n'      { token lexbuf }
+  | "c " [^ '\n']* '\n'     { token lexbuf }
   | ['-']? number           { LIT (int_of_string (Lexing.lexeme lexbuf)) }
   | eof                     { EOF }

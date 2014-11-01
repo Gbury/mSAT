@@ -20,7 +20,9 @@ doc:
 	$(COMP) $(FLAGS) $(DIRS) $(DOC)
 
 test: $(TEST)
-	./tests/main tests/test-0.d
+
+test-full: $(TEST)
+	./tests/run
 
 $(TEST): $(LIB)
 	$(COMP) $(FLAGS) $(DIRS) $(TEST)

@@ -1,3 +1,3 @@
-c First test
+c Status: SAT
 p cnf 2 1
 1 2 0

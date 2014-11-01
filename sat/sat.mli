@@ -18,7 +18,7 @@ module Make(Dummy: sig end) : sig
 
   val make : int -> atom
   (** Returns the literal corresponding to the integer.
-      @raise bad_atom if given [0] as argument.*)
+      @raise Bad_atom if given [0] as argument.*)
 
   val neg : atom -> atom
   (** [neg a] returns the negation of a literal. Involutive, i.e [neg (neg a) = a]. *)

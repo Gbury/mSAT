@@ -1,0 +1,19 @@
+#!/bin/bash
+
+solvertest () {
+    for f in `find $1 -name *.d -type f`
+    do
+        echo -ne "\r\033[K Testing $f "
+        tests/main $f | grep $2 > /dev/null 2> /dev/null
+        RET=$?
+        if [ $RET -ne 0 ];
+        then
+            echo -e "\r\033[K\e[31m[KO]\e[0m $f"
+            exit 2
+        fi
+    done
+    echo -e "\r\033[K\e[32m[OK]\e[0m $2"
+}
+
+solvertest "tests/sat/" "Sat"
+solvertest "tests/unsat/" "Unsat"

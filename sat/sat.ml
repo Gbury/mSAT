@@ -11,7 +11,12 @@ module Fsat = struct
   let max_lit = min max_int (- min_int)
   let max_index = ref 0
 
-  let make i = if i <> 0 then i else raise Dummy
+  let make i =
+      if i <> 0 then begin
+          max_index := max !max_index (abs i);
+          i
+      end else
+          raise Dummy
 
   let dummy = 0
 
