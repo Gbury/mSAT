@@ -14,6 +14,7 @@
 (**************************************************************************)
 
 module type S = sig
+  (** Signature of formulas that parametrises the SMT Solver Module. *)
 
   type t
   (** The type of atomic formulas. *)
@@ -21,15 +22,14 @@ module type S = sig
   val true_ : t
   val false_ : t
   val dummy : t
-  (** Formula constants. [dummy] should be different from any other formula. *)
+  (** Formula constants. A valid formula should never be physically equal to [dummy] *)
 
   val neg : t -> t
   (** Formula negation *)
 
   val norm : t -> t * bool
   (** Returns a 'normalized' form of the formula, possibly negated (in which case return true).
-      WARNING: for the solver to cork correctly, the normalisation function must be so that
-      [a] and  [neg a] normalises to the same formula. *)
+      [norm] must be so that [a] and [neg a] normalises to the same formula. *)
 
   val hash : t -> int
   val equal : t -> t -> bool

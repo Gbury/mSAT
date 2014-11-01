@@ -15,3 +15,4 @@
 module type S = Explanation_intf.S
 
 module Make : functor (St : Solver_types.S) -> S with type atom = St.atom
+(** Functor to create the types of explanations used in the Solver Module. *)

@@ -12,6 +12,8 @@
 (**************************************************************************)
 
 module type S = sig
+  (** The signatures of clauses used in the Solver. *)
+
   type formula
 
   type var = {

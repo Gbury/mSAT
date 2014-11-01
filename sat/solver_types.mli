@@ -14,3 +14,4 @@
 module type S = Solver_types_intf.S
 
 module Make : functor (F : Formula_intf.S) -> S with type formula = F.t
+(** Functor to instantiate the types of clauses for the Solver. *)

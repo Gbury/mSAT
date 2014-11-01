@@ -1,7 +1,10 @@
 sat/Formula_intf
 sat/Explanation
+sat/Explanation_intf
+sat/Sat
 sat/Solver
 sat/Solver_types
+sat/Solver_types_intf
 sat/Theory_intf
 
 #smt/Arith

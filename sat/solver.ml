@@ -917,10 +917,9 @@ module Make (F : Formula_intf.S)
     env.model <- Vec.make 0 dummy_var;
     env.trail <- Vec.make 601 dummy_atom;
     env.trail_lim <- Vec.make 601 (-105);
-    env.tenv_queue <- Vec.make 100 (empty_theory);
+    env.tenv_queue <- Vec.make 100 Th.dummy;
     env.tatoms_queue <- Queue.create ();
     St.clear ()
-
 
   let copy (v : 'a) : 'a = Marshal.from_string (Marshal.to_string v []) 0
 

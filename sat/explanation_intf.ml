@@ -13,6 +13,7 @@
 (**************************************************************************)
 
 module type S = sig
+  (** Signature for explanations. To be modified to allow passing bulks of assumptions to the theories. *)
 
   type t
   type exp
