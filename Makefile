@@ -3,8 +3,9 @@
 LOG=build.log
 COMP=ocamlbuild -log $(LOG) -use-ocamlfind -package num,zarith,unix -classic-display
 FLAGS=
-DIRS=-Is sat,smt,common
+DIRS=-Is sat,smt,common,util
 DOC=msat.docdir/index.html
+TEST=test.d.byte
 
 NAME=msat
 
@@ -17,6 +18,13 @@ $(LIB):
 
 doc:
 	$(COMP) $(FLAGS) $(DIRS) $(DOC)
+
+test: $(TEST)
+	./tests/main
+
+$(TEST): $(LIB)
+	$(COMP) $(FLAGS) $(DIRS) $(TEST)
+	cp $(TEST) tests/main && rm $(TEST)
 
 log:
 	cat _build/$(LOG) || true

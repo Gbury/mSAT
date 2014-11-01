@@ -3,6 +3,8 @@
 module Fsat = struct
     exception Out_of_int
 
+    (* Until the constant true_ and false_ are not needed anymore,
+     * wa can't simply use sigend integers to represent literals *)
     type t = {
         (* Invariant : var >= 0 *)
         var : int;
@@ -65,10 +67,39 @@ module Tsat = struct
     let assume ~cs:_ _ _ _ = ()
 end
 
-module Sat = struct
+module Make(Dummy : sig end) = struct
     module SatSolver = Solver.Make(Fsat)(Stypes)(Exp)(Tsat)
+
+    type res =
+        | Sat
+        | Unsat
+
+    let _i = ref 0
 
     type atom = Fsat.t
     type state = SatSolver.t
 
+    let neg = Fsat.neg
+    let new_atom = Fsat.create
+
+    let hash = Fsat.hash
+    let equal = Fsat.equal
+    let compare = Fsat.compare
+
+    let print_atom = Fsat.print
+    let iter_atoms = Fsat.iter
+
+    let solve () =
+        try
+            SatSolver.solve ();
+            assert false
+        with
+        | SatSolver.Sat -> Sat
+        | SatSolver.Unsat _ -> Unsat
+
+    let assume l =
+        incr _i;
+        SatSolver.assume l !_i
+
+    let eval = SatSolver.eval
 end
