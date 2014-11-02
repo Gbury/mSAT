@@ -25,6 +25,9 @@ module type S = sig
   (** The type of explanations. Should be compatible with
       Explanations.S.t with module St = Solver_types.S with type formula = fomula *)
 
+  type proof
+  (** A custom type for the proofs of lemmas produced by the theory. *)
+
   exception Inconsistent of explanation
   (** Exception raised by the theory when assuming an incoherent set of formulas. *)
 

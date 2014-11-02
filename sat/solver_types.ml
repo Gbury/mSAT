@@ -13,14 +13,6 @@
 
 open Printf
 
-let ale = Hstring.make "<="
-let alt = Hstring.make "<"
-let agt = Hstring.make ">"
-
-let is_le n = Hstring.compare n ale = 0
-let is_lt n = Hstring.compare n alt = 0
-let is_gt n = Hstring.compare n agt = 0
-
 module type S = Solver_types_intf.S
 
 module Make (F : Formula_intf.S) = struct
@@ -85,13 +77,6 @@ module Make (F : Formula_intf.S) = struct
 
   module MA = Map.Make(F)
   type varmap = var MA.t
-
-  let ale = Hstring.make "<="
-  let alt = Hstring.make "<"
-  let agt = Hstring.make ">"
-  let is_le n = Hstring.compare n ale = 0
-  let is_lt n = Hstring.compare n alt = 0
-  let is_gt n = Hstring.compare n agt = 0
 
   let normal_form = F.norm
 

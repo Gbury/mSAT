@@ -1,6 +1,8 @@
 sat/Formula_intf
 sat/Explanation
 sat/Explanation_intf
+sat/Res
+sat/Res_intf
 sat/Sat
 sat/Solver
 sat/Solver_types

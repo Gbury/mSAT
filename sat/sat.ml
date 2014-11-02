@@ -61,6 +61,7 @@ module Tsat = struct
   type t = int
   type formula = Fsat.t
   type explanation = Exp.t
+  type proof = unit
 
   exception Inconsistent of explanation
 
