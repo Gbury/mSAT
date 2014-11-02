@@ -12,11 +12,11 @@ module Fsat = struct
   let max_index = ref 0
 
   let make i =
-      if i <> 0 then begin
-          max_index := max !max_index (abs i);
-          i
-      end else
-          raise Dummy
+    if i <> 0 then begin
+      max_index := max !max_index (abs i);
+      i
+    end else
+      raise Dummy
 
   let dummy = 0
 
@@ -34,7 +34,7 @@ module Fsat = struct
   let create, iter =
     let create () =
       if !max_index <> max_lit then
-          (incr max_index; !max_index)
+        (incr max_index; !max_index)
       else
         raise Out_of_int
     in
@@ -84,16 +84,16 @@ module Make(Dummy : sig end) = struct
   type state = SatSolver.t
 
   let new_atom () =
-      try
-          Fsat.create ()
-      with Fsat.Out_of_int ->
-          raise Bad_atom
+    try
+      Fsat.create ()
+    with Fsat.Out_of_int ->
+      raise Bad_atom
 
   let make i =
-      try
-          Fsat.make i
-      with Fsat.Dummy ->
-          raise Bad_atom
+    try
+      Fsat.make i
+    with Fsat.Dummy ->
+      raise Bad_atom
 
   let neg = Fsat.neg
 

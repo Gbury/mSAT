@@ -414,8 +414,9 @@ module Make (F : Formula_intf.S)
           var_bump_activity q.var;
           q.var.seen <- true;
           seen := q :: !seen;
-          if q.var.level >= decision_level () then incr pathC
-          else begin
+          if q.var.level >= decision_level () then begin
+            incr pathC
+          end else begin
             learnt := q :: !learnt;
             incr size;
             blevel := max !blevel q.var.level

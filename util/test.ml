@@ -38,39 +38,39 @@ let input_file = fun s -> file := s
 let usage = "Usage : main [options] <file>"
 let argspec = Arg.align [
     "-v", Arg.Int (fun i -> Log.set_debug i),
-        "<lvl> Sets the debug verbose level";
+    "<lvl> Sets the debug verbose level";
     "-t", Arg.String (int_arg time_limit),
-        "<t>[smhd] Sets the time limit for the sat solver";
+    "<t>[smhd] Sets the time limit for the sat solver";
     "-s", Arg.String (int_arg size_limit),
-        "<s>[kMGT] Sets the size limit for the sat solver";
+    "<s>[kMGT] Sets the size limit for the sat solver";
     "-model", Arg.Set p_assign,
-        " Outputs the boolean model found if sat";
-]
+    " Outputs the boolean model found if sat";
+  ]
 
 (* Limits alarm *)
 let check () =
-    let t = Sys.time () in
-    let heap_size = (Gc.quick_stat ()).Gc.heap_words in
-    let s = float heap_size *. float Sys.word_size /. 8. in
-    if t > !time_limit then
-        raise Out_of_time
-    else if s > !size_limit then
-        raise Out_of_space
+  let t = Sys.time () in
+  let heap_size = (Gc.quick_stat ()).Gc.heap_words in
+  let s = float heap_size *. float Sys.word_size /. 8. in
+  if t > !time_limit then
+    raise Out_of_time
+  else if s > !size_limit then
+    raise Out_of_space
 
 (* Entry file parsing *)
 let get_cnf () =
-    let chan = open_in !file in
-    let lexbuf = Lexing.from_channel chan in
-    let l = Parsedimacs.file Lexdimacs.token lexbuf in
-    List.map (List.map S.make) l
+  let chan = open_in !file in
+  let lexbuf = Lexing.from_channel chan in
+  let l = Parsedimacs.file Lexdimacs.token lexbuf in
+  List.map (List.map S.make) l
 
 let print_cnf cnf =
-    Format.printf "CNF :@\n";
-    List.iter (fun c ->
-        Format.fprintf Format.std_formatter "%a;@\n"
+  Format.printf "CNF :@\n";
+  List.iter (fun c ->
+      Format.fprintf Format.std_formatter "%a;@\n"
         (fun fmt -> List.iter (fun a ->
-            Format.fprintf fmt "%a@ " S.print_atom a
-            )
+             Format.fprintf fmt "%a@ " S.print_atom a
+           )
         ) c
     ) cnf
 
@@ -86,8 +86,8 @@ let main () =
   (* Administrative duties *)
   Arg.parse argspec input_file usage;
   if !file = "" then begin
-      Arg.usage argspec usage;
-      exit 2
+    Arg.usage argspec usage;
+    exit 2
   end;
   let al = Gc.create_alarm check in
 
@@ -96,19 +96,19 @@ let main () =
   S.assume cnf;
   match S.solve () with
   | S.Sat ->
-          Format.printf "Sat@.";
-          if !p_assign then
-              print_assign Format.std_formatter ()
+    Format.printf "Sat@.";
+    if !p_assign then
+      print_assign Format.std_formatter ()
   | S.Unsat ->
-          Format.printf "Unsat@."
+    Format.printf "Unsat@."
 ;;
 
 try
-    main ()
+  main ()
 with
 | Out_of_time ->
-        Format.printf "Time limit exceeded@.";
-    exit 2
+  Format.printf "Time limit exceeded@.";
+  exit 2
 | Out_of_space ->
-    Format.printf "Size limit exceeded@.";
-    exit 3
+  Format.printf "Size limit exceeded@.";
+  exit 3
