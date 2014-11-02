@@ -4,7 +4,7 @@ solvertest () {
     for f in `find $1 -name *.d -type f`
     do
         echo -ne "\r\033[K Testing $f "
-        tests/main $f | grep $2 > /dev/null 2> /dev/null
+        tests/main -t 5s -s 1G $f | grep $2 > /dev/null 2> /dev/null
         RET=$?
         if [ $RET -ne 0 ];
         then
