@@ -230,12 +230,7 @@ module Make (F : Formula_intf.S)
   let remove_clause c = detach_clause c
 
   let satisfied c =
-    try
-      for i = 0 to Vec.size c.atoms - 1 do
-        if (Vec.get c.atoms i).is_true then raise Exit
-      done;
-      false
-    with Exit -> true
+    Vec.exists (fun atom -> atom.is_true) c.atoms
 
   (* annule tout jusqu'a lvl *exclu*  *)
   let cancel_until lvl =
@@ -391,6 +386,7 @@ module Make (F : Formula_intf.S)
       (* eprintf "th inconsistent : %a @." Ex.print dep; *)
       Some dep
 
+  (* boolean propagation, using unit clauses *)
   let propagate () =
     let num_props = ref 0 in
     let res = ref None in
@@ -406,6 +402,7 @@ module Make (F : Formula_intf.S)
     env.simpDB_props <- env.simpDB_props - !num_props;
     !res
 
+  (* conflict analysis *)
   let analyze c_clause =
     let pathC  = ref 0 in
     let learnt = ref [] in
@@ -453,6 +450,8 @@ module Make (F : Formula_intf.S)
     List.iter (fun q -> q.var.seen <- false) !seen;
     !blevel, !learnt, !history, !size
 
+  (* heuristic comparison between clauses, by their size (unary/binary or not)
+      and activity *)
   let f_sort_db c1 c2 =
     let sz1 = Vec.size c1.atoms in
     let sz2 = Vec.size c2.atoms in
@@ -462,18 +461,18 @@ module Make (F : Formula_intf.S)
     if sz1 > 2 && (sz2 = 2 || c < 0) then -1
     else 1
 
-  let locked c = false(*
-      try
-        for i = 0 to Vec.size env.vars - 1 do
-          match (Vec.get env.vars i).reason with
-            | Some c' when c ==c' -> raise Exit
-            | _ -> ()
-        done;
-        false
-      with Exit -> true*)
+  (* returns true if the clause is used as a reason for a propagation,
+      and therefore can be needed in case of conflict. In this case
+      the clause can't be forgotten *)
+  let locked c =
+    Vec.exists
+      (fun v -> match v.reason with
+        | Some c' -> c ==c'
+        | _ -> false
+      ) env.vars
 
-  let reduce_db () = ()
-    (*
+  (* remove some learnt clauses *)
+  let reduce_db () =
       let extra_lim = env.clause_inc /. (to_float (Vec.size env.learnts)) in
       Vec.sort env.learnts f_sort_db;
       let lim2 = Vec.size env.learnts in
@@ -494,8 +493,8 @@ module Make (F : Formula_intf.S)
           begin Vec.set env.learnts !j c; incr j end
       done;
       Vec.shrink env.learnts (lim2 - !j)
-    *)
 
+  (* remove from [vec] the clauses that are satisfied in the current trail *)
   let remove_satisfied vec =
     let j = ref 0 in
     let k = Vec.size vec - 1 in
@@ -795,7 +794,8 @@ module Make (F : Formula_intf.S)
     check_vec env.clauses;
     check_vec env.learnts
 
-
+  (* fixpoint of propagation and decisions until a model is found, or a
+    conflict is reached *)
   let solve () =
     if env.is_unsat then raise (Unsat env.unsat_core);
     let n_of_conflicts = ref (to_float env.restart_first) in
@@ -817,6 +817,7 @@ module Make (F : Formula_intf.S)
 
   exception Trivial
 
+  (* TODO: could be more efficient than [@] everywhere? *)
   let partition atoms init =
     let rec partition_aux trues unassigned falses init = function
       | [] -> trues @ unassigned @ falses, init

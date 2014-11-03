@@ -90,3 +90,6 @@ val iter : ('a -> unit) -> 'a t -> unit
 val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 (** Fold over elements *)
 
+val exists : ('a -> bool) -> 'a t -> bool
+(** Does there exist an element that satisfies the predicate? *)
+

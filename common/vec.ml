@@ -119,6 +119,16 @@ let fold f acc t =
       _fold f acc' t (i+1)
   in _fold f acc t 0
 
+exception ExitVec
+
+let exists p t =
+  try
+    for i = 0 to t.sz - 1 do
+      if p (Array.unsafe_get t.data i) then raise ExitVec
+    done;
+    false
+  with ExitVec -> true
+
 (*
 template<class V, class T>
 static inline void remove(V& ts, const T& t)
