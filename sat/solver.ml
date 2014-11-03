@@ -160,7 +160,7 @@ module Make (F : Formula_intf.S)
   let var_bump_activity v =
     v.weight <- v.weight +. env.var_inc;
     if v.weight > 1e100 then begin
-      for i = 0 to env.vars.Vec.sz - 1 do
+      for i = 0 to (Vec.size env.vars) - 1 do
         (Vec.get env.vars i).weight <- (Vec.get env.vars i).weight *. 1e-100
       done;
       env.var_inc <- env.var_inc *. 1e-100;
@@ -172,7 +172,7 @@ module Make (F : Formula_intf.S)
   let clause_bump_activity c =
     c.activity <- c.activity +. env.clause_inc;
     if c.activity > 1e20 then begin
-      for i = 0 to env.learnts.Vec.sz - 1 do
+      for i = 0 to (Vec.size env.learnts) - 1 do
         (Vec.get env.learnts i).activity <-
           (Vec.get env.learnts i).activity *. 1e-20;
       done;

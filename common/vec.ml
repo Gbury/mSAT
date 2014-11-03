@@ -15,9 +15,13 @@ type 'a t = { mutable dummy: 'a; mutable data : 'a array; mutable sz : int }
 
 let make capa d = {data = Array.make capa d; sz = 0; dummy = d}
 
+let make_empty d = {data = [||]; sz=0; dummy=d }
+
 let init capa f d = {data = Array.init capa (fun i -> f i); sz = capa; dummy = d}
 
-let from_array data sz d = {data = data; sz = sz; dummy = d}
+let from_array data sz d =
+  assert (sz <= Array.length data);
+  {data = data; sz = sz; dummy = d}
 
 let from_list l sz d =
   let l = ref l in
@@ -28,7 +32,9 @@ let clear s = s.sz <- 0
 
 let shrink t i = assert (i >= 0 && i<=t.sz); t.sz <- t.sz - i
 
-let pop t = assert (t.sz >=1); t.sz <- t.sz - 1
+let pop t =
+  if t.sz = 0 then invalid_arg "vec.pop";
+  t.sz <- t.sz - 1
 
 let size t = t.sz
 
@@ -56,39 +62,25 @@ let push t e =
   t.data.(t.sz) <- e;
   t.sz <- t.sz + 1
 
-let push_none t =
-  if is_full t then grow_to_double_size t;
-  t.data.(t.sz) <- t.dummy;
-  t.sz <- t.sz + 1
-
 let last t =
-  let e = t.data.(t.sz - 1) in
-  assert (not (e == t.dummy));
-  e
+  if t.sz = 0 then invalid_arg "vec.last";
+  t.data.(t.sz - 1)
 
 let get t i =
-  assert (i < t.sz);
-  let e = t.data.(i) in
-  if e == t.dummy then raise Not_found
-  else e
+  if i < 0 || i >= t.sz then invalid_arg "vec.get";
+  Array.unsafe_get t.data i
 
 let set t i v =
-  t.data.(i) <- v;
-  t.sz <- max t.sz (i + 1)
-
-let set_size t sz = t.sz <- sz
+  if i < 0 || i > t.sz then invalid_arg "vec.set";
+  t.sz <- max t.sz (i+1);  (* can set first empty slot *)
+  Array.unsafe_set t.data i v
 
 let copy t =
-  let data = t.data in
-  let len = Array.length data in
-  let data = Array.init len (fun i -> data.(i)) in
-  { data=data; sz=t.sz; dummy = t.dummy }
+  let data = Array.copy t.data in
+  {t with data; }
 
 let move_to t t' =
-  let data = t.data in
-  let len = Array.length data in
-  let data = Array.init len (fun i -> data.(i)) in
-  t'.data <- data;
+  t'.data <- Array.copy t.data;
   t'.sz <- t.sz
 
 
@@ -117,6 +109,15 @@ let iter f t =
   for i = 0 to size t - 1 do
     f (get t i)
   done
+
+let fold f acc t =
+  let rec _fold f acc t i =
+    if i=t.sz
+    then acc
+    else
+      let acc' = f acc (Array.unsafe_get t.data i) in
+      _fold f acc' t (i+1)
+  in _fold f acc t 0
 
 (*
 template<class V, class T>

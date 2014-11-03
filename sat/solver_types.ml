@@ -63,17 +63,23 @@ module Make (F : Formula_intf.S) = struct
   and dummy_atom =
     { var = dummy_var;
       lit = dummy_lit;
-      watched = {Vec.dummy=dummy_clause; data=[||]; sz=0};
+      watched = Obj.magic 0;
+        (* should be [Vec.make_empty dummy_clause]
+          but we have to break the cycle *)
       neg = dummy_atom;
       is_true = false;
       aid = -102 }
-  and dummy_clause =
+
+  let dummy_clause =
     { name = "";
-      atoms = {Vec.dummy=dummy_atom; data=[||]; sz=0};
+      atoms = Vec.make_empty dummy_atom;
       activity = -1.;
       removed = false;
       learnt = false;
       cpremise = [] }
+
+  let () =
+    dummy_atom.watched <- Vec.make_empty dummy_clause
 
   module MA = Map.Make(F)
   type varmap = var MA.t
