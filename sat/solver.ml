@@ -10,8 +10,6 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Format
-
 module Make (F : Formula_intf.S)
     (St : Solver_types.S with type formula = F.t)
     (Ex : Explanation.S with type atom = St.atom)

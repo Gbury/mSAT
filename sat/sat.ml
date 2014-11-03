@@ -82,7 +82,6 @@ module Make(Dummy : sig end) = struct
   let _i = ref 0
 
   type atom = Fsat.t
-  type state = SatSolver.t
 
   let new_atom () =
     try
