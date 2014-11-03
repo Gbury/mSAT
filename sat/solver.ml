@@ -927,6 +927,12 @@ module Make (F : Formula_intf.S)
     if l > current_level()
       then invalid_arg "cannot pop() to level, it is too high";
     let i = Vec.get env.levels l in
+    (* see whether we can reset [env.is_unsat] *)
+    if env.is_unsat && not (Vec.is_empty env.trail_lim) then (
+      (* level at which the decision that lead to unsat was made *)
+      let last = Vec.last env.trail_lim in
+      if i < last then env.is_unsat <- false
+    );
     cancel_until i
 
   let clear () = pop base_level
