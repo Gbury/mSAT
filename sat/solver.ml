@@ -23,57 +23,80 @@ module Make (F : Formula_intf.S)
   exception Restart
   exception Conflict of clause
 
+  (* Singleton type containing the current state *)
   type env = {
-    (* si true_, les contraintes sont deja fausses *)
+
     mutable is_unsat : bool;
+    (* if [true], constraints are already false *)
+
     mutable unsat_core : clause list;
-    (* clauses du probleme *)
-    mutable clauses : clause Vec.t;
-    (* clauses apprises *)
-    mutable learnts : clause Vec.t;
-    (* valeur de l'increment pour l'activite des clauses *)
+    (* clauses that imply false, if any  *)
+
+    clauses : clause Vec.t;
+    (* all currently active clauses *)
+
+    learnts : clause Vec.t;
+    (* learnt clauses  *)
+
     mutable clause_inc : float;
-    (* valeur de l'increment pour l'activite des variables *)
+    (* increment for clauses' activity *)
+
     mutable var_inc : float;
-    (* un vecteur des variables du probleme *)
-    mutable vars : var Vec.t;
-    (* la pile de decisions avec les faits impliques *)
-    mutable trail : atom Vec.t;
-    (* une pile qui pointe vers les niveaux de decision dans trail *)
-    mutable trail_lim : int Vec.t;
-    (* Tete de la File des faits unitaires a propager.
-       	   C'est un index vers le trail *)
+    (* increment for variables' activity *)
+
+    vars : var Vec.t;
+    (* all boolean variables *)
+
+    trail : atom Vec.t;
+    (* decision stack + propagated atoms *)
+
+    trail_lim : int Vec.t;
+    (* decision levels in [trail]  *)
+
+    levels : int Vec.t;
+    (* user-defined levels. Subset of [trail_lim] *)
+
     mutable qhead : int;
-    (* Nombre des assignements top-level depuis la derniere
-       execution de 'simplify()' *)
+    (* Start offset in the queue of unit facts to propagate, within the trail *)
+
     mutable simpDB_assigns : int;
-    (* Nombre restant de propagations a faire avant la prochaine
-       execution de 'simplify()' *)
+    (* number of toplevel assignments since last call to [simplify ()] *)
+
     mutable simpDB_props : int;
-    (* Un tas ordone en fonction de l'activite des variables *)
-    mutable order : Iheap.t;
-    (* estimation de progressions, mis a jour par 'search()' *)
+    (* remaining number of propagations before the next call to [simplify ()] *)
+
+    order : Iheap.t;
+    (* Heap ordered by variable activity *)
+
     mutable progress_estimate : float;
-    (* *)
+    (* progression estimate, updated by [search ()] *)
+
     remove_satisfied : bool;
-    (* inverse du facteur d'acitivte des variables, vaut 1/0.999 par defaut *)
+
     var_decay : float;
-    (* inverse du facteur d'activite des clauses, vaut 1/0.95 par defaut *)
+    (* inverse of the activity factor for variables. Default 1/0.999 *)
+
     clause_decay : float;
-    (* la limite de restart initiale, vaut 100 par defaut *)
+    (* inverse of the activity factor for clauses. Default 1/0.95 *)
+
     mutable restart_first : int;
-    (* facteur de multiplication de restart limite, vaut 1.5 par defaut*)
+    (* intial restart limit, default 100 *)
+
     restart_inc : float;
-    (* limite initiale du nombre de clause apprises, vaut 1/3
-       des clauses originales par defaut *)
+    (* multiplicative factor for restart limit, default 1.5 *)
+
     mutable learntsize_factor : float;
-    (* multiplier learntsize_factor par cette valeur a chaque restart,
-       vaut 1.1 par defaut *)
+    (* initial limit for the number of learnt clauses, 1/3 of initial
+        number of clauses by default *)
+
     learntsize_inc : float;
-    (* controler la minimisation des clauses conflit, vaut true par defaut *)
+    (* multiplicative factor for [learntsize_factor] at each restart, default 1.1 *)
+
     expensive_ccmin : bool;
-    (* controle la polarite a choisir lors de la decision *)
+    (* control minimization of conflict clause, default true *)
+
     polarity_mode : bool;
+    (* default polarity for decision *)
 
     mutable starts : int;
     mutable decisions : int;
@@ -91,28 +114,21 @@ module Make (F : Formula_intf.S)
     mutable tatoms_queue : atom Queue.t;
   }
 
-  type state = {
-    env : env;
-    st_cpt_mk_var: int;
-    st_ma : varmap;
-  }
-
-  type t = state
-
   let env = {
     is_unsat = false;
     unsat_core = [] ;
-    clauses = Vec.make 0 dummy_clause; (*sera mis a jour lors du parsing*)
-    learnts = Vec.make 0 dummy_clause; (*sera mis a jour lors du parsing*)
+    clauses = Vec.make 0 dummy_clause; (*updated during parsing*)
+    learnts = Vec.make 0 dummy_clause; (*updated during parsing*)
     clause_inc = 1.;
     var_inc = 1.;
-    vars = Vec.make 0 dummy_var; (*sera mis a jour lors du parsing*)
+    vars = Vec.make 0 dummy_var; (*updated during parsing*)
     trail = Vec.make 601 dummy_atom;
-    trail_lim = Vec.make 601 (-105);
+    trail_lim = Vec.make 601 (-1);
+    levels =  Vec.make 20 (-1);
     qhead = 0;
     simpDB_assigns = -1;
     simpDB_props = 0;
-    order = Iheap.init 0; (* sera mis a jour dans solve *)
+    order = Iheap.init 0; (* updated in solve *)
     progress_estimate = 0.;
     remove_satisfied = true;
     var_decay = 1. /. 0.95;
@@ -138,7 +154,6 @@ module Make (F : Formula_intf.S)
     tenv_queue = Vec.make 100 Th.dummy;
     tatoms_queue = Queue.create ();
   }
-
 
   let f_weight i j =
     (Vec.get env.vars j).weight < (Vec.get env.vars i).weight
@@ -741,7 +756,7 @@ module Make (F : Formula_intf.S)
           record_learnt_clause blevel learnt history size
 
         | None ->
-          if nb_assigns () = env.nb_init_vars then raise Sat;
+          if nb_assigns() = env.nb_init_vars then raise Sat;
           if n_of_conflicts >= 0 && !conflictC >= n_of_conflicts then
             begin
               env.progress_estimate <- progress_estimate();
@@ -787,15 +802,15 @@ module Make (F : Formula_intf.S)
     let n_of_learnts = ref ((to_float (nb_clauses())) *. env.learntsize_factor) in
     try
       while true do
-        (try search (to_int !n_of_conflicts) (to_int !n_of_learnts);
-         with Restart -> ());
+        begin try
+          search (to_int !n_of_conflicts) (to_int !n_of_learnts);
+        with Restart -> ()
+        end;
         n_of_conflicts := !n_of_conflicts *. env.restart_inc;
         n_of_learnts   := !n_of_learnts *. env.learntsize_inc;
       done;
     with
-    | Sat ->
-      (*check_model ();*)
-      raise Sat
+    | Sat -> ()
     | (Unsat cl) as e ->
       (* check_unsat_core cl; *)
       raise e
@@ -893,15 +908,15 @@ module Make (F : Formula_intf.S)
     let empty_theory = Th.empty () in
     env.is_unsat <- false;
     env.unsat_core <- [];
-    env.clauses <- Vec.make 0 dummy_clause;
-    env.learnts <- Vec.make 0 dummy_clause;
+    Vec.clear env.clauses;
+    Vec.clear env.learnts;
     env.clause_inc <- 1.;
     env.var_inc <- 1.;
-    env.vars <- Vec.make 0 dummy_var;
+    Vec.clear env.vars;
     env.qhead <- 0;
     env.simpDB_assigns <- -1;
     env.simpDB_props <- 0;
-    env.order <- Iheap.init 0; (* sera mis a jour dans solve *)
+    Iheap.clear env.order;
     env.progress_estimate <- 0.;
     env.restart_first <- 100;
     env.starts <- 0;
@@ -916,60 +931,35 @@ module Make (F : Formula_intf.S)
     env.nb_init_clauses <- 0;
     env.tenv <- empty_theory;
     env.model <- Vec.make 0 dummy_var;
-    env.trail <- Vec.make 601 dummy_atom;
-    env.trail_lim <- Vec.make 601 (-105);
+    Vec.clear env.trail;
+    Vec.clear env.trail_lim;
     env.tenv_queue <- Vec.make 100 Th.dummy;
     env.tatoms_queue <- Queue.create ();
     St.clear ()
-
-  let copy (v : 'a) : 'a = Marshal.from_string (Marshal.to_string v []) 0
-
-  let save () =
-    let sv =
-      { env = env;
-        st_cpt_mk_var = !St.cpt_mk_var;
-        st_ma = !St.ma }
-    in
-    copy sv
-
-  let restore { env = s_env; st_cpt_mk_var = st_cpt_mk_var; st_ma = st_ma } =
-    env.is_unsat <- s_env.is_unsat;
-    env.unsat_core <- s_env.unsat_core;
-    env.clauses <- s_env.clauses;
-    env.learnts <- s_env.learnts;
-    env.clause_inc <- s_env.clause_inc;
-    env.var_inc <- s_env.var_inc;
-    env.vars <- s_env.vars;
-    env.qhead <- s_env.qhead;
-    env.simpDB_assigns <- s_env.simpDB_assigns;
-    env.simpDB_props <- s_env.simpDB_props;
-    env.order <- s_env.order;
-    env.progress_estimate <- s_env.progress_estimate;
-    env.restart_first <- s_env.restart_first;
-    env.starts <- s_env.starts;
-    env.decisions <- s_env.decisions;
-    env.propagations <- s_env.propagations;
-    env.conflicts <- s_env.conflicts;
-    env.clauses_literals <- s_env.clauses_literals;
-    env.learnts_literals <- s_env.learnts_literals;
-    env.max_literals <- s_env.max_literals;
-    env.tot_literals <- s_env.tot_literals;
-    env.nb_init_vars <- s_env.nb_init_vars;
-    env.nb_init_clauses <- s_env.nb_init_clauses;
-    env.tenv <- s_env.tenv;
-    env.model <- s_env.model;
-    env.trail <- s_env.trail;
-    env.trail_lim <- s_env.trail_lim;
-    env.tenv_queue <- s_env.tenv_queue;
-    env.tatoms_queue <- s_env.tatoms_queue;
-    env.learntsize_factor <- s_env.learntsize_factor;
-    St.cpt_mk_var := st_cpt_mk_var;
-    St.ma := st_ma
 
   let eval lit =
     let var, negated = make_var lit in
     let truth = var.pa.is_true in
     if negated then not truth else truth
 
+  type level = int
+
+  let base_level = 0
+
+  let current_level() =
+    if Vec.is_empty env.levels then base_level else Vec.last env.levels
+
+  let push () =
+    let l = if Vec.is_empty env.trail_lim
+      then base_level
+      else Vec.last env.trail_lim
+    in
+    Vec.push env.levels l;
+    l
+
+  let pop l =
+    if l > current_level()
+      then invalid_arg "cannot pop() to level, it is too high";
+    () (* TODO *)
 end
 

@@ -23,9 +23,9 @@ module Fsat = struct
   let neg a = - a
   let norm a = abs a, a < 0
 
-  let hash = Hashtbl.hash
-  let equal = (=)
-  let compare = Pervasives.compare
+  let hash (a:int) = Hashtbl.hash a
+  let equal (a:int) b = a=b
+  let compare (a:int) b = Pervasives.compare a b
 
   let _str = Hstring.make ""
   let label a = _str
@@ -107,14 +107,14 @@ module Make(Dummy : sig end) = struct
   let solve () =
     try
       SatSolver.solve ();
-      assert false
-    with
-    | SatSolver.Sat -> Sat
-    | SatSolver.Unsat _ -> Unsat
+      Sat
+    with SatSolver.Unsat _ -> Unsat
 
   let assume l =
     incr _i;
-    SatSolver.assume l !_i
+    try
+      SatSolver.assume l !_i
+    with SatSolver.Unsat _ -> ()
 
   let eval = SatSolver.eval
 end

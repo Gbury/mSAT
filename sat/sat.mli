@@ -26,7 +26,8 @@ module Make(Dummy: sig end) : sig
   val hash : atom -> int
   val equal : atom -> atom -> bool
   val compare : atom -> atom -> int
-  (** Usual hash and comparison functions. For now, directly uses Pervasives and Hashtbl builtins. *)
+  (** Usual hash and comparison functions. For now, directly uses
+      [Pervasives] and [Hashtbl] builtins. *)
 
   val print_atom : Format.formatter -> atom -> unit
   (** Print the atom on the given formatter. *)
