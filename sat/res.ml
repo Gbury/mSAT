@@ -12,7 +12,8 @@ module Make(St : Solver_types.S)(Proof : sig type t end) = struct
     type node =
         | Assumption
         | Lemma of lemma
-        | Resolution of int_cl * int_cl
+        | Resolution of int_cl * int_cl * int_cl
+        (* lits, c1, c2 with lits the literals used to resolve c1 and c2 *)
 
     exception Resolution_error of string
 
@@ -26,17 +27,9 @@ module Make(St : Solver_types.S)(Proof : sig type t end) = struct
 
     (* Misc functions *)
     let compare_atoms a b =
-        Pervasives.compare St.(a.var.vid) St.(b.var.vid)
+        Pervasives.compare St.(a.aid) St.(b.aid)
 
     let equal_atoms a b = St.(a.aid) = St.(b.aid)
-
-    let to_list c =
-        let v = St.(c.atoms) in
-        let l = ref [] in
-        for i = 0 to Vec.size v - 1 do
-            l := (Vec.get v i) :: !l
-        done;
-        List.sort_uniq compare_atoms !l
 
     (* Accesors to the proof graph *)
     let add_hyp c = H.add proof c Assumption
@@ -50,31 +43,35 @@ module Make(St : Solver_types.S)(Proof : sig type t end) = struct
             | [] -> resolved, acc
             | [a] -> resolved, a :: acc
             | a :: b :: r ->
-                    if a == b then
+                    if equal_atoms a b then
                         aux resolved (a :: acc) r
-                    else if St.(a.neg) == b then
-                        aux true acc r
+                    else if equal_atoms St.(a.neg) b then
+                        aux (St.(a.var.pa) :: resolved) acc r
                     else
                         aux resolved (a :: acc) (b :: r)
         in
-        let b, l' = aux false [] l in
-        b, List.sort compare_atoms l'
-
-    let merge c d =
-        let l = List.merge compare_atoms c d in
-        let b, l' = resolve l in
-        if not b then
-            raise (Resolution_error "No literal to resolve over");
-        l'
+        let resolved, new_clause = aux [] [] l in
+        resolved, List.rev new_clause
 
     let add_res c d =
         if not (is_proved c) || not (is_proved d) then
             raise (Resolution_error "Unproven clause");
-        let new_clause = merge c d in
-        H.add proof new_clause (Resolution (c, d));
+        let l = List.merge compare_atoms c d in
+        let resolved, new_clause = resolve l in
+        if resolved = [] then
+            raise (Resolution_error "No literal to resolve over");
+        H.add proof new_clause (Resolution (resolved, c, d));
         new_clause
 
     (* Wrappers *)
+    let to_list c =
+        let v = St.(c.atoms) in
+        let l = ref [] in
+        for i = 0 to Vec.size v - 1 do
+            l := (Vec.get v i) :: !l
+        done;
+        snd (resolve (List.sort_uniq compare_atoms !l))
+
     let proven c = is_proved (to_list c)
     let add_assumption c = add_hyp (to_list c)
     let add_th_lemma c l = add_lemma (to_list c) l
@@ -87,4 +84,71 @@ module Make(St : Solver_types.S)(Proof : sig type t end) = struct
             raise (Resolution_error "Clause cannot be derived from history");
         ()
 
+    (* Print proof graph *)
+    let _i = ref 0
+    let new_id () = incr _i; "id_" ^ (string_of_int !_i)
+
+    let ids : (bool * string) H.t = H.create 1007;;
+    let cl_id c =
+        try
+            snd (H.find ids c)
+        with Not_found ->
+            let id = new_id () in
+            H.add ids c (false, id);
+            id
+
+    let is_drawn c =
+        try
+            fst (H.find ids c)
+        with Not_found ->
+            false
+
+    let has_drawn c =
+        assert (H.mem ids c);
+        let b, id = H.find ids c in
+        assert (not b);
+        H.replace ids c (true, id)
+
+    let print_atom fmt a =
+        Format.fprintf fmt "%s%d" St.(if a.var.pa == a then "" else "-") St.(a.var.vid + 1)
+
+    let rec print_clause fmt = function
+        | [] -> Format.fprintf fmt "[]"
+        | [a] -> print_atom fmt a
+        | a :: (_ :: _) as r -> Format.fprintf fmt "%a \\/ %a" print_atom a print_clause r
+
+    let print_dot_rule f arg fmt cl =
+        Format.fprintf fmt "%s [shape=plaintext, label=<<TABLE %s>%a</TABLE>>];@\n"
+            (cl_id cl) "BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\">" f arg
+
+    let print_dot_edge c fmt d =
+        Format.fprintf fmt "%s -> %s;@\n" (cl_id c) (cl_id d)
+
+    let print_dot_proof fmt cl =
+        match H.find proof cl with
+        | Assumption ->
+                let aux fmt () =
+                    Format.fprintf fmt "<TR><TD BGCOLOR=\"LIGHTBLUE\">%a</TD></TR>" print_clause cl
+                in
+                print_dot_rule aux () fmt cl
+        | Lemma _ ->
+                let aux fmt () =
+                    Format.fprintf fmt "<TR><TD BGCOLOR=\"LIGHTBLUE\">%a</TD></TR><TR><TD>to prove ...</TD></TR>" print_clause cl
+                in
+                print_dot_rule aux () fmt cl
+        | Resolution (r, c, d) ->
+                let aux fmt () =
+                    Format.fprintf fmt "<TR><TD>%a</TD></TR><TR><TD>%a</TD</TR>"
+                        print_clause cl print_clause r
+                in
+                Format.fprintf fmt "%a%a%a"
+                    (print_dot_rule aux ()) cl
+                    (print_dot_edge cl) c
+                    (print_dot_edge cl) d
+
+    let print_dot fmt cl =
+        assert (is_proved cl);
+        Format.fprintf fmt "digraph proof {@\n%a@\n}@." print_dot_proof cl
+
 end
+
