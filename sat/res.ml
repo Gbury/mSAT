@@ -7,14 +7,16 @@ module Make(St : Solver_types.S)(Proof : sig type t end) = struct
     (* Type definitions *)
     type lemma = Proof.t
     type clause = St.clause
+    type atom = St.atom
     type int_cl = St.atom list
 
     type node =
         | Assumption
         | Lemma of lemma
-        | Resolution of int_cl * int_cl * int_cl
+        | Resolution of atom * int_cl * int_cl
         (* lits, c1, c2 with lits the literals used to resolve c1 and c2 *)
 
+    exception Tautology
     exception Resolution_error of string
 
     (* Proof graph *)
@@ -31,13 +33,8 @@ module Make(St : Solver_types.S)(Proof : sig type t end) = struct
 
     let equal_atoms a b = St.(a.aid) = St.(b.aid)
 
-    (* Accesors to the proof graph *)
-    let add_hyp c = H.add proof c Assumption
-    let add_lemma c l = H.add proof c (Lemma l)
 
-    let is_proved c = H.mem proof c
-
-    (* New resolution node *)
+    (* Compute resolution of 2 clauses *)
     let resolve l =
         let rec aux resolved acc = function
             | [] -> resolved, acc
@@ -53,36 +50,49 @@ module Make(St : Solver_types.S)(Proof : sig type t end) = struct
         let resolved, new_clause = aux [] [] l in
         resolved, List.rev new_clause
 
-    let add_res c d =
-        if not (is_proved c) || not (is_proved d) then
-            raise (Resolution_error "Unproven clause");
-        let l = List.merge compare_atoms c d in
-        let resolved, new_clause = resolve l in
-        if resolved = [] then
-            raise (Resolution_error "No literal to resolve over");
-        H.add proof new_clause (Resolution (resolved, c, d));
-        new_clause
-
-    (* Wrappers *)
     let to_list c =
         let v = St.(c.atoms) in
         let l = ref [] in
         for i = 0 to Vec.size v - 1 do
             l := (Vec.get v i) :: !l
         done;
-        snd (resolve (List.sort_uniq compare_atoms !l))
+        let l, res = resolve (List.sort_uniq compare_atoms !l) in
+        if l <> [] then
+            raise (Resolution_error "Input cause is a tautology");
+        res
 
-    let proven c = is_proved (to_list c)
-    let add_assumption c = add_hyp (to_list c)
-    let add_th_lemma c l = add_lemma (to_list c) l
+    (* Adding new proven clauses *)
+    let is_proved c = H.mem proof c
 
-    let add_clause c history =
-        assert (List.length history > 1);
-        let l = List.map to_list history in
-        let res = List.fold_left add_res (List.hd l) (List.tl l) in
-        if not (List.for_all2 equal_atoms (to_list c) res) then
-            raise (Resolution_error "Clause cannot be derived from history");
-        ()
+    let rec add_res c d =
+        add_clause c;
+        add_clause d;
+        let cl_c = to_list c in
+        let cl_d = to_list d in
+        let l = List.merge compare_atoms cl_c cl_d in
+        let resolved, new_clause = resolve l in
+        match resolved with
+        | [] -> raise (Resolution_error "No literal to resolve over")
+        | [a] ->
+                H.add proof new_clause (Resolution (a, cl_c, cl_d));
+                new_clause
+        | _ -> raise (Resolution_error "Resolved to a tautology")
+
+    and add_clause c =
+        let cl = to_list c in
+        if is_proved cl then
+            ()
+        else if not St.(c.learnt) then
+            H.add proof cl Assumption
+        else begin
+            let history = St.(c.cpremise) in
+            ()
+            (* TODO
+            match history with
+            | a  :: (_ :: _) as r ->
+                    List.fold_left add_res a r
+            *)
+        end
 
     (* Print proof graph *)
     let _i = ref 0
@@ -139,7 +149,7 @@ module Make(St : Solver_types.S)(Proof : sig type t end) = struct
         | Resolution (r, c, d) ->
                 let aux fmt () =
                     Format.fprintf fmt "<TR><TD>%a</TD></TR><TR><TD>%a</TD</TR>"
-                        print_clause cl print_clause r
+                        print_clause cl print_atom r
                 in
                 Format.fprintf fmt "%a%a%a"
                     (print_dot_rule aux ()) cl

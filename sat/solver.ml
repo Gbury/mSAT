@@ -16,7 +16,6 @@ module Make (F : Formula_intf.S)
     (Th : Theory_intf.S with type formula = F.t and type explanation = Ex.t) = struct
 
   open St
-  module Res = Res.Make(St)(struct type t = Th.proof end)
 
   exception Sat
   exception Unsat of clause list
