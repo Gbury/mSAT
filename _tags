@@ -1,3 +1,10 @@
 <smt/*.cmx>: for-pack(Msat)
 <sat/*.cmx>: for-pack(Msat)
 
+# enable stronger inlining everywhere
+<common/**/*.cmx>: inline(15)
+<sat/**/*.cmx>: inline(10)
+<smt/**/*.cmx>: inline(10)
+
+# more warnings
+<**/*.ml>: warn_K, warn_Y, warn_X
