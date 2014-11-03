@@ -31,10 +31,6 @@ sig
       Modifies the sat solver state in place.
       @raise Unsat if a conflict is detect when adding the clauses *)
 
-  val clear : unit -> unit
-  (** Resets everything done. Basically returns the solver to a
-      state similar to when the module was created. *)
-
   val eval : F.t -> bool
   (** Returns the valuation of a formula in the current state
       of the sat solver. *)
@@ -54,5 +50,8 @@ sig
   val pop : level -> unit
   (** Go back to the given level, forgetting every assumption added since.
       @raise Invalid_argument if the current level is below the argument *)
+
+  val clear : unit -> unit
+  (** Return to level {!base_level} *)
 end
 

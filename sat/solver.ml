@@ -232,7 +232,7 @@ module Make (F : Formula_intf.S)
   let satisfied c =
     Vec.exists (fun atom -> atom.is_true) c.atoms
 
-  (* annule tout jusqu'a lvl *exclu*  *)
+  (* cancel down to [lvl] excluded *)
   let cancel_until lvl =
     Log.debug 5 "Bactracking to decision level %d (excluded)" lvl;
     if decision_level () > lvl then begin
@@ -266,7 +266,7 @@ module Make (F : Formula_intf.S)
   let enqueue a lvl reason =
     assert (not a.is_true && not a.neg.is_true &&
             a.var.level < 0 && a.var.reason = None && lvl >= 0);
-    (* Garder la reason car elle est utile pour les unsat-core *)
+    (* keep the reason for proof/unsat-core *)
     (*let reason = if lvl = 0 then None else reason in*)
     a.is_true <- true;
     a.var.level <- lvl;
@@ -289,22 +289,22 @@ module Make (F : Formula_intf.S)
   let propagate_in_clause a c i watched new_sz =
     let atoms = c.atoms in
     let first = Vec.get atoms 0 in
-    if first == a.neg then begin (* le literal faux doit etre dans .(1) *)
+    if first == a.neg then begin (* false lit must be at index 1 *)
       Vec.set atoms 0 (Vec.get atoms 1);
       Vec.set atoms 1 first
     end;
     let first = Vec.get atoms 0 in
     if first.is_true then begin
-      (* clause vraie, la garder dans les watched *)
+      (* true clause, keep it in watched *)
       Vec.set watched !new_sz c;
       incr new_sz;
     end
     else
-      try (* chercher un nouveau watcher *)
+      try (* look for another watch lit *)
         for k = 2 to Vec.size atoms - 1 do
           let ak = Vec.get atoms k in
           if not (ak.neg.is_true) then begin
-            (* Watcher Trouve: mettre a jour et sortir *)
+            (* watch lit found: update and exit *)
             Vec.set atoms 1 ak;
             Vec.set atoms k a.neg;
             Vec.push ak.neg.watched c;
@@ -312,9 +312,9 @@ module Make (F : Formula_intf.S)
             raise Exit
           end
         done;
-        (* Watcher NON Trouve *)
+        (* no watch lit found *)
         if first.neg.is_true then begin
-          (* la clause est fausse *)
+          (* clause is false *)
           env.qhead <- Vec.size env.trail;
           for k = i to Vec.size watched - 1 do
             Vec.set watched !new_sz (Vec.get watched k);
@@ -324,7 +324,7 @@ module Make (F : Formula_intf.S)
           raise (Conflict c)
         end
         else begin
-          (* la clause est unitaire *)
+          (* clause is unit *)
           Vec.set watched !new_sz c;
           incr new_sz;
           Log.debug 5 "Unit clause : %a" St.pp_clause c;
@@ -648,7 +648,7 @@ module Make (F : Formula_intf.S)
     var_decay_activity ();
     clause_decay_activity ()
 
-  let check_inconsistence_of dep =
+  let check_inconsistency_of dep =
     try
       let env = ref (Th.empty()) in ();
       Ex.iter_atoms
@@ -672,7 +672,7 @@ module Make (F : Formula_intf.S)
         ) dep ([], 0, 0, [])
     in
     if atoms = [] then begin
-      (* check_inconsistence_of dep; *)
+      (* check_inconsistency_of dep; *)
       report_t_unsat dep
       (* une conjonction de faits unitaires etaient deja unsat *)
     end;
@@ -725,8 +725,6 @@ module Make (F : Formula_intf.S)
     done;
     List.iter (fun q -> q.var.seen <- false) !seen;
     !blevel, !learnt, !history, !size
-
-
 
   let add_boolean_conflict confl =
     env.conflicts <- env.conflicts + 1;
@@ -905,39 +903,6 @@ module Make (F : Formula_intf.S)
     let cnf = List.map (List.map St.add_atom) cnf in
     init_solver cnf ~cnumber
 
-  let clear () =
-    let empty_theory = Th.empty () in
-    env.is_unsat <- false;
-    env.unsat_core <- [];
-    Vec.clear env.clauses;
-    Vec.clear env.learnts;
-    env.clause_inc <- 1.;
-    env.var_inc <- 1.;
-    Vec.clear env.vars;
-    env.qhead <- 0;
-    env.simpDB_assigns <- -1;
-    env.simpDB_props <- 0;
-    Iheap.clear env.order;
-    env.progress_estimate <- 0.;
-    env.restart_first <- 100;
-    env.starts <- 0;
-    env.decisions <- 0;
-    env.propagations <- 0;
-    env.conflicts <- 0;
-    env.clauses_literals <- 0;
-    env.learnts_literals <- 0;
-    env.max_literals <- 0;
-    env.tot_literals <- 0;
-    env.nb_init_vars <- 0;
-    env.nb_init_clauses <- 0;
-    env.tenv <- empty_theory;
-    env.model <- Vec.make 0 dummy_var;
-    Vec.clear env.trail;
-    Vec.clear env.trail_lim;
-    env.tenv_queue <- Vec.make 100 Th.dummy;
-    env.tatoms_queue <- Queue.create ();
-    St.clear ()
-
   let eval lit =
     let var, negated = make_var lit in
     let truth = var.pa.is_true in
@@ -961,6 +926,9 @@ module Make (F : Formula_intf.S)
   let pop l =
     if l > current_level()
       then invalid_arg "cannot pop() to level, it is too high";
-    () (* TODO *)
+    let i = Vec.get env.levels l in
+    cancel_until i
+
+  let clear () = pop base_level
 end
 
