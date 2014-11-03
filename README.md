@@ -15,7 +15,7 @@ The following theories should be supported:
 ## COPYRIGHT
 
 This program is distributed under the Apache Software License version
-2.0. See the enclosed file COPYING.
+2.0. See the enclosed file `LICENSE`.
 
 
 ## INSTALLATION
