@@ -13,7 +13,7 @@
 
 type t = {heap : int Vec.t; indices : int Vec.t }
 
-let dummy = -100
+let dummy = 0
 
 let init sz =
   { heap    =  Vec.init sz (fun i -> i) dummy;
@@ -96,6 +96,11 @@ let size s = Vec.size s.heap
 
 let is_empty s = Vec.is_empty s.heap
 
+let clear {heap; indices} =
+  Vec.clear heap;
+  Vec.clear indices;
+  ()
+
 let insert cmp s n =
   if not (in_heap s n) then
     begin
@@ -123,6 +128,7 @@ let update cmp s n =
 *)
 
 let remove_min cmp ({heap=heap; indices=indices} as s) =
+  if Vec.size heap=0 then raise Not_found;
   let x = Vec.get heap 0 in
   Vec.set heap 0 (Vec.last heap); (*heap.last()*)
   Vec.set indices (Vec.get heap 0) 0;

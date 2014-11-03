@@ -22,57 +22,80 @@ module Make (F : Formula_intf.S)
   exception Restart
   exception Conflict of clause
 
+  (* Singleton type containing the current state *)
   type env = {
-    (* si true_, les contraintes sont deja fausses *)
+
     mutable is_unsat : bool;
+    (* if [true], constraints are already false *)
+
     mutable unsat_core : clause list;
-    (* clauses du probleme *)
-    mutable clauses : clause Vec.t;
-    (* clauses apprises *)
-    mutable learnts : clause Vec.t;
-    (* valeur de l'increment pour l'activite des clauses *)
+    (* clauses that imply false, if any  *)
+
+    clauses : clause Vec.t;
+    (* all currently active clauses *)
+
+    learnts : clause Vec.t;
+    (* learnt clauses  *)
+
     mutable clause_inc : float;
-    (* valeur de l'increment pour l'activite des variables *)
+    (* increment for clauses' activity *)
+
     mutable var_inc : float;
-    (* un vecteur des variables du probleme *)
-    mutable vars : var Vec.t;
-    (* la pile de decisions avec les faits impliques *)
-    mutable trail : atom Vec.t;
-    (* une pile qui pointe vers les niveaux de decision dans trail *)
-    mutable trail_lim : int Vec.t;
-    (* Tete de la File des faits unitaires a propager.
-       	   C'est un index vers le trail *)
+    (* increment for variables' activity *)
+
+    vars : var Vec.t;
+    (* all boolean variables *)
+
+    trail : atom Vec.t;
+    (* decision stack + propagated atoms *)
+
+    trail_lim : int Vec.t;
+    (* decision levels in [trail]  *)
+
+    levels : int Vec.t;
+    (* user-defined levels. Subset of [trail_lim] *)
+
     mutable qhead : int;
-    (* Nombre des assignements top-level depuis la derniere
-       execution de 'simplify()' *)
+    (* Start offset in the queue of unit facts to propagate, within the trail *)
+
     mutable simpDB_assigns : int;
-    (* Nombre restant de propagations a faire avant la prochaine
-       execution de 'simplify()' *)
+    (* number of toplevel assignments since last call to [simplify ()] *)
+
     mutable simpDB_props : int;
-    (* Un tas ordone en fonction de l'activite des variables *)
-    mutable order : Iheap.t;
-    (* estimation de progressions, mis a jour par 'search()' *)
+    (* remaining number of propagations before the next call to [simplify ()] *)
+
+    order : Iheap.t;
+    (* Heap ordered by variable activity *)
+
     mutable progress_estimate : float;
-    (* *)
+    (* progression estimate, updated by [search ()] *)
+
     remove_satisfied : bool;
-    (* inverse du facteur d'acitivte des variables, vaut 1/0.999 par defaut *)
+
     var_decay : float;
-    (* inverse du facteur d'activite des clauses, vaut 1/0.95 par defaut *)
+    (* inverse of the activity factor for variables. Default 1/0.999 *)
+
     clause_decay : float;
-    (* la limite de restart initiale, vaut 100 par defaut *)
+    (* inverse of the activity factor for clauses. Default 1/0.95 *)
+
     mutable restart_first : int;
-    (* facteur de multiplication de restart limite, vaut 1.5 par defaut*)
+    (* intial restart limit, default 100 *)
+
     restart_inc : float;
-    (* limite initiale du nombre de clause apprises, vaut 1/3
-       des clauses originales par defaut *)
+    (* multiplicative factor for restart limit, default 1.5 *)
+
     mutable learntsize_factor : float;
-    (* multiplier learntsize_factor par cette valeur a chaque restart,
-       vaut 1.1 par defaut *)
+    (* initial limit for the number of learnt clauses, 1/3 of initial
+        number of clauses by default *)
+
     learntsize_inc : float;
-    (* controler la minimisation des clauses conflit, vaut true par defaut *)
+    (* multiplicative factor for [learntsize_factor] at each restart, default 1.1 *)
+
     expensive_ccmin : bool;
-    (* controle la polarite a choisir lors de la decision *)
+    (* control minimization of conflict clause, default true *)
+
     polarity_mode : bool;
+    (* default polarity for decision *)
 
     mutable starts : int;
     mutable decisions : int;
@@ -90,28 +113,21 @@ module Make (F : Formula_intf.S)
     mutable tatoms_queue : atom Queue.t;
   }
 
-  type state = {
-    env : env;
-    st_cpt_mk_var: int;
-    st_ma : varmap;
-  }
-
-  type t = state
-
   let env = {
     is_unsat = false;
     unsat_core = [] ;
-    clauses = Vec.make 0 dummy_clause; (*sera mis a jour lors du parsing*)
-    learnts = Vec.make 0 dummy_clause; (*sera mis a jour lors du parsing*)
+    clauses = Vec.make 0 dummy_clause; (*updated during parsing*)
+    learnts = Vec.make 0 dummy_clause; (*updated during parsing*)
     clause_inc = 1.;
     var_inc = 1.;
-    vars = Vec.make 0 dummy_var; (*sera mis a jour lors du parsing*)
+    vars = Vec.make 0 dummy_var; (*updated during parsing*)
     trail = Vec.make 601 dummy_atom;
-    trail_lim = Vec.make 601 (-105);
+    trail_lim = Vec.make 601 (-1);
+    levels =  Vec.make 20 (-1);
     qhead = 0;
     simpDB_assigns = -1;
     simpDB_props = 0;
-    order = Iheap.init 0; (* sera mis a jour dans solve *)
+    order = Iheap.init 0; (* updated in solve *)
     progress_estimate = 0.;
     remove_satisfied = true;
     var_decay = 1. /. 0.95;
@@ -137,7 +153,6 @@ module Make (F : Formula_intf.S)
     tenv_queue = Vec.make 100 Th.dummy;
     tatoms_queue = Queue.create ();
   }
-
 
   let f_weight i j =
     (Vec.get env.vars j).weight < (Vec.get env.vars i).weight
@@ -214,14 +229,9 @@ module Make (F : Formula_intf.S)
   let remove_clause c = detach_clause c
 
   let satisfied c =
-    try
-      for i = 0 to Vec.size c.atoms - 1 do
-        if (Vec.get c.atoms i).is_true then raise Exit
-      done;
-      false
-    with Exit -> true
+    Vec.exists (fun atom -> atom.is_true) c.atoms
 
-  (* annule tout jusqu'a lvl *exclu*  *)
+  (* cancel down to [lvl] excluded *)
   let cancel_until lvl =
     Log.debug 5 "Bactracking to decision level %d (excluded)" lvl;
     if decision_level () > lvl then begin
@@ -255,7 +265,7 @@ module Make (F : Formula_intf.S)
   let enqueue a lvl reason =
     assert (not a.is_true && not a.neg.is_true &&
             a.var.level < 0 && a.var.reason = None && lvl >= 0);
-    (* Garder la reason car elle est utile pour les unsat-core *)
+    (* keep the reason for proof/unsat-core *)
     (*let reason = if lvl = 0 then None else reason in*)
     a.is_true <- true;
     a.var.level <- lvl;
@@ -278,22 +288,22 @@ module Make (F : Formula_intf.S)
   let propagate_in_clause a c i watched new_sz =
     let atoms = c.atoms in
     let first = Vec.get atoms 0 in
-    if first == a.neg then begin (* le literal faux doit etre dans .(1) *)
+    if first == a.neg then begin (* false lit must be at index 1 *)
       Vec.set atoms 0 (Vec.get atoms 1);
       Vec.set atoms 1 first
     end;
     let first = Vec.get atoms 0 in
     if first.is_true then begin
-      (* clause vraie, la garder dans les watched *)
+      (* true clause, keep it in watched *)
       Vec.set watched !new_sz c;
       incr new_sz;
     end
     else
-      try (* chercher un nouveau watcher *)
+      try (* look for another watch lit *)
         for k = 2 to Vec.size atoms - 1 do
           let ak = Vec.get atoms k in
           if not (ak.neg.is_true) then begin
-            (* Watcher Trouve: mettre a jour et sortir *)
+            (* watch lit found: update and exit *)
             Vec.set atoms 1 ak;
             Vec.set atoms k a.neg;
             Vec.push ak.neg.watched c;
@@ -301,9 +311,9 @@ module Make (F : Formula_intf.S)
             raise Exit
           end
         done;
-        (* Watcher NON Trouve *)
+        (* no watch lit found *)
         if first.neg.is_true then begin
-          (* la clause est fausse *)
+          (* clause is false *)
           env.qhead <- Vec.size env.trail;
           for k = i to Vec.size watched - 1 do
             Vec.set watched !new_sz (Vec.get watched k);
@@ -313,7 +323,7 @@ module Make (F : Formula_intf.S)
           raise (Conflict c)
         end
         else begin
-          (* la clause est unitaire *)
+          (* clause is unit *)
           Vec.set watched !new_sz c;
           incr new_sz;
           Log.debug 5 "Unit clause : %a" St.pp_clause c;
@@ -375,6 +385,7 @@ module Make (F : Formula_intf.S)
       (* eprintf "th inconsistent : %a @." Ex.print dep; *)
       Some dep
 
+  (* boolean propagation, using unit clauses *)
   let propagate () =
     let num_props = ref 0 in
     let res = ref None in
@@ -390,6 +401,7 @@ module Make (F : Formula_intf.S)
     env.simpDB_props <- env.simpDB_props - !num_props;
     !res
 
+  (* conflict analysis *)
   let analyze c_clause =
     let pathC  = ref 0 in
     let learnt = ref [] in
@@ -437,6 +449,8 @@ module Make (F : Formula_intf.S)
     List.iter (fun q -> q.var.seen <- false) !seen;
     !blevel, !learnt, !history, !size
 
+  (* heuristic comparison between clauses, by their size (unary/binary or not)
+      and activity *)
   let f_sort_db c1 c2 =
     let sz1 = Vec.size c1.atoms in
     let sz2 = Vec.size c2.atoms in
@@ -446,18 +460,18 @@ module Make (F : Formula_intf.S)
     if sz1 > 2 && (sz2 = 2 || c < 0) then -1
     else 1
 
-  let locked c = false(*
-      try
-        for i = 0 to Vec.size env.vars - 1 do
-          match (Vec.get env.vars i).reason with
-            | Some c' when c ==c' -> raise Exit
-            | _ -> ()
-        done;
-        false
-      with Exit -> true*)
+  (* returns true if the clause is used as a reason for a propagation,
+      and therefore can be needed in case of conflict. In this case
+      the clause can't be forgotten *)
+  let locked c =
+    Vec.exists
+      (fun v -> match v.reason with
+        | Some c' -> c ==c'
+        | _ -> false
+      ) env.vars
 
-  let reduce_db () = ()
-    (*
+  (* remove some learnt clauses *)
+  let reduce_db () =
       let extra_lim = env.clause_inc /. (to_float (Vec.size env.learnts)) in
       Vec.sort env.learnts f_sort_db;
       let lim2 = Vec.size env.learnts in
@@ -478,8 +492,8 @@ module Make (F : Formula_intf.S)
           begin Vec.set env.learnts !j c; incr j end
       done;
       Vec.shrink env.learnts (lim2 - !j)
-    *)
 
+  (* remove from [vec] the clauses that are satisfied in the current trail *)
   let remove_satisfied vec =
     let j = ref 0 in
     let k = Vec.size vec - 1 in
@@ -633,7 +647,7 @@ module Make (F : Formula_intf.S)
     var_decay_activity ();
     clause_decay_activity ()
 
-  let check_inconsistence_of dep =
+  let check_inconsistency_of dep =
     try
       let env = ref (Th.empty()) in ();
       Ex.iter_atoms
@@ -657,7 +671,7 @@ module Make (F : Formula_intf.S)
         ) dep ([], 0, 0, [])
     in
     if atoms = [] then begin
-      (* check_inconsistence_of dep; *)
+      (* check_inconsistency_of dep; *)
       report_t_unsat dep
       (* une conjonction de faits unitaires etaient deja unsat *)
     end;
@@ -711,8 +725,6 @@ module Make (F : Formula_intf.S)
     List.iter (fun q -> q.var.seen <- false) !seen;
     !blevel, !learnt, !history, !size
 
-
-
   let add_boolean_conflict confl =
     env.conflicts <- env.conflicts + 1;
     if decision_level() = 0 then report_b_unsat confl; (* Top-level conflict *)
@@ -740,7 +752,7 @@ module Make (F : Formula_intf.S)
           record_learnt_clause blevel learnt history size
 
         | None ->
-          if nb_assigns () = env.nb_init_vars then raise Sat;
+          if nb_assigns() = env.nb_init_vars then raise Sat;
           if n_of_conflicts >= 0 && !conflictC >= n_of_conflicts then
             begin
               env.progress_estimate <- progress_estimate();
@@ -779,28 +791,30 @@ module Make (F : Formula_intf.S)
     check_vec env.clauses;
     check_vec env.learnts
 
-
+  (* fixpoint of propagation and decisions until a model is found, or a
+    conflict is reached *)
   let solve () =
     if env.is_unsat then raise (Unsat env.unsat_core);
     let n_of_conflicts = ref (to_float env.restart_first) in
     let n_of_learnts = ref ((to_float (nb_clauses())) *. env.learntsize_factor) in
     try
       while true do
-        (try search (to_int !n_of_conflicts) (to_int !n_of_learnts);
-         with Restart -> ());
+        begin try
+          search (to_int !n_of_conflicts) (to_int !n_of_learnts);
+        with Restart -> ()
+        end;
         n_of_conflicts := !n_of_conflicts *. env.restart_inc;
         n_of_learnts   := !n_of_learnts *. env.learntsize_inc;
       done;
     with
-    | Sat ->
-      (*check_model ();*)
-      raise Sat
+    | Sat -> ()
     | (Unsat cl) as e ->
       (* check_unsat_core cl; *)
       raise e
 
   exception Trivial
 
+  (* TODO: could be more efficient than [@] everywhere? *)
   let partition atoms init =
     let rec partition_aux trues unassigned falses init = function
       | [] -> trues @ unassigned @ falses, init
@@ -888,87 +902,38 @@ module Make (F : Formula_intf.S)
     let cnf = List.map (List.map St.add_atom) cnf in
     init_solver cnf ~cnumber
 
-  let clear () =
-    let empty_theory = Th.empty () in
-    env.is_unsat <- false;
-    env.unsat_core <- [];
-    env.clauses <- Vec.make 0 dummy_clause;
-    env.learnts <- Vec.make 0 dummy_clause;
-    env.clause_inc <- 1.;
-    env.var_inc <- 1.;
-    env.vars <- Vec.make 0 dummy_var;
-    env.qhead <- 0;
-    env.simpDB_assigns <- -1;
-    env.simpDB_props <- 0;
-    env.order <- Iheap.init 0; (* sera mis a jour dans solve *)
-    env.progress_estimate <- 0.;
-    env.restart_first <- 100;
-    env.starts <- 0;
-    env.decisions <- 0;
-    env.propagations <- 0;
-    env.conflicts <- 0;
-    env.clauses_literals <- 0;
-    env.learnts_literals <- 0;
-    env.max_literals <- 0;
-    env.tot_literals <- 0;
-    env.nb_init_vars <- 0;
-    env.nb_init_clauses <- 0;
-    env.tenv <- empty_theory;
-    env.model <- Vec.make 0 dummy_var;
-    env.trail <- Vec.make 601 dummy_atom;
-    env.trail_lim <- Vec.make 601 (-105);
-    env.tenv_queue <- Vec.make 100 Th.dummy;
-    env.tatoms_queue <- Queue.create ();
-    St.clear ()
-
-  let copy (v : 'a) : 'a = Marshal.from_string (Marshal.to_string v []) 0
-
-  let save () =
-    let sv =
-      { env = env;
-        st_cpt_mk_var = !St.cpt_mk_var;
-        st_ma = !St.ma }
-    in
-    copy sv
-
-  let restore { env = s_env; st_cpt_mk_var = st_cpt_mk_var; st_ma = st_ma } =
-    env.is_unsat <- s_env.is_unsat;
-    env.unsat_core <- s_env.unsat_core;
-    env.clauses <- s_env.clauses;
-    env.learnts <- s_env.learnts;
-    env.clause_inc <- s_env.clause_inc;
-    env.var_inc <- s_env.var_inc;
-    env.vars <- s_env.vars;
-    env.qhead <- s_env.qhead;
-    env.simpDB_assigns <- s_env.simpDB_assigns;
-    env.simpDB_props <- s_env.simpDB_props;
-    env.order <- s_env.order;
-    env.progress_estimate <- s_env.progress_estimate;
-    env.restart_first <- s_env.restart_first;
-    env.starts <- s_env.starts;
-    env.decisions <- s_env.decisions;
-    env.propagations <- s_env.propagations;
-    env.conflicts <- s_env.conflicts;
-    env.clauses_literals <- s_env.clauses_literals;
-    env.learnts_literals <- s_env.learnts_literals;
-    env.max_literals <- s_env.max_literals;
-    env.tot_literals <- s_env.tot_literals;
-    env.nb_init_vars <- s_env.nb_init_vars;
-    env.nb_init_clauses <- s_env.nb_init_clauses;
-    env.tenv <- s_env.tenv;
-    env.model <- s_env.model;
-    env.trail <- s_env.trail;
-    env.trail_lim <- s_env.trail_lim;
-    env.tenv_queue <- s_env.tenv_queue;
-    env.tatoms_queue <- s_env.tatoms_queue;
-    env.learntsize_factor <- s_env.learntsize_factor;
-    St.cpt_mk_var := st_cpt_mk_var;
-    St.ma := st_ma
-
   let eval lit =
     let var, negated = make_var lit in
     let truth = var.pa.is_true in
     if negated then not truth else truth
 
+  type level = int
+
+  let base_level = 0
+
+  let current_level() =
+    if Vec.is_empty env.levels then base_level else Vec.last env.levels
+
+  let push () =
+    let l = if Vec.is_empty env.trail_lim
+      then base_level
+      else Vec.last env.trail_lim
+    in
+    Vec.push env.levels l;
+    l
+
+  let pop l =
+    if l > current_level()
+      then invalid_arg "cannot pop() to level, it is too high";
+    let i = Vec.get env.levels l in
+    (* see whether we can reset [env.is_unsat] *)
+    if env.is_unsat && not (Vec.is_empty env.trail_lim) then (
+      (* level at which the decision that lead to unsat was made *)
+      let last = Vec.last env.trail_lim in
+      if i < last then env.is_unsat <- false
+    );
+    cancel_until i
+
+  let clear () = pop base_level
 end
 

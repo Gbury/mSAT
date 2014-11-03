@@ -40,6 +40,7 @@ module type S = sig
   val assume : cs:bool -> formula -> explanation -> t -> t
   (** Return a new theory state with the formula as assumption.
       @raise Inconsistent if the new state would be inconsistent. *)
+  (* TODO: remove (apparently) useless [cs] parameter *)
 
 end
 
