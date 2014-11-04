@@ -1,7 +1,7 @@
 # copyright (c) 2014, guillaume bury
 
 LOG=build.log
-COMP=ocamlbuild -log $(LOG) -use-ocamlfind -package num,zarith,unix,str -classic-display
+COMP=ocamlbuild -log $(LOG) -use-ocamlfind -classic-display
 FLAGS=
 DIRS=-Is sat,smt,common,util
 DOC=msat.docdir/index.html

@@ -1,0 +1,6 @@
+S sat
+S smt
+S util
+B _build/sat
+B _build/smt
+B _build/util

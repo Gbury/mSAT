@@ -1,4 +1,8 @@
-(* Copyright 2014 Guillaume Bury *)
+(*
+MSAT is free software, using the Apache license, see file LICENSE
+Copyright 2014 Guillaume Bury
+Copyright 2014 Simon Cruanes
+*)
 
 exception Syntax_error of int
 
@@ -8,7 +12,23 @@ type line =
   | Pcnf of int * int
   | Clause of int list
 
-let ssplit = Str.split (Str.regexp "[ \t]+")
+let rec _read_word s acc i len =
+  assert (len>0);
+  if i+len=String.length s
+    then String.sub s i len :: acc
+    else match s.[i+len] with
+      | ' ' | '\t' ->
+          let acc = String.sub s i len :: acc in
+          _skip_space s acc (i+len+1)
+      | _ -> _read_word s acc i (len+1)
+and _skip_space s acc i =
+  if i=String.length s
+  then acc
+  else match s.[i] with
+    | ' ' | '\t' -> _skip_space s acc (i+1)
+    | _ -> _read_word s acc i 1
+
+let ssplit s = List.rev (_skip_space s [] 0)
 
 let of_input f =
   match ssplit (input_line f) with
@@ -17,7 +37,7 @@ let of_input f =
   | "p" :: "cnf" :: i :: j :: [] ->
     begin try
         Pcnf (int_of_string i, int_of_string j)
-      with Invalid_argument _ ->
+      with Failure _ ->
         raise (Syntax_error (-1))
     end
   | l ->
@@ -26,7 +46,7 @@ let of_input f =
           | 0 :: r -> Clause r
           | _ -> raise (Syntax_error (-1))
         end
-      with Invalid_argument _ -> raise (Syntax_error (-1))
+      with Failure _ -> raise (Syntax_error (-1))
     end
 
 let parse_with todo file =
