@@ -9,7 +9,6 @@ let file = ref ""
 let p_assign = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
-;;
 
 let int_arg r arg =
   let l = String.length arg in
@@ -32,19 +31,25 @@ let int_arg r arg =
       | '0'..'9' -> r := float_of_string arg
       | _ -> raise (Arg.Bad "bad numeric argument")
     with Failure "float_of_string" -> raise (Arg.Bad "bad numeric argument")
-;;
+
+let setup_gc_stat () =
+  at_exit (fun () ->
+    Gc.print_stat stdout;
+  )
 
 let input_file = fun s -> file := s
 let usage = "Usage : main [options] <file>"
 let argspec = Arg.align [
     "-v", Arg.Int (fun i -> Log.set_debug i),
-    "<lvl> Sets the debug verbose level";
+      "<lvl> Sets the debug verbose level";
     "-t", Arg.String (int_arg time_limit),
-    "<t>[smhd] Sets the time limit for the sat solver";
+      "<t>[smhd] Sets the time limit for the sat solver";
     "-s", Arg.String (int_arg size_limit),
-    "<s>[kMGT] Sets the size limit for the sat solver";
+      "<s>[kMGT] Sets the size limit for the sat solver";
     "-model", Arg.Set p_assign,
-    " Outputs the boolean model found if sat";
+      "Outputs the boolean model found if sat";
+    "-gc", Arg.Unit setup_gc_stat,
+      "Outputs statistics about the GC";
   ]
 
 (* Limits alarm *)
@@ -86,7 +91,7 @@ let main () =
     Arg.usage argspec usage;
     exit 2
   end;
-  let al = Gc.create_alarm check in
+  ignore(Gc.create_alarm check);
 
   (* Interesting stuff happening *)
   let cnf = get_cnf () in
@@ -98,14 +103,14 @@ let main () =
       print_assign Format.std_formatter ()
   | S.Unsat ->
     Format.printf "Unsat@."
-;;
 
-try
-  main ()
-with
-| Out_of_time ->
-  Format.printf "Time limit exceeded@.";
-  exit 2
-| Out_of_space ->
-  Format.printf "Size limit exceeded@.";
-  exit 3
+let () =
+  try
+    main ()
+  with
+  | Out_of_time ->
+    Format.printf "Time limit exceeded@.";
+    exit 2
+  | Out_of_space ->
+    Format.printf "Size limit exceeded@.";
+    exit 3
