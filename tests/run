@@ -4,7 +4,7 @@ solvertest () {
     for f in `find -L $1 -name *.cnf -type f`
     do
         echo -ne "\r\033[KTesting $f..."
-        tests/main -t 5s -s 1G $f | grep $2 > /dev/null 2> /dev/null
+        tests/main -t 30s -s 1G $f | grep $2 > /dev/null 2> /dev/null
         RET=$?
         if [ $RET -ne 0 ];
         then
