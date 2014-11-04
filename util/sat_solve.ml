@@ -47,9 +47,9 @@ let argspec = Arg.align [
     "-s", Arg.String (int_arg size_limit),
       "<s>[kMGT] Sets the size limit for the sat solver";
     "-model", Arg.Set p_assign,
-      "Outputs the boolean model found if sat";
+      " Outputs the boolean model found if sat";
     "-gc", Arg.Unit setup_gc_stat,
-      "Outputs statistics about the GC";
+      " Outputs statistics about the GC";
   ]
 
 (* Limits alarm *)
