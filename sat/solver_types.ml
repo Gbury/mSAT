@@ -64,8 +64,8 @@ module Make (F : Formula_intf.S) = struct
     { var = dummy_var;
       lit = dummy_lit;
       watched = Obj.magic 0;
-        (* should be [Vec.make_empty dummy_clause]
-          but we have to break the cycle *)
+      (* should be [Vec.make_empty dummy_clause]
+         but we have to break the cycle *)
       neg = dummy_atom;
       is_true = false;
       aid = -102 }

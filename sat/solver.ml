@@ -466,32 +466,32 @@ module Make (F : Formula_intf.S)
   let locked c =
     Vec.exists
       (fun v -> match v.reason with
-        | Some c' -> c ==c'
-        | _ -> false
+         | Some c' -> c ==c'
+         | _ -> false
       ) env.vars
 
   (* remove some learnt clauses *)
   let reduce_db () =
-      let extra_lim = env.clause_inc /. (to_float (Vec.size env.learnts)) in
-      Vec.sort env.learnts f_sort_db;
-      let lim2 = Vec.size env.learnts in
-      let lim1 = lim2 / 2 in
-      let j = ref 0 in
-      for i = 0 to lim1 - 1 do
-        let c = Vec.get env.learnts i in
-        if Vec.size c.atoms > 2 && not (locked c) then
-          remove_clause c
-        else
-          begin Vec.set env.learnts !j c; incr j end
-      done;
-      for i = lim1 to lim2 - 1 do
-        let c = Vec.get env.learnts i in
-        if Vec.size c.atoms > 2 && not (locked c) && c.activity < extra_lim then
-          remove_clause c
-        else
-          begin Vec.set env.learnts !j c; incr j end
-      done;
-      Vec.shrink env.learnts (lim2 - !j)
+    let extra_lim = env.clause_inc /. (to_float (Vec.size env.learnts)) in
+    Vec.sort env.learnts f_sort_db;
+    let lim2 = Vec.size env.learnts in
+    let lim1 = lim2 / 2 in
+    let j = ref 0 in
+    for i = 0 to lim1 - 1 do
+      let c = Vec.get env.learnts i in
+      if Vec.size c.atoms > 2 && not (locked c) then
+        remove_clause c
+      else
+        begin Vec.set env.learnts !j c; incr j end
+    done;
+    for i = lim1 to lim2 - 1 do
+      let c = Vec.get env.learnts i in
+      if Vec.size c.atoms > 2 && not (locked c) && c.activity < extra_lim then
+        remove_clause c
+      else
+        begin Vec.set env.learnts !j c; incr j end
+    done;
+    Vec.shrink env.learnts (lim2 - !j)
 
   (* remove from [vec] the clauses that are satisfied in the current trail *)
   let remove_satisfied vec =
@@ -792,7 +792,7 @@ module Make (F : Formula_intf.S)
     check_vec env.learnts
 
   (* fixpoint of propagation and decisions until a model is found, or a
-    conflict is reached *)
+     conflict is reached *)
   let solve () =
     if env.is_unsat then raise (Unsat env.unsat_core);
     let n_of_conflicts = ref (to_float env.restart_first) in
@@ -800,8 +800,8 @@ module Make (F : Formula_intf.S)
     try
       while true do
         begin try
-          search (to_int !n_of_conflicts) (to_int !n_of_learnts);
-        with Restart -> ()
+            search (to_int !n_of_conflicts) (to_int !n_of_learnts);
+          with Restart -> ()
         end;
         n_of_conflicts := !n_of_conflicts *. env.restart_inc;
         n_of_learnts   := !n_of_learnts *. env.learntsize_inc;
@@ -924,7 +924,7 @@ module Make (F : Formula_intf.S)
 
   let pop l =
     if l > current_level()
-      then invalid_arg "cannot pop() to level, it is too high";
+    then invalid_arg "cannot pop() to level, it is too high";
     let i = Vec.get env.levels l in
     (* see whether we can reset [env.is_unsat] *)
     if env.is_unsat && not (Vec.is_empty env.trail_lim) then (

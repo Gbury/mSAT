@@ -18,7 +18,7 @@ module Make (F : Formula_intf.S)
 sig
   (** Functor to create a SMT Solver parametrised by the atomic
       formulas and a theory. *)
-  
+
   exception Unsat of St.clause list
 
   val solve : unit -> unit
