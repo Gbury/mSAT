@@ -5,7 +5,7 @@ COMP=ocamlbuild -log $(LOG) -use-ocamlfind -classic-display
 FLAGS=
 DIRS=-Is sat,smt,common,util
 DOC=msat.docdir/index.html
-TEST=test.native
+TEST=sat_solve.native
 
 NAME=msat
 
