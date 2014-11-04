@@ -1,10 +1,13 @@
 #!/bin/bash
 
+CURDIR=`dirname $0`
+SOLVER="$CURDIR/../test.native"
+
 solvertest () {
     for f in `find -L $1 -name *.cnf -type f`
     do
         echo -ne "\r\033[KTesting $f..."
-        tests/main -t 30s -s 1G $f | grep $2 > /dev/null 2> /dev/null
+        "$SOLVER" -t 30s -s 1G $f | grep $2 > /dev/null 2> /dev/null
         RET=$?
         if [ $RET -ne 0 ];
         then
@@ -15,5 +18,5 @@ solvertest () {
     echo -e "\r\033[K\e[32m[OK]\e[0m $2"
 }
 
-solvertest "tests/sat/" "Sat"
-solvertest "tests/unsat/" "Unsat"
+solvertest "$CURDIR/sat/" "Sat"
+solvertest "$CURDIR/unsat/" "Unsat"

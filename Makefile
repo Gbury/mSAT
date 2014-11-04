@@ -26,7 +26,6 @@ test-full: $(TEST)
 
 $(TEST): $(LIB)
 	$(COMP) $(FLAGS) $(DIRS) $(TEST)
-	cp $(TEST) tests/main && rm $(TEST)
 
 log:
 	cat _build/$(LOG) || true
