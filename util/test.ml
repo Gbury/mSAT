@@ -59,10 +59,7 @@ let check () =
 
 (* Entry file parsing *)
 let get_cnf () =
-  let chan = open_in !file in
-  let lexbuf = Lexing.from_channel chan in
-  let l = Parsedimacs.file Lexdimacs.token lexbuf in
-  List.map (List.map S.make) l
+  List.map (List.map S.make) (Parser.parse !file)
 
 let print_cnf cnf =
   Format.printf "CNF :@\n";
