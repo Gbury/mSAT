@@ -21,11 +21,12 @@ let of_input f =
                 raise (Syntax_error (-1))
             end
     | l ->
-            begin try begin match List.rev_map int_of_string l with
-            | 0 :: r -> Clause r
-            | _ -> raise (Syntax_error (-1))
-            end with
-            | Invalid_argument _ -> raise (Syntax_error (-1))
+            begin try
+              begin match List.rev_map int_of_string l with
+              | 0 :: r -> Clause r
+              | _ -> raise (Syntax_error (-1))
+              end
+            with Invalid_argument _ -> raise (Syntax_error (-1))
             end
 
 let parse_with todo file =
