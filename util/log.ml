@@ -27,15 +27,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 let debug_level_ = ref 0
 let set_debug l = debug_level_ := l
 let get_debug () = !debug_level_
+let _dummy_buf = Buffer.create 0  (* dummy buffer, never used *)
 let debug l format =
-  let b = Buffer.create 15 in
   if l <= !debug_level_
   then (
+    let b = Buffer.create 64 in
     Printf.kbprintf
       (fun b -> print_endline (Buffer.contents b))
       b format)
   else
-    Printf.ifprintf b format
+    Printf.ifprintf _dummy_buf format
 
 let on_buffer pp x =
   let buf = Buffer.create 24 in
