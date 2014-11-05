@@ -31,6 +31,6 @@ $(SOLVER):
 
 $(LOGDIR)/raw/%.done : $(PROVER)
 	@mkdir -p $(dir $@)
-	@echo "solving problem $*.cnf..."
+	@echo "solving problem $*.cnf..." | tee -a $(INDEX)
 	@./run_prover "$(CMD)" "$*.cnf" "$@"
 
