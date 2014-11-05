@@ -41,7 +41,7 @@ val insert : (int -> int -> bool) -> t -> int -> unit
 (** Insert a new integer into the heap, according to the given comparison *)
 
 val grow_to_by_double: t -> int -> unit
-(** Augment the internal capacity of the heap until it reaches at
+(** Hint: augment the internal capacity of the heap until it reaches at
     least the given integer *)
 
 (*val update : (int -> int -> bool) -> t -> int -> unit*)

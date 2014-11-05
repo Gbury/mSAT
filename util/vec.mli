@@ -70,6 +70,7 @@ val set : 'a t -> int -> 'a -> unit
     @raise Invalid_argument if the index is not valid *)
 
 val set_unsafe : 'a t -> int -> 'a -> unit
+(* undocumented. TODO remove asap *)
 
 val copy : 'a t -> 'a t
 (** Fresh copy *)
