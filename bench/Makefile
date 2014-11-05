@@ -9,16 +9,22 @@ DONE 	:= $(addprefix $(LOGDIR)/raw/, $(CNF:.cnf=.done))
 PROVER := $(shell echo "./$(LOGDIR)/prover")
 CMD    := $(PROVER) $(OPTIONS)
 
+DATE    = date +'%H:%M:%S %d/%m/%Y'
+
 all: $(INDEX)
 
-$(INDEX): $(PROVER) $(DONE)
-	@echo "Bench ended for commit `git rev-parse HEAD`" | tee -a $(INDEX)
-	@echo "Ended at `date +'%H:%M:%S %d/%m/%Y'`" | tee -a $(INDEX)
+sync:
+	rsync -avz rsync://gbury.eu/benchs/ ./
+
+$(INDEX): dummy $(PROVER) $(DONE)
+	@echo "Bench ended for commit `git rev-parse HEAD` at `$(DATE)`" | tee -a $(INDEX)
+
+dummy: $(PROVER)
+	@echo "Bench started for commit `git rev-parse HEAD` at `$(DATE)`" | tee -a $(INDEX)
 
 $(PROVER): $(SOLVER)
 	@mkdir -p $(LOGDIR)/raw
 	@cp $(SOLVER) $(PROVER)
-	@echo "Bench started for commit `git rev-parse HEAD`"
 
 $(SOLVER):
 	cd .. && $(MAKE)
