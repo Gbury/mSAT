@@ -58,16 +58,16 @@ module Tsat = struct
   (* We don't have anything to do since the SAT Solver already
    * does propagation and conflict detection *)
 
-  type t = int
+  type t = unit
   type formula = Fsat.t
   type explanation = Exp.t
   type proof = unit
 
   exception Inconsistent of explanation
 
-  let dummy = -1
-  let empty () = 0
-  let assume ~cs:_ _ _ _ = 0
+  let dummy = ()
+  let empty () = ()
+  let assume ~cs:_ _ _ _ = ()
 end
 
 module Make(Dummy : sig end) = struct
