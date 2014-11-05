@@ -11,7 +11,7 @@ NAME=msat
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 
-all:$(LIB)
+all:$(LIB) $(TEST)
 
 $(LIB):
 	$(COMP) $(FLAGS) $(DIRS) $(LIB)
@@ -20,8 +20,6 @@ doc:
 	$(COMP) $(FLAGS) $(DIRS) $(DOC)
 
 test: $(TEST)
-
-test-full: $(TEST)
 	./tests/run
 
 $(TEST): $(LIB)
