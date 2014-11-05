@@ -25,6 +25,9 @@ test: $(TEST)
 $(TEST): $(LIB)
 	$(COMP) $(FLAGS) $(DIRS) $(TEST)
 
+bench: $(TEST)
+	cd bench && $(MAKE)
+
 log:
 	cat _build/$(LOG) || true
 
@@ -43,4 +46,4 @@ reinstall: all
 	ocamlfind remove msat || true
 	ocamlfind install msat $(TO_INSTALL)
 
-.PHONY: clean doc all install uninstall reinstall
+.PHONY: clean doc all bench install uninstall reinstall
