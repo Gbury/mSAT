@@ -1,6 +1,4 @@
 
-module S = Sat.Make(struct end)
-
 exception Out_of_time
 exception Out_of_space
 
@@ -38,10 +36,14 @@ let setup_gc_stat () =
   )
 
 let input_file = fun s -> file := s
+let log_file = ref ""
+let debug_level = ref max_int
 let usage = "Usage : main [options] <file>"
 let argspec = Arg.align [
-    "-v", Arg.Int (fun i -> Log.set_debug i),
+    "-v", Arg.Set_int debug_level,
       "<lvl> Sets the debug verbose level";
+    "-log", Arg.Set_string log_file,
+      "<file> Sets the log file";
     "-t", Arg.String (int_arg time_limit),
       "<t>[smhd] Sets the time limit for the sat solver";
     "-s", Arg.String (int_arg size_limit),
@@ -62,36 +64,40 @@ let check () =
   else if s > !size_limit then
     raise Out_of_space
 
-(* Entry file parsing *)
-let get_cnf () =
-  List.rev_map (List.rev_map S.make) (Parser.parse !file)
+let proceed () =
+  (* logging module *)
+  let log = match !log_file with
+    | "" -> Neperien.dummy
+    | filename -> Neperien.log_to_file_mod_exn filename
+  in
+  let module NLog = (val log : Neperien.S) in
+  NLog.set_max_level !debug_level;
+  let module S = Sat.Make(NLog) in
 
-let print_cnf cnf =
-  Format.printf "CNF :@\n";
-  List.iter (fun c ->
-      Format.fprintf Format.std_formatter "%a;@\n"
-        (fun fmt -> List.iter (fun a ->
-             Format.fprintf fmt "%a@ " S.print_atom a
-           )
-        ) c
-    ) cnf
+  (* Entry file parsing *)
+  let get_cnf () =
+    List.rev_map (List.rev_map S.make) (Parser.parse !file)
+  in
 
-(* Iterate over all variables created *)
-let print_assign fmt () =
-  S.iter_atoms (fun a ->
-      Format.fprintf fmt "%a -> %s,@ "
-        S.print_atom a
-        (if S.eval a then "T" else "F")
-    )
+  let print_cnf cnf =
+    Format.printf "CNF :@\n";
+    List.iter (fun c ->
+        Format.fprintf Format.std_formatter "%a;@\n"
+          (fun fmt -> List.iter (fun a ->
+               Format.fprintf fmt "%a@ " S.print_atom a
+             )
+          ) c
+      ) cnf
+  in
 
-let main () =
-  (* Administrative duties *)
-  Arg.parse argspec input_file usage;
-  if !file = "" then begin
-    Arg.usage argspec usage;
-    exit 2
-  end;
-  ignore(Gc.create_alarm check);
+  (* Iterate over all variables created *)
+  let print_assign fmt () =
+    S.iter_atoms (fun a ->
+        Format.fprintf fmt "%a -> %s,@ "
+          S.print_atom a
+          (if S.eval a then "T" else "F")
+      )
+  in
 
   (* Interesting stuff happening *)
   let cnf = get_cnf () in
@@ -103,6 +109,16 @@ let main () =
       print_assign Format.std_formatter ()
   | S.Unsat ->
     Format.printf "Unsat@."
+
+let main () =
+  (* Administrative duties *)
+  Arg.parse argspec input_file usage;
+  if !file = "" then begin
+    Arg.usage argspec usage;
+    exit 2
+  end;
+  ignore(Gc.create_alarm check);
+  proceed ()
 
 let () =
   try

@@ -1,6 +1,6 @@
 (* Copyright 2014 Guillaume Bury *)
 
-module Make(Dummy: sig end) : sig
+module Make(L: Neperien.S) : sig
   (** Fonctor to make a pure SAT Solver module with built-in literals. *)
 
   exception Bad_atom
@@ -14,7 +14,8 @@ module Make(Dummy: sig end) : sig
 
   val new_atom : unit -> atom
   (** [new_atom ()] returns a fresh literal.
-      @raise Bad_atom if there are no more integer available to represent new atoms. *)
+      @raise Bad_atom if there are no more integer available
+          to represent new atoms. *)
 
   val make : int -> atom
   (** Returns the literal corresponding to the integer.

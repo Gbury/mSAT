@@ -13,7 +13,8 @@
 module Make (F : Formula_intf.S)
     (St : Solver_types.S with type formula = F.t)
     (Ex : Explanation.S with type atom = St.atom)
-    (Th : Theory_intf.S with type formula = F.t and type explanation = Ex.t) = struct
+    (Th : Theory_intf.S with type formula = F.t and type explanation = Ex.t)
+    (L : Neperien.S) = struct
 
   open St
 
@@ -201,15 +202,17 @@ module Make (F : Formula_intf.S)
   let new_decision_level() =
     Vec.push env.trail_lim (Vec.size env.trail);
     Vec.push env.tenv_queue env.tenv; (* save the current tenv *)
-    Log.debug 5 "New decision level : %d (%d in env queue)(%d in trail)"
+    L.send_b' "New decision level : %d (%d in env queue)(%d in trail)"
       (Vec.size env.trail_lim) (Vec.size env.tenv_queue) (Vec.size env.trail);
     ()
 
   let attach_clause c =
+    let lev = L.Unsafe.within_enter () in
     Vec.push (Vec.get c.atoms 0).neg.watched c;
     Vec.push (Vec.get c.atoms 1).neg.watched c;
-    Log.debug 8 "%a <-- %a" St.pp_atom (Vec.get c.atoms 0).neg St.pp_clause c;
-    Log.debug 8 "%a <-- %a" St.pp_atom (Vec.get c.atoms 1).neg St.pp_clause c;
+    L.send_b' "%a <-- %a" St.pp_atom (Vec.get c.atoms 0).neg St.pp_clause c;
+    L.send_b' "%a <-- %a" St.pp_atom (Vec.get c.atoms 1).neg St.pp_clause c;
+    L.Unsafe.within_exit_b' lev "attach clause %a" St.pp_clause c;
     if c.learnt then
       env.learnts_literals <- env.learnts_literals + Vec.size c.atoms
     else
@@ -233,7 +236,7 @@ module Make (F : Formula_intf.S)
 
   (* cancel down to [lvl] excluded *)
   let cancel_until lvl =
-    Log.debug 5 "Bactracking to decision level %d (excluded)" lvl;
+    let lev = L.Unsafe.within_enter () in
     if decision_level () > lvl then begin
       env.qhead <- Vec.get env.trail_lim lvl;
       for c = Vec.size env.trail - 1 downto env.qhead do
@@ -251,6 +254,7 @@ module Make (F : Formula_intf.S)
       Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - lvl);
       Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - lvl)
     end;
+    L.Unsafe.within_exit_b' lev "Bactracking to decision level %d (excluded)" lvl;
     assert (Vec.size env.trail_lim = Vec.size env.tenv_queue)
 
   let rec pick_branch_lit () =
@@ -270,7 +274,7 @@ module Make (F : Formula_intf.S)
     a.is_true <- true;
     a.var.level <- lvl;
     a.var.reason <- reason;
-    Log.debug 8 "Enqueue: %a" pp_atom a;
+    L.send_b' "Enqueue: %a" pp_atom a;
     Vec.push env.trail a
 
   let progress_estimate () =
@@ -307,7 +311,8 @@ module Make (F : Formula_intf.S)
             Vec.set atoms 1 ak;
             Vec.set atoms k a.neg;
             Vec.push ak.neg.watched c;
-            Log.debug 8 "New watcher (%a) for clause : %a" St.pp_atom ak.neg St.pp_clause c;
+            L.send_b' "New watcher (%a) for clause : %a"
+              St.pp_atom ak.neg St.pp_clause c;
             raise Exit
           end
         done;
@@ -319,22 +324,22 @@ module Make (F : Formula_intf.S)
             Vec.set watched !new_sz (Vec.get watched k);
             incr new_sz;
           done;
-          Log.debug 3 "Conflict found : %a" St.pp_clause c;
+          L.send_b' "Conflict found : %a" St.pp_clause c;
           raise (Conflict c)
         end
         else begin
           (* clause is unit *)
           Vec.set watched !new_sz c;
           incr new_sz;
-          Log.debug 5 "Unit clause : %a" St.pp_clause c;
+          L.send_b' "Unit clause : %a" St.pp_clause c;
           enqueue first (decision_level ()) (Some c)
         end
       with Exit -> ()
 
   let propagate_atom a res =
-    Log.debug 8 "Propagating %a" St.pp_atom a;
+    let lev = L.Unsafe.within_enter () in
     let watched = a.watched in
-    Log.debug 10 "Watching %a :" St.pp_atom a;
+    L.send_b' "Watching %a :" St.pp_atom a;
     Vec.iter (fun c -> Log.debug 10 "  %a" St.pp_clause c) watched;
     let new_sz_w = ref 0 in
     begin
@@ -345,6 +350,7 @@ module Make (F : Formula_intf.S)
         done;
       with Conflict c -> assert (!res = None); res := Some c
     end;
+    L.Unsafe.within_exit_b' lev "Propagating %a" St.pp_atom a;
     let dead_part = Vec.size watched - !new_sz_w in
     Vec.shrink watched dead_part
 
@@ -389,6 +395,7 @@ module Make (F : Formula_intf.S)
   let propagate () =
     let num_props = ref 0 in
     let res = ref None in
+    let lev = L.Unsafe.within_enter () in
     (*assert (Queue.is_empty env.tqueue);*)
     while env.qhead < Vec.size env.trail do
       let a = Vec.get env.trail env.qhead in
@@ -399,6 +406,7 @@ module Make (F : Formula_intf.S)
     done;
     env.propagations <- env.propagations + !num_props;
     env.simpDB_props <- env.simpDB_props - !num_props;
+    L.Unsafe.within_exit' lev "boolean propagation";
     !res
 
   (* conflict analysis *)
@@ -634,13 +642,13 @@ module Make (F : Formula_intf.S)
       | [] -> assert false
       | [fuip] ->
         assert (blevel = 0);
-        Log.debug 2 "Unit clause learnt : %a" St.pp_atom fuip;
+        L.send_b' "Unit clause learnt : %a" St.pp_atom fuip;
         fuip.var.vpremise <- history;
         enqueue fuip 0 None
       | fuip :: _ ->
         let name = fresh_lname () in
         let lclause = make_clause name learnt size true history in
-        Log.debug 2 "New clause learnt : %a" St.pp_clause lclause;
+        L.send_b' "New clause learnt : %a" St.pp_clause lclause;
         Vec.push env.learnts lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
@@ -773,7 +781,7 @@ module Make (F : Formula_intf.S)
           let next = pick_branch_lit () in
           let current_level = decision_level () in
           assert (next.level < 0);
-          Log.debug 5 "Deciding on %a" St.pp_atom next.pa;
+          L.send_b' "Deciding on %a" St.pp_atom next.pa;
           enqueue next.pa current_level None
     done
 

@@ -70,8 +70,8 @@ module Tsat = struct
   let assume ~cs:_ _ _ _ = 0
 end
 
-module Make(Dummy : sig end) = struct
-  module SatSolver = Solver.Make(Fsat)(Stypes)(Exp)(Tsat)
+module Make(L : Neperien.S) = struct
+  module SatSolver = Solver.Make(Fsat)(Stypes)(Exp)(Tsat)(L)
 
   exception Bad_atom
 
