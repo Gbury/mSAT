@@ -463,15 +463,16 @@ module Make (F : Formula_intf.S)
   (* returns true if the clause is used as a reason for a propagation,
       and therefore can be needed in case of conflict. In this case
       the clause can't be forgotten *)
-  let locked c =
+  let locked c = false (*
     Vec.exists
       (fun v -> match v.reason with
          | Some c' -> c ==c'
          | _ -> false
       ) env.vars
+      *)
 
   (* remove some learnt clauses *)
-  let reduce_db () =
+  let reduce_db () = () (*
     let extra_lim = env.clause_inc /. (to_float (Vec.size env.learnts)) in
     Vec.sort env.learnts f_sort_db;
     let lim2 = Vec.size env.learnts in
@@ -492,6 +493,7 @@ module Make (F : Formula_intf.S)
         begin Vec.set env.learnts !j c; incr j end
     done;
     Vec.shrink env.learnts (lim2 - !j)
+    *)
 
   (* remove from [vec] the clauses that are satisfied in the current trail *)
   let remove_satisfied vec =
@@ -879,14 +881,13 @@ module Make (F : Formula_intf.S)
       None -> () | Some dep -> report_t_unsat dep
 
   let init_solver cnf ~cnumber =
-    let nbv, _ = made_vars_info () in
+    let nbv = made_vars_info env.vars in
     let nbc = env.nb_init_clauses + List.length cnf in
     Vec.grow_to_by_double env.vars nbv;
     Iheap.grow_to_by_double env.order nbv;
     List.iter
       (List.iter
          (fun a ->
-            Vec.set env.vars a.var.vid a.var;
             insert_var_order a.var
          )
       ) cnf;
@@ -899,7 +900,7 @@ module Make (F : Formula_intf.S)
 
 
   let assume cnf ~cnumber =
-    let cnf = List.map (List.map St.add_atom) cnf in
+    let cnf = List.rev_map (List.rev_map St.add_atom) cnf in
     init_solver cnf ~cnumber
 
   let eval lit =

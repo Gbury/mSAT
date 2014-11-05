@@ -104,7 +104,7 @@ let clear {heap; indices} =
 let insert cmp s n =
   if not (in_heap s n) then
     begin
-      Vec.set s.indices n (Vec.size s.heap);
+      Vec.set_unsafe s.indices n (Vec.size s.heap);
       Vec.push s.heap n;
       percolate_up cmp s (Vec.get s.indices n)
     end

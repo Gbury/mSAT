@@ -72,7 +72,7 @@ module type S = sig
   val to_float : int -> float
 
   val to_int : float -> int
-  val made_vars_info : unit -> int * var list
+  val made_vars_info : var Vec.t -> int
   val clear : unit -> unit
 
   val pp_atom : Buffer.t -> atom -> unit

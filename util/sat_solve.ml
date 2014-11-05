@@ -64,7 +64,7 @@ let check () =
 
 (* Entry file parsing *)
 let get_cnf () =
-  List.map (List.map S.make) (Parser.parse !file)
+  List.rev_map (List.rev_map S.make) (Parser.parse !file)
 
 let print_cnf cnf =
   Format.printf "CNF :@\n";
