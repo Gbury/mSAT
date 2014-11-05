@@ -1,0 +1,7 @@
+#!/bin/bash
+
+CMD="$0"
+FILE="$1"
+LOG="$2"
+
+sleep 1
