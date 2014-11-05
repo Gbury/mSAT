@@ -4,7 +4,7 @@ OPTIONS :=-t 30s -s 1G
 LOGDIR 	:= $(shell echo "logs/`git rev-parse HEAD`")
 LOGDIRE := $(shell echo "logs\/`git rev-parse HEAD`")
 INDEX	:= $(shell echo "$(LOGDIR)/index")
-CNF 	:= $(shell find ./ -name "*.cnf" -type f)
+CNF 	:= $(shell find -L ./ -name "*.cnf" -type f)
 DONE 	:= $(addprefix $(LOGDIR)/raw/, $(CNF:.cnf=.done))
 
 PROVER := $(shell echo "$(LOGDIR)/prover")
