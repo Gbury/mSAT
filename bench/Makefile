@@ -1,27 +1,28 @@
-SOLVER =../sat_solve.native
-OPTIONS =-t 30s -s 1G
-CMD = $(SOLVER) $(OPTIONS)
+SOLVER 	:=../sat_solve.native
+OPTIONS :=-t 30s -s 1G
 
-LOGDIR := logs
-LOG := $(shell  date +'$(LOGDIR)/sat_%Y-%m-%d-%H%M')
-CNF := $(shell  find ./ -name "*.cnf" -type f)
-DONE := $(CNF:.cnf=.done)
+LOGDIR 	:= $(shell echo "logs/`git rev-parse HEAD`")
+LOGDIRE := $(shell echo "logs\/`git rev-parse HEAD`")
+INDEX	:= $(shell echo "$(LOGDIR)/index")
+CNF 	:= $(shell find ./ -name "*.cnf" -type f)
+DONE 	:= $(addprefix $(LOGDIR)/raw/, $(CNF:.cnf=.done))
 
-all: $(LOG) $(DONE)
-	@find ./ -name "*.done" -type f -delete
+PROVER := $(shell echo "$(LOGDIR)/prover")
+CMD    := $(PROVER) $(OPTIONS)
+
+all: $(INDEX)
 	@echo "All done."
 
-$(LOG):
-	@mkdir -p $(LOGDIR)
-	@touch $(LOG)
-	@echo "Log file : $(LOG)"
-	@echo "Date : `date +'%H:%M %d-%m-%Y'`" | tee -a $(LOG)
-	@echo "Command : '$(CMD)'" | tee -a $(LOG)
-	@echo "Commit : `git rev-parse HEAD`" | tee -a $(LOG)
+$(INDEX): $(PROVER) $(DONE)
+	@echo "Ended at `date +'%H:%M:%S %d/%m/%Y'`" > $(INDEX)
+	@echo "Index created"
 
-%.done : %.cnf $(LOG)
-	@./run_prover "$(CMD)" "$*" "$(LOG)"
-	@touch $*.done
+$(PROVER):
+	@echo "Creating log directory..." && mkdir -p $(LOGDIR)/raw
+	@echo "Copying prover..." && cp $(SOLVER) $(PROVER)
 
-clean:
-	@find ./ -name "*.done" -type f -delete
+$(LOGDIR)/raw/%.done : $(PROVER)
+	@mkdir -p $(dir $@)
+	@echo "solving problem $*.cnf..."
+	@./run_prover "$(CMD)" "$*.cnf" "$@"
+

@@ -1,7 +1,12 @@
 #!/bin/bash
 
-CMD="$0"
-FILE="$1"
-LOG="$2"
+CMD="$1"
+FILE="$2"
+LOG="$3"
 
-sleep 1
+/usr/bin/time -f "%e" $CMD $FILE > $3 2>&1
+RET=$?
+if [ $RET -ne 0 ];
+then
+    echo "Error code $RET while solving $FILE"
+fi
