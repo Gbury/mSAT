@@ -7,7 +7,8 @@ exception Out_of_space
 (* Arguments parsing *)
 let file = ref ""
 let p_assign = ref false
-let p_proof = ref false
+let p_proof_check = ref false
+let p_proof_print = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
 
@@ -43,11 +44,13 @@ let usage = "Usage : main [options] <file>"
 let argspec = Arg.align [
     "-bt", Arg.Unit (fun () -> Printexc.record_backtrace true),
     " Enable stack traces";
+    "-check", Arg.Set p_proof_check,
+    " Build and check the proof, if unsat";
     "-gc", Arg.Unit setup_gc_stat,
     " Outputs statistics about the GC";
     "-model", Arg.Set p_assign,
     " Outputs the boolean model found if sat";
-    "-p", Arg.Set p_proof,
+    "-p", Arg.Unit (fun () -> p_proof_check := true; p_proof_print := true),
     " Outputs the proof found (in dot format) if unsat";
     "-s", Arg.String (int_arg size_limit),
     "<s>[kMGT] Sets the size limit for the sat solver";
@@ -107,11 +110,13 @@ let main () =
     if !p_assign then
       print_assign Format.std_formatter ()
   | S.Unsat ->
-    Format.printf "Unsat@.";
-    if !p_proof then begin
+    if !p_proof_check then begin
+      Format.printf "/* Unsat */@.";
       let p = S.get_proof () in
-      S.print_proof Format.std_formatter p
-    end
+      if !p_proof_print then
+        S.print_proof Format.std_formatter p
+    end else
+      Format.printf "Unsat@."
 
 let () =
   try

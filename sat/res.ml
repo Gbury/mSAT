@@ -43,6 +43,9 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
   let compare_atoms a b = Pervasives.compare St.(a.aid) St.(b.aid)
 
+  let _c = ref 0
+  let fresh_pcl_name () = incr _c; "P" ^ (string_of_int !_c)
+
   (* Printing functions *)
   let print_atom fmt a =
     Format.fprintf fmt "%s%d" St.(if a.var.pa == a then "" else "-") St.(a.var.vid + 1)
@@ -93,7 +96,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     | [] -> raise (Resolution_error "No literal to resolve over")
     | [a] ->
       H.add proof new_clause (Resolution (a, (c, cl_c), (d, cl_d)));
-      let new_c = St.make_clause (St.fresh_name ()) new_clause (List.length new_clause) true [c; d] in
+      let new_c = St.make_clause (fresh_pcl_name ()) new_clause (List.length new_clause) true [c; d] in
       Log.debug 5 "New clause : %a" St.pp_clause new_c;
       new_c, new_clause
     | _ -> raise (Resolution_error "Resolved to a tautology")
@@ -146,7 +149,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
 
   let clause_unit a = St.(
       let l = if a.is_true then [a] else [a.neg] in
-      make_clause (fresh_name ()) l 1 true a.var.vpremise
+      make_clause (fresh_pcl_name ()) l 1 true a.var.vpremise
     )
 
   let rec prove_unsat_cl (c, cl) = match cl with
@@ -225,38 +228,49 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
 
   let print_clause fmt c = print_cl fmt (to_list c)
 
-  let print_dot_rule f arg fmt cl =
-    Format.fprintf fmt "%s [shape=plaintext, label=<<TABLE %s>%a</TABLE>>];@\n"
-      (c_id cl) "BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"" f arg
+  let print_dot_rule opt f arg fmt cl =
+    Format.fprintf fmt "%s [shape=plaintext, label=<<TABLE %s %s>%a</TABLE>>];@\n"
+      (c_id cl) "BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"" opt f arg
 
-  let print_dot_edge c fmt d =
-    Format.fprintf fmt "%s -> %s;@\n" (c_id c) (c_id d)
+  let print_dot_edge id_c fmt id_d =
+    Format.fprintf fmt "%s -> %s;@\n" id_c id_d
+
+  let print_res_atom id fmt a =
+      Format.fprintf fmt "%s [label=\"%a\"]" id print_atom a
+
+  let print_res_node concl p1 p2 fmt atom =
+      let id = new_id () in
+      Format.fprintf fmt "%a;@\n%a%a%a"
+      (print_res_atom id) atom
+      (print_dot_edge (c_id concl)) id
+      (print_dot_edge id) (c_id p1)
+      (print_dot_edge id) (c_id p2)
 
   let rec print_dot_proof fmt p =
     match p.step with
     | Hypothesis ->
       let aux fmt () =
-        Format.fprintf fmt "<TR><TD BGCOLOR=\"LIGHTBLUE\">%a</TD></TR>"
-          print_clause p.conclusion
+        Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>Hypothesis</TD><TD>%s</TD></TR>"
+          print_clause p.conclusion St.(p.conclusion.name)
       in
-      print_dot_rule aux () fmt p.conclusion
+      print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
     | Lemma _ ->
       let aux fmt () =
-        Format.fprintf fmt "<TR><TD BGCOLOR=\"LIGHTBLUE\">%a</TD></TR><TR><TD>to prove ...</TD></TR>"
-          print_clause p.conclusion
+        Format.fprintf fmt "<TR><TD colspan=\"2\"BGCOLOR=\"LIGHTBLUE\">%a</TD></TR><TR><TD>Lemma</TD><TD>%s</TD></TR>"
+          print_clause p.conclusion St.(p.conclusion.name)
       in
-      print_dot_rule aux () fmt p.conclusion
+      print_dot_rule "BGCOLOR=\"RED\"" aux () fmt p.conclusion
     | Resolution (proof1, proof2, a) ->
       let aux fmt () =
-        Format.fprintf fmt "<TR><TD>%a</TD></TR><TR><TD>%a</TD></TR>"
-          print_clause p.conclusion print_atom a
+        Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>%s</TD><TD>%s</TD></TR>"
+        print_clause p.conclusion
+        "Resolution" St.(p.conclusion.name)
       in
       let p1 = proof1 () in
       let p2 = proof2 () in
-      Format.fprintf fmt "%a%a%a%a%a"
-        (print_dot_rule aux ()) p.conclusion
-        (print_dot_edge p.conclusion) p1.conclusion
-        (print_dot_edge p.conclusion) p2.conclusion
+      Format.fprintf fmt "%a%a%a%a"
+        (print_dot_rule "" aux ()) p.conclusion
+        (print_res_node p.conclusion p1.conclusion p2.conclusion) a
         print_dot_proof p1
         print_dot_proof p2
 
