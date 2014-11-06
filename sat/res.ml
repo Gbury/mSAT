@@ -48,12 +48,12 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
 
   (* Printing functions *)
   let print_atom fmt a =
-    Format.fprintf fmt "%s%d" St.(if a.var.pa == a then "" else "-") St.(a.var.vid + 1)
+    Format.fprintf fmt "%s%d" St.(if a.var.pa == a then "" else "¬ ") St.(a.var.vid + 1)
 
   let rec print_cl fmt = function
     | [] -> Format.fprintf fmt "[]"
     | [a] -> print_atom fmt a
-    | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a \\/ %a" print_atom a print_cl r
+    | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" print_atom a print_cl r
 
   (* Compute resolution of 2 clauses *)
   let resolve l =
