@@ -140,6 +140,8 @@ module Make (F : Formula_intf.S) = struct
       activity = 0.;
       cpremise = premise}
 
+  let empty_clause = make_clause "Empty" [] 0 false []
+
   let fresh_lname =
     let cpt = ref 0 in
     fun () -> incr cpt; "L" ^ (string_of_int !cpt)

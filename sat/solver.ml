@@ -16,6 +16,7 @@ module Make (F : Formula_intf.S)
     (Th : Theory_intf.S with type formula = F.t and type explanation = Ex.t) = struct
 
   open St
+  module Proof = Res.Make(St)(Th)
 
   exception Sat
   exception Unsat of clause list
@@ -30,6 +31,9 @@ module Make (F : Formula_intf.S)
 
     mutable unsat_core : clause list;
     (* clauses that imply false, if any  *)
+
+    mutable unsat_conflict : clause option;
+    (* conflict clause at decision level 0, if any *)
 
     clauses : clause Vec.t;
     (* all currently active clauses *)
@@ -116,6 +120,7 @@ module Make (F : Formula_intf.S)
   let env = {
     is_unsat = false;
     unsat_core = [] ;
+    unsat_conflict = None;
     clauses = Vec.make 0 dummy_clause; (*updated during parsing*)
     learnts = Vec.make 0 dummy_clause; (*updated during parsing*)
     clause_inc = 1.;
@@ -559,6 +564,7 @@ module Make (F : Formula_intf.S)
     *)
     env.is_unsat <- true;
     env.unsat_core <- unsat_core;
+    env.unsat_conflict <- Some confl;
     raise (Unsat unsat_core)
 
 
@@ -907,6 +913,9 @@ module Make (F : Formula_intf.S)
     let var, negated = make_var lit in
     let truth = var.pa.is_true in
     if negated then not truth else truth
+
+
+  let unsat_conflict () = env.unsat_conflict
 
   type level = int
 

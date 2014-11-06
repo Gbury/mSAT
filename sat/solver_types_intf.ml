@@ -56,6 +56,7 @@ module type S = sig
   val dummy_var : var
   val dummy_atom : atom
   val dummy_clause : clause
+  val empty_clause : clause
 
   val make_var : formula -> var * bool
 

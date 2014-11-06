@@ -9,6 +9,9 @@ module Make(Dummy: sig end) : sig
   type atom = private int
   (** Type for atoms, i.e boolean literals. *)
 
+  type proof
+  (** Abstract type for resolution proofs *)
+
   type res = Sat | Unsat
   (** Type of results returned by the solve function. *)
 
@@ -43,6 +46,12 @@ module Make(Dummy: sig end) : sig
 
   val assume : atom list list -> unit
   (** Add a list of clauses to the set of assumptions. *)
+
+  val get_proof : unit -> proof
+  (** Returns the resolution proof found, if [solve] returned [Unsat]. *)
+
+  val print_proof : Format.formatter -> proof -> unit
+  (** Print the given proof in dot format. *)
 
 end
 

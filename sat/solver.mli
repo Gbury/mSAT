@@ -21,6 +21,11 @@ sig
 
   exception Unsat of St.clause list
 
+  module Proof : Res.S with
+    type atom = St.atom and
+    type clause = St.clause and
+    type lemma = Th.proof
+
   val solve : unit -> unit
   (** Try and solves the current set of assumptions.
       @return () if the current set of clauses is satisfiable
@@ -34,6 +39,10 @@ sig
   val eval : F.t -> bool
   (** Returns the valuation of a formula in the current state
       of the sat solver. *)
+
+  val unsat_conflict : unit -> St.clause option
+  (** Returns the unsat clause found at the toplevel, if it exists (i.e if
+      [solve] has raised [Unsat]) *)
 
   type level
   (** Abstract notion of assumption level. *)

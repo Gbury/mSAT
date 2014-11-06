@@ -7,6 +7,7 @@ exception Out_of_space
 (* Arguments parsing *)
 let file = ref ""
 let p_assign = ref false
+let p_proof = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
 
@@ -40,16 +41,20 @@ let setup_gc_stat () =
 let input_file = fun s -> file := s
 let usage = "Usage : main [options] <file>"
 let argspec = Arg.align [
-    "-v", Arg.Int (fun i -> Log.set_debug i),
-      "<lvl> Sets the debug verbose level";
-    "-t", Arg.String (int_arg time_limit),
-      "<t>[smhd] Sets the time limit for the sat solver";
-    "-s", Arg.String (int_arg size_limit),
-      "<s>[kMGT] Sets the size limit for the sat solver";
-    "-model", Arg.Set p_assign,
-      " Outputs the boolean model found if sat";
+    "-bt", Arg.Unit (fun () -> Printexc.record_backtrace true),
+      " Enable stack traces";
     "-gc", Arg.Unit setup_gc_stat,
       " Outputs statistics about the GC";
+    "-model", Arg.Set p_assign,
+      " Outputs the boolean model found if sat";
+    "-p", Arg.Set p_proof,
+      " Outputs the proof found (in dot format) if unsat";
+    "-s", Arg.String (int_arg size_limit),
+      "<s>[kMGT] Sets the size limit for the sat solver";
+    "-t", Arg.String (int_arg time_limit),
+      "<t>[smhd] Sets the time limit for the sat solver";
+    "-v", Arg.Int (fun i -> Log.set_debug i),
+      "<lvl> Sets the debug verbose level";
   ]
 
 (* Limits alarm *)
@@ -102,7 +107,11 @@ let main () =
     if !p_assign then
       print_assign Format.std_formatter ()
   | S.Unsat ->
-    Format.printf "Unsat@."
+    Format.printf "Unsat@.";
+    if !p_proof then begin
+        let p = S.get_proof () in
+        S.print_proof Format.std_formatter p
+    end
 
 let () =
   try

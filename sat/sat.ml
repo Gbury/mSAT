@@ -75,13 +75,14 @@ module Make(Dummy : sig end) = struct
 
   exception Bad_atom
 
+  type atom = Fsat.t
+  type proof = SatSolver.Proof.proof
+
   type res =
     | Sat
     | Unsat
 
   let _i = ref 0
-
-  type atom = Fsat.t
 
   let new_atom () =
     try
@@ -117,4 +118,12 @@ module Make(Dummy : sig end) = struct
     with SatSolver.Unsat _ -> ()
 
   let eval = SatSolver.eval
+
+  let get_proof () =
+      match SatSolver.unsat_conflict () with
+      | None -> assert false
+      | Some c -> SatSolver.Proof.prove_unsat c
+
+  let print_proof = SatSolver.Proof.print_dot
+
 end
