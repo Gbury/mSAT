@@ -120,9 +120,9 @@ module Make(Dummy : sig end) = struct
   let eval = SatSolver.eval
 
   let get_proof () =
-      match SatSolver.unsat_conflict () with
-      | None -> assert false
-      | Some c -> SatSolver.Proof.prove_unsat c
+    match SatSolver.unsat_conflict () with
+    | None -> assert false
+    | Some c -> SatSolver.Proof.prove_unsat c
 
   let print_proof = SatSolver.Proof.print_dot
 

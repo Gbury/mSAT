@@ -123,9 +123,9 @@ module Make (F : Formula_intf.S) = struct
         var, negated
 
   let made_vars_info vars =
-      Vec.grow_to_by_double vars !cpt_mk_var;
-      MA.iter (fun _ var -> Vec.set_unsafe vars var.vid var) !ma;
-      !cpt_mk_var
+    Vec.grow_to_by_double vars !cpt_mk_var;
+    MA.iter (fun _ var -> Vec.set_unsafe vars var.vid var) !ma;
+    !cpt_mk_var
 
   let add_atom lit =
     let var, negated = make_var lit in

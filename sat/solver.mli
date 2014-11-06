@@ -23,8 +23,8 @@ sig
 
   module Proof : Res.S with
     type atom = St.atom and
-    type clause = St.clause and
-    type lemma = Th.proof
+  type clause = St.clause and
+  type lemma = Th.proof
 
   val solve : unit -> unit
   (** Try and solves the current set of assumptions.

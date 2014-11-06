@@ -35,26 +35,26 @@ let int_arg r arg =
 
 let setup_gc_stat () =
   at_exit (fun () ->
-    Gc.print_stat stdout;
-  )
+      Gc.print_stat stdout;
+    )
 
 let input_file = fun s -> file := s
 let usage = "Usage : main [options] <file>"
 let argspec = Arg.align [
     "-bt", Arg.Unit (fun () -> Printexc.record_backtrace true),
-      " Enable stack traces";
+    " Enable stack traces";
     "-gc", Arg.Unit setup_gc_stat,
-      " Outputs statistics about the GC";
+    " Outputs statistics about the GC";
     "-model", Arg.Set p_assign,
-      " Outputs the boolean model found if sat";
+    " Outputs the boolean model found if sat";
     "-p", Arg.Set p_proof,
-      " Outputs the proof found (in dot format) if unsat";
+    " Outputs the proof found (in dot format) if unsat";
     "-s", Arg.String (int_arg size_limit),
-      "<s>[kMGT] Sets the size limit for the sat solver";
+    "<s>[kMGT] Sets the size limit for the sat solver";
     "-t", Arg.String (int_arg time_limit),
-      "<t>[smhd] Sets the time limit for the sat solver";
+    "<t>[smhd] Sets the time limit for the sat solver";
     "-v", Arg.Int (fun i -> Log.set_debug i),
-      "<lvl> Sets the debug verbose level";
+    "<lvl> Sets the debug verbose level";
   ]
 
 (* Limits alarm *)
@@ -109,8 +109,8 @@ let main () =
   | S.Unsat ->
     Format.printf "Unsat@.";
     if !p_proof then begin
-        let p = S.get_proof () in
-        S.print_proof Format.std_formatter p
+      let p = S.get_proof () in
+      S.print_proof Format.std_formatter p
     end
 
 let () =

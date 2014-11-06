@@ -8,7 +8,7 @@ Copyright 2014 Simon Cruanes
 (** {1 Sparse vector, filled with default value} *)
 
 let _size_too_big()=
-    failwith "Sparse_vec: capacity exceeds maximum array size"
+  failwith "Sparse_vec: capacity exceeds maximum array size"
 
 type 'a t = { default : 'a; mutable data : 'a array; mutable sz : int }
 
@@ -17,8 +17,8 @@ let make sz default =
   { default; sz; data=Array.make sz default; }
 
 let init sz f default =
-    if sz > Sys.max_array_length then _size_too_big();
-    {data = Array.init sz (fun i -> f i); sz ; default}
+  if sz > Sys.max_array_length then _size_too_big();
+  {data = Array.init sz (fun i -> f i); sz ; default}
 
 let length {sz} = sz
 
@@ -37,7 +37,7 @@ let rec grow_to_by_double t new_capa =
   let data = t.data in
   let capa = ref (Array.length data + 1) in
   while !capa < new_capa do
-      capa := min (2 * !capa) Sys.max_array_length;
+    capa := min (2 * !capa) Sys.max_array_length;
   done;
   grow_to t !capa
 

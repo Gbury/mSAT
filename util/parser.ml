@@ -15,12 +15,12 @@ type line =
 let rec _read_word s acc i len =
   assert (len>0);
   if i+len=String.length s
-    then String.sub s i len :: acc
-    else match s.[i+len] with
-      | ' ' | '\t' ->
-          let acc = String.sub s i len :: acc in
-          _skip_space s acc (i+len+1)
-      | _ -> _read_word s acc i (len+1)
+  then String.sub s i len :: acc
+  else match s.[i+len] with
+    | ' ' | '\t' ->
+      let acc = String.sub s i len :: acc in
+      _skip_space s acc (i+len+1)
+    | _ -> _read_word s acc i (len+1)
 and _skip_space s acc i =
   if i=String.length s
   then acc

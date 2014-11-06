@@ -14,17 +14,17 @@
 type 'a t = { mutable dummy: 'a; mutable data : 'a array; mutable sz : int }
 
 let _size_too_big()=
-    failwith "Vec: capacity exceeds maximum array size"
+  failwith "Vec: capacity exceeds maximum array size"
 
 let make capa d =
-    if capa > Sys.max_array_length then _size_too_big();
-    {data = Array.make capa d; sz = 0; dummy = d}
+  if capa > Sys.max_array_length then _size_too_big();
+  {data = Array.make capa d; sz = 0; dummy = d}
 
 let make_empty d = {data = [||]; sz=0; dummy=d }
 
 let init capa f d =
-    if capa > Sys.max_array_length then _size_too_big();
-    {data = Array.init capa (fun i -> f i); sz = capa; dummy = d}
+  if capa > Sys.max_array_length then _size_too_big();
+  {data = Array.init capa (fun i -> f i); sz = capa; dummy = d}
 
 let from_array data sz d =
   assert (sz <= Array.length data);
@@ -53,16 +53,16 @@ let grow_to t new_capa =
   t.data <- Array.init new_capa (fun i -> if i < capa then data.(i) else t.dummy)
 
 let grow_to_double_size t =
-    if Array.length t.data = Sys.max_array_length then _size_too_big();
-    let size = min Sys.max_array_length (2* Array.length t.data) in
-    grow_to t size
+  if Array.length t.data = Sys.max_array_length then _size_too_big();
+  let size = min Sys.max_array_length (2* Array.length t.data) in
+  grow_to t size
 
 let rec grow_to_by_double t new_capa =
   if new_capa > Sys.max_array_length then _size_too_big ();
   let data = t.data in
   let capa = ref (Array.length data + 1) in
   while !capa < new_capa do
-      capa := min (2 * !capa) Sys.max_array_length;
+    capa := min (2 * !capa) Sys.max_array_length;
   done;
   grow_to t !capa
 

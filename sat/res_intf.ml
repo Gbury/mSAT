@@ -15,8 +15,8 @@ module type S = sig
       @raise Cannot if it is impossible. *)
 
   type proof_node = {
-      conclusion : clause;
-      step : step;
+    conclusion : clause;
+    step : step;
   }
   and proof = unit -> proof_node
   and step =
