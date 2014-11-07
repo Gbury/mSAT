@@ -19,7 +19,7 @@ module Make (F : Formula_intf.S)
   module Proof = Res.Make(St)(Th)
 
   exception Sat
-  exception Unsat of clause list
+  exception Unsat
   exception Restart
   exception Conflict of clause
 
@@ -28,9 +28,6 @@ module Make (F : Formula_intf.S)
 
     mutable is_unsat : bool;
     (* if [true], constraints are already false *)
-
-    mutable unsat_core : clause list;
-    (* clauses that imply false, if any  *)
 
     mutable unsat_conflict : clause option;
     (* conflict clause at decision level 0, if any *)
@@ -119,7 +116,6 @@ module Make (F : Formula_intf.S)
 
   let env = {
     is_unsat = false;
-    unsat_core = [] ;
     unsat_conflict = None;
     clauses = Vec.make 0 dummy_clause; (*updated during parsing*)
     learnts = Vec.make 0 dummy_clause; (*updated during parsing*)
@@ -520,105 +516,17 @@ module Make (F : Formula_intf.S)
 
 
   let report_b_unsat ({atoms=atoms} as confl) =
-    let l = ref [confl] in
-    for i = 0 to Vec.size atoms - 1 do
-      let v = (Vec.get atoms i).var in
-      l := List.rev_append v.vpremise !l;
-      match v.reason with None -> () | Some c -> l := c :: !l
-    done;
-    (*
-    if false then begin
-      eprintf "@.>>UNSAT Deduction made from:@.";
-      List.iter
-        (fun hc ->
-           eprintf "    %a@." pp_clause hc
-        )!l;
-    end;
-    *)
-    let uc = HUC.create 17 in
-    let rec roots todo =
-      match todo with
-      | [] -> ()
-      | c::r ->
-        for i = 0 to Vec.size c.atoms - 1 do
-          let v = (Vec.get c.atoms i).var in
-          if not v.seen then begin
-            v.seen <- true;
-            roots v.vpremise;
-            match v.reason with None -> () | Some r -> roots [r];
-          end
-        done;
-        match c.cpremise with
-        | []    -> if not (HUC.mem uc c) then HUC.add uc c (); roots r
-        | prems -> roots prems; roots r
-    in roots !l;
-    let unsat_core = HUC.fold (fun c _ l -> c :: l) uc [] in
-    (*
-    if false then begin
-      eprintf "@.>>UNSAT_CORE:@.";
-      List.iter
-        (fun hc ->
-           eprintf "    %a@." pp_clause hc
-        )unsat_core;
-    end;
-    *)
-    env.is_unsat <- true;
-    env.unsat_core <- unsat_core;
     env.unsat_conflict <- Some confl;
-    raise (Unsat unsat_core)
-
+    env.is_unsat <- true;
+    raise Unsat
 
   let report_t_unsat dep =
-    let l =
-      Ex.fold_atoms
-        (fun {var=v} l ->
-           let l = List.rev_append v.vpremise l in
-           match v.reason with None -> l | Some c -> c :: l
-        ) dep []
-    in
-    (*
-    if false then begin
-      eprintf "@.>>T-UNSAT Deduction made from:@.";
-      List.iter
-        (fun hc ->
-           eprintf "    %a@." pp_clause hc
-        )l;
-    end;
-    *)
-    let uc = HUC.create 17 in
-    let rec roots todo =
-      match todo with
-      | [] -> ()
-      | c::r ->
-        for i = 0 to Vec.size c.atoms - 1 do
-          let v = (Vec.get c.atoms i).var in
-          if not v.seen then begin
-            v.seen <- true;
-            roots v.vpremise;
-            match v.reason with None -> () | Some r -> roots [r];
-          end
-        done;
-        match c.cpremise with
-        | []    -> if not (HUC.mem uc c) then HUC.add uc c (); roots r
-        | prems -> roots prems; roots r
-    in roots l;
-    let unsat_core = HUC.fold (fun c _ l -> c :: l) uc [] in
-    (*
-    if false then begin
-      eprintf "@.>>T-UNSAT_CORE:@.";
-      List.iter
-        (fun hc ->
-           eprintf "    %a@." pp_clause hc
-        ) unsat_core;
-    end;
-    *)
     env.is_unsat <- true;
-    env.unsat_core <- unsat_core;
-    raise (Unsat unsat_core)
+    raise Unsat
 
   let simplify () =
     assert (decision_level () = 0);
-    if env.is_unsat then raise (Unsat env.unsat_core);
+    if env.is_unsat then raise Unsat;
     begin
       match propagate () with
       | Some confl -> report_b_unsat confl
@@ -640,9 +548,12 @@ module Make (F : Formula_intf.S)
       | [] -> assert false
       | [fuip] ->
         assert (blevel = 0);
+        let name = fresh_lname () in
+        let uclause = make_clause name learnt size true history in
         Log.debug 2 "Unit clause learnt : %a" St.pp_atom fuip;
+        Vec.push env.learnts uclause;
         fuip.var.vpremise <- history;
-        enqueue fuip 0 None
+        enqueue fuip 0 (Some uclause)
       | fuip :: _ ->
         let name = fresh_lname () in
         let lclause = make_clause name learnt size true history in
@@ -802,7 +713,7 @@ module Make (F : Formula_intf.S)
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)
   let solve () =
-    if env.is_unsat then raise (Unsat env.unsat_core);
+    if env.is_unsat then raise Unsat;
     let n_of_conflicts = ref (to_float env.restart_first) in
     let n_of_learnts = ref ((to_float (nb_clauses())) *. env.learntsize_factor) in
     try
@@ -816,9 +727,6 @@ module Make (F : Formula_intf.S)
       done;
     with
     | Sat -> ()
-    | (Unsat cl) as e ->
-      (* check_unsat_core cl; *)
-      raise e
 
   exception Trivial
 
@@ -841,7 +749,7 @@ module Make (F : Formula_intf.S)
 
 
   let add_clause ~cnumber atoms =
-    if env.is_unsat then raise (Unsat env.unsat_core);
+    if env.is_unsat then raise Unsat;
     let init_name = string_of_int cnumber in
     let init0 = make_clause init_name atoms (List.length atoms) false [] in
     try
@@ -914,6 +822,7 @@ module Make (F : Formula_intf.S)
     let truth = var.pa.is_true in
     if negated then not truth else truth
 
+  let history () = env.learnts
 
   let unsat_conflict () = env.unsat_conflict
 

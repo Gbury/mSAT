@@ -19,7 +19,7 @@ sig
   (** Functor to create a SMT Solver parametrised by the atomic
       formulas and a theory. *)
 
-  exception Unsat of St.clause list
+  exception Unsat
 
   module Proof : Res.S with
     type atom = St.atom and
@@ -39,6 +39,9 @@ sig
   val eval : F.t -> bool
   (** Returns the valuation of a formula in the current state
       of the sat solver. *)
+
+  val history : unit -> St.clause Vec.t
+  (** Returns the history of learnt clauses, in the right order. *)
 
   val unsat_conflict : unit -> St.clause option
   (** Returns the unsat clause found at the toplevel, if it exists (i.e if

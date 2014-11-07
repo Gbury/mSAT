@@ -109,13 +109,13 @@ module Make(Dummy : sig end) = struct
     try
       SatSolver.solve ();
       Sat
-    with SatSolver.Unsat _ -> Unsat
+    with SatSolver.Unsat -> Unsat
 
   let assume l =
     incr _i;
     try
       SatSolver.assume l !_i
-    with SatSolver.Unsat _ -> ()
+    with SatSolver.Unsat -> ()
 
   let eval = SatSolver.eval
 
