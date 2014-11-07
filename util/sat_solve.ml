@@ -7,32 +7,32 @@ exception Out_of_space
 (* IO wrappers *)
 (* Types for input/output languages *)
 type sat_input =
-    | Dimacs
+  | Dimacs
 
 type sat_output =
-    | Standard (* Only output problem status *)
-    | Dot
+  | Standard (* Only output problem status *)
+  | Dot
 
 let input = ref Dimacs
 let output = ref Standard
 
 let input_list = [
-    "dimacs", Dimacs;
+  "dimacs", Dimacs;
 ]
 let output_list = [
-    "dot", Dot;
+  "dot", Dot;
 ]
 
 let error_msg opt arg l =
-    Format.fprintf Format.str_formatter "'%s' is not a valid argument for '%s', valid arguments are : %a"
+  Format.fprintf Format.str_formatter "'%s' is not a valid argument for '%s', valid arguments are : %a"
     arg opt (fun fmt -> List.iter (fun (s, _) -> Format.fprintf fmt "%s, " s)) l;
-    Format.flush_str_formatter ()
+  Format.flush_str_formatter ()
 
 let set_io opt arg flag l =
-    try
-        flag := List.assoc arg l
-    with Not_found ->
-        invalid_arg (error_msg opt arg l)
+  try
+    flag := List.assoc arg l
+  with Not_found ->
+    invalid_arg (error_msg opt arg l)
 
 let set_input s = set_io "Input" s input input_list
 let set_output s = set_io "Output" s output output_list
@@ -149,8 +149,8 @@ let main () =
   | S.Unsat ->
     print "Unsat";
     if !p_proof_check then begin
-        let p = S.get_proof () in
-        print_proof p
+      let p = S.get_proof () in
+      print_proof p
     end
 
 let () =

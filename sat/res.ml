@@ -208,8 +208,8 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
       let d = match St.(a.var.level, a.var.reason) with
         | 0, Some d -> d
         | 0, None ->
-                let d, cl_d = unit_hyp a in
-                if is_proved (d, cl_d) then d else raise Exit
+          let d, cl_d = unit_hyp a in
+          if is_proved (d, cl_d) then d else raise Exit
         | _ -> raise Exit
       in
       prove d;
@@ -274,16 +274,15 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     Hashtbl.iter (fun c (_, id) -> Hashtbl.replace ids c (false, id)) ids
 
   let is_drawn c =
-    try
-      fst (Hashtbl.find ids c)
-    with Not_found ->
-      false
+    ignore (c_id c);
+    fst (Hashtbl.find ids c)
 
   let has_drawn c =
-    assert (Hashtbl.mem ids c);
-    let b, id = Hashtbl.find ids c in
-    assert (not b);
-    Hashtbl.replace ids c (true, id)
+    if not (is_drawn c) then
+      let b, id = Hashtbl.find ids c in
+      Hashtbl.replace ids c (true, id)
+    else
+      ()
 
   let print_clause fmt c = print_cl fmt (to_list c)
 
