@@ -498,18 +498,10 @@ module Make (F : Formula_intf.S)
 
   (* remove from [vec] the clauses that are satisfied in the current trail *)
   let remove_satisfied vec =
-    let j = ref 0 in
-    let k = Vec.size vec - 1 in
-    for i = 0 to k do
+    for i = 0 to Vec.size vec - 1 do
       let c = Vec.get vec i in
       if satisfied c then remove_clause c
-      else begin
-        Vec.set vec !j (Vec.get vec i);
-        incr j
-      end
-    done;
-    Vec.shrink vec (k + 1 - !j)
-
+    done
 
   module HUC = Hashtbl.Make
       (struct type t = clause let equal = (==) let hash = Hashtbl.hash end)
@@ -548,11 +540,11 @@ module Make (F : Formula_intf.S)
       | [] -> assert false
       | [fuip] ->
         assert (blevel = 0);
+        fuip.var.vpremise <- history;
         let name = fresh_lname () in
         let uclause = make_clause name learnt size true history in
-        Log.debug 2 "Unit clause learnt : %a" St.pp_atom fuip;
+        Log.debug 2 "Unit clause learnt : %a" St.pp_clause uclause;
         Vec.push env.learnts uclause;
-        fuip.var.vpremise <- history;
         enqueue fuip 0 (Some uclause)
       | fuip :: _ ->
         let name = fresh_lname () in

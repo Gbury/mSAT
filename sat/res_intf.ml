@@ -9,9 +9,12 @@ module type S = sig
   val is_proven : clause -> bool
   (** Returns [true] if the clause has a derivation in the current proof graph, and [false] otherwise. *)
 
-  exception Cannot
+  exception Insuficient_hyps
+  val learn : clause Vec.t -> unit
+  (** Learn and build proofs for the clause in the vector. Clauses in the vector should be in the order they were learned. *)
+
   val assert_can_prove_unsat : clause -> unit
-  (** [prove_unsat c] tries and prove the empty clause from [c].
+  (** [prove_unsat c] tries and prove the empty clause from [c]. [c] may be a learnt clause not yet proved.
       @raise Cannot if it is impossible. *)
 
   type proof_node = {

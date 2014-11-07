@@ -20,6 +20,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     | Resolution of atom * int_cl * int_cl
     (* lits, c1, c2 with lits the literals used to resolve c1 and c2 *)
 
+  exception Insuficient_hyps
   exception Resolution_error of string
 
   (* Proof graph *)
@@ -38,7 +39,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
       let equal = equal_cl
     end)
   let proof : node H.t = H.create 1007;;
-  let unit_learnt : clause H.t = H.create 37;;
+  let unit_hyp : (clause * St.atom list) H.t = H.create 37;;
 
   (* Misc functions *)
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
@@ -46,14 +47,6 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
 
   let _c = ref 0
   let fresh_pcl_name () = incr _c; "P" ^ (string_of_int !_c)
-
-  let clause_unit a =
-    try
-      H.find unit_learnt [a]
-    with Not_found ->
-      let new_c = St.(make_clause (fresh_pcl_name ()) [a] 1 true a.var.vpremise) in
-      H.add unit_learnt [a] new_c;
-      new_c
 
   (* Printing functions *)
   let print_atom fmt a =
@@ -96,6 +89,25 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     | [a] -> St.(a.var.level = 0 && a.var.reason = None && a.var.vpremise <> [])
     | _ -> false
 
+  let make_unit_hyp a =
+    let aux a = St.(make_clause (fresh_name ()) [a] 1 false []) in
+    if St.(a.is_true) then
+      aux a
+    else if St.(a.neg.is_true) then
+      aux St.(a.neg)
+    else
+      assert false
+
+  let unit_hyp a =
+    let a = St.(a.var.pa) in
+    try
+      H.find unit_hyp [a]
+    with Not_found ->
+      let c = make_unit_hyp a in
+      let cl = to_list c in
+      H.add unit_hyp [a] (c, cl);
+      (c, cl)
+
   let is_proved (c, cl) =
     if H.mem proof cl then
       true
@@ -112,7 +124,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     Log.debug 7 "    %a" St.pp_clause c;
     Log.debug 7 "    %a" St.pp_clause d;
     assert (is_proved (c, cl_c));
-    assert (is_proved (c, cl_d));
+    assert (is_proved (d, cl_d));
     let l = List.merge compare_atoms cl_c cl_d in
     let resolved, new_clause = resolve l in
     match resolved with
@@ -134,22 +146,31 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
         diff_learnt (b :: acc) l r'
     | _ -> raise (Resolution_error "Impossible to derive correct clause")
 
+  let clause_unit a = match St.(a.var.level, a.var.reason) with
+    | 0, Some c -> c, to_list c
+    | 0, None ->
+      let c, cl = unit_hyp a in
+      if is_proved (c, cl) then
+        c, cl
+      else
+        assert false
+    | _ ->
+      raise (Resolution_error "Could not find a reason needed to resolve")
+
   let add_clause c cl l = (* We assume that all clauses in l are already proved ! *)
     match l with
     | a :: ((_ :: _) as r) ->
       Log.debug 5 "Resolving (with history) %a" St.pp_clause c;
       let temp_c, temp_cl = List.fold_left add_res a r in
       Log.debug 10 " Switching to unit resolutions";
-      let unit_to_use = diff_learnt [] cl temp_cl in
-      let unit_r = List.map St.(fun a -> clause_unit a.neg, [a.neg]) unit_to_use in
-      let new_c, new_cl = List.fold_left add_res (temp_c, temp_cl) unit_r in
-      if not (equal_cl cl new_cl) then begin
-        (* We didn't get the expected clause, raise an error *)
-        Log.debug 0 "Expected the following clauses to be equal :";
-        Log.debug 0 "expected : %s" (Log.on_fmt print_cl cl);
-        Log.debug 0 "found : %a" St.pp_clause new_c;
-        assert false
-      end
+      let new_c, new_cl = (ref temp_c, ref temp_cl) in
+      while not (equal_cl cl !new_cl) do
+        let unit_to_use = diff_learnt [] cl !new_cl in
+        let unit_r = List.map St.(fun a -> clause_unit a) unit_to_use in
+        let temp_c, temp_cl = List.fold_left add_res (!new_c, !new_cl) unit_r in
+        new_c := temp_c;
+        new_cl := temp_cl;
+      done
     | _ -> assert false
 
   let need_clause (c, cl) =
@@ -186,7 +207,9 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
       Log.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
       let d = match St.(a.var.level, a.var.reason) with
         | 0, Some d -> d
-        | 0, None -> clause_unit St.(a.neg)
+        | 0, None ->
+                let d, cl_d = unit_hyp a in
+                if is_proved (d, cl_d) then d else raise Exit
         | _ -> raise Exit
       in
       prove d;
@@ -199,11 +222,15 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     with Exit ->
       false
 
-  exception Cannot
+  let learn v =
+    Vec.iter (fun c -> Log.debug 15 "history : %a" St.pp_clause c) v;
+    Vec.iter prove v
+
   let assert_can_prove_unsat c =
     Log.debug 1 "=================== Proof =====================";
     prove c;
-    if not (prove_unsat_cl (c, to_list c)) then raise Cannot
+    if not (prove_unsat_cl (c, to_list c)) then
+      raise Insuficient_hyps
 
   (* Interface exposed *)
   type proof_node = {
@@ -279,32 +306,35 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
       (print_dot_edge id) (c_id p2)
 
   let rec print_dot_proof fmt p =
-    match p.step with
-    | Hypothesis ->
-      let aux fmt () =
-        Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>Hypothesis</TD><TD>%s</TD></TR>"
-          print_clause p.conclusion St.(p.conclusion.name)
-      in
-      print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
-    | Lemma _ ->
-      let aux fmt () =
-        Format.fprintf fmt "<TR><TD colspan=\"2\"BGCOLOR=\"LIGHTBLUE\">%a</TD></TR><TR><TD>Lemma</TD><TD>%s</TD></TR>"
-          print_clause p.conclusion St.(p.conclusion.name)
-      in
-      print_dot_rule "BGCOLOR=\"RED\"" aux () fmt p.conclusion
-    | Resolution (proof1, proof2, a) ->
-      let aux fmt () =
-        Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>%s</TD><TD>%s</TD></TR>"
-          print_clause p.conclusion
-          "Resolution" St.(p.conclusion.name)
-      in
-      let p1 = proof1 () in
-      let p2 = proof2 () in
-      Format.fprintf fmt "%a%a%a%a"
-        (print_dot_rule "" aux ()) p.conclusion
-        (print_res_node p.conclusion p1.conclusion p2.conclusion) a
-        print_dot_proof p1
-        print_dot_proof p2
+    if not (is_drawn p.conclusion) then begin
+      has_drawn p.conclusion;
+      match p.step with
+      | Hypothesis ->
+        let aux fmt () =
+          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>Hypothesis</TD><TD>%s</TD></TR>"
+            print_clause p.conclusion St.(p.conclusion.name)
+        in
+        print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
+      | Lemma _ ->
+        let aux fmt () =
+          Format.fprintf fmt "<TR><TD colspan=\"2\"BGCOLOR=\"LIGHTBLUE\">%a</TD></TR><TR><TD>Lemma</TD><TD>%s</TD></TR>"
+            print_clause p.conclusion St.(p.conclusion.name)
+        in
+        print_dot_rule "BGCOLOR=\"RED\"" aux () fmt p.conclusion
+      | Resolution (proof1, proof2, a) ->
+        let aux fmt () =
+          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>%s</TD><TD>%s</TD></TR>"
+            print_clause p.conclusion
+            "Resolution" St.(p.conclusion.name)
+        in
+        let p1 = proof1 () in
+        let p2 = proof2 () in
+        Format.fprintf fmt "%a%a%a%a"
+          (print_dot_rule "" aux ()) p.conclusion
+          (print_res_node p.conclusion p1.conclusion p2.conclusion) a
+          print_dot_proof p1
+          print_dot_proof p2
+    end
 
   let print_dot fmt proof =
     clear_ids ();
