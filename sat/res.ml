@@ -38,6 +38,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
       let equal = equal_cl
     end)
   let proof : node H.t = H.create 1007;;
+  let unit_learnt : clause H.t = H.create 37;;
 
   (* Misc functions *)
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
@@ -45,6 +46,14 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
 
   let _c = ref 0
   let fresh_pcl_name () = incr _c; "P" ^ (string_of_int !_c)
+
+  let clause_unit a =
+      try
+          H.find unit_learnt [a]
+      with Not_found ->
+          let new_c = St.(make_clause (fresh_pcl_name ()) [a] 1 true a.var.vpremise) in
+          H.add unit_learnt [a] new_c;
+          new_c
 
   (* Printing functions *)
   let print_atom fmt a =
@@ -86,10 +95,53 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
   let is_proved c = H.mem proof c
   let is_proven c = is_proved (to_list c)
 
+  let is_unit_hyp = function
+      | [a] -> St.(a.var.level = 0 && a.var.reason = None && a.var.vpremise <> [])
+      | _ -> false
+
+  let unit_learnts a =
+      match St.(a.var.level, a.var.reason, a.var.vpremise) with
+      | 0, None, [] -> [clause_unit a]
+      | _ -> []
+
+  let need_clause (c, cl) =
+    if is_proved cl then
+      [], []
+    else if not St.(c.learnt) || is_unit_hyp cl then begin
+      H.add proof cl Assumption;
+      [], []
+    end else
+      let l =
+          if List.length cl > 1 then
+              List.flatten (List.map unit_learnts cl)
+          else
+              []
+      in
+      (*
+      Log.debug 0 "Need for : %s" St.(c.name);
+      List.iter (fun c ->
+          Log.debug 0 "  premise: %s" St.(c.name)) St.(c.cpremise);
+      List.iter (fun c ->
+          Log.debug 0 "  unit: %s" St.(c.name)) l;
+          *)
+      St.(c.cpremise), l
+
+  let rec diff_learnt acc l l' =
+      match l, l' with
+      | [], _ -> l' @ acc
+      | a :: r, b :: r' ->
+              if equal_atoms a b then
+                  diff_learnt acc r r'
+              else
+                  diff_learnt (b :: acc) l r'
+      | _ -> raise (Resolution_error "Impossible to derive correct clause")
+
   let add_res (c, cl_c) (d, cl_d) =
     Log.debug 7 "Resolving clauses :";
     Log.debug 7 "  %a" St.pp_clause c;
     Log.debug 7 "  %a" St.pp_clause d;
+    assert (is_proved cl_c);
+    assert (is_proved cl_d);
     let l = List.merge compare_atoms cl_c cl_d in
     let resolved, new_clause = resolve l in
     match resolved with
@@ -104,7 +156,10 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
   let add_clause cl l = (* We assume that all clauses in c.cpremise are already proved ! *)
     match l with
     | a :: ((_ :: _) as r) ->
-      let new_c, new_cl = List.fold_left add_res a r in
+      let temp_c, temp_cl = List.fold_left add_res a r in
+      let unit_to_use = diff_learnt [] cl temp_cl in
+      let unit_r = List.map St.(fun a -> clause_unit a.neg, [a.neg]) unit_to_use in
+      let new_c, new_cl = List.fold_left add_res (temp_c, temp_cl) unit_r in
       if not (equal_cl cl new_cl) then begin
         Log.debug 0 "Expected the following clauses to be equal :";
         Log.debug 0 "expected : %s" (Log.on_fmt print_cl cl);
@@ -113,30 +168,20 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
       end
     | _ -> assert false
 
-  let need_clause (c, cl) =
-    if is_proved cl then
-      []
-    else if not St.(c.learnt) then begin
-      Log.debug 8 "Adding to hyps : %a" St.pp_clause c;
-      H.add proof cl Assumption;
-      []
-    end else
-      St.(c.cpremise)
-
   let rec do_clause = function
     | [] -> ()
     | c :: r ->
       let cl = to_list c in
-      let l = need_clause (c, cl) in
-      if l = [] then (* c is either an asusmption, or already proved *)
+      let history, unit_to_learn = need_clause (c, cl) in
+      if history = [] then (* c is either an asusmption, or already proved *)
         do_clause r
       else
-        let l' = List.rev_map (fun c -> c, to_list c) l in
-        let to_prove = List.filter (fun (_, cl) -> not (is_proved cl)) l' in
-        let to_prove = List.rev_map fst to_prove in
+        let history_cl = List.rev_map (fun c -> c, to_list c) history in
+        let to_prove = List.filter (fun (_, cl) -> not (is_proved cl)) history_cl in
+        let to_prove = (List.rev_map fst to_prove) @ unit_to_learn in
         if to_prove = [] then begin
           (* See wether we can prove c right now *)
-          add_clause cl l';
+          add_clause cl history_cl;
           do_clause r
         end else
           (* Or if we have to prove some other clauses first *)
@@ -147,11 +192,6 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     do_clause [c];
     Log.debug 3 "Proved : %a" St.pp_clause c
 
-  let clause_unit a = St.(
-      let l = if a.is_true then [a] else [a.neg] in
-      make_clause (fresh_pcl_name ()) l 1 true a.var.vpremise
-    )
-
   let rec prove_unsat_cl (c, cl) = match cl with
     | [] -> true
     | a :: r ->
@@ -159,7 +199,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
         Log.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
         let d = match St.(a.var.level, a.var.reason) with
           | 0, Some d -> d
-          | 0, None -> clause_unit a
+          | 0, None -> clause_unit St.(a.neg)
           | _ -> raise Exit
         in
         prove d;
