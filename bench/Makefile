@@ -1,5 +1,5 @@
 SOLVER 	:=../sat_solve.native
-OPTIONS :=-t 30s -s 1G
+OPTIONS :=-time 30s -size 1G
 
 LOGDIR 	:= $(shell echo "./logs/`git rev-parse HEAD`")
 INDEX	:= $(shell echo "./$(LOGDIR)/index")

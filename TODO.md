@@ -9,9 +9,8 @@
 - Cleanup code
     * Simplify Solver.Make functor
     * Clean Solver_types interface
-- Add proof output as resolution
+- Add proof output for smt/theories
     * Each theory brings its own proof output (tautologies), somehow
-    * pure resolution proofs between boolean clauses and theory tautologies
 - Add model extraction (at least for SAT)
 - Allow to plug one's code into boolean propagation
     * react upon propagation (possibly by propagating more, or side-effect)

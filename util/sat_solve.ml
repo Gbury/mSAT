@@ -4,6 +4,59 @@ module S = Sat.Make(struct end)
 exception Out_of_time
 exception Out_of_space
 
+(* IO wrappers *)
+(* Types for input/output languages *)
+type sat_input =
+    | Dimacs
+
+type sat_output =
+    | Standard (* Only output problem status *)
+    | Dot
+
+let input = ref Dimacs
+let output = ref Standard
+
+let input_list = [
+    "dimacs", Dimacs;
+]
+let output_list = [
+    "dot", Dot;
+]
+
+let error_msg opt arg l =
+    Format.fprintf Format.str_formatter "'%s' is not a valid argument for '%s', valid arguments are : %a"
+    arg opt (fun fmt -> List.iter (fun (s, _) -> Format.fprintf fmt "%s, " s)) l;
+    Format.flush_str_formatter ()
+
+let set_io opt arg flag l =
+    try
+        flag := List.assoc arg l
+    with Not_found ->
+        invalid_arg (error_msg opt arg l)
+
+let set_input s = set_io "Input" s input input_list
+let set_output s = set_io "Output" s output output_list
+
+(* Input Parsing *)
+let parse_input file = match !input with
+  | Dimacs -> List.rev_map (List.rev_map S.make) (Parser.parse file)
+
+(* Printing wrappers *)
+let std = Format.std_formatter
+
+let print format = match !output with
+  | Standard -> Format.fprintf std "%( fmt %)@." format
+  | Dot -> Format.fprintf std "/* %( fmt %) */@." format
+
+let print_proof proof = match !output with
+  | Standard -> ()
+  | Dot -> S.print_proof std proof
+
+let print_assign () = match !output with
+  | Standard -> S.iter_atoms (fun a ->
+      Format.fprintf std "%a -> %s,@ " S.print_atom a (if S.eval a then "T" else "F"))
+  | Dot -> ()
+
 (* Arguments parsing *)
 let file = ref ""
 let p_assign = ref false
@@ -40,21 +93,24 @@ let setup_gc_stat () =
     )
 
 let input_file = fun s -> file := s
+
 let usage = "Usage : main [options] <file>"
 let argspec = Arg.align [
     "-bt", Arg.Unit (fun () -> Printexc.record_backtrace true),
     " Enable stack traces";
     "-check", Arg.Set p_proof_check,
-    " Build and check the proof, if unsat";
+    " Build, check and print the proof (if output is set), if unsat";
     "-gc", Arg.Unit setup_gc_stat,
     " Outputs statistics about the GC";
+    "-i", Arg.String set_input,
+    " Sets the input format (default dimacs)";
     "-model", Arg.Set p_assign,
     " Outputs the boolean model found if sat";
-    "-p", Arg.Unit (fun () -> p_proof_check := true; p_proof_print := true),
-    " Outputs the proof found (in dot format) if unsat";
-    "-s", Arg.String (int_arg size_limit),
+    "-o", Arg.String set_output,
+    " Sets the output format (default none)";
+    "-size", Arg.String (int_arg size_limit),
     "<s>[kMGT] Sets the size limit for the sat solver";
-    "-t", Arg.String (int_arg time_limit),
+    "-time", Arg.String (int_arg time_limit),
     "<t>[smhd] Sets the time limit for the sat solver";
     "-v", Arg.Int (fun i -> Log.set_debug i),
     "<lvl> Sets the debug verbose level";
@@ -71,26 +127,7 @@ let check () =
     raise Out_of_space
 
 (* Entry file parsing *)
-let get_cnf () =
-  List.rev_map (List.rev_map S.make) (Parser.parse !file)
-
-let print_cnf cnf =
-  Format.printf "CNF :@\n";
-  List.iter (fun c ->
-      Format.fprintf Format.std_formatter "%a;@\n"
-        (fun fmt -> List.iter (fun a ->
-             Format.fprintf fmt "%a@ " S.print_atom a
-           )
-        ) c
-    ) cnf
-
-(* Iterate over all variables created *)
-let print_assign fmt () =
-  S.iter_atoms (fun a ->
-      Format.fprintf fmt "%a -> %s,@ "
-        S.print_atom a
-        (if S.eval a then "T" else "F")
-    )
+let get_cnf () = parse_input !file
 
 let main () =
   (* Administrative duties *)
@@ -106,25 +143,23 @@ let main () =
   S.assume cnf;
   match S.solve () with
   | S.Sat ->
-    Format.printf "Sat@.";
+    print "Sat";
     if !p_assign then
-      print_assign Format.std_formatter ()
+      print_assign ()
   | S.Unsat ->
+    print "Unsat";
     if !p_proof_check then begin
-      Format.printf "/* Unsat */@.";
-      let p = S.get_proof () in
-      if !p_proof_print then
-        S.print_proof Format.std_formatter p
-    end else
-      Format.printf "Unsat@."
+        let p = S.get_proof () in
+        print_proof p
+    end
 
 let () =
   try
     main ()
   with
   | Out_of_time ->
-    Format.printf "Time limit exceeded@.";
+    print "Time limit exceeded";
     exit 2
   | Out_of_space ->
-    Format.printf "Size limit exceeded@.";
+    print "Size limit exceeded";
     exit 3
