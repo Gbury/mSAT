@@ -5,6 +5,8 @@ Sat
 Solver
 Solver_types
 Theory_intf
+Tseitin
+Tseitin_intf
 
 #Arith
 #Cc

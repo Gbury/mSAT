@@ -1,12 +1,16 @@
 (* Copyright 2014 Guillaume Bury *)
 
+module Fsat : Formula_intf.S
+
+module Tseitin : Tseitin.S with type atom = Fsat.t
+
 module Make(Dummy: sig end) : sig
   (** Fonctor to make a pure SAT Solver module with built-in literals. *)
 
   exception Bad_atom
   (** Exception raised when a problem with atomic formula encoding is detected. *)
 
-  type atom = private int
+  type atom = Fsat.t
   (** Type for atoms, i.e boolean literals. *)
 
   type proof

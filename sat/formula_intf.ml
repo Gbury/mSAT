@@ -22,6 +22,9 @@ module type S = sig
   val dummy : t
   (** Formula constants. A valid formula should never be physically equal to [dummy] *)
 
+  val fresh : unit -> t
+  (** Returns a fresh litteral, distinct from any other literal (used in cnf conversion) *)
+
   val neg : t -> t
   (** Formula negation *)
 

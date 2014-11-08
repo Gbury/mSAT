@@ -45,10 +45,14 @@ module Fsat = struct
     in
     create, iter
 
+  let fresh = create
+
   let print fmt a =
     Format.fprintf fmt "%s%d" (if a < 0 then "~" else "") (abs a)
 
 end
+
+module Tseitin = Tseitin.Make(Fsat)
 
 module Stypes = Solver_types.Make(Fsat)
 
