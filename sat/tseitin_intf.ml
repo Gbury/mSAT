@@ -16,6 +16,9 @@ module type S = sig
   type t
   type atom
 
+  val f_true : t
+  val f_false : t
+
   val make_atom : atom -> t
   (** [make_pred p] builds the atomic formula [p = true].
       @param sign the polarity of the atomic formula *)
@@ -31,6 +34,10 @@ module type S = sig
   (** [make_cnf f] returns a conjunctive normal form of [f] under the form: a
       list (which is a conjunction) of lists (which are disjunctions) of
       literals. *)
+
+  val simplify_cnf : atom list list -> atom list list
+  (** Simplifies the cnf given as argument : eliminates 'false' atoms, and eliminates clauses
+      with the 'true' atom *)
 
   val print : Format.formatter -> t -> unit
   (** [print fmt f] prints the formula on the formatter [fmt].*)

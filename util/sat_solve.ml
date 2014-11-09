@@ -8,6 +8,7 @@ exception Out_of_space
 (* Types for input/output languages *)
 type sat_input =
   | Dimacs
+  | Smtlib
 
 type sat_output =
   | Standard (* Only output problem status *)
@@ -18,6 +19,7 @@ let output = ref Standard
 
 let input_list = [
   "dimacs", Dimacs;
+  "smtlib", Smtlib;
 ]
 let output_list = [
   "dot", Dot;
@@ -38,8 +40,13 @@ let set_input s = set_io "Input" s input input_list
 let set_output s = set_io "Output" s output output_list
 
 (* Input Parsing *)
+let rec rev_flat_map f acc = function
+    | [] -> acc
+    | a :: r -> rev_flat_map f (List.rev_append (f a) acc) r
+
 let parse_input file = match !input with
-  | Dimacs -> List.rev_map (List.rev_map S.make) (Parser.parse file)
+  | Dimacs -> List.rev_map (List.rev_map S.make) (Parsedimacs.parse file)
+  | Smtlib -> Sat.Tseitin.simplify_cnf (rev_flat_map Sat.Tseitin.make_cnf [] (Smtlib.parse file))
 
 (* Printing wrappers *)
 let std = Format.std_formatter

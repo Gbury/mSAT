@@ -44,49 +44,13 @@ module Make (F : Formula_intf.S) = struct
     else if List.mem (make Not [c]) env then Some false
     else None
 
-  (*
-  let rec lift_ite env op l =
-    try
-      let left, (c, t1, t2), right = Term.first_ite l in
-      begin
-        match value env c with
-        | Some true ->
-          lift_ite (c::env) op (left@(t1::right))
-        | Some false ->
-          lift_ite ((make Not [c])::env) op (left@(t2::right))
-        | None ->
-          Comb
-            (And,
-             [Comb
-                (Imp, [c; lift_ite (c::env) op (left@(t1::right))]);
-              Comb (Imp,
-                    [(make Not [c]);
-                     lift_ite
-                       ((make Not [c])::env) op (left@(t2::right))])])
-      end
-    with Not_found ->
-      begin
-        let lit =
-          match op, l with
-          | Eq, [Term.T t1; Term.T t2] ->
-            Literal.Eq (t1, t2)
-          | Neq, ts ->
-            let ts =
-              List.rev_map (function Term.T x -> x | _ -> assert false) ts in
-            Literal.Distinct (false, ts)
-          | Le, [Term.T t1; Term.T t2] ->
-            Literal.Builtin (true, Hstring.make "<=", [t1; t2])
-          | Lt, [Term.T t1; Term.T t2] ->
-            Literal.Builtin (true, Hstring.make "<", [t1; t2])
-          | _ -> assert false
-        in
-        Lit (F.make lit)
-      end
-
-  let make_lit op l = lift_ite [] op l
-  *)
-
   let make_atom p = Lit p
+
+  let atomic_true = F.fresh ()
+  let atomic_false = F.neg atomic_true
+
+  let f_true = make_atom atomic_true
+  let f_false = make_atom atomic_false
 
   let make_not f = make Not [f]
   let make_and l = make And l
@@ -94,6 +58,11 @@ module Make (F : Formula_intf.S) = struct
   let make_equiv f1 f2 = make And [ make_imply f1 f2; make_imply f2 f1]
   let make_xor f1 f2 = make Or [ make And [ make Not [f1]; f2 ];
                                  make And [ f1; make Not [f2] ] ]
+
+  let make_or = function
+    | [] -> raise Empty_Or
+    | [a] -> a
+    | l -> Comb (Or, l)
 
   (* simplify formula *)
   let rec sform = function
@@ -116,15 +85,26 @@ module Make (F : Formula_intf.S) = struct
     | Comb ((Imp | Not), _) -> assert false
     | Lit _ as f -> f
 
+  let rec simplify_clause acc = function
+      | [] -> Some acc
+      | a :: r when F.equal atomic_true a -> None
+      | a :: r when F.equal atomic_false a ->
+              simplify_clause acc r
+      | a :: r -> simplify_clause (a :: acc) r
+
+  let rec rev_opt_map f acc = function
+    | [] -> acc
+    | a :: r -> begin match f a with
+      | None -> rev_opt_map f acc r
+      | Some b -> rev_opt_map f (b :: acc) r
+    end
+
+  let simplify_cnf = rev_opt_map (simplify_clause []) []
 
   let ( @@ ) l1 l2 = List.rev_append l1 l2
   let ( @ ) = `Use_rev_append_instead   (* prevent use of non-tailrec append *)
 
-  let make_or = function
-    | [] -> raise Empty_Or
-    | [a] -> a
-    | l -> Comb (Or, l)
-
+  (*
   let distrib l_and l_or =
     let l =
       if l_or = [] then l_and
@@ -218,18 +198,9 @@ module Make (F : Formula_intf.S) = struct
   let make_cnf f =
     let sfnc = cnf (sform f) in
     init [] sfnc
+  *)
 
   let mk_proxy = F.fresh
-      (*
-    let cpt = ref 0 in
-    fun () ->
-      let t = AETerm.make
-          (Symbols.name (Hstring.make ("PROXY__"^(string_of_int !cpt))))
-          [] Ty.Tbool
-      in
-      incr cpt;
-      F.make (Literal.Eq (t, AETerm.true_))
-      *)
 
   let acc_or = ref []
   let acc_and = ref []

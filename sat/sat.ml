@@ -1,22 +1,23 @@
 (* Copyright 2014 Guillaume Bury *)
 
 module Fsat = struct
-  exception Dummy
-  exception Out_of_int
+  exception Dummy of int
 
   (* Until the constant true_ and false_ are not needed anymore,
    * wa can't simply use sigend integers to represent literals *)
   type t = int
 
-  let max_lit = min max_int (- min_int)
+  let max_lit = max_int
+  let max_fresh = ref (-1)
   let max_index = ref 0
 
-  let make i =
-    if i <> 0 then begin
-      max_index := max !max_index (abs i);
-      i
+  let _make i =
+    if i <> 0 && (abs i) < max_lit then begin
+        max_index := max !max_index (abs i);
+        i
     end else
-      raise Dummy
+        (Format.printf "Warning : %d/%d@." i max_lit;
+        raise (Dummy i))
 
   let dummy = 0
 
@@ -31,12 +32,11 @@ module Fsat = struct
   let label a = _str
   let add_label _ _ = ()
 
-  let create, iter =
+  let make i = _make (2 * i)
+  let fresh, iter =
     let create () =
-      if !max_index <> max_lit then
-        (incr max_index; !max_index)
-      else
-        raise Out_of_int
+        incr max_fresh;
+        _make (2 * !max_fresh + 1)
     in
     let iter: (t -> unit) -> unit = fun f ->
       for j = 1 to !max_index do
@@ -45,10 +45,11 @@ module Fsat = struct
     in
     create, iter
 
-  let fresh = create
-
   let print fmt a =
-    Format.fprintf fmt "%s%d" (if a < 0 then "~" else "") (abs a)
+    Format.fprintf fmt "%s%s%d"
+      (if a < 0 then "~" else "")
+      (if a mod 2 = 0 then "v" else "f")
+      ((abs a) / 2)
 
 end
 
@@ -90,14 +91,14 @@ module Make(Dummy : sig end) = struct
 
   let new_atom () =
     try
-      Fsat.create ()
-    with Fsat.Out_of_int ->
+      Fsat.fresh ()
+    with Fsat.Dummy _ ->
       raise Bad_atom
 
   let make i =
     try
       Fsat.make i
-    with Fsat.Dummy ->
+    with Fsat.Dummy _ ->
       raise Bad_atom
 
   let neg = Fsat.neg

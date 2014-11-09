@@ -1,0 +1,9 @@
+S ./
+S ../
+S ../../sat/
+
+B ../../_build/
+B ../../_build/util/
+B ../../_build/util/smtlib/
+B ../../_build/sat/
+B ../../_build/smt/
