@@ -64,8 +64,17 @@ let print_assign () = match !output with
       Format.fprintf std "%a -> %s,@ " S.print_atom a (if S.eval a then "T" else "F"))
   | Dot -> ()
 
+let rec print_cl fmt = function
+    | [] -> Format.fprintf fmt "[]"
+    | [a] -> Sat.Fsat.print fmt a
+    | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" Sat.Fsat.print a print_cl r
+
+let print_cnf cnf =
+    List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) cnf
+
 (* Arguments parsing *)
 let file = ref ""
+let p_cnf = ref false
 let p_assign = ref false
 let p_proof_check = ref false
 let p_proof_print = ref false
@@ -105,6 +114,8 @@ let usage = "Usage : main [options] <file>"
 let argspec = Arg.align [
     "-bt", Arg.Unit (fun () -> Printexc.record_backtrace true),
     " Enable stack traces";
+    "-cnf", Arg.Set p_cnf,
+    " Prints the cnf used.";
     "-check", Arg.Set p_proof_check,
     " Build, check and print the proof (if output is set), if unsat";
     "-gc", Arg.Unit setup_gc_stat,
@@ -147,6 +158,8 @@ let main () =
 
   (* Interesting stuff happening *)
   let cnf = get_cnf () in
+  if !p_cnf then
+      print_cnf cnf;
   S.assume cnf;
   match S.solve () with
   | S.Sat ->
