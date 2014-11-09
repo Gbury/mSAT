@@ -3,7 +3,7 @@
 LOG=build.log
 COMP=ocamlbuild -log $(LOG) -use-ocamlfind -classic-display
 FLAGS=
-DIRS=-Is sat,smt,common,util
+DIRS=-Is sat,smt,util
 DOC=msat.docdir/index.html
 TEST=sat_solve.native
 
