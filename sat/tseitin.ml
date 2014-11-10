@@ -52,8 +52,15 @@ module Make (F : Formula_intf.S) = struct
   let f_true = make_atom atomic_true
   let f_false = make_atom atomic_false
 
+  let rec flatten comb acc = function
+          | [] -> acc
+          | (Comb (c, l)) :: r when c = comb ->
+                  flatten comb (List.rev_append l acc) r
+          | a :: r ->
+                  flatten comb (a :: acc) r
+
   let make_not f = make Not [f]
-  let make_and l = make And l
+  let make_and l = make And (flatten And [] l)
   let make_imply f1 f2 = make Imp [f1; f2]
   let make_equiv f1 f2 = make And [ make_imply f1 f2; make_imply f2 f1]
   let make_xor f1 f2 = make Or [ make And [ make Not [f1]; f2 ];
@@ -62,7 +69,7 @@ module Make (F : Formula_intf.S) = struct
   let make_or = function
     | [] -> raise Empty_Or
     | [a] -> a
-    | l -> Comb (Or, l)
+    | l -> Comb (Or, flatten Or [] l)
 
   (* simplify formula *)
   let rec sform = function
