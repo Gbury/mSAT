@@ -7,6 +7,7 @@ exception Out_of_space
 (* IO wrappers *)
 (* Types for input/output languages *)
 type sat_input =
+  | Auto
   | Dimacs
   | Smtlib
 
@@ -14,10 +15,11 @@ type sat_output =
   | Standard (* Only output problem status *)
   | Dot
 
-let input = ref Dimacs
+let input = ref Auto
 let output = ref Standard
 
 let input_list = [
+  "auto", Auto;
   "dimacs", Dimacs;
   "smtlib", Smtlib;
 ]
@@ -44,7 +46,22 @@ let rec rev_flat_map f acc = function
     | [] -> acc
     | a :: r -> rev_flat_map f (List.rev_append (f a) acc) r
 
-let parse_input file = match !input with
+let format_of_filename s =
+    let last n =
+        try
+            String.sub s (String.length s - n) n
+        with Invalid_argument _ ->
+            ""
+    in
+    if last 4 = ".cnf" then
+        "dimacs"
+    else if last 5 = ".smt2" then
+        "smtlib"
+    else (* Default choice *)
+        "dimacs"
+
+let rec parse_input file = match !input with
+  | Auto -> set_input (format_of_filename file); parse_input file
   | Dimacs -> List.rev_map (List.rev_map S.make) (Parsedimacs.parse file)
   | Smtlib -> Sat.Tseitin.simplify_cnf (rev_flat_map Sat.Tseitin.make_cnf [] (Smtlib.parse file))
 
@@ -121,7 +138,7 @@ let argspec = Arg.align [
     "-gc", Arg.Unit setup_gc_stat,
     " Outputs statistics about the GC";
     "-i", Arg.String set_input,
-    " Sets the input format (default dimacs)";
+    " Sets the input format (default auto)";
     "-model", Arg.Set p_assign,
     " Outputs the boolean model found if sat";
     "-o", Arg.String set_output,
