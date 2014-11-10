@@ -4,7 +4,7 @@ CURDIR=`dirname $0`
 SOLVER="$CURDIR/../sat_solve.native"
 
 solvertest () {
-    for f in `find -L $1 -name *.cnf -type f`
+    for f in `find -L $1 -type f -name '*.cnf' -o -name '*.smt2'`
     do
         echo -ne "\r\033[KTesting $f..."
         "$SOLVER" -check -time 30s -size 1G $f | grep $2 > /dev/null 2> /dev/null
