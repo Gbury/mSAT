@@ -48,22 +48,25 @@ let rec rev_flat_map f acc = function
 
 let format_of_filename s =
     let last n =
-        try
-            String.sub s (String.length s - n) n
-        with Invalid_argument _ ->
-            ""
+        try String.sub s (String.length s - n) n
+        with Invalid_argument _ -> ""
     in
     if last 4 = ".cnf" then
-        "dimacs"
+        Dimacs
     else if last 5 = ".smt2" then
-        "smtlib"
+        Smtlib
     else (* Default choice *)
-        "dimacs"
+        Dimacs
 
-let rec parse_input file = match !input with
-  | Auto -> set_input (format_of_filename file); parse_input file
+let parse_with_input file = function
+  | Auto -> assert false
   | Dimacs -> List.rev_map (List.rev_map S.make) (Parsedimacs.parse file)
   | Smtlib -> Sat.Tseitin.simplify_cnf (rev_flat_map Sat.Tseitin.make_cnf [] (Smtlib.parse file))
+
+let parse_input file =
+    parse_with_input file (match !input with
+        | Auto -> format_of_filename file
+        | f -> f)
 
 (* Printing wrappers *)
 let std = Format.std_formatter
