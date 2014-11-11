@@ -260,13 +260,13 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
   (* Compute unsat-core *)
   let compare_cl c d =
     let rec aux = function
-    | [], [] -> 0
-    | a :: r, a' :: r' -> begin match compare_atoms a a' with
-      | 0 -> aux (r, r')
-      | x -> x
-    end
-    | _ :: _ , [] -> -1
-    | [], _ :: _ -> 1
+      | [], [] -> 0
+      | a :: r, a' :: r' -> begin match compare_atoms a a' with
+          | 0 -> aux (r, r')
+          | x -> x
+        end
+      | _ :: _ , [] -> -1
+      | [], _ :: _ -> 1
     in
     aux (to_list c, to_list d)
 
@@ -276,7 +276,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
       match p.step with
       | Hypothesis | Lemma _ -> [p.conclusion]
       | Resolution (proof1, proof2, _) ->
-              List.rev_append (aux proof1) (aux proof2)
+        List.rev_append (aux proof1) (aux proof2)
     in
     List.sort_uniq compare_cl (aux proof)
 

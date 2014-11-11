@@ -13,11 +13,11 @@ module Fsat = struct
 
   let _make i =
     if i <> 0 && (abs i) < max_lit then begin
-        max_index := max !max_index (abs i);
-        i
+      max_index := max !max_index (abs i);
+      i
     end else
-        (Format.printf "Warning : %d/%d@." i max_lit;
-        raise (Dummy i))
+      (Format.printf "Warning : %d/%d@." i max_lit;
+       raise (Dummy i))
 
   let dummy = 0
 
@@ -35,8 +35,8 @@ module Fsat = struct
   let make i = _make (2 * i)
   let fresh, iter =
     let create () =
-        incr max_fresh;
-        _make (2 * !max_fresh + 1)
+      incr max_fresh;
+      _make (2 * !max_fresh + 1)
     in
     let iter: (t -> unit) -> unit = fun f ->
       for j = 1 to !max_index do

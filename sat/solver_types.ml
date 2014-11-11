@@ -162,15 +162,15 @@ module Make (F : Formula_intf.S) = struct
   let print_atom fmt a = F.print fmt a.lit
 
   let print_atoms fmt v =
-      print_atom fmt (Vec.get v 0);
-      if (Vec.size v) > 1 then begin
-          for i = 1 to (Vec.size v) - 1 do
-              Format.fprintf fmt " ∨ %a" print_atom (Vec.get v i)
-          done
-      end
+    print_atom fmt (Vec.get v 0);
+    if (Vec.size v) > 1 then begin
+      for i = 1 to (Vec.size v) - 1 do
+        Format.fprintf fmt " ∨ %a" print_atom (Vec.get v i)
+      done
+    end
 
   let print_clause fmt c =
-      Format.fprintf fmt "%s : %a" c.name print_atoms c.atoms
+    Format.fprintf fmt "%s : %a" c.name print_atoms c.atoms
 
   (* Complete debug printing *)
   let sign a = if a==a.var.pa then "" else "-"

@@ -1,10 +1,12 @@
 (* Copyright 2014 Guillaume Bury *)
 
 module type S = sig
+  (** Sinature for a module handling proof by resolution from sat solving traces *)
 
   type atom
   type clause
   type lemma
+  (** Abstract types for atoms, clauses and theoriy-specific lemmas *)
 
   val is_proven : clause -> bool
   (** Returns [true] if the clause has a derivation in the current proof graph, and [false] otherwise. *)

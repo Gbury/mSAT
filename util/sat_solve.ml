@@ -43,20 +43,20 @@ let set_output s = set_io "Output" s output output_list
 
 (* Input Parsing *)
 let rec rev_flat_map f acc = function
-    | [] -> acc
-    | a :: r -> rev_flat_map f (List.rev_append (f a) acc) r
+  | [] -> acc
+  | a :: r -> rev_flat_map f (List.rev_append (f a) acc) r
 
 let format_of_filename s =
-    let last n =
-        try String.sub s (String.length s - n) n
-        with Invalid_argument _ -> ""
-    in
-    if last 4 = ".cnf" then
-        Dimacs
-    else if last 5 = ".smt2" then
-        Smtlib
-    else (* Default choice *)
-        Dimacs
+  let last n =
+    try String.sub s (String.length s - n) n
+    with Invalid_argument _ -> ""
+  in
+  if last 4 = ".cnf" then
+    Dimacs
+  else if last 5 = ".smt2" then
+    Smtlib
+  else (* Default choice *)
+    Dimacs
 
 let parse_with_input file = function
   | Auto -> assert false
@@ -64,9 +64,9 @@ let parse_with_input file = function
   | Smtlib -> Sat.Tseitin.simplify_cnf (rev_flat_map Sat.Tseitin.make_cnf [] (Smtlib.parse file))
 
 let parse_input file =
-    parse_with_input file (match !input with
-        | Auto -> format_of_filename file
-        | f -> f)
+  parse_with_input file (match !input with
+      | Auto -> format_of_filename file
+      | f -> f)
 
 (* Printing wrappers *)
 let std = Format.std_formatter
@@ -85,15 +85,15 @@ let print_assign () = match !output with
   | Dot -> ()
 
 let rec print_cl fmt = function
-    | [] -> Format.fprintf fmt "[]"
-    | [a] -> Sat.Fsat.print fmt a
-    | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" Sat.Fsat.print a print_cl r
+  | [] -> Format.fprintf fmt "[]"
+  | [a] -> Sat.Fsat.print fmt a
+  | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" Sat.Fsat.print a print_cl r
 
 let print_lcl l =
-    List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) l
+  List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) l
 
 let print_lclause l =
-    List.iter (fun c -> Format.fprintf std "%a@\n" S.print_clause c) l
+  List.iter (fun c -> Format.fprintf std "%a@\n" S.print_clause c) l
 
 (* Arguments parsing *)
 let file = ref ""
@@ -155,7 +155,7 @@ let argspec = Arg.align [
     "-time", Arg.String (int_arg time_limit),
     "<t>[smhd] Sets the time limit for the sat solver";
     "-u", Arg.Set p_unsat_core,
-    " Prints the unsat-core explanation of the unsat proof";
+    " Prints the unsat-core explanation of the unsat proof (if used with -check)";
     "-v", Arg.Int (fun i -> Log.set_debug i),
     "<lvl> Sets the debug verbose level";
   ]
@@ -185,7 +185,7 @@ let main () =
   (* Interesting stuff happening *)
   let cnf = get_cnf () in
   if !p_cnf then
-      print_lcl cnf;
+    print_lcl cnf;
   S.assume cnf;
   match S.solve () with
   | S.Sat ->
@@ -198,7 +198,7 @@ let main () =
       let p = S.get_proof () in
       print_proof p;
       if !p_unsat_core then
-          print_lclause (S.unsat_core p)
+        print_lclause (S.unsat_core p)
     end
 
 let () =

@@ -53,11 +53,11 @@ module Make (F : Formula_intf.S) = struct
   let f_false = make_atom atomic_false
 
   let rec flatten comb acc = function
-          | [] -> acc
-          | (Comb (c, l)) :: r when c = comb ->
-                  flatten comb (List.rev_append l acc) r
-          | a :: r ->
-                  flatten comb (a :: acc) r
+    | [] -> acc
+    | (Comb (c, l)) :: r when c = comb ->
+      flatten comb (List.rev_append l acc) r
+    | a :: r ->
+      flatten comb (a :: acc) r
 
   let make_not f = make Not [f]
   let make_and l = make And (flatten And [] l)
@@ -93,18 +93,18 @@ module Make (F : Formula_intf.S) = struct
     | Lit _ as f -> f
 
   let rec simplify_clause acc = function
-      | [] -> Some acc
-      | a :: r when F.equal atomic_true a -> None
-      | a :: r when F.equal atomic_false a ->
-              simplify_clause acc r
-      | a :: r -> simplify_clause (a :: acc) r
+    | [] -> Some acc
+    | a :: r when F.equal atomic_true a -> None
+    | a :: r when F.equal atomic_false a ->
+      simplify_clause acc r
+    | a :: r -> simplify_clause (a :: acc) r
 
   let rec rev_opt_map f acc = function
     | [] -> acc
     | a :: r -> begin match f a with
-      | None -> rev_opt_map f acc r
-      | Some b -> rev_opt_map f (b :: acc) r
-    end
+        | None -> rev_opt_map f acc r
+        | Some b -> rev_opt_map f (b :: acc) r
+      end
 
   let simplify_cnf = rev_opt_map (simplify_clause []) []
 

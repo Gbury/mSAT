@@ -7,7 +7,6 @@
     * Allow theory propagation
 - Cleanup code
     * Simplify Solver.Make functor
-    * Clean Solver_types interface
 - Add proof output for smt/theories
     * Each theory brings its own proof output (tautologies), somehow
 - Allow to plug one's code into boolean propagation
