@@ -37,10 +37,9 @@ module type S = sig
   val empty : unit -> t
   (** A function to create an empty theory. *)
 
-  val assume : cs:bool -> formula -> explanation -> t -> t
+  val assume : formula -> explanation -> t -> t
   (** Return a new theory state with the formula as assumption.
       @raise Inconsistent if the new state would be inconsistent. *)
-  (* TODO: remove (apparently) useless [cs] parameter *)
 
 end
 

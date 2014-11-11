@@ -381,7 +381,7 @@ module Make (F : Formula_intf.S)
       let full_model = nb_assigns() = env.nb_init_vars in
       env.tenv <-
         List.fold_left
-          (fun t (a,ex) -> let t = Th.assume ~cs:true a ex t in t)
+          (fun t (a,ex) -> let t = Th.assume a ex t in t)
           env.tenv !facts;
       if full_model then expensive_theory_propagate ()
       else None
@@ -561,6 +561,7 @@ module Make (F : Formula_intf.S)
     var_decay_activity ();
     clause_decay_activity ()
 
+  (*
   let check_inconsistency_of dep =
     try
       let env = ref (Th.empty()) in ();
@@ -572,6 +573,7 @@ module Make (F : Formula_intf.S)
       (* ignore (Th.expensive_processing !env); *)
       assert false
     with Th.Inconsistent _ -> ()
+  *)
 
   let theory_analyze dep =
     let atoms, sz, max_lvl, c_hist =
@@ -701,9 +703,11 @@ module Make (F : Formula_intf.S)
   let check_vec vec =
     for i = 0 to Vec.size vec - 1 do check_clause (Vec.get vec i) done
 
+  (*
   let check_model () =
     check_vec env.clauses;
     check_vec env.learnts
+  *)
 
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)

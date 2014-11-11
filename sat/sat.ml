@@ -72,7 +72,7 @@ module Tsat = struct
 
   let dummy = ()
   let empty () = ()
-  let assume ~cs:_ _ _ _ = ()
+  let assume _ _ _ = ()
 end
 
 module Make(Dummy : sig end) = struct
