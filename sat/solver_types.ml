@@ -39,7 +39,7 @@ module Make (F : Formula_intf.S) = struct
 
   and clause =
     { name : string;
-      mutable atoms : atom Vec.t ;
+      atoms : atom Vec.t ;
       mutable activity : float;
       mutable removed : bool;
       learnt : bool;
@@ -154,14 +154,25 @@ module Make (F : Formula_intf.S) = struct
     let cpt = ref 0 in
     fun () -> incr cpt; "C" ^ (string_of_int !cpt)
 
-  let to_float i = float_of_int i
-
-  let to_int f = int_of_float f
-
   let clear () =
     cpt_mk_var := 0;
     ma := MA.empty
 
+  (* Pretty printing for atoms and clauses *)
+  let print_atom fmt a = F.print fmt a.lit
+
+  let print_atoms fmt v =
+      print_atom fmt (Vec.get v 0);
+      if (Vec.size v) > 1 then begin
+          for i = 1 to (Vec.size v) - 1 do
+              Format.fprintf fmt " ∨ %a" print_atom (Vec.get v i)
+          done
+      end
+
+  let print_clause fmt c =
+      Format.fprintf fmt "%s : %a" c.name print_atoms c.atoms
+
+  (* Complete debug printing *)
   let sign a = if a==a.var.pa then "" else "-"
 
   let level a =

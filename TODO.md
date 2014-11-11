@@ -2,7 +2,6 @@
 
 ## Main goals
 
-- Include cnf conversion in 'sat' library
 - Modify theories to allow passing bulk of assumed literals
     * Create shared "vector" (formulas/atoms ?)
     * Allow theory propagation
@@ -11,7 +10,6 @@
     * Clean Solver_types interface
 - Add proof output for smt/theories
     * Each theory brings its own proof output (tautologies), somehow
-- Add model extraction (at least for SAT)
 - Allow to plug one's code into boolean propagation
     * react upon propagation (possibly by propagating more, or side-effect)
     * more advanced/specific propagation (2-clauses)?
@@ -20,5 +18,4 @@
 
 ## Long term goals
 
-- unsat-core (easy from resolution proofs)
 - max-sat/max-smt

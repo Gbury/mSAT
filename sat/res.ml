@@ -257,6 +257,29 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     assert_can_prove_unsat c;
     return_proof (St.empty_clause, [])
 
+  (* Compute unsat-core *)
+  let compare_cl c d =
+    let rec aux = function
+    | [], [] -> 0
+    | a :: r, a' :: r' -> begin match compare_atoms a a' with
+      | 0 -> aux (r, r')
+      | x -> x
+    end
+    | _ :: _ , [] -> -1
+    | [], _ :: _ -> 1
+    in
+    aux (to_list c, to_list d)
+
+  let unsat_core proof =
+    let rec aux proof =
+      let p = proof () in
+      match p.step with
+      | Hypothesis | Lemma _ -> [p.conclusion]
+      | Resolution (proof1, proof2, _) ->
+              List.rev_append (aux proof1) (aux proof2)
+    in
+    List.sort_uniq compare_cl (aux proof)
+
   (* Print proof graph *)
   let _i = ref 0
   let new_id () = incr _i; "id_" ^ (string_of_int !_i)
@@ -284,6 +307,8 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     else
       ()
 
+  (* We use a custom function instead of the functions in Solver_type,
+     so that atoms are sorted before printing. *)
   let print_clause fmt c = print_cl fmt (to_list c)
 
   let print_dot_rule opt f arg fmt cl =

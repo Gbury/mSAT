@@ -15,6 +15,8 @@ module type S = sig
   (** The signatures of clauses used in the Solver. *)
 
   type formula
+  type varmap
+  val ma : varmap ref
 
   type var = {
     vid : int;
@@ -38,7 +40,7 @@ module type S = sig
 
   and clause = {
     name : string;
-    mutable atoms : atom Vec.t;
+    atoms : atom Vec.t;
     mutable activity : float;
     mutable removed : bool;
     learnt : bool;
@@ -46,37 +48,46 @@ module type S = sig
   }
 
   and reason = clause option
-
   and premise = clause list
-
-  val cpt_mk_var : int ref
-  type varmap
-  val ma : varmap ref
+  (** Recursive types for literals (atoms) and clauses *)
 
   val dummy_var : var
   val dummy_atom : atom
   val dummy_clause : clause
-  val empty_clause : clause
+  (** Dummy values for use in vector dummys *)
 
-  val make_var : formula -> var * bool
+  val empty_clause : clause
+  (** The empty clause *)
 
   val add_atom : formula -> atom
+  (** Returns the atom associated with the given formula *)
+
+  val make_var : formula -> var * bool
+  (** Returns the variable linked with the given formula, and wether the atom associated with the formula
+      is [var.pa] or [var.na] *)
 
   val make_clause : string -> atom list -> int -> bool -> premise -> clause
+  (** [make_clause name atoms size learnt premise] creates a clause with the given attributes. *)
 
   val fresh_name : unit -> string
-
   val fresh_lname : unit -> string
-
   val fresh_dname : unit -> string
+  (** Fresh names for clauses *)
 
-  val to_float : int -> float
-
-  val to_int : float -> int
   val made_vars_info : var Vec.t -> int
+  (** Returns the number of variables created, and fill the given vector with the variables created.
+      Each variable is set in the vecotr with its [vid] as index. *)
+
   val clear : unit -> unit
+  (** Forget all variables cretaed *)
+
+  val print_atom : Format.formatter -> atom -> unit
+  val print_clause : Format.formatter -> clause -> unit
+  (** Pretty printing functions for atoms and clauses *)
 
   val pp_atom : Buffer.t -> atom -> unit
   val pp_clause : Buffer.t -> clause -> unit
+  (** Debug function for atoms and clauses (very verbose) *)
+
 end
 

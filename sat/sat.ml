@@ -81,6 +81,7 @@ module Make(Dummy : sig end) = struct
   exception Bad_atom
 
   type atom = Fsat.t
+  type clause = Stypes.clause
   type proof = SatSolver.Proof.proof
 
   type res =
@@ -107,7 +108,6 @@ module Make(Dummy : sig end) = struct
   let equal = Fsat.equal
   let compare = Fsat.compare
 
-  let print_atom = Fsat.print
   let iter_atoms = Fsat.iter
 
   let solve () =
@@ -130,6 +130,10 @@ module Make(Dummy : sig end) = struct
     | None -> assert false
     | Some c -> SatSolver.Proof.prove_unsat c
 
+  let unsat_core = SatSolver.Proof.unsat_core
+
+  let print_atom = Fsat.print
+  let print_clause = Stypes.print_clause
   let print_proof = SatSolver.Proof.print_dot
 
 end

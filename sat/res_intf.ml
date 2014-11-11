@@ -30,6 +30,9 @@ module type S = sig
   val prove_unsat : clause -> proof
   (** Given a conflict clause [c], returns a proof of the empty clause. *)
 
+  val unsat_core : proof -> clause list
+  (** Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof. *)
+
   val print_dot : Format.formatter -> proof -> unit
   (** Print the given proof in dot format on the given formatter. *)
 

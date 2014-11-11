@@ -155,6 +155,9 @@ module Make (F : Formula_intf.S)
     tatoms_queue = Queue.create ();
   }
 
+  let to_float i = float_of_int i
+  let to_int f = int_of_float f
+
   let f_weight i j =
     (Vec.get env.vars j).weight < (Vec.get env.vars i).weight
 

@@ -89,8 +89,11 @@ let rec print_cl fmt = function
     | [a] -> Sat.Fsat.print fmt a
     | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" Sat.Fsat.print a print_cl r
 
-let print_cnf cnf =
-    List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) cnf
+let print_lcl l =
+    List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) l
+
+let print_lclause l =
+    List.iter (fun c -> Format.fprintf std "%a@\n" S.print_clause c) l
 
 (* Arguments parsing *)
 let file = ref ""
@@ -98,6 +101,7 @@ let p_cnf = ref false
 let p_assign = ref false
 let p_proof_check = ref false
 let p_proof_print = ref false
+let p_unsat_core = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
 
@@ -150,6 +154,8 @@ let argspec = Arg.align [
     "<s>[kMGT] Sets the size limit for the sat solver";
     "-time", Arg.String (int_arg time_limit),
     "<t>[smhd] Sets the time limit for the sat solver";
+    "-u", Arg.Set p_unsat_core,
+    " Prints the unsat-core explanation of the unsat proof";
     "-v", Arg.Int (fun i -> Log.set_debug i),
     "<lvl> Sets the debug verbose level";
   ]
@@ -179,7 +185,7 @@ let main () =
   (* Interesting stuff happening *)
   let cnf = get_cnf () in
   if !p_cnf then
-      print_cnf cnf;
+      print_lcl cnf;
   S.assume cnf;
   match S.solve () with
   | S.Sat ->
@@ -190,7 +196,9 @@ let main () =
     print "Unsat";
     if !p_proof_check then begin
       let p = S.get_proof () in
-      print_proof p
+      print_proof p;
+      if !p_unsat_core then
+          print_lclause (S.unsat_core p)
     end
 
 let () =

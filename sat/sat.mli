@@ -13,6 +13,9 @@ module Make(Dummy: sig end) : sig
   type atom = Fsat.t
   (** Type for atoms, i.e boolean literals. *)
 
+  type clause
+  (** Abstract type for clauses *)
+
   type proof
   (** Abstract type for resolution proofs *)
 
@@ -36,9 +39,6 @@ module Make(Dummy: sig end) : sig
   (** Usual hash and comparison functions. For now, directly uses
       [Pervasives] and [Hashtbl] builtins. *)
 
-  val print_atom : Format.formatter -> atom -> unit
-  (** Print the atom on the given formatter. *)
-
   val iter_atoms : (atom -> unit) -> unit
   (** Allows iteration over all atoms created (even if unused). *)
 
@@ -53,6 +53,15 @@ module Make(Dummy: sig end) : sig
 
   val get_proof : unit -> proof
   (** Returns the resolution proof found, if [solve] returned [Unsat]. *)
+
+  val unsat_core : proof -> clause list
+  (** Returns the unsat-core of the proof. *)
+
+  val print_atom : Format.formatter -> atom -> unit
+  (** Print the atom on the given formatter. *)
+
+  val print_clause : Format.formatter -> clause -> unit
+  (** Print the clause on the given formatter. *)
 
   val print_proof : Format.formatter -> proof -> unit
   (** Print the given proof in dot format. *)
