@@ -12,8 +12,7 @@
 
 module Make (F : Formula_intf.S)
     (St : Solver_types.S with type formula = F.t)
-    (Ex : Explanation.S with type atom = St.atom)
-    (Th : Theory_intf.S with type formula = F.t and type explanation = Ex.t) = struct
+    (Th : Theory_intf.S with type formula = F.t) = struct
 
   open St
   module Proof = Res.Make(St)(Th)
@@ -109,9 +108,8 @@ module Make (F : Formula_intf.S)
     mutable nb_init_vars : int;
     mutable nb_init_clauses : int;
     mutable model : var Vec.t;
-    mutable tenv : Th.t;
-    mutable tenv_queue : Th.t Vec.t;
-    mutable tatoms_queue : atom Queue.t;
+    mutable tenv_queue : Th.level Vec.t;
+    mutable tatoms_qhead : int;
   }
 
   let env = {
@@ -150,9 +148,8 @@ module Make (F : Formula_intf.S)
     nb_init_vars = 0;
     nb_init_clauses = 0;
     model = Vec.make 0 dummy_var;
-    tenv = Th.empty();
     tenv_queue = Vec.make 100 Th.dummy;
-    tatoms_queue = Queue.create ();
+    tatoms_qhead = 0;
   }
 
   let to_float i = float_of_int i
@@ -204,7 +201,7 @@ module Make (F : Formula_intf.S)
 
   let new_decision_level() =
     Vec.push env.trail_lim (Vec.size env.trail);
-    Vec.push env.tenv_queue env.tenv; (* save the current tenv *)
+    Vec.push env.tenv_queue (Th.current_level ()); (* save the current tenv *)
     Log.debug 5 "New decision level : %d (%d in env queue)(%d in trail)"
       (Vec.size env.trail_lim) (Vec.size env.tenv_queue) (Vec.size env.trail);
     ()
@@ -240,6 +237,7 @@ module Make (F : Formula_intf.S)
     Log.debug 5 "Bactracking to decision level %d (excluded)" lvl;
     if decision_level () > lvl then begin
       env.qhead <- Vec.get env.trail_lim lvl;
+      env.tatoms_qhead <- env.qhead;
       for c = Vec.size env.trail - 1 downto env.qhead do
         let a = Vec.get env.trail c in
         a.is_true <- false;
@@ -249,8 +247,7 @@ module Make (F : Formula_intf.S)
         a.var.vpremise <- [];
         insert_var_order a.var
       done;
-      Queue.clear env.tatoms_queue;
-      env.tenv <- Vec.get env.tenv_queue lvl; (* recover the right tenv *)
+      Th.backtrack (Vec.get env.tenv_queue lvl); (* recover the right tenv *)
       Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
       Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - lvl);
       Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - lvl)
@@ -347,50 +344,25 @@ module Make (F : Formula_intf.S)
           let c = Vec.get watched i in
           if not c.removed then propagate_in_clause a c i watched new_sz_w
         done;
-      with Conflict c -> assert (!res = None); res := Some c
+      with Conflict c ->
+        assert (!res = None);
+        res := Some c
     end;
     let dead_part = Vec.size watched - !new_sz_w in
     Vec.shrink watched dead_part
 
-  let expensive_theory_propagate () = None
-  (* try *)
-  (*   if D1.d then eprintf "expensive_theory_propagate@."; *)
-  (*   ignore(Th.expensive_processing env.tenv); *)
-  (*   if D1.d then eprintf "expensive_theory_propagate => None@."; *)
-  (*   None *)
-  (* with Th.Inconsistent dep ->  *)
-  (*   if D1.d then eprintf "expensive_theory_propagate => Inconsistent@."; *)
-  (*   Some dep *)
+  (* Propagation (boolean and theory *)
+  let current_slice () = Th.({
+      start = env.tatoms_qhead;
+      length = (Vec.size env.trail) - env.tatoms_qhead;
+      get = (function i -> (Vec.get env.trail i).lit);
+      push = (function lit -> enqueue (St.add_atom lit) (decision_level ()) None);
+      (* TODO: modify reasons to allow for theory reason *)
+    })
 
-  let theory_propagate () =
-    let facts = ref [] in
-    while not (Queue.is_empty env.tatoms_queue) do
-      let a = Queue.pop env.tatoms_queue in
-      if a.is_true then
-        (*let ex = if a.var.level > 0 then Ex.singleton a else Ex.empty in*)
-        let ex = Ex.singleton a in (* Usefull for debugging *)
-        facts := (a.lit, ex) :: !facts
-      else
-      if a.neg.is_true then
-        (*let ex = if a.var.level > 0 then Ex.singleton a.neg else Ex.empty in*)
-        let ex = Ex.singleton a.neg in (* Usefull for debugging *)
-        facts := (a.neg.lit, ex) :: !facts
-      else assert false;
-    done;
-    try
-      let full_model = nb_assigns() = env.nb_init_vars in
-      env.tenv <-
-        List.fold_left
-          (fun t (a,ex) -> let t = Th.assume a ex t in t)
-          env.tenv !facts;
-      if full_model then expensive_theory_propagate ()
-      else None
-    with Th.Inconsistent dep ->
-      (* eprintf "th inconsistent : %a @." Ex.print dep; *)
-      Some dep
+  let rec theory_propagate () = None
 
-  (* boolean propagation, using unit clauses *)
-  let propagate () =
+  and propagate () =
     let num_props = ref 0 in
     let res = ref None in
     (*assert (Queue.is_empty env.tqueue);*)
@@ -399,7 +371,6 @@ module Make (F : Formula_intf.S)
       env.qhead <- env.qhead + 1;
       incr num_props;
       propagate_atom a res;
-      Queue.push a env.tatoms_queue;
     done;
     env.propagations <- env.propagations + !num_props;
     env.simpDB_props <- env.simpDB_props - !num_props;
@@ -561,21 +532,9 @@ module Make (F : Formula_intf.S)
     var_decay_activity ();
     clause_decay_activity ()
 
-  (*
-  let check_inconsistency_of dep =
-    try
-      let env = ref (Th.empty()) in ();
-      Ex.iter_atoms
-        (fun atom ->
-           let t = Th.assume ~cs:true atom.lit (Ex.singleton atom) !env in
-           env := t)
-        dep;
-      (* ignore (Th.expensive_processing !env); *)
-      assert false
-    with Th.Inconsistent _ -> ()
-  *)
 
-  let theory_analyze dep =
+  let theory_analyze dep = 0, [], [], 1
+  (*
     let atoms, sz, max_lvl, c_hist =
       Ex.fold_atoms
         (fun a (acc, sz, max_lvl, c_hist) ->
@@ -640,6 +599,7 @@ module Make (F : Formula_intf.S)
     done;
     List.iter (fun q -> q.var.seen <- false) !seen;
     !blevel, !learnt, !history, !size
+    *)
 
   let add_boolean_conflict confl =
     env.conflicts <- env.conflicts + 1;
@@ -829,7 +789,7 @@ module Make (F : Formula_intf.S)
 
   let base_level = 0
 
-  let current_level() =
+  let current_level () =
     if Vec.is_empty env.levels then base_level else Vec.last env.levels
 
   let push () =

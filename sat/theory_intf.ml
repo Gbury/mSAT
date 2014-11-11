@@ -15,31 +15,43 @@
 module type S = sig
   (** Singature for theories to be given to the Solver. *)
 
-  type t
-  (** The type of states of the theory. Preferably not mutable. *)
-
   type formula
   (** The type of formulas. Should be compatble with Formula_intf.S *)
-
-  type explanation
-  (** The type of explanations. Should be compatible with
-      Explanations.S.t with module St = Solver_types.S with type formula = fomula *)
 
   type proof
   (** A custom type for the proofs of lemmas produced by the theory. *)
 
-  exception Inconsistent of explanation
-  (** Exception raised by the theory when assuming an incoherent set of formulas. *)
+  type slice = {
+    start : int;
+    length : int;
+    get : int -> formula;
+    push : formula -> unit;
+  }
 
-  val dummy : t
-  (** A dummy theory state. Should be physically different from any valid theory state. *)
+  type level
+  (** The type for levels to allow backtracking. *)
 
-  val empty : unit -> t
-  (** A function to create an empty theory. *)
+  type res =
+    | Sat of level
+    | Unsat of formula list
+    (** Type returned by the theory, either the current set of assumptions is satisfiable,
+        or it is not, in which case an unsatisfiable clause (hopefully minimal) is returned.
+        Formulas in the unsat clause must come from the current set of assumptions. *)
 
-  val assume : formula -> explanation -> t -> t
-  (** Return a new theory state with the formula as assumption.
-      @raise Inconsistent if the new state would be inconsistent. *)
+  val dummy : level
+  (** A dummy level. *)
+
+  val current_level : unit -> level
+  (** Return the current level of the theory (either the empty/beginning state, or the
+      last level returned by the assume] function). *)
+
+  val assume : slice -> res
+  (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
+      and returns the new level of the theory. *)
+
+  val backtrack : level -> unit
+  (** Backtrack to the given level (excluded). After a call to [backtrack l], the theory should be in the
+      same state as when it returned the value [l], *)
 
 end
 

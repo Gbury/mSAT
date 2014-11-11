@@ -57,26 +57,34 @@ module Tseitin = Tseitin.Make(Fsat)
 
 module Stypes = Solver_types.Make(Fsat)
 
-module Exp = Explanation.Make(Stypes)
-
 module Tsat = struct
   (* We don't have anything to do since the SAT Solver already
    * does propagation and conflict detection *)
 
-  type t = unit
   type formula = Fsat.t
-  type explanation = Exp.t
   type proof = unit
+  type level = unit
 
-  exception Inconsistent of explanation
+  type slice = {
+    start : int;
+    length : int;
+    get : int -> formula;
+    push : formula -> unit;
+  }
+
+  type res =
+    | Sat of level
+    | Unsat of formula list
 
   let dummy = ()
-  let empty () = ()
-  let assume _ _ _ = ()
+  let current_level () = ()
+  let assume _ = Sat ()
+  let backtrack _ = ()
+
 end
 
 module Make(Dummy : sig end) = struct
-  module SatSolver = Solver.Make(Fsat)(Stypes)(Exp)(Tsat)
+  module SatSolver = Solver.Make(Fsat)(Stypes)(Tsat)
 
   exception Bad_atom
 

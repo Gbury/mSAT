@@ -13,8 +13,7 @@
 
 module Make (F : Formula_intf.S)
     (St : Solver_types.S with type formula = F.t)
-    (Ex : Explanation.S with type atom = St.atom)
-    (Th : Theory_intf.S with type formula = F.t and type explanation = Ex.t) :
+    (Th : Theory_intf.S with type formula = F.t) :
 sig
   (** Functor to create a SMT Solver parametrised by the atomic
       formulas and a theory. *)
