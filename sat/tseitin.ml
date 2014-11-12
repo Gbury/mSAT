@@ -56,36 +56,39 @@ module Make (F : Formula_intf.S) = struct
 
   let make_not f = make Not [f]
   let make_and l = make And (flatten And [] l)
-  let make_imply f1 f2 = make Imp [f1; f2]
-  let make_equiv f1 f2 = make And [ make_imply f1 f2; make_imply f2 f1]
-  let make_xor f1 f2 = make Or [ make And [ make Not [f1]; f2 ];
-                                 make And [ f1; make Not [f2] ] ]
-
   let make_or = function
     | [] -> raise Empty_Or
     | [a] -> a
     | l -> Comb (Or, flatten Or [] l)
+  let make_imply f1 f2 = make Imp [f1; f2]
+  let make_equiv f1 f2 = make_and [ make_imply f1 f2; make_imply f2 f1]
+  let make_xor f1 f2 = make_or [ make_and [ make Not [f1]; f2 ];
+                                 make_and [ f1; make Not [f2] ] ]
 
   (* simplify formula *)
-  let rec sform = function
-    | Comb (Not, [Lit a]) -> Lit (F.neg a)
-    | Comb (Not, [Comb (Not, [f])]) -> sform f
-    | Comb (Not, [Comb (Or, l)]) ->
-      let nl = List.rev_map (fun a -> sform (Comb (Not, [a]))) l in
-      Comb (And, nl)
-    | Comb (Not, [Comb (And, l)]) ->
-      let nl = List.rev_map (fun a -> sform (Comb (Not, [a]))) l in
-      Comb (Or, nl)
-    | Comb (Not, [Comb (Imp, [f1; f2])]) ->
-      Comb (And, [sform f1; sform (Comb (Not, [f2]))])
-    | Comb (And, l) ->
-      Comb (And, List.rev_map sform l)
-    | Comb (Or, l) ->
-      Comb (Or, List.rev_map sform l)
+  let (%%) f g x = f (g x)
+
+  let rec sform f k = match f with
+    | Comb (Not, [Lit a]) -> k (Lit (F.neg a))
+    | Comb (Not, [Comb (Not, [f])]) -> sform f k
+    | Comb (Not, [Comb (Or, l)]) -> sform_list_not [] l (k %% make_and)
+    | Comb (Not, [Comb (And, l)]) -> sform_list_not [] l (k %% make_or)
+    | Comb (And, l) -> sform_list [] l (k %% make_and)
+    | Comb (Or, l) -> sform_list [] l (k %% make_or)
     | Comb (Imp, [f1; f2]) ->
-      Comb (Or, [sform (Comb (Not, [f1])); sform f2])
+            sform (make_not f1) (fun f1' -> sform f2 (fun f2' -> k (make_or [f1'; f2'])))
+    | Comb (Not, [Comb (Imp, [f1; f2])]) ->
+            sform f1 (fun f1' -> sform (make_not f2) (fun f2' -> k (make_and [f1';f2'])))
     | Comb ((Imp | Not), _) -> assert false
-    | Lit _ as f -> f
+    | Lit _ -> k f
+  and sform_list acc l k = match l with
+    | [] -> k acc
+    | f :: tail ->
+        sform f (fun f' -> sform_list (f'::acc) tail k)
+  and sform_list_not acc l k = match l with
+    | [] -> k acc
+    | f :: tail ->
+        sform (make_not f) (fun f' -> sform_list_not (f'::acc) tail k)
 
   let rec simplify_clause acc = function
     | [] -> Some acc
@@ -294,7 +297,7 @@ module Make (F : Formula_intf.S) = struct
   let make_cnf f =
     acc_or := [];
     acc_and := [];
-    cnf (sform f)
+    cnf (sform f (fun f' -> f'))
 
   (* Naive CNF XXX remove???
      let make_cnf f = mk_cnf (sform f)
