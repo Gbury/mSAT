@@ -13,5 +13,6 @@
 
 module type S = Solver_types_intf.S
 
-module Make : functor (F : Formula_intf.S) -> S with type formula = F.t
+module Make : functor (F : Formula_intf.S)(Th : Theory_intf.S)
+  -> S with type formula = F.t and type proof = Th.proof
 (** Functor to instantiate the types of clauses for the Solver. *)

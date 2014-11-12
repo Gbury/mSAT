@@ -15,6 +15,8 @@ module type S = sig
   (** The signatures of clauses used in the Solver. *)
 
   type formula
+  type proof
+
   type varmap
   val ma : varmap ref
 
@@ -48,7 +50,9 @@ module type S = sig
   }
 
   and reason = clause option
-  and premise = clause list
+  and premise =
+      | History of clause list
+      | Lemma of proof
   (** Recursive types for literals (atoms) and clauses *)
 
   val dummy_var : var

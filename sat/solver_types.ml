@@ -15,9 +15,10 @@ open Printf
 
 module type S = Solver_types_intf.S
 
-module Make (F : Formula_intf.S) = struct
+module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
 
   type formula = F.t
+  type proof = Th.proof
 
   type var =
     {  vid : int;
@@ -47,7 +48,9 @@ module Make (F : Formula_intf.S) = struct
 
   and reason = clause option
 
-  and premise = clause list
+  and premise =
+      | History of clause list
+      | Lemma of proof
 
   let dummy_lit = F.dummy
 
@@ -59,7 +62,7 @@ module Make (F : Formula_intf.S) = struct
       reason = None;
       weight = -1.;
       seen = false;
-      vpremise = [] }
+      vpremise = History [] }
   and dummy_atom =
     { var = dummy_var;
       lit = dummy_lit;
@@ -76,7 +79,7 @@ module Make (F : Formula_intf.S) = struct
       activity = -1.;
       removed = false;
       learnt = false;
-      cpremise = [] }
+      cpremise = History [] }
 
   let () =
     dummy_atom.watched <- Vec.make_empty dummy_clause
@@ -102,7 +105,7 @@ module Make (F : Formula_intf.S) = struct
             reason = None;
             weight = 0.;
             seen = false;
-            vpremise = [];
+            vpremise = History [];
           }
         and pa =
           { var = var;
@@ -140,7 +143,7 @@ module Make (F : Formula_intf.S) = struct
       activity = 0.;
       cpremise = premise}
 
-  let empty_clause = make_clause "Empty" [] 0 false []
+  let empty_clause = make_clause "Empty" [] 0 false (History [])
 
   let fresh_lname =
     let cpt = ref 0 in
@@ -188,8 +191,9 @@ module Make (F : Formula_intf.S) = struct
     else if a.neg.is_true then sprintf "[F%s]" (level a)
     else ""
 
-  let pp_premise b v =
-    List.iter (fun {name=name} -> bprintf b "%s," name) v
+  let pp_premise b = function
+      | History v -> List.iter (fun {name=name} -> bprintf b "%s," name) v
+      | Lemma _ -> bprintf b "th_lemma"
 
   let pp_atom b a =
     bprintf b "%s%d%s [lit:%s] vpremise={{%a}}"

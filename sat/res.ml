@@ -6,10 +6,10 @@ Copyright 2014 Simon Cruanes
 
 module type S = Res_intf.S
 
-module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
+module Make(St : Solver_types.S) = struct
 
   (* Type definitions *)
-  type lemma = Proof.proof
+  type lemma = St.proof
   type clause = St.clause
   type atom = St.atom
   type int_cl = clause * St.atom list
@@ -86,11 +86,11 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
 
   (* Adding hyptoheses *)
   let is_unit_hyp = function
-    | [a] -> St.(a.var.level = 0 && a.var.reason = None && a.var.vpremise <> [])
+    | [a] -> St.(a.var.level = 0 && a.var.reason = None && a.var.vpremise <> History [])
     | _ -> false
 
   let make_unit_hyp a =
-    let aux a = St.(make_clause (fresh_name ()) [a] 1 false []) in
+    let aux a = St.(make_clause (fresh_name ()) [a] 1 false (History [])) in
     if St.(a.is_true) then
       aux a
     else if St.(a.neg.is_true) then
@@ -114,8 +114,9 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     else if is_unit_hyp cl || not St.(c.learnt) then begin
       H.add proof cl Assumption;
       true
-    end else
-      false
+    end else match St.(c.cpremise) with
+      | St.Lemma p -> H.add proof cl (Lemma p); true
+      | St.History _ -> false
 
   let is_proven c = is_proved (c, to_list c)
 
@@ -131,7 +132,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     | [] -> raise (Resolution_error "No literal to resolve over")
     | [a] ->
       H.add proof new_clause (Resolution (a, (c, cl_c), (d, cl_d)));
-      let new_c = St.make_clause (fresh_pcl_name ()) new_clause (List.length new_clause) true [c; d] in
+      let new_c = St.make_clause (fresh_pcl_name ()) new_clause (List.length new_clause) true St.(History [c; d]) in
       Log.debug 5 "New clause : %a" St.pp_clause new_c;
       new_c, new_clause
     | _ -> raise (Resolution_error "Resolved to a tautology")
@@ -177,7 +178,9 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
     if is_proved (c, cl) then
       []
     else
-      St.(c.cpremise)
+      match St.(c.cpremise) with
+      | St.History l -> l
+      | St.Lemma _ -> assert false
 
   let rec do_clause = function
     | [] -> ()

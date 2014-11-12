@@ -13,8 +13,8 @@
 module Make (F : Formula_intf.S)
     (Th : Theory_intf.S with type formula = F.t) = struct
 
-  module St = Solver_types.Make(F)
-  module Proof = Res.Make(St)(Th)
+  module St = Solver_types.Make(F)(Th)
+  module Proof = Res.Make(St)
 
   open St
 
@@ -245,7 +245,7 @@ module Make (F : Formula_intf.S)
         a.neg.is_true <- false;
         a.var.level <- -1;
         a.var.reason <- None;
-        a.var.vpremise <- [];
+        a.var.vpremise <- History [];
         insert_var_order a.var
       done;
       Th.backtrack (Vec.get env.tenv_queue lvl); (* recover the right tenv *)
@@ -356,8 +356,8 @@ module Make (F : Formula_intf.S)
   let slice_get i = (Vec.get env.trail i).lit
   let slice_push lit l lemma =
     let atoms = List.rev_map add_atom (lit :: (List.rev_map F.neg l)) in
-    let c = St.make_clause (St.fresh_name ()) atoms (List.length atoms) true [] in
-    enqueue (St.add_atom lit) (decision_level ()) (Some c)
+    let c = make_clause (fresh_name ()) atoms (List.length atoms) true (Lemma lemma) in
+    enqueue (add_atom lit) (decision_level ()) (Some c)
 
   let current_slice () = Th.({
       start = env.tatoms_qhead;
@@ -373,7 +373,7 @@ module Make (F : Formula_intf.S)
       propagate ()
     | Th.Unsat (l, p) ->
       let l = List.rev_map St.add_atom l in
-      let c = St.make_clause (St.fresh_name ()) l (List.length l) true [] in
+      let c = St.make_clause (St.fresh_name ()) l (List.length l) true (History []) in
       Some c
 
   and propagate () =
@@ -544,81 +544,12 @@ module Make (F : Formula_intf.S)
     var_decay_activity ();
     clause_decay_activity ()
 
-
-  (*
-  let theory_analyze dep = 0, [], [], 1
-    let atoms, sz, max_lvl, c_hist =
-      Ex.fold_atoms
-        (fun a (acc, sz, max_lvl, c_hist) ->
-           let c_hist = List.rev_append a.var.vpremise c_hist in
-           let c_hist = match a.var.reason with
-             | None -> c_hist | Some r -> r:: c_hist in
-           if a.var.level = 0 then acc, sz, max_lvl, c_hist
-           else a.neg :: acc, sz + 1, max max_lvl a.var.level, c_hist
-        ) dep ([], 0, 0, [])
-    in
-    if atoms = [] then begin
-      (* check_inconsistency_of dep; *)
-      report_t_unsat dep
-      (* une conjonction de faits unitaires etaient deja unsat *)
-    end;
-    let name = fresh_dname() in
-    let c_clause = make_clause name atoms sz false c_hist in
-    (* eprintf "c_clause: %a@." Debug.clause c_clause; *)
-    c_clause.removed <- true;
-
-    let pathC  = ref 0 in
-    let learnt = ref [] in
-    let cond   = ref true in
-    let blevel = ref 0 in
-    let seen   = ref [] in
-    let c      = ref c_clause in
-    let tr_ind = ref (Vec.size env.trail - 1) in
-    let size   = ref 1 in
-    let history = ref [] in
-    while !cond do
-      if !c.learnt then clause_bump_activity !c;
-      history := !c :: !history;
-      (* visit the current predecessors *)
-      for j = 0 to Vec.size !c.atoms - 1 do
-        let q = Vec.get !c.atoms j in
-        (*printf "I visit %a@." D1.atom q;*)
-        assert (q.is_true || q.neg.is_true && q.var.level >= 0); (* Pas sur *)
-        if not q.var.seen && q.var.level > 0 then begin
-          var_bump_activity q.var;
-          q.var.seen <- true;
-          seen := q :: !seen;
-          if q.var.level >= max_lvl then incr pathC
-          else begin
-            learnt := q :: !learnt;
-            incr size;
-            blevel := max !blevel q.var.level
-          end
-        end
-      done;
-
-      (* look for the next node to expand *)
-      while not (Vec.get env.trail !tr_ind).var.seen do decr tr_ind done;
-      decr pathC;
-      let p = Vec.get env.trail !tr_ind in
-      decr tr_ind;
-      match !pathC, p.var.reason with
-      | 0, _ ->
-        cond := false;
-        learnt := p.neg :: (List.rev !learnt)
-      | n, None   -> assert false
-      | n, Some cl -> c := cl
-    done;
-    List.iter (fun q -> q.var.seen <- false) !seen;
-    !blevel, !learnt, !history, !size
-    *)
-
   let add_boolean_conflict confl =
     env.conflicts <- env.conflicts + 1;
     if decision_level() = 0 then report_unsat confl; (* Top-level conflict *)
     let blevel, learnt, history, size = analyze confl in
     cancel_until blevel;
-    record_learnt_clause blevel learnt history size
+    record_learnt_clause blevel learnt (History history) size
 
   let search n_of_conflicts n_of_learnts =
     let conflictC = ref 0 in
@@ -700,9 +631,11 @@ module Make (F : Formula_intf.S)
           if a.var.level = 0 then raise Trivial
           else (a::trues) @ unassigned @ falses @ r, init
         else if a.neg.is_true then
-          if a.var.level = 0 then
+          if a.var.level = 0 then match a.var.vpremise with
+          | History v ->
             partition_aux trues unassigned falses
-              (List.rev_append (a.var.vpremise) init) r
+              (List.rev_append v init) r
+          | Lemma _ -> assert false
           else partition_aux trues unassigned (a::falses) init r
         else partition_aux trues (a::unassigned) falses init r
     in
@@ -712,15 +645,16 @@ module Make (F : Formula_intf.S)
   let add_clause ~cnumber atoms =
     if env.is_unsat then raise Unsat;
     let init_name = string_of_int cnumber in
-    let init0 = make_clause init_name atoms (List.length atoms) false [] in
+    let init0 = make_clause init_name atoms (List.length atoms) false (History []) in
     try
       let atoms, init =
         if decision_level () = 0 then
           let atoms, init = List.fold_left
               (fun (atoms, init) a ->
                  if a.is_true then raise Trivial;
-                 if a.neg.is_true then
-                   atoms, (List.rev_append (a.var.vpremise) init)
+                 if a.neg.is_true then match a.var.vpremise with
+                 | History v -> atoms, (List.rev_append v init)
+                 | Lemma p -> assert false
                  else a::atoms, init
               ) ([], [init0]) atoms in
           List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
@@ -733,7 +667,7 @@ module Make (F : Formula_intf.S)
 
       | a::_::_ ->
         let name = fresh_name () in
-        let clause = make_clause name atoms size false init in
+        let clause = make_clause name atoms size false (History init) in
         attach_clause clause;
         Vec.push env.clauses clause;
         if a.neg.is_true then begin
@@ -744,7 +678,7 @@ module Make (F : Formula_intf.S)
 
       | [a]   ->
         cancel_until 0;
-        a.var.vpremise <- init;
+        a.var.vpremise <- History init;
         enqueue a 0 None;
         match propagate () with
           None -> () | Some confl -> report_unsat confl
