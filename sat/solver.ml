@@ -352,29 +352,47 @@ module Make (F : Formula_intf.S)
     Vec.shrink watched dead_part
 
   (* Propagation (boolean and theory *)
+  let slice_get i = (Vec.get env.trail i).lit
+  let slice_push lit l lemma =
+    let atoms = List.rev_map add_atom (lit :: (List.rev_map F.neg l)) in
+    let c = St.make_clause (St.fresh_name ()) atoms (List.length atoms) true [] in
+    enqueue (St.add_atom lit) (decision_level ()) (Some c)
+
   let current_slice () = Th.({
       start = env.tatoms_qhead;
       length = (Vec.size env.trail) - env.tatoms_qhead;
-      get = (function i -> (Vec.get env.trail i).lit);
-      push = (function lit -> enqueue (St.add_atom lit) (decision_level ()) None);
-      (* TODO: modify reasons to allow for theory reason *)
+      get = slice_get;
+      push = slice_push;
     })
 
-  let rec theory_propagate () = None
+  let rec theory_propagate () =
+    match Th.assume (current_slice ()) with
+    | Th.Sat _ ->
+      env.tatoms_qhead <- Vec.size env.trail;
+      propagate ()
+    | Th.Unsat (l, p) ->
+      let l = List.rev_map St.add_atom l in
+      let c = St.make_clause (St.fresh_name ()) l (List.length l) true [] in
+      Some c
 
   and propagate () =
-    let num_props = ref 0 in
-    let res = ref None in
-    (*assert (Queue.is_empty env.tqueue);*)
-    while env.qhead < Vec.size env.trail do
-      let a = Vec.get env.trail env.qhead in
-      env.qhead <- env.qhead + 1;
-      incr num_props;
-      propagate_atom a res;
-    done;
-    env.propagations <- env.propagations + !num_props;
-    env.simpDB_props <- env.simpDB_props - !num_props;
-    !res
+    if env.qhead = Vec.size env.trail then
+      None
+    else begin
+      let num_props = ref 0 in
+      let res = ref None in
+      while env.qhead < Vec.size env.trail do
+        let a = Vec.get env.trail env.qhead in
+        env.qhead <- env.qhead + 1;
+        incr num_props;
+        propagate_atom a res;
+      done;
+      env.propagations <- env.propagations + !num_props;
+      env.simpDB_props <- env.simpDB_props - !num_props;
+      match !res with
+      | None -> theory_propagate ()
+      | _ -> !res
+    end
 
   (* conflict analysis *)
   let analyze c_clause =
@@ -481,12 +499,8 @@ module Make (F : Formula_intf.S)
       (struct type t = clause let equal = (==) let hash = Hashtbl.hash end)
 
 
-  let report_b_unsat ({atoms=atoms} as confl) =
+  let report_unsat ({atoms=atoms} as confl) =
     env.unsat_conflict <- Some confl;
-    env.is_unsat <- true;
-    raise Unsat
-
-  let report_t_unsat dep =
     env.is_unsat <- true;
     raise Unsat
 
@@ -495,11 +509,8 @@ module Make (F : Formula_intf.S)
     if env.is_unsat then raise Unsat;
     begin
       match propagate () with
-      | Some confl -> report_b_unsat confl
-      | None ->
-        match theory_propagate () with
-          Some dep -> report_t_unsat dep
-        | None -> ()
+      | Some confl -> report_unsat confl
+      | None -> ()
     end;
     if nb_assigns() <> env.simpDB_assigns && env.simpDB_props <= 0 then begin
       if Vec.size env.learnts > 0 then remove_satisfied env.learnts;
@@ -533,8 +544,8 @@ module Make (F : Formula_intf.S)
     clause_decay_activity ()
 
 
-  let theory_analyze dep = 0, [], [], 1
   (*
+  let theory_analyze dep = 0, [], [], 1
     let atoms, sz, max_lvl, c_hist =
       Ex.fold_atoms
         (fun a (acc, sz, max_lvl, c_hist) ->
@@ -603,7 +614,7 @@ module Make (F : Formula_intf.S)
 
   let add_boolean_conflict confl =
     env.conflicts <- env.conflicts + 1;
-    if decision_level() = 0 then report_b_unsat confl; (* Top-level conflict *)
+    if decision_level() = 0 then report_unsat confl; (* Top-level conflict *)
     let blevel, learnt, history, size = analyze confl in
     cancel_until blevel;
     record_learnt_clause blevel learnt history size
@@ -618,37 +629,27 @@ module Make (F : Formula_intf.S)
         add_boolean_conflict confl
 
       | None -> (* No Conflict *)
-        match theory_propagate () with
-        | Some dep ->
-          incr conflictC;
-          env.conflicts <- env.conflicts + 1;
-          if decision_level() = 0 then report_t_unsat dep; (* T-L conflict *)
-          let blevel, learnt, history, size = theory_analyze dep in
-          cancel_until blevel;
-          record_learnt_clause blevel learnt history size
+        if nb_assigns() = env.nb_init_vars then raise Sat;
+        if n_of_conflicts >= 0 && !conflictC >= n_of_conflicts then
+          begin
+            env.progress_estimate <- progress_estimate();
+            cancel_until 0;
+            raise Restart
+          end;
+        if decision_level() = 0 then simplify ();
 
-        | None ->
-          if nb_assigns() = env.nb_init_vars then raise Sat;
-          if n_of_conflicts >= 0 && !conflictC >= n_of_conflicts then
-            begin
-              env.progress_estimate <- progress_estimate();
-              cancel_until 0;
-              raise Restart
-            end;
-          if decision_level() = 0 then simplify ();
+        if n_of_learnts >= 0 &&
+           Vec.size env.learnts - nb_assigns() >= n_of_learnts then
+          reduce_db();
 
-          if n_of_learnts >= 0 &&
-             Vec.size env.learnts - nb_assigns() >= n_of_learnts then
-            reduce_db();
+        env.decisions <- env.decisions + 1;
 
-          env.decisions <- env.decisions + 1;
-
-          new_decision_level();
-          let next = pick_branch_lit () in
-          let current_level = decision_level () in
-          assert (next.level < 0);
-          Log.debug 5 "Deciding on %a" St.pp_atom next.pa;
-          enqueue next.pa current_level None
+        new_decision_level();
+        let next = pick_branch_lit () in
+        let current_level = decision_level () in
+        assert (next.level < 0);
+        Log.debug 5 "Deciding on %a" St.pp_atom next.pa;
+        enqueue next.pa current_level None
     done
 
   let check_clause c =
@@ -727,7 +728,7 @@ module Make (F : Formula_intf.S)
       let size = List.length atoms in
       match atoms with
       | [] ->
-        report_b_unsat init0;
+        report_unsat init0;
 
       | a::_::_ ->
         let name = fresh_name () in
@@ -745,13 +746,11 @@ module Make (F : Formula_intf.S)
         a.var.vpremise <- init;
         enqueue a 0 None;
         match propagate () with
-          None -> () | Some confl -> report_b_unsat confl
+          None -> () | Some confl -> report_unsat confl
     with Trivial -> ()
 
   let add_clauses cnf ~cnumber =
-    List.iter (add_clause ~cnumber) cnf;
-    match theory_propagate () with
-      None -> () | Some dep -> report_t_unsat dep
+    List.iter (add_clause ~cnumber) cnf
 
   let init_solver cnf ~cnumber =
     let nbv = made_vars_info env.vars in

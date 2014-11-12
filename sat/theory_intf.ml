@@ -25,7 +25,7 @@ module type S = sig
     start : int;
     length : int;
     get : int -> formula;
-    push : formula -> unit;
+    push : formula -> formula list -> proof -> unit;
   }
 
   type level
@@ -33,7 +33,7 @@ module type S = sig
 
   type res =
     | Sat of level
-    | Unsat of formula list
+    | Unsat of formula list * proof
     (** Type returned by the theory, either the current set of assumptions is satisfiable,
         or it is not, in which case an unsatisfiable clause (hopefully minimal) is returned.
         Formulas in the unsat clause must come from the current set of assumptions. *)

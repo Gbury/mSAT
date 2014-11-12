@@ -39,11 +39,6 @@ module Make (F : Formula_intf.S) = struct
 
   let make comb l = Comb (comb, l)
 
-  let value env c =
-    if List.mem c env then Some true
-    else if List.mem (make Not [c]) env then Some false
-    else None
-
   let make_atom p = Lit p
 
   let atomic_true = F.fresh ()

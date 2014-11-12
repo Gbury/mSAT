@@ -69,12 +69,12 @@ module Tsat = struct
     start : int;
     length : int;
     get : int -> formula;
-    push : formula -> unit;
+    push : formula -> formula list -> proof -> unit;
   }
 
   type res =
     | Sat of level
-    | Unsat of formula list
+    | Unsat of formula list * proof
 
   let dummy = ()
   let current_level () = ()
