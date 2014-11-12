@@ -27,6 +27,11 @@ module type S = sig
     get : int -> formula;
     push : formula -> formula list -> proof -> unit;
   }
+  (** The type for a slice of litterals to assume/propagate in the theory.
+      [get] operations should only be used for integers [ start <= i < start + length].
+      The semantic for push is the following :
+      [push f \[a1; a2;... ; an\] p] shoudl be so that p is a proof of
+      a1 /\ a2 /\ ... /\ an => f. *)
 
   type level
   (** The type for levels to allow backtracking. *)
@@ -34,9 +39,10 @@ module type S = sig
   type res =
     | Sat of level
     | Unsat of formula list * proof
-    (** Type returned by the theory, either the current set of assumptions is satisfiable,
-        or it is not, in which case an unsatisfiable clause (hopefully minimal) is returned.
-        Formulas in the unsat clause must come from the current set of assumptions. *)
+  (** Type returned by the theory, either the current set of assumptions is satisfiable,
+      or it is not, in which case a tautological clause (hopefully minimal) is returned.
+      Formulas in the unsat clause must come from the current set of assumptions, i.e
+      must have been encountered in a slice. *)
 
   val dummy : level
   (** A dummy level. *)
@@ -47,10 +53,10 @@ module type S = sig
 
   val assume : slice -> res
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
-      and returns the new level of the theory. *)
+      and returns the result of the new assumptions. *)
 
   val backtrack : level -> unit
-  (** Backtrack to the given level (excluded). After a call to [backtrack l], the theory should be in the
+  (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
       same state as when it returned the value [l], *)
 
 end
