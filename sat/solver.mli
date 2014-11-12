@@ -12,18 +12,19 @@
 (**************************************************************************)
 
 module Make (F : Formula_intf.S)
-    (St : Solver_types.S with type formula = F.t)
-    (Th : Theory_intf.S with type formula = F.t) :
-sig
+    (Th : Theory_intf.S with type formula = F.t) : sig
   (** Functor to create a SMT Solver parametrised by the atomic
       formulas and a theory. *)
 
   exception Unsat
 
+  module St : Solver_types.S with
+    type formula = F.t
+
   module Proof : Res.S with
     type atom = St.atom and
-  type clause = St.clause and
-  type lemma = Th.proof
+    type clause = St.clause and
+    type lemma = Th.proof
 
   val solve : unit -> unit
   (** Try and solves the current set of assumptions.

@@ -55,8 +55,6 @@ end
 
 module Tseitin = Tseitin.Make(Fsat)
 
-module Stypes = Solver_types.Make(Fsat)
-
 module Tsat = struct
   (* We don't have anything to do since the SAT Solver already
    * does propagation and conflict detection *)
@@ -84,12 +82,12 @@ module Tsat = struct
 end
 
 module Make(Dummy : sig end) = struct
-  module SatSolver = Solver.Make(Fsat)(Stypes)(Tsat)
+  module SatSolver = Solver.Make(Fsat)(Tsat)
 
   exception Bad_atom
 
   type atom = Fsat.t
-  type clause = Stypes.clause
+  type clause = SatSolver.St.clause
   type proof = SatSolver.Proof.proof
 
   type res =
@@ -141,7 +139,7 @@ module Make(Dummy : sig end) = struct
   let unsat_core = SatSolver.Proof.unsat_core
 
   let print_atom = Fsat.print
-  let print_clause = Stypes.print_clause
+  let print_clause = SatSolver.St.print_clause
   let print_proof = SatSolver.Proof.print_dot
 
 end

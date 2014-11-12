@@ -11,11 +11,12 @@
 (**************************************************************************)
 
 module Make (F : Formula_intf.S)
-    (St : Solver_types.S with type formula = F.t)
     (Th : Theory_intf.S with type formula = F.t) = struct
 
-  open St
+  module St = Solver_types.Make(F)
   module Proof = Res.Make(St)(Th)
+
+  open St
 
   exception Sat
   exception Unsat

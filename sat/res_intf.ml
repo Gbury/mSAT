@@ -16,8 +16,8 @@ module type S = sig
   (** Learn and build proofs for the clause in the vector. Clauses in the vector should be in the order they were learned. *)
 
   val assert_can_prove_unsat : clause -> unit
-  (** [prove_unsat c] tries and prove the empty clause from [c]. [c] may be a learnt clause not yet proved.
-      @raise Cannot if it is impossible. *)
+  (** [assert_can_prove_unsat c] tries and prove the empty clause from [c]. [c] may be a learnt clause not yet proved.
+      @raise Insuficient_hyps if it is impossible. *)
 
   type proof_node = {
     conclusion : clause;
@@ -30,7 +30,9 @@ module type S = sig
     | Resolution of proof * proof * atom
 
   val prove_unsat : clause -> proof
-  (** Given a conflict clause [c], returns a proof of the empty clause. *)
+  (** Given a conflict clause [c], returns a proof of the empty clause. Same as [assert_can_prove_unsat] but returns
+      the proof if it succeeds.
+      @raise Insuficient_hyps if it does not succeed. *)
 
   val unsat_core : proof -> clause list
   (** Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof. *)
