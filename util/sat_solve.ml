@@ -61,7 +61,7 @@ let format_of_filename s =
 let parse_with_input file = function
   | Auto -> assert false
   | Dimacs -> List.rev_map (List.rev_map S.make) (Parsedimacs.parse file)
-  | Smtlib -> Sat.Tseitin.simplify_cnf (rev_flat_map Sat.Tseitin.make_cnf [] (Smtlib.parse file))
+  | Smtlib -> rev_flat_map Sat.Tseitin.make_cnf [] (Smtlib.parse file)
 
 let parse_input file =
   parse_with_input file (match !input with

@@ -35,10 +35,6 @@ module type S = sig
       list (which is a conjunction) of lists (which are disjunctions) of
       literals. *)
 
-  val simplify_cnf : atom list list -> atom list list
-  (** Simplifies the cnf given as argument : eliminates 'false' atoms, and eliminates clauses
-      with the 'true' atom *)
-
   val print : Format.formatter -> t -> unit
   (** [print fmt f] prints the formula on the formatter [fmt].*)
 

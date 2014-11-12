@@ -19,11 +19,13 @@ module Make (F : Formula_intf.S) = struct
 
   type atom = F.t
   type t =
+    | True
     | Lit of atom
     | Comb of combinator * t list
 
   let rec print fmt phi =
     match phi with
+    | True -> Format.fprintf fmt "true"
     | Lit a -> F.print fmt a
     | Comb (Not, [f]) ->
       Format.fprintf fmt "not (%a)" print f
@@ -41,11 +43,8 @@ module Make (F : Formula_intf.S) = struct
 
   let make_atom p = Lit p
 
-  let atomic_true = F.fresh ()
-  let atomic_false = F.neg atomic_true
-
-  let f_true = make_atom atomic_true
-  let f_false = make_atom atomic_false
+  let f_true = True
+  let f_false = Comb(Not, [True])
 
   let rec flatten comb acc = function
     | [] -> acc
@@ -54,21 +53,56 @@ module Make (F : Formula_intf.S) = struct
     | a :: r ->
       flatten comb (a :: acc) r
 
+  let rec opt_rev_map f acc = function
+    | [] -> acc
+    | a :: r -> begin match f a with
+        | None -> opt_rev_map f acc r
+        | Some b -> opt_rev_map f (b :: acc) r
+      end
+
+  let remove_true l =
+      let aux = function
+          | True -> None
+          | f -> Some f
+      in
+      opt_rev_map aux [] l
+
+  let remove_false l =
+      let aux = function
+          | Comb(Not, [True]) -> None
+          | f -> Some f
+      in
+      opt_rev_map aux [] l
+
+
   let make_not f = make Not [f]
-  let make_and l = make And (flatten And [] l)
-  let make_or = function
-    | [] -> raise Empty_Or
-    | [a] -> a
-    | l -> Comb (Or, flatten Or [] l)
+
+  let make_and l =
+      let l' = remove_true (flatten And [] l) in
+      if List.exists ((=) f_false) l' then
+        f_false
+      else
+        make And l'
+
+  let make_or l =
+    let l' = remove_false (flatten Or [] l) in
+    if List.exists ((=) f_true) l' then
+        f_true
+    else match l' with
+      | [] -> raise Empty_Or
+      | [a] -> a
+      | _ -> Comb (Or, l')
+
   let make_imply f1 f2 = make Imp [f1; f2]
   let make_equiv f1 f2 = make_and [ make_imply f1 f2; make_imply f2 f1]
-  let make_xor f1 f2 = make_or [ make_and [ make Not [f1]; f2 ];
-                                 make_and [ f1; make Not [f2] ] ]
+  let make_xor f1 f2 = make_or [ make_and [ make_not f1; f2 ];
+                                 make_and [ f1; make_not f2 ] ]
 
   (* simplify formula *)
   let (%%) f g x = f (g x)
 
   let rec sform f k = match f with
+    | True | Comb (Not, [True]) -> k f
     | Comb (Not, [Lit a]) -> k (Lit (F.neg a))
     | Comb (Not, [Comb (Not, [f])]) -> sform f k
     | Comb (Not, [Comb (Or, l)]) -> sform_list_not [] l (k %% make_and)
@@ -89,22 +123,6 @@ module Make (F : Formula_intf.S) = struct
     | [] -> k acc
     | f :: tail ->
         sform (make_not f) (fun f' -> sform_list_not (f'::acc) tail k)
-
-  let rec simplify_clause acc = function
-    | [] -> Some acc
-    | a :: r when F.equal atomic_true a -> None
-    | a :: r when F.equal atomic_false a ->
-      simplify_clause acc r
-    | a :: r -> simplify_clause (a :: acc) r
-
-  let rec rev_opt_map f acc = function
-    | [] -> acc
-    | a :: r -> begin match f a with
-        | None -> rev_opt_map f acc r
-        | Some b -> rev_opt_map f (b :: acc) r
-      end
-
-  let simplify_cnf = rev_opt_map (simplify_clause []) []
 
   let ( @@ ) l1 l2 = List.rev_append l1 l2
   let ( @ ) = `Use_rev_append_instead   (* prevent use of non-tailrec append *)
@@ -254,11 +272,12 @@ module Make (F : Formula_intf.S) = struct
            | None, l -> Some Or, l @@ acc
            | _ -> assert false
         ) (None, []) l
-
     | _ -> assert false
 
   let cnf f =
     let acc = match f with
+      | True -> []
+      | Comb(Not, [True]) -> [[]]
       | Comb (And, l) -> List.rev_map (fun f -> snd(cnf f)) l
       | _ -> [snd (cnf f)]
     in
