@@ -43,7 +43,7 @@ module type S = sig
 
   val current_level : unit -> level
   (** Return the current level of the theory (either the empty/beginning state, or the
-      last level returned by the assume] function). *)
+      last level returned by the [assume] function). *)
 
   val assume : slice -> res
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
