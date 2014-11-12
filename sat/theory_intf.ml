@@ -30,7 +30,7 @@ module type S = sig
   (** The type for a slice of litterals to assume/propagate in the theory.
       [get] operations should only be used for integers [ start <= i < start + length].
       The semantic for push is the following :
-      [push f \[a1; a2;... ; an\] p] shoudl be so that p is a proof of
+      [push f \[a1; a2;... ; an\] p] should be so that [p] is a proof of
       a1 /\ a2 /\ ... /\ an => f. *)
 
   type level
