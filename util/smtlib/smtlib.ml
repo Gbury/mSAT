@@ -65,8 +65,8 @@ let rec translate_term = function
             (* CORE theory translation - '=', 'distinct','ite' not yet implemented *)
             | "not", [e] -> T.make_not e
             | "not", _ -> raise (Bad_arity "not")
-            | "and" as s, l -> T.make_and l
-            | "or" as s, l -> T.make_or l
+            | "and", l -> T.make_and l
+            | "or", l -> T.make_or l
             | "xor" as s, l -> left_assoc s T.make_xor l
             | "=>" as s, l -> right_assoc s T.make_imply l
             | _ -> raise Unknown_command

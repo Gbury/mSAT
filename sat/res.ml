@@ -166,7 +166,7 @@ module Make(St : Solver_types.S)(Proof : sig type proof end) = struct
       let new_c, new_cl = (ref temp_c, ref temp_cl) in
       while not (equal_cl cl !new_cl) do
         let unit_to_use = diff_learnt [] cl !new_cl in
-        let unit_r = List.map St.(fun a -> clause_unit a) unit_to_use in
+        let unit_r = List.map (fun a -> clause_unit a) unit_to_use in
         let temp_c, temp_cl = List.fold_left add_res (!new_c, !new_cl) unit_r in
         new_c := temp_c;
         new_cl := temp_cl;

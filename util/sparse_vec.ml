@@ -27,12 +27,7 @@ let grow_to t new_capa =
   let capa = Array.length data in
   t.data <- Array.init new_capa (fun i -> if i < capa then data.(i) else t.default)
 
-let grow_to_double_size t =
-  if Array.length t.data = Sys.max_array_length then _size_too_big();
-  let size = min Sys.max_array_length (2* Array.length t.data) in
-  grow_to t size
-
-let rec grow_to_by_double t new_capa =
+let grow_to_by_double t new_capa =
   if new_capa > Sys.max_array_length then _size_too_big ();
   let data = t.data in
   let capa = ref (Array.length data + 1) in

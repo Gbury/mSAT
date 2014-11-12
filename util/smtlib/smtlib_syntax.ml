@@ -34,7 +34,7 @@ and commanddefinesort_command_symbol11 = pd * ( symbol) list
 and attributevalsexpr_attributevalue_sexpr5 = pd * ( sexpr) list;;
 
 (* pd stands for pos (position) and extradata *)
-let rec dummy () = () 
+let dummy () = () 
 and pd_an_option = function 
   | AnOptionAttribute(d,_) -> d
 

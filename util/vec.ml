@@ -57,7 +57,7 @@ let grow_to_double_size t =
   let size = min Sys.max_array_length (2* Array.length t.data) in
   grow_to t size
 
-let rec grow_to_by_double t new_capa =
+let grow_to_by_double t new_capa =
   if new_capa > Sys.max_array_length then _size_too_big ();
   let data = t.data in
   let capa = ref (Array.length data + 1) in

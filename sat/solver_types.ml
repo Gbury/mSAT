@@ -188,11 +188,6 @@ module Make (F : Formula_intf.S) = struct
     else if a.neg.is_true then sprintf "[F%s]" (level a)
     else ""
 
-  let value_ms_like a =
-    if a.is_true then sprintf ":1%s" (level a)
-    else if a.neg.is_true then sprintf ":0%s" (level a)
-    else ":X"
-
   let pp_premise b v =
     List.iter (fun {name=name} -> bprintf b "%s," name) v
 
@@ -200,9 +195,6 @@ module Make (F : Formula_intf.S) = struct
     bprintf b "%s%d%s [lit:%s] vpremise={{%a}}"
       (sign a) (a.var.vid+1) (value a) (Log.on_fmt F.print a.lit)
       pp_premise a.var.vpremise
-
-  let pp_atoms_list b l = List.iter (bprintf b "%a ; " pp_atom) l
-  let pp_atoms_array b arr = Array.iter (bprintf b "%a ; " pp_atom) arr
 
   let pp_atoms_vec b vec =
     for i = 0 to Vec.size vec - 1 do
