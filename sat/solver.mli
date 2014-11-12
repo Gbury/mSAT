@@ -18,13 +18,13 @@ module Make (F : Formula_intf.S)
 
   exception Unsat
 
-  module St : Solver_types.S with
-    type formula = F.t
+  module St : Solver_types.S
+    with type formula = F.t
 
-  module Proof : Res.S with
-    type atom = St.atom and
-    type clause = St.clause and
-    type lemma = Th.proof
+  module Proof : Res.S
+    with type atom = St.atom
+     and type clause = St.clause
+     and type lemma = Th.proof
 
   val solve : unit -> unit
   (** Try and solves the current set of assumptions.
