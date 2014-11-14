@@ -6,6 +6,7 @@ Copyright 2014 Simon Cruanes
 
 module Fsmt : sig
     include Formula_intf.S
+    val mk_prop : int -> t
     val mk_eq : string -> string -> t
     val mk_neq : string -> string -> t
 end
@@ -26,23 +27,6 @@ module Make(Dummy: sig end) : sig
 
   type res = Sat | Unsat
   (** Type of results returned by the solve function. *)
-
-  val make_eq : string -> string -> atom
-  (** Returns the literal corresponding to equality of the given variables
-      @raise Invalid_var if given [0] as argument.*)
-
-  val make_neq : string -> string -> atom
-  (** Returns the literal corresponding to disequality of the given variables
-      @raise Invalid_var if given [0] as argument.*)
-
-  val neg : atom -> atom
-  (** [neg a] returns the negation of a literal. Involutive, i.e [neg (neg a) = a]. *)
-
-  val hash : atom -> int
-  val equal : atom -> atom -> bool
-  val compare : atom -> atom -> int
-  (** Usual hash and comparison functions. For now, directly uses
-      [Pervasives] and [Hashtbl] builtins. *)
 
   val solve : unit -> res
   (** Returns the satisfiability status of the current set of assumptions. *)

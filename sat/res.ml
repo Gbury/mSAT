@@ -49,13 +49,10 @@ module Make(St : Solver_types.S) = struct
   let fresh_pcl_name () = incr _c; "P" ^ (string_of_int !_c)
 
   (* Printing functions *)
-  let print_atom fmt a =
-    Format.fprintf fmt "%s%d" St.(if a.var.pa == a then "" else "¬ ") St.(a.var.vid + 1)
-
   let rec print_cl fmt = function
     | [] -> Format.fprintf fmt "[]"
-    | [a] -> print_atom fmt a
-    | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" print_atom a print_cl r
+    | [a] -> St.print_atom fmt a
+    | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" St.print_atom a print_cl r
 
   (* Compute resolution of 2 clauses *)
   let resolve l =
@@ -322,7 +319,7 @@ module Make(St : Solver_types.S) = struct
     Format.fprintf fmt "%s -> %s;@\n" id_c id_d
 
   let print_res_atom id fmt a =
-    Format.fprintf fmt "%s [label=\"%a\"]" id print_atom a
+    Format.fprintf fmt "%s [label=\"%a\"]" id St.print_atom a
 
   let print_res_node concl p1 p2 fmt atom =
     let id = new_id () in

@@ -1,5 +1,7 @@
 
-module S = Sat.Make(struct end)
+module F = Smt.Fsmt
+module T = Smt.Tseitin
+module S = Smt.Make(struct end)
 
 exception Out_of_time
 exception Out_of_space
@@ -60,8 +62,8 @@ let format_of_filename s =
 
 let parse_with_input file = function
   | Auto -> assert false
-  | Dimacs -> List.rev_map (List.rev_map S.make) (Parsedimacs.parse file)
-  | Smtlib -> rev_flat_map Sat.Tseitin.make_cnf [] (Satlib.parse file)
+  | Dimacs -> List.rev_map (List.rev_map F.mk_prop) (Parsedimacs.parse file)
+  | Smtlib -> rev_flat_map T.make_cnf [] (Smtlib.parse file)
 
 let parse_input file =
   parse_with_input file (match !input with
@@ -79,15 +81,17 @@ let print_proof proof = match !output with
   | Standard -> ()
   | Dot -> S.print_proof std proof
 
+(*
 let print_assign () = match !output with
   | Standard -> S.iter_atoms (fun a ->
       Format.fprintf std "%a -> %s,@ " S.print_atom a (if S.eval a then "T" else "F"))
   | Dot -> ()
+*)
 
 let rec print_cl fmt = function
   | [] -> Format.fprintf fmt "[]"
-  | [a] -> Sat.Fsat.print fmt a
-  | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" Sat.Fsat.print a print_cl r
+  | [a] -> F.print fmt a
+  | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" F.print a print_cl r
 
 let print_lcl l =
   List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) l
@@ -189,9 +193,11 @@ let main () =
   S.assume cnf;
   match S.solve () with
   | S.Sat ->
-    print "Sat";
+    print "Sat"
+    (*
     if !p_assign then
       print_assign ()
+      *)
   | S.Unsat ->
     print "Unsat";
     if !p_proof_check then begin

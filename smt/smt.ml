@@ -10,33 +10,35 @@ module Fsmt = struct
 
   type var = string
   type t =
-    | Fresh of int
+    | Prop of int
     | Equal of var * var
     | Distinct of var * var
 
-  let dummy = Fresh 0
+  let dummy = Prop 0
 
   let max_fresh = ref 0
   let fresh () =
     incr max_fresh;
-    Fresh !max_fresh
+    Prop (2 * !max_fresh + 1)
+
+  let mk_prop i =
+      if i <> 0 && i < max_int / 2 then Prop (2 * i)
+      else raise Invalid_var
 
   let mk_var i =
-    if i <> "" then
-      i
-    else
-      raise Invalid_var
+    if i <> "" then i
+    else raise Invalid_var
 
   let mk_eq i j = Equal (mk_var i, mk_var j)
   let mk_neq i j = Distinct (mk_var i, mk_var j)
 
   let neg = function
-    | Fresh i -> Fresh (-i)
+    | Prop i -> Prop (-i)
     | Equal (a, b) -> Distinct (a, b)
     | Distinct (a, b) -> Equal (a, b)
 
   let norm = function
-    | Fresh i -> Fresh (abs i), i < 0
+    | Prop i -> Prop (abs i), i < 0
     | Equal (a, b) -> Equal (min a b, max a b), false
     | Distinct (a, b) -> Equal (min a b, max a b), true
 
@@ -50,9 +52,9 @@ module Fsmt = struct
   let add_label _ _ = ()
 
   let print fmt = function
-    | Fresh i -> Format.fprintf fmt "%sv%d" (if i < 0 then "¬ " else "") (abs i)
+    | Prop i -> Format.fprintf fmt "%s%s%d" (if i < 0 then "¬ " else "") (if i mod 2 = 0 then "v" else "f") (abs i)
     | Equal (a, b) -> Format.fprintf fmt "%s = %s" a b
-    | Distinct (a, b) -> Format.fprintf fmt "%s <> %s" a b
+    | Distinct (a, b) -> Format.fprintf fmt "%s ≠ %s" a b
 
 end
 
@@ -89,7 +91,7 @@ module Tsmt = struct
       try
           for i = s.start to s.start + s.length - 1 do
               match s.get i with
-              | Fsmt.Fresh _ -> ()
+              | Fsmt.Prop _ -> ()
               | Fsmt.Equal (i, j) as f ->
                       env := { !env with seen = f :: !env.seen };
                       env := { !env with uf = U.union !env.uf i j }
@@ -118,16 +120,6 @@ module Make(Dummy:sig end) = struct
     | Unsat
 
   let _i = ref 0
-
-  let make_eq = Fsmt.mk_eq
-  let make_neq = Fsmt.mk_neq
-
-  let neg = Fsmt.neg
-
-  let hash = Fsmt.hash
-  let equal = Fsmt.equal
-  let compare = Fsmt.compare
-
   let solve () =
     try
       SmtSolver.solve ();

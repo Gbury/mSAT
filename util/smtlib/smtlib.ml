@@ -14,7 +14,7 @@ let env : (string, T.t) Hashtbl.t = Hashtbl.create 57;;
 Hashtbl.add env "true" T.f_true;;
 Hashtbl.add env "false" T.f_false;;
 
-let get_var s =
+let get_atom s =
         try
             Hashtbl.find env s
         with Not_found ->
@@ -75,7 +75,7 @@ let rec translate_term = function
               | _ -> raise Unknown_command
               end
             end
-    | _ -> raise Incomplete_translation
+    | e -> (get_atom (translate_atom e))
 
 (* Command Translation *)
 let translate_command = function
