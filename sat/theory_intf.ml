@@ -36,13 +36,13 @@ module type S = sig
   type level
   (** The type for levels to allow backtracking. *)
 
-  type res =
-    | Sat of level
-    | Unsat of formula list * proof
   (** Type returned by the theory, either the current set of assumptions is satisfiable,
       or it is not, in which case a tautological clause (hopefully minimal) is returned.
       Formulas in the unsat clause must come from the current set of assumptions, i.e
       must have been encountered in a slice. *)
+  type res =
+    | Sat of level
+    | Unsat of formula list * proof
 
   val dummy : level
   (** A dummy level. *)
