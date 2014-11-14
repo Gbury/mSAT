@@ -4,17 +4,18 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Fsat : Formula_intf.S
+module Fsmt : sig
+    include Formula_intf.S
+    val mk_eq : string -> string -> t
+    val mk_neq : string -> string -> t
+end
 
-module Tseitin : Tseitin.S with type atom = Fsat.t
+module Tseitin : Tseitin.S with type atom = Fsmt.t
 
 module Make(Dummy: sig end) : sig
   (** Fonctor to make a pure SAT Solver module with built-in literals. *)
 
-  exception Bad_atom
-  (** Exception raised when a problem with atomic formula encoding is detected. *)
-
-  type atom = Fsat.t
+  type atom = Fsmt.t
   (** Type for atoms, i.e boolean literals. *)
 
   type clause
@@ -26,13 +27,13 @@ module Make(Dummy: sig end) : sig
   type res = Sat | Unsat
   (** Type of results returned by the solve function. *)
 
-  val new_atom : unit -> atom
-  (** [new_atom ()] returns a fresh literal.
-      @raise Bad_atom if there are no more integer available to represent new atoms. *)
+  val make_eq : string -> string -> atom
+  (** Returns the literal corresponding to equality of the given variables
+      @raise Invalid_var if given [0] as argument.*)
 
-  val make : int -> atom
-  (** Returns the literal corresponding to the integer.
-      @raise Bad_atom if given [0] as argument.*)
+  val make_neq : string -> string -> atom
+  (** Returns the literal corresponding to disequality of the given variables
+      @raise Invalid_var if given [0] as argument.*)
 
   val neg : atom -> atom
   (** [neg a] returns the negation of a literal. Involutive, i.e [neg (neg a) = a]. *)
@@ -43,14 +44,8 @@ module Make(Dummy: sig end) : sig
   (** Usual hash and comparison functions. For now, directly uses
       [Pervasives] and [Hashtbl] builtins. *)
 
-  val iter_atoms : (atom -> unit) -> unit
-  (** Allows iteration over all atoms created (even if unused). *)
-
   val solve : unit -> res
   (** Returns the satisfiability status of the current set of assumptions. *)
-
-  val eval : atom -> bool
-  (** Return the current assignement of the literals. *)
 
   val assume : atom list list -> unit
   (** Add a list of clauses to the set of assumptions. *)

@@ -1,5 +1,5 @@
 
-module S = Sat.Make(struct end)
+module S = Smt.Make(struct end)
 
 exception Out_of_time
 exception Out_of_space
@@ -8,7 +8,6 @@ exception Out_of_space
 (* Types for input/output languages *)
 type sat_input =
   | Auto
-  | Dimacs
   | Smtlib
 
 type sat_output =
@@ -20,7 +19,6 @@ let output = ref Standard
 
 let input_list = [
   "auto", Auto;
-  "dimacs", Dimacs;
   "smtlib", Smtlib;
 ]
 let output_list = [
@@ -51,17 +49,14 @@ let format_of_filename s =
     try String.sub s (String.length s - n) n
     with Invalid_argument _ -> ""
   in
-  if last 4 = ".cnf" then
-    Dimacs
-  else if last 5 = ".smt2" then
+  if last 5 = ".smt2" then
     Smtlib
   else (* Default choice *)
-    Dimacs
+    Smtlib
 
 let parse_with_input file = function
   | Auto -> assert false
-  | Dimacs -> List.rev_map (List.rev_map S.make) (Parsedimacs.parse file)
-  | Smtlib -> rev_flat_map Sat.Tseitin.make_cnf [] (Satlib.parse file)
+  | Smtlib -> rev_flat_map Smt.Tseitin.make_cnf [] (Smtlib.parse file)
 
 let parse_input file =
   parse_with_input file (match !input with
@@ -79,15 +74,10 @@ let print_proof proof = match !output with
   | Standard -> ()
   | Dot -> S.print_proof std proof
 
-let print_assign () = match !output with
-  | Standard -> S.iter_atoms (fun a ->
-      Format.fprintf std "%a -> %s,@ " S.print_atom a (if S.eval a then "T" else "F"))
-  | Dot -> ()
-
 let rec print_cl fmt = function
   | [] -> Format.fprintf fmt "[]"
-  | [a] -> Sat.Fsat.print fmt a
-  | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" Sat.Fsat.print a print_cl r
+  | [a] -> Smt.Fsmt.print fmt a
+  | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" Smt.Fsmt.print a print_cl r
 
 let print_lcl l =
   List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) l
@@ -98,7 +88,6 @@ let print_lclause l =
 (* Arguments parsing *)
 let file = ref ""
 let p_cnf = ref false
-let p_assign = ref false
 let p_proof_check = ref false
 let p_proof_print = ref false
 let p_unsat_core = ref false
@@ -146,8 +135,6 @@ let argspec = Arg.align [
     " Outputs statistics about the GC";
     "-i", Arg.String set_input,
     " Sets the input format (default auto)";
-    "-model", Arg.Set p_assign,
-    " Outputs the boolean model found if sat";
     "-o", Arg.String set_output,
     " Sets the output format (default none)";
     "-size", Arg.String (int_arg size_limit),
@@ -190,8 +177,6 @@ let main () =
   match S.solve () with
   | S.Sat ->
     print "Sat";
-    if !p_assign then
-      print_assign ()
   | S.Unsat ->
     print "Unsat";
     if !p_proof_check then begin

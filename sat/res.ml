@@ -344,7 +344,7 @@ module Make(St : Solver_types.S) = struct
         print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
       | Lemma _ ->
         let aux fmt () =
-          Format.fprintf fmt "<TR><TD colspan=\"2\"BGCOLOR=\"LIGHTBLUE\">%a</TD></TR><TR><TD>Lemma</TD><TD>%s</TD></TR>"
+          Format.fprintf fmt "<TR><TD colspan=\"2\" BGCOLOR=\"LIGHTBLUE\">%a</TD></TR><TR><TD>Lemma</TD><TD>%s</TD></TR>"
             print_clause p.conclusion St.(p.conclusion.name)
         in
         print_dot_rule "BGCOLOR=\"RED\"" aux () fmt p.conclusion

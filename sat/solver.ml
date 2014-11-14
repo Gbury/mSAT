@@ -373,7 +373,7 @@ module Make (F : Formula_intf.S)
       propagate ()
     | Th.Unsat (l, p) ->
       let l = List.rev_map St.add_atom l in
-      let c = St.make_clause (St.fresh_name ()) l (List.length l) true (History []) in
+      let c = St.make_clause (St.fresh_name ()) l (List.length l) true (Lemma p) in
       Some c
 
   and propagate () =
@@ -501,6 +501,7 @@ module Make (F : Formula_intf.S)
 
 
   let report_unsat ({atoms=atoms} as confl) =
+    Log.debug 5 "Unsat conflict : %a" St.pp_clause confl;
     env.unsat_conflict <- Some confl;
     env.is_unsat <- true;
     raise Unsat
@@ -646,6 +647,7 @@ module Make (F : Formula_intf.S)
     if env.is_unsat then raise Unsat;
     let init_name = string_of_int cnumber in
     let init0 = make_clause init_name atoms (List.length atoms) false (History []) in
+    Log.debug 10 "New clause : %a" St.pp_clause init0;
     try
       let atoms, init =
         if decision_level () = 0 then

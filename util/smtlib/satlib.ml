@@ -2,8 +2,8 @@
 
 open Smtlib_syntax
 
-module F = Smt.Fsmt
-module T = Smt.Tseitin
+module F = Sat.Fsat
+module T = Sat.Tseitin
 
 exception Bad_arity of string
 exception Unknown_command
@@ -14,7 +14,8 @@ let env : (string, T.t) Hashtbl.t = Hashtbl.create 57;;
 Hashtbl.add env "true" T.f_true;;
 Hashtbl.add env "false" T.f_false;;
 
-let get_var s =
+let get_var =
+    fun s ->
         try
             Hashtbl.find env s
         with Not_found ->
@@ -28,7 +29,7 @@ let translate_const = function
     | SpecConstNum(_, s)
     | SpecConstString(_, s)
     | SpecConstsHex(_, s)
-    | SpecConstsBinary(_, s) -> s
+    | SpecConstsBinary(_, s) -> get_var s
 
 let translate_symbol = function
     | Symbol(_, s)
@@ -37,6 +38,12 @@ let translate_symbol = function
 let translate_id = function
     | IdSymbol(_, s) -> translate_symbol s
     | IdUnderscoreSymNum(_, s, n) -> raise Incomplete_translation
+
+let translate_sort = function
+    | SortIdentifier(_, id) ->
+            let s = translate_id id in
+            if s <> "Bool" then raise Incomplete_translation
+    | _ -> raise Incomplete_translation
 
 let translate_qualid = function
     | QualIdentifierId(_, id) -> translate_id id
@@ -50,36 +57,27 @@ let right_assoc s f = function
     | x :: r -> List.fold_right f r x
     | _ -> raise (Bad_arity s)
 
-let translate_atom = function
-    | TermSpecConst(_, const) -> translate_const const
-    | TermQualIdentifier(_, id) -> translate_qualid id
-    | _ -> raise Incomplete_translation
-
 let rec translate_term = function
+    | TermSpecConst(_, const) -> translate_const const
+    | TermQualIdentifier(_, id) -> get_var (translate_qualid id)
     | TermQualIdTerm(_, f, (_, l)) ->
-            begin match (translate_qualid f) with
-            | "=" ->
-              begin match (List.map translate_atom l) with
-              | [a; b] -> T.make_atom (F.mk_eq a b)
-              | _ -> assert false
-              end
-            | s ->
-              begin match s, (List.map translate_term l) with
-              (* CORE theory translation - 'distinct','ite' not yet implemented *)
-              | "not", [e] -> T.make_not e
-              | "not", _ -> raise (Bad_arity "not")
-              | "and", l -> T.make_and l
-              | "or", l -> T.make_or l
-              | "xor" as s, l -> left_assoc s T.make_xor l
-              | "=>" as s, l -> right_assoc s T.make_imply l
-              | _ -> raise Unknown_command
-              end
+            begin match (translate_qualid f), (List.map translate_term l) with
+            (* CORE theory translation - '=', 'distinct','ite' not yet implemented *)
+            | "not", [e] -> T.make_not e
+            | "not", _ -> raise (Bad_arity "not")
+            | "and", l -> T.make_and l
+            | "or", l -> T.make_or l
+            | "xor" as s, l -> left_assoc s T.make_xor l
+            | "=>" as s, l -> right_assoc s T.make_imply l
+            | _ -> raise Unknown_command
             end
     | _ -> raise Incomplete_translation
 
 (* Command Translation *)
 let translate_command = function
-    | CommandDeclareFun(_, s, (_, []), _) ->
+    | CommandDeclareFun(_, s, (_, []), ret) ->
+            ignore (translate_sort ret);
+            ignore (get_var (translate_symbol s));
             None
     | CommandAssert(_, t) ->
             Some (translate_term t)

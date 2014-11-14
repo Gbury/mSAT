@@ -1,3 +1,4 @@
+# Sat Modules
 Explanation
 Formula_intf
 Res
@@ -8,6 +9,11 @@ Theory_intf
 Tseitin
 Tseitin_intf
 
+# Smt Modules
+Unionfind
+Smt
+
+# Old modules
 #Arith
 #Cc
 #Combine
