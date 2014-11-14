@@ -70,19 +70,20 @@ module Tsmt = struct
     get : int -> formula;
     push : formula -> formula list -> proof -> unit;
   }
-  type level = U.t
+  type level = {
+      uf : U.t;
+      seen : formula list
+  }
 
   type res =
     | Sat of level
     | Unsat of formula list * proof
 
-  let dummy = U.empty
+  let dummy = { uf = U.empty; seen = [] }
 
-  let env = ref U.empty
+  let env = ref dummy
 
   let current_level () = !env
-
-  let temp = ref []
 
   let assume s =
       try
@@ -90,18 +91,16 @@ module Tsmt = struct
               match s.get i with
               | Fsmt.Fresh _ -> ()
               | Fsmt.Equal (i, j) as f ->
-                      temp := f :: !temp;
-                      env := U.union !env i j
+                      env := { !env with seen = f :: !env.seen };
+                      env := { !env with uf = U.union !env.uf i j }
               | Fsmt.Distinct (i, j) as f ->
-                      temp := f :: !temp;
-                      env := U.forbid !env i j
+                      env := { !env with seen = f :: !env.seen };
+                      env := { !env with uf = U.forbid !env.uf i j }
               | _ -> assert false
           done;
           Sat (current_level ())
       with U.Unsat ->
-          match !temp with
-          | _ :: _ -> Unsat (List.rev_map Fsmt.neg !temp, ())
-          | _ -> assert false
+          Unsat (List.rev_map Fsmt.neg !env.seen, ())
 
   let backtrack l = env := l
 
