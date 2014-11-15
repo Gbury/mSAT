@@ -157,7 +157,7 @@ module Make(St : Solver_types.S) = struct
 
   let add_clause c cl l = (* We assume that all clauses in l are already proved ! *)
     match l with
-    | a :: ((_ :: _) as r) ->
+    | a :: r ->
       Log.debug 5 "Resolving (with history) %a" St.pp_clause c;
       let temp_c, temp_cl = List.fold_left add_res a r in
       Log.debug 10 " Switching to unit resolutions";
