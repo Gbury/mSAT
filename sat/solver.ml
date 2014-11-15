@@ -624,7 +624,7 @@ module Make (F : Formula_intf.S)
   exception Trivial
 
   (* TODO: could be more efficient than [@] everywhere? *)
-  let partition atoms init =
+  let partition atoms init0 =
     let rec partition_aux trues unassigned falses init = function
       | [] -> trues @ unassigned @ falses, init
       | a::r ->
@@ -634,13 +634,13 @@ module Make (F : Formula_intf.S)
         else if a.neg.is_true then
           if a.var.level = 0 then match a.var.vpremise with
           | History v ->
-            partition_aux trues unassigned falses
-              (List.rev_append v init) r
+            partition_aux trues unassigned falses [init0] r
           | Lemma _ -> assert false
-          else partition_aux trues unassigned (a::falses) init r
+          else
+          partition_aux trues unassigned (a::falses) init r
         else partition_aux trues (a::unassigned) falses init r
     in
-    partition_aux [] [] [] init atoms
+    partition_aux [] [] [] [] atoms
 
 
   let add_clause ~cnumber atoms =
@@ -655,12 +655,12 @@ module Make (F : Formula_intf.S)
               (fun (atoms, init) a ->
                  if a.is_true then raise Trivial;
                  if a.neg.is_true then match a.var.vpremise with
-                 | History v -> atoms, (List.rev_append v init)
+                 | History v -> atoms, [init0]
                  | Lemma p -> assert false
                  else a::atoms, init
-              ) ([], [init0]) atoms in
+              ) ([], []) atoms in
           List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
-        else partition atoms [init0]
+        else partition atoms init0
       in
       let size = List.length atoms in
       match atoms with
@@ -669,7 +669,7 @@ module Make (F : Formula_intf.S)
 
       | a::_::_ ->
         let name = fresh_name () in
-        let clause = make_clause name atoms size false (History init) in
+        let clause = make_clause name atoms size (init <> []) (History init) in
         attach_clause clause;
         Vec.push env.clauses clause;
         if a.neg.is_true then begin
@@ -681,7 +681,7 @@ module Make (F : Formula_intf.S)
       | [a]   ->
         cancel_until 0;
         a.var.vpremise <- History init;
-        enqueue a 0 None;
+        enqueue a 0 (match init with [init0] -> Some init0 | _ -> None);
         match propagate () with
           None -> () | Some confl -> report_unsat confl
     with Trivial -> ()
