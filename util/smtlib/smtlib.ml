@@ -46,9 +46,10 @@ let left_assoc s f = function
     | x :: r -> List.fold_left f x r
     | _ -> raise (Bad_arity s)
 
-let right_assoc s f = function
-    | x :: r -> List.fold_right f r x
-    | _ -> raise (Bad_arity s)
+let rec right_assoc s f = function
+    | [] -> raise (Bad_arity s)
+    | [x] -> x
+    | x :: r -> f x (right_assoc s f r)
 
 let translate_atom = function
     | TermSpecConst(_, const) -> translate_const const

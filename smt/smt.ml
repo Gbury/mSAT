@@ -52,7 +52,7 @@ module Fsmt = struct
   let add_label _ _ = ()
 
   let print fmt = function
-    | Prop i -> Format.fprintf fmt "%s%s%d" (if i < 0 then "¬ " else "") (if i mod 2 = 0 then "v" else "f") (abs i)
+    | Prop i -> Format.fprintf fmt "%s%s%d" (if i < 0 then "¬ " else "") (if i mod 2 = 0 then "v" else "f") ((abs i) / 2)
     | Equal (a, b) -> Format.fprintf fmt "%s = %s" a b
     | Distinct (a, b) -> Format.fprintf fmt "%s ≠ %s" a b
 
