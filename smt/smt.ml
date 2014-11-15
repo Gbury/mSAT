@@ -62,7 +62,7 @@ module Tseitin = Tseitin.Make(Fsmt)
 
 module Tsmt = struct
 
-  module U = Unionfind.Make(String)
+  module CC = Cc.Make(String)
 
   type formula = Fsmt.t
   type proof = unit
@@ -72,37 +72,44 @@ module Tsmt = struct
     get : int -> formula;
     push : formula -> formula list -> proof -> unit;
   }
-  type level = {
-      uf : U.t;
-      seen : formula list
-  }
+  type level = CC.t
 
   type res =
     | Sat of level
     | Unsat of formula list * proof
 
-  let dummy = { uf = U.empty; seen = [] }
+  let dummy = CC.empty
 
   let env = ref dummy
 
   let current_level () = !env
 
+  let to_clause (a, b, l) =
+      Log.debug 10 "Expl : %s; %s" a b;
+      List.iter (fun s -> Log.debug 10 " |- %s" s) l;
+      let rec aux acc = function
+          | [] | [_] -> acc
+          | x :: ((y :: _) as r) ->
+                  aux (Fsmt.mk_eq x y :: acc) r
+      in
+      (Fsmt.mk_eq a b) :: (List.rev_map Fsmt.neg (aux [] l))
+
   let assume s =
       try
           for i = s.start to s.start + s.length - 1 do
+              Log.debug 10 "Propagating in th : %s" (Log.on_fmt Fsmt.print (s.get i));
               match s.get i with
               | Fsmt.Prop _ -> ()
               | Fsmt.Equal (i, j) as f ->
-                      env := { !env with seen = f :: !env.seen };
-                      env := { !env with uf = U.union !env.uf i j }
+                      env := CC.add_eq !env i j
               | Fsmt.Distinct (i, j) as f ->
-                      env := { !env with seen = f :: !env.seen };
-                      env := { !env with uf = U.forbid !env.uf i j }
+                      env := CC.add_neq !env i j
               | _ -> assert false
           done;
           Sat (current_level ())
-      with U.Unsat ->
-          Unsat (List.rev_map Fsmt.neg !env.seen, ())
+      with CC.Unsat x ->
+          Log.debug 8 "Making explanation clause...";
+          Unsat (to_clause x, ())
 
   let backtrack l = env := l
 

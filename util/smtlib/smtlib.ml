@@ -72,7 +72,9 @@ let rec translate_term = function
               | "or", l -> T.make_or l
               | "xor" as s, l -> left_assoc s T.make_xor l
               | "=>" as s, l -> right_assoc s T.make_imply l
-              | _ -> raise Unknown_command
+              | _ ->
+                      Format.printf "unknown : %s@." s;
+                      raise Unknown_command
               end
             end
     | e -> (get_atom (translate_atom e))

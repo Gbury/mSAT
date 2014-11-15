@@ -1,12 +1,7 @@
 
-module type OrderedType = sig
-    type t
-    val compare : t -> t -> int
-end
-
 (* Union-find Module *)
-module Make(T : OrderedType) = struct
-    exception Unsat
+module Make(T : Sig.OrderedType) = struct
+    exception Unsat of T.t * T.t
 
     type var = T.t
     module M = Map.Make(T)
@@ -48,12 +43,11 @@ let possible h =
   let aux (a, b) =
     let ca = find h a in
     let cb = find h b in
-    ca != cb
+    if T.compare ca cb = 0 then
+        raise (Unsat (a, b))
   in
-  if List.for_all aux h.forbid then
-    h
-  else
-    raise Unsat
+  List.iter aux h.forbid;
+  h
 
 let union_aux h x y =
   let cx = find h x in
@@ -78,7 +72,7 @@ let forbid h x y =
   let cx = find h x in
   let cy = find h y in
   if cx = cy then
-    raise Unsat
+    raise (Unsat (x, y))
   else
     { h with forbid = (x, y) :: h.forbid }
 end

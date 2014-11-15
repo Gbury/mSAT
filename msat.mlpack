@@ -10,8 +10,10 @@ Tseitin
 Tseitin_intf
 
 # Smt Modules
-Unionfind
+Cc
+Sig
 Smt
+Unionfind
 
 # Old modules
 #Arith
