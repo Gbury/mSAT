@@ -29,8 +29,8 @@ module Fsmt = struct
     if i <> "" then i
     else raise Invalid_var
 
-  let mk_eq i j = Equal (mk_var i, mk_var j)
-  let mk_neq i j = Distinct (mk_var i, mk_var j)
+  let mk_eq i j = Equal (mk_var (min i j), mk_var (max i j))
+  let mk_neq i j = Distinct (mk_var (min i j), mk_var (max i j))
 
   let neg = function
     | Prop i -> Prop (-i)
@@ -39,8 +39,8 @@ module Fsmt = struct
 
   let norm = function
     | Prop i -> Prop (abs i), i < 0
-    | Equal (a, b) -> Equal (min a b, max a b), false
-    | Distinct (a, b) -> Equal (min a b, max a b), true
+    | Equal (a, b) -> Equal (a, b), false
+    | Distinct (a, b) -> Equal (a, b), true
 
   (* Only used after normalisation, so usual functions should work *)
   let hash = Hashtbl.hash
