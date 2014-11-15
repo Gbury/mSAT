@@ -23,6 +23,13 @@ module Make (F : Formula_intf.S)
   exception Restart
   exception Conflict of clause
 
+  (* a push/pop state *)
+  type user_level = {
+    ul_trail : int; (* height of the decision trail *)
+    ul_clauses : int; (* number of clauses *)
+    ul_learnt : int; (* number of learnt clauses *)
+  }
+
   (* Singleton type containing the current state *)
   type env = {
 
@@ -53,8 +60,8 @@ module Make (F : Formula_intf.S)
     trail_lim : int Vec.t;
     (* decision levels in [trail]  *)
 
-    levels : int Vec.t;
-    (* user-defined levels. Subset of [trail_lim] *)
+    user_levels : user_level Vec.t;
+    (* user-defined levels, for {!push} and {!pop} *)
 
     mutable qhead : int;
     (* Start offset in the queue of unit facts to propagate, within the trail *)
@@ -123,7 +130,7 @@ module Make (F : Formula_intf.S)
     vars = Vec.make 0 dummy_var; (*updated during parsing*)
     trail = Vec.make 601 dummy_atom;
     trail_lim = Vec.make 601 (-1);
-    levels =  Vec.make 20 (-1);
+    user_levels = Vec.make 20 {ul_trail=0;ul_learnt=0;ul_clauses=0};
     qhead = 0;
     simpDB_assigns = -1;
     simpDB_props = 0;
@@ -725,28 +732,31 @@ module Make (F : Formula_intf.S)
 
   let base_level = 0
 
-  let current_level () =
-    if Vec.is_empty env.levels then base_level else Vec.last env.levels
+  let current_level () = Vec.size env.user_levels
 
   let push () =
-    let l = if Vec.is_empty env.trail_lim
+    let ul_trail = if Vec.is_empty env.trail_lim
       then base_level
       else Vec.last env.trail_lim
-    in
-    Vec.push env.levels l;
-    l
+    and ul_clauses = Vec.size env.clauses
+    and ul_learnt = Vec.size env.learnts in
+    Vec.push env.user_levels {ul_trail; ul_clauses;ul_learnt};
+    Vec.size env.user_levels
 
   let pop l =
     if l > current_level()
-    then invalid_arg "cannot pop() to level, it is too high";
-    let i = Vec.get env.levels l in
+      then invalid_arg "cannot pop() to level, it is too high";
+    let ul = Vec.get env.user_levels l in
     (* see whether we can reset [env.is_unsat] *)
     if env.is_unsat && not (Vec.is_empty env.trail_lim) then (
       (* level at which the decision that lead to unsat was made *)
       let last = Vec.last env.trail_lim in
-      if i < last then env.is_unsat <- false
+      if ul.ul_trail < last then env.is_unsat <- false
     );
-    cancel_until i
+    cancel_until ul.ul_trail;
+    Vec.shrink env.clauses ul.ul_clauses;
+    Vec.shrink env.learnts ul.ul_learnt;
+    ()
 
   let clear () = pop base_level
 end
