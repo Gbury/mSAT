@@ -698,12 +698,10 @@ module Make (F : Formula_intf.S)
     let nbv = St.nb_vars () in
     let nbc = env.nb_init_clauses + List.length cnf in
     Iheap.grow_to_by_double env.order nbv;
-    List.iter
-      (List.iter
-         (fun a ->
-            insert_var_order a.var
-         )
-      ) cnf;
+    (*
+    List.iter (List.iter (fun a -> insert_var_order a.var)) cnf;
+    *)
+    St.iter_vars insert_var_order;
     Vec.grow_to_by_double env.model nbv;
     Vec.grow_to_by_double env.clauses nbc;
     Vec.grow_to_by_double env.learnts nbc;

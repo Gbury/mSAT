@@ -125,7 +125,7 @@ let sort t f =
 
 let iter f t =
   for i = 0 to size t - 1 do
-    f (get t i)
+    f t.data.(i)
   done
 
 let fold f acc t =

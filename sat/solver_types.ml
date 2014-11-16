@@ -93,6 +93,7 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
 
   let nb_vars () = Vec.size vars
   let get_var i = Vec.get vars i
+  let iter_vars f = Vec.iter f vars
 
   let cpt_mk_var = ref 0
   let make_var =

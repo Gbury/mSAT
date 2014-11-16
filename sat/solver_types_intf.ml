@@ -72,6 +72,7 @@ module type S = sig
 
   val nb_vars : unit -> int
   val get_var : int -> var
+  val iter_vars : (var -> unit) -> unit
   (** Read access to the vector of variables created *)
 
   val fresh_name : unit -> string
