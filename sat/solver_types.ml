@@ -85,12 +85,16 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
     dummy_atom.watched <- Vec.make_empty dummy_clause
 
   module MA = Map.Make(F)
-  type varmap = var MA.t
 
   let normal_form = F.norm
 
-  let cpt_mk_var = ref 0
   let ma = ref MA.empty
+  let vars = Vec.make 107 dummy_var
+
+  let nb_vars () = Vec.size vars
+  let get_var i = Vec.get vars i
+
+  let cpt_mk_var = ref 0
   let make_var =
     fun lit ->
       let lit, negated = normal_form lit in
@@ -123,12 +127,9 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
             aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in
         ma := MA.add lit var !ma;
         incr cpt_mk_var;
+        Vec.push vars var;
+        assert (Vec.get vars var.vid == var && !cpt_mk_var = Vec.size vars);
         var, negated
-
-  let made_vars_info vars =
-    Vec.grow_to_by_double vars !cpt_mk_var;
-    MA.iter (fun _ var -> Vec.set_unsafe vars var.vid var) !ma;
-    !cpt_mk_var
 
   let add_atom lit =
     let var, negated = make_var lit in

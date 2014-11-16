@@ -17,9 +17,6 @@ module type S = sig
   type formula
   type proof
 
-  type varmap
-  val ma : varmap ref
-
   type var = {
     vid : int;
     pa : atom;
@@ -73,14 +70,14 @@ module type S = sig
   val make_clause : string -> atom list -> int -> bool -> premise -> clause
   (** [make_clause name atoms size learnt premise] creates a clause with the given attributes. *)
 
+  val nb_vars : unit -> int
+  val get_var : int -> var
+  (** Read access to the vector of variables created *)
+
   val fresh_name : unit -> string
   val fresh_lname : unit -> string
   val fresh_dname : unit -> string
   (** Fresh names for clauses *)
-
-  val made_vars_info : var Vec.t -> int
-  (** Returns the number of variables created, and fill the given vector with the variables created.
-      Each variable is set in the vecotr with its [vid] as index. *)
 
   val clear : unit -> unit
   (** Forget all variables cretaed *)

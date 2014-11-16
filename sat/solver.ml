@@ -51,9 +51,6 @@ module Make (F : Formula_intf.S)
     mutable var_inc : float;
     (* increment for variables' activity *)
 
-    vars : var Vec.t;
-    (* all boolean variables *)
-
     trail : atom Vec.t;
     (* decision stack + propagated atoms *)
 
@@ -113,7 +110,6 @@ module Make (F : Formula_intf.S)
     mutable learnts_literals : int;
     mutable max_literals : int;
     mutable tot_literals : int;
-    mutable nb_init_vars : int;
     mutable nb_init_clauses : int;
     mutable model : var Vec.t;
     mutable tenv_queue : Th.level Vec.t;
@@ -127,7 +123,6 @@ module Make (F : Formula_intf.S)
     learnts = Vec.make 0 dummy_clause; (*updated during parsing*)
     clause_inc = 1.;
     var_inc = 1.;
-    vars = Vec.make 0 dummy_var; (*updated during parsing*)
     trail = Vec.make 601 dummy_atom;
     trail_lim = Vec.make 601 (-1);
     user_levels = Vec.make 20 {ul_trail=0;ul_learnt=0;ul_clauses=0};
@@ -153,7 +148,6 @@ module Make (F : Formula_intf.S)
     learnts_literals = 0;
     max_literals = 0;
     tot_literals = 0;
-    nb_init_vars = 0;
     nb_init_clauses = 0;
     model = Vec.make 0 dummy_var;
     tenv_queue = Vec.make 100 Th.dummy;
@@ -164,10 +158,10 @@ module Make (F : Formula_intf.S)
   let to_int f = int_of_float f
 
   let f_weight i j =
-    (Vec.get env.vars j).weight < (Vec.get env.vars i).weight
+    (St.get_var j).weight < (St.get_var i).weight
 
   let f_filter i =
-    (Vec.get env.vars i).level < 0
+    (St.get_var i).level < 0
 
   let insert_var_order v =
     Iheap.insert f_weight env.order v.vid
@@ -181,8 +175,8 @@ module Make (F : Formula_intf.S)
   let var_bump_activity v =
     v.weight <- v.weight +. env.var_inc;
     if v.weight > 1e100 then begin
-      for i = 0 to (Vec.size env.vars) - 1 do
-        (Vec.get env.vars i).weight <- (Vec.get env.vars i).weight *. 1e-100
+      for i = 0 to (St.nb_vars ()) - 1 do
+        (St.get_var i).weight <- (St.get_var i).weight *. 1e-100
       done;
       env.var_inc <- env.var_inc *. 1e-100;
     end;
@@ -205,7 +199,7 @@ module Make (F : Formula_intf.S)
   let nb_assigns () = Vec.size env.trail
   let nb_clauses () = Vec.size env.clauses
   let nb_learnts () = Vec.size env.learnts
-  let nb_vars    () = Vec.size env.vars
+  let nb_vars    () = St.nb_vars ()
 
   let new_decision_level() =
     Vec.push env.trail_lim (Vec.size env.trail);
@@ -264,7 +258,7 @@ module Make (F : Formula_intf.S)
 
   let rec pick_branch_lit () =
     let max = Iheap.remove_min f_weight env.order in
-    let v = Vec.get env.vars max in
+    let v = St.get_var max in
     if v.level>= 0 then  begin
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit ()
@@ -362,8 +356,12 @@ module Make (F : Formula_intf.S)
   (* Propagation (boolean and theory *)
   let slice_get i = (Vec.get env.trail i).lit
   let slice_push lit l lemma =
-    let atoms = List.rev_map add_atom (lit :: (List.rev_map F.neg l)) in
-    let c = make_clause (fresh_name ()) atoms (List.length atoms) true (Lemma lemma) in
+    let nbv = St.nb_vars () in
+    let new_atom = add_atom lit in
+    insert_var_order new_atom.var;
+    let atoms = List.rev_map (fun x -> add_atom (F.neg x)) l in
+    assert (List.for_all (fun v -> v.var.vid < nbv) atoms);
+    let c = make_clause (fresh_name ()) (new_atom :: atoms) (List.length atoms + 1) true (Lemma lemma) in
     enqueue (add_atom lit) (decision_level ()) (Some c)
 
   let current_slice () = Th.({
@@ -569,7 +567,7 @@ module Make (F : Formula_intf.S)
         add_boolean_conflict confl
 
       | None -> (* No Conflict *)
-        if nb_assigns() = env.nb_init_vars then raise Sat;
+        if nb_assigns() = St.nb_vars () (* env.nb_init_vars *) then raise Sat;
         if n_of_conflicts >= 0 && !conflictC >= n_of_conflicts then
           begin
             env.progress_estimate <- progress_estimate();
@@ -697,9 +695,8 @@ module Make (F : Formula_intf.S)
     List.iter (add_clause ~cnumber) cnf
 
   let init_solver cnf ~cnumber =
-    let nbv = made_vars_info env.vars in
+    let nbv = St.nb_vars () in
     let nbc = env.nb_init_clauses + List.length cnf in
-    Vec.grow_to_by_double env.vars nbv;
     Iheap.grow_to_by_double env.order nbv;
     List.iter
       (List.iter
@@ -707,7 +704,6 @@ module Make (F : Formula_intf.S)
             insert_var_order a.var
          )
       ) cnf;
-    env.nb_init_vars <- nbv;
     Vec.grow_to_by_double env.model nbv;
     Vec.grow_to_by_double env.clauses nbc;
     Vec.grow_to_by_double env.learnts nbc;
