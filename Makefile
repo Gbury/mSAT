@@ -5,7 +5,7 @@ COMP=ocamlbuild -log $(LOG) -use-ocamlfind -classic-display
 FLAGS=
 DIRS=-Is sat,smt,util,util/smtlib
 DOC=msat.docdir/index.html
-TEST=sat_solve.native
+TEST=sat_solve.native bench_stats.native
 
 NAME=msat
 
@@ -27,6 +27,9 @@ $(TEST): $(LIB)
 
 bench: $(TEST)
 	cd bench && $(MAKE)
+
+stats:
+	./bench_stats.native `git rev-parse HEAD`
 
 log:
 	cat _build/$(LOG) || true
