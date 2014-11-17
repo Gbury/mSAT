@@ -8,13 +8,16 @@ exception Commit_not_found
 exception Commit_ambiguous
 
 (* Arguments parsing *)
-let usage = "Usage : ./bench_stats [options] commit1 [commit2]"
+let usage = "Usage : ./bench_stats [options] [commit1 [commit2]]"
 
 let arg_commit = ref []
 let anon s = arg_commit := s :: !arg_commit
 
+let info_commit = ref false
 let long_diff = ref false
 let args = Arg.align [
+    "-info", Arg.Set info_commit,
+    " Adds info on the commit when printing stats";
     "-long", Arg.Set long_diff,
     " Print a long diff instead of a short one";
 ]
@@ -114,8 +117,8 @@ let diff h h' =
 let print_stats s =
     let sha, h = get_commit s in
     let st = get_stats h in
-    Format.printf "Average time : %f (%d / %d)@\nTimeouts : %d@\nSpaceouts : %d@."
-    st.avg_time (st.nb_sat + st.nb_unsat)
+    Format.printf "%s@\nAverage time : %f (%d / %d)@\nTimeouts : %d@\nSpaceouts : %d@."
+    (if !info_commit then Parselog.commit_info sha else sha) st.avg_time (st.nb_sat + st.nb_unsat)
     (st.nb_sat + st.nb_unsat + st.nb_timeout + st.nb_spaceout) st.nb_timeout st.nb_spaceout
 
 let print_diff_short s1 s2 =
@@ -135,16 +138,20 @@ let print_diff_short s1 s2 =
 (* Main function *)
 let main () =
     Arg.parse args anon usage;
-    (* Warning : the 'anon' function reverses the order of the arguments *)
-    match !arg_commit with
+    match List.rev (!arg_commit) with
+    | [] -> print_stats (Parselog.last_commit ())
     | [c] -> print_stats c
-    | [c1; c2] -> print_diff_short c2 c1
+    | [c1; c2] -> print_diff_short c1 c2
     | _ -> Arg.usage args usage
 ;;
 
 try
     main ()
 with
+| Parselog.Unknown_status (f, l) ->
+        Format.printf "For file '%s' : unknown return string :@\n" f;
+        List.iter (fun s -> Format.printf "%s@." s) l;
+        exit 3
 | Commit_not_found ->
         Format.printf "No such commit found@.";
         exit 2

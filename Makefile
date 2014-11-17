@@ -28,8 +28,8 @@ $(TEST): $(LIB)
 bench: $(TEST)
 	cd bench && $(MAKE)
 
-stats: $(TEST)
-	./bench_stats.native `git rev-parse HEAD`
+stats:
+	./bench_stats.native
 
 log:
 	cat _build/$(LOG) || true

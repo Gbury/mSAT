@@ -45,9 +45,15 @@ let commit_info sha =
     ignore (Unix.close_process_in ch);
     String.concat "\n" (List.rev l)
 
+let last_commit () =
+    let ch = Unix.open_process_in "git rev-parse HEAD" in
+    let s = input_line ch in
+    ignore (Unix.close_process_in ch);
+    s
+
 (* Raw log file parsing *)
 exception Empty_raw of string
-exception Unknown_status of string list
+exception Unknown_status of string * string list
 
 type status =
     | Sat
@@ -61,12 +67,12 @@ type pb = {
     pb_time : float;
 }
 
-let status_of_lines = function
+let status_of_lines f = function
     | ["Sat"] -> Sat
     | ["Unsat"] -> Unsat
     | ["Time limit exceeded"; _] -> Timeout
     | ["Size limit exceeded"; _] -> Spaceout
-    | l -> raise (Unknown_status l)
+    | l -> raise (Unknown_status (f, l))
 
 let parse_raw f =
     let f_in = open_in f in
@@ -82,12 +88,12 @@ let parse_raw f =
     match !f_lines with
     | [] -> raise (Empty_raw f)
     | s :: r ->
-            let st = status_of_lines (List.rev r) in
+            let st = status_of_lines f (List.rev r) in
             { pb_name = f; pb_st = st; pb_time = float_of_string s }
 
 let parse_commit root =
     let l = list_dir_files_rec (Filename.concat root "raw") in
     let res = Hashtbl.create (List.length l) in
-    List.iter (fun f -> Hashtbl.add res f (parse_raw f)) l;
+    List.iter (fun f -> try Hashtbl.add res f (parse_raw f) with Empty_raw _ -> ()) l;
     res
 
