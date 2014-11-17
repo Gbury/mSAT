@@ -4,9 +4,6 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-exception Empty_raw of string
-exception Unknown_status of string * string list
-
 val complete : string -> string -> string list
 val commit_info : string -> string
 val last_commit : unit -> string

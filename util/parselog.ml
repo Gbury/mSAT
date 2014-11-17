@@ -72,7 +72,10 @@ let status_of_lines f = function
     | ["Unsat"] -> Unsat
     | ["Time limit exceeded"; _] -> Timeout
     | ["Size limit exceeded"; _] -> Spaceout
-    | l -> raise (Unknown_status (f, l))
+    | l ->
+        Format.printf "For file '%s' : unknown return string :@\n" f;
+        List.iter (fun s -> Format.printf "%s@." s) l;
+        raise (Unknown_status (f, l))
 
 let parse_raw f =
     let f_in = open_in f in
@@ -94,6 +97,10 @@ let parse_raw f =
 let parse_commit root =
     let l = list_dir_files_rec (Filename.concat root "raw") in
     let res = Hashtbl.create (List.length l) in
-    List.iter (fun f -> try Hashtbl.add res f (parse_raw f) with Empty_raw _ -> ()) l;
+    List.iter (fun f ->
+        try
+            Hashtbl.add res f (parse_raw f)
+        with Empty_raw _ | Unknown_status _ -> ()
+    ) l;
     res
 

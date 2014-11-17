@@ -148,10 +148,6 @@ let main () =
 try
     main ()
 with
-| Parselog.Unknown_status (f, l) ->
-        Format.printf "For file '%s' : unknown return string :@\n" f;
-        List.iter (fun s -> Format.printf "%s@." s) l;
-        exit 3
 | Commit_not_found ->
         Format.printf "No such commit found@.";
         exit 2
