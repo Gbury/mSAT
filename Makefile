@@ -28,7 +28,7 @@ $(TEST): $(LIB)
 bench: $(TEST)
 	cd bench && $(MAKE)
 
-stats:
+stats: $(TEST)
 	./bench_stats.native `git rev-parse HEAD`
 
 log:
