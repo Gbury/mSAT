@@ -713,6 +713,7 @@ module Make (F : Formula_intf.S)
 
   let eval lit =
     let var, negated = make_var lit in
+    assert (var.pa.is_true || var.na.is_true);
     let truth = var.pa.is_true in
     if negated then not truth else truth
 

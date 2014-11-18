@@ -3,6 +3,7 @@ module F = Smt.Fsmt
 module T = Smt.Tseitin
 module S = Smt.Make(struct end)
 
+exception Incorrect_model
 exception Out_of_time
 exception Out_of_space
 
@@ -81,13 +82,6 @@ let print_proof proof = match !output with
   | Standard -> ()
   | Dot -> S.print_proof std proof
 
-(*
-let print_assign () = match !output with
-  | Standard -> S.iter_atoms (fun a ->
-      Format.fprintf std "%a -> %s,@ " S.print_atom a (if S.eval a then "T" else "F"))
-  | Dot -> ()
-*)
-
 let rec print_cl fmt = function
   | [] -> Format.fprintf fmt "[]"
   | [a] -> F.print fmt a
@@ -99,11 +93,18 @@ let print_lcl l =
 let print_lclause l =
   List.iter (fun c -> Format.fprintf std "%a@\n" S.print_clause c) l
 
+let print_cnf cnf = match !output with
+  | Standard -> print_lcl cnf
+  | Dot -> ()
+
+let print_unsat_core u = match !output with
+  | Standard -> print_lclause u
+  | Dot -> ()
+
 (* Arguments parsing *)
 let file = ref ""
 let p_cnf = ref false
-let p_assign = ref false
-let p_proof_check = ref false
+let p_check = ref false
 let p_proof_print = ref false
 let p_unsat_core = ref false
 let time_limit = ref 300.
@@ -144,14 +145,12 @@ let argspec = Arg.align [
     " Enable stack traces";
     "-cnf", Arg.Set p_cnf,
     " Prints the cnf used.";
-    "-check", Arg.Set p_proof_check,
+    "-check", Arg.Set p_check,
     " Build, check and print the proof (if output is set), if unsat";
     "-gc", Arg.Unit setup_gc_stat,
     " Outputs statistics about the GC";
     "-i", Arg.String set_input,
     " Sets the input format (default auto)";
-    "-model", Arg.Set p_assign,
-    " Outputs the boolean model found if sat";
     "-o", Arg.String set_output,
     " Sets the output format (default none)";
     "-size", Arg.String (int_arg size_limit),
@@ -184,33 +183,37 @@ let main () =
     Arg.usage argspec usage;
     exit 2
   end;
-  ignore(Gc.create_alarm check);
+  let al = Gc.create_alarm check in
 
   (* Interesting stuff happening *)
   let cnf = get_cnf () in
   if !p_cnf then
-    print_lcl cnf;
+    print_cnf cnf;
   S.assume cnf;
-  match S.solve () with
+  let res = S.solve () in
+  Gc.delete_alarm al;
+  match res with
   | S.Sat ->
-    print "Sat"
-    (*
-    if !p_assign then
-      print_assign ()
-      *)
+    print "Sat";
+    if !p_check then
+      if not (List.for_all (List.exists S.eval) cnf) then
+          raise Incorrect_model
   | S.Unsat ->
     print "Unsat";
-    if !p_proof_check then begin
+    if !p_check then begin
       let p = S.get_proof () in
       print_proof p;
       if !p_unsat_core then
-        print_lclause (S.unsat_core p)
+        print_unsat_core (S.unsat_core p)
     end
 
 let () =
   try
     main ()
   with
+  | Incorrect_model ->
+    print "Internal error : incorrect *sat* model";
+    exit 2
   | Out_of_time ->
     print "Time limit exceeded";
     exit 2

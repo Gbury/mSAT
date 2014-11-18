@@ -34,6 +34,9 @@ module Make(Dummy: sig end) : sig
   val assume : atom list list -> unit
   (** Add a list of clauses to the set of assumptions. *)
 
+  val eval : atom -> bool
+  (** Returns the valuation of the given atom in the current state of the prover *)
+
   val get_proof : unit -> proof
   (** Returns the resolution proof found, if [solve] returned [Unsat]. *)
 

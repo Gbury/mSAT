@@ -145,6 +145,8 @@ module Make(Dummy:sig end) = struct
     | None -> assert false
     | Some c -> SmtSolver.Proof.prove_unsat c
 
+  let eval = SmtSolver.eval
+
   let unsat_core = SmtSolver.Proof.unsat_core
 
   let print_atom = Fsmt.print
