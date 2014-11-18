@@ -19,11 +19,13 @@ lib:
 doc:
 	$(COMP) $(FLAGS) $(DIRS) $(DOC)
 
-test:
+build-test:
 	$(COMP) $(FLAGS) $(DIRS) $(TEST)
+
+test: build-test
 	./tests/run
 
-bench: $(TEST)
+bench: build-test
 	cd bench && $(MAKE)
 
 stats:
