@@ -213,7 +213,7 @@ let () =
   with
   | Incorrect_model ->
     print "Internal error : incorrect *sat* model";
-    exit 2
+    exit 4
   | Out_of_time ->
     print "Time limit exceeded";
     exit 2
