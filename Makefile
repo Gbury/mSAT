@@ -11,19 +11,17 @@ NAME=msat
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 
-all:$(LIB) $(TEST)
+all: lib test
 
-$(LIB):
+lib:
 	$(COMP) $(FLAGS) $(DIRS) $(LIB)
 
 doc:
 	$(COMP) $(FLAGS) $(DIRS) $(DOC)
 
-test: $(TEST)
-	./tests/run
-
-$(TEST): $(LIB)
+test:
 	$(COMP) $(FLAGS) $(DIRS) $(TEST)
+	./tests/run
 
 bench: $(TEST)
 	cd bench && $(MAKE)
