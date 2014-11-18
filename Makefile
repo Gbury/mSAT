@@ -29,7 +29,7 @@ bench: build-test
 	cd bench && $(MAKE)
 
 stats:
-	./bench_stats.native
+	@./bench_stats.native
 
 log:
 	cat _build/$(LOG) || true

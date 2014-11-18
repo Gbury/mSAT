@@ -29,7 +29,7 @@ $(PROVER): $(SOLVER)
 $(SOLVER):
 	cd .. && $(MAKE)
 
-$(LOGDIR)/raw/%.done : $(PROVER)
+$(LOGDIR)/raw/%.done : dummy $(PROVER)
 	@mkdir -p $(dir $@)
 	@echo "solving problem $*.cnf..." | tee -a $(INDEX)
 	@./run_prover "$(CMD)" "$*.cnf" "$@"
