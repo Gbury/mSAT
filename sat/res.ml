@@ -329,6 +329,11 @@ module Make(St : Solver_types.S) = struct
       (print_dot_edge id) (c_id p1)
       (print_dot_edge id) (c_id p2)
 
+  let color s = match s.[0] with
+      | 'E' -> ""
+      | 'L' -> ""
+      | _ -> "BGCOLOR=\"GREY\""
+
   let rec print_dot_proof fmt p =
     if not (is_drawn p.conclusion) then begin
       has_drawn p.conclusion;
@@ -341,10 +346,10 @@ module Make(St : Solver_types.S) = struct
         print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
       | Lemma _ ->
         let aux fmt () =
-          Format.fprintf fmt "<TR><TD colspan=\"2\" BGCOLOR=\"LIGHTBLUE\">%a</TD></TR><TR><TD>Lemma</TD><TD>%s</TD></TR>"
+          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD BGCOLOR=\"YELLOW\">Lemma</TD><TD>%s</TD></TR>"
             print_clause p.conclusion St.(p.conclusion.name)
         in
-        print_dot_rule "BGCOLOR=\"RED\"" aux () fmt p.conclusion
+        print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
       | Resolution (proof1, proof2, a) ->
         let aux fmt () =
           Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>%s</TD><TD>%s</TD></TR>"
@@ -354,7 +359,7 @@ module Make(St : Solver_types.S) = struct
         let p1 = proof1 () in
         let p2 = proof2 () in
         Format.fprintf fmt "%a%a%a%a"
-          (print_dot_rule "" aux ()) p.conclusion
+          (print_dot_rule (color p.conclusion.St.name) aux ()) p.conclusion
           (print_res_node p.conclusion p1.conclusion p2.conclusion) a
           print_dot_proof p1
           print_dot_proof p2
