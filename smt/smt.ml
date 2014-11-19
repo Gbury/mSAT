@@ -70,7 +70,7 @@ module Tsmt = struct
     start : int;
     length : int;
     get : int -> formula;
-    push : formula -> formula list -> proof -> unit;
+    push : formula list -> proof -> unit;
   }
   type level = CC.t
 

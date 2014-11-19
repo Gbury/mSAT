@@ -25,13 +25,11 @@ module type S = sig
     start : int;
     length : int;
     get : int -> formula;
-    push : formula -> formula list -> proof -> unit;
+    push : formula list -> proof -> unit;
   }
   (** The type for a slice of litterals to assume/propagate in the theory.
       [get] operations should only be used for integers [ start <= i < start + length].
-      The semantic for push is the following :
-      [push f \[a1; a2;... ; an\] p] should be so that [p] is a proof of
-      a1 /\ a2 /\ ... /\ an => f. *)
+      [push clause proof] allows to add a tautological clause to the sat solver. *)
 
   type level
   (** The type for levels to allow backtracking. *)
