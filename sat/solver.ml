@@ -396,17 +396,22 @@ module Make (F : Formula_intf.S)
   let add_clause ~cnumber atoms history =
     if env.is_unsat then raise Unsat;
     let init_name = string_of_int cnumber in
-    let init0 = make_clause init_name atoms (List.length atoms) false history in
-    Log.debug 10 "New clause : %a" St.pp_clause init0;
+    let init0 = make_clause init_name atoms (List.length atoms) (history <> History []) history in
+    Log.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
       let atoms, init = partition atoms init0 in
+      let history = match init with
+      | [] -> history
+      | l -> History l
+      in
       let size = List.length atoms in
       match atoms with
       | [] ->
         report_unsat init0;
       | a::_::_ ->
         let name = fresh_name () in
-        let clause = make_clause name atoms size (init <> []) (History init) in
+        let clause = make_clause name atoms size (history <> History []) history in
+        Log.debug 10 "New clause : %a" St.pp_clause init0;
         attach_clause clause;
         Vec.push env.clauses clause;
         if a.neg.is_true then begin
@@ -416,7 +421,7 @@ module Make (F : Formula_intf.S)
         end
       | [a]   ->
         cancel_until 0;
-        a.var.vpremise <- History init;
+        a.var.vpremise <- history;
         enqueue a 0 (match init with [init0] -> Some init0 | _ -> None)
     with Trivial -> ()
 
@@ -509,11 +514,14 @@ module Make (F : Formula_intf.S)
     Vec.shrink watched dead_part
 
   (* Propagation (boolean and theory *)
+  let _th_cnumber = ref 0
   let slice_get i = (Vec.get env.trail i).lit
   let slice_push l lemma =
-    let atoms = List.rev_map (fun x -> add_atom (F.neg x)) l in
+    decr _th_cnumber;
+    let atoms = List.rev_map (fun x -> add_atom x) l in
+    Iheap.grow_to_by_double env.order (St.nb_vars ());
     List.iter (fun a -> insert_var_order a.var) atoms;
-    add_clause ~cnumber:0 atoms (Lemma lemma)
+    add_clause ~cnumber:!_th_cnumber atoms (Lemma lemma)
 
   let current_slice () = Th.({
       start = env.tatoms_qhead;
@@ -523,9 +531,10 @@ module Make (F : Formula_intf.S)
     })
 
   let rec theory_propagate () =
+    let head = Vec.size env.trail in
     match Th.assume (current_slice ()) with
     | Th.Sat _ ->
-      env.tatoms_qhead <- Vec.size env.trail;
+      env.tatoms_qhead <- head;
       propagate ()
     | Th.Unsat (l, p) ->
       let l = List.rev_map St.add_atom l in

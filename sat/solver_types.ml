@@ -207,7 +207,7 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
       bprintf b "%a ; " pp_atom (Vec.get vec i)
     done
 
-  let pp_clause b {name=name; atoms=arr; cpremise=cp} =
-    bprintf b "%s:{ %a} cpremise={{%a}}" name pp_atoms_vec arr pp_premise cp
+  let pp_clause b {name=name; atoms=arr; cpremise=cp; learnt=learnt} =
+    bprintf b "%s%s{ %a} cpremise={{%a}}" name (if learnt then "!" else ":") pp_atoms_vec arr pp_premise cp
 
 end
