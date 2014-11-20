@@ -4,7 +4,7 @@ OPTIONS :=-time 30s -size 1G
 LOGDIR 	:= $(shell echo "./logs/`git rev-parse HEAD`")
 INDEX	:= $(shell echo "./$(LOGDIR)/index")
 CNF 	:= $(shell find -L ./ -name "*.cnf" -type f)
-DONE 	:= $(addprefix $(LOGDIR)/raw/, $(CNF:.cnf=.done))
+DONE 	:= $(addprefix $(LOGDIR)/raw/, $(CNF:=.done))
 
 PROVER := $(shell echo "./$(LOGDIR)/prover")
 CMD    := $(PROVER) $(OPTIONS)
@@ -31,6 +31,6 @@ $(SOLVER):
 
 $(LOGDIR)/raw/%.done : dummy $(PROVER)
 	@mkdir -p $(dir $@)
-	@echo "solving problem $*.cnf..." | tee -a $(INDEX)
-	@./run_prover "$(CMD)" "$*.cnf" "$@"
+	@echo "solving problem $*..." | tee -a $(INDEX)
+	@./run_prover "$(CMD)" "$*" "$@"
 
