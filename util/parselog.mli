@@ -11,5 +11,4 @@ val last_commit : unit -> string
 type status = Sat | Unsat | Timeout | Spaceout
 type pb = { pb_name : string; pb_st : status; pb_time : float; }
 
-val parse_raw : string -> pb
 val parse_commit : string -> (string, pb) Hashtbl.t

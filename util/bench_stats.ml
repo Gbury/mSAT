@@ -135,6 +135,12 @@ let print_diff_short s1 s2 =
     | [] -> ()
     | l -> Format.printf "WARNING : %d incoherence@\n" (List.length l)
 
+let print_full h =
+    let aux f pb =
+        ()
+    in
+    Hashtbl.iter aux h
+
 (* Main function *)
 let main () =
     Arg.parse args anon usage;

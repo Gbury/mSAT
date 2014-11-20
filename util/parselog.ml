@@ -67,6 +67,10 @@ type pb = {
     pb_time : float;
 }
 
+let str_cut s start len =
+    try String.sub s start len
+    with Invalid_argument _ -> ""
+
 let status_of_lines f = function
     | ["Sat"] -> Sat
     | ["Unsat"] -> Unsat
@@ -77,7 +81,7 @@ let status_of_lines f = function
         List.iter (fun s -> Format.printf "%s@." s) l;
         raise (Unknown_status (f, l))
 
-let parse_raw f =
+let parse_raw base f =
     let f_in = open_in f in
     let f_lines = ref [] in
     begin try
@@ -92,14 +96,18 @@ let parse_raw f =
     | [] -> raise (Empty_raw f)
     | s :: r ->
             let st = status_of_lines f (List.rev r) in
-            { pb_name = f; pb_st = st; pb_time = float_of_string s }
+            assert (str_cut f 0 (String.length base) = base);
+            let file_name = String.sub f (String.length base) (String.length f - String.length base) in
+            { pb_name = file_name; pb_st = st; pb_time = float_of_string s }
 
 let parse_commit root =
-    let l = list_dir_files_rec (Filename.concat root "raw") in
+    let s = Filename.concat root "raw" in
+    let l = list_dir_files_rec s in
     let res = Hashtbl.create (List.length l) in
     List.iter (fun f ->
         try
-            Hashtbl.add res f (parse_raw f)
+            let pb = parse_raw s f in
+            Hashtbl.add res pb.pb_name pb
         with Empty_raw _ | Unknown_status _ -> ()
     ) l;
     res
