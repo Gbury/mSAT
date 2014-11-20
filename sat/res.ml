@@ -330,8 +330,8 @@ module Make(St : Solver_types.S) = struct
       (print_dot_edge id) (c_id p2)
 
   let color s = match s.[0] with
-      | 'E' -> ""
-      | 'L' -> ""
+      | 'E' -> "BGCOLOR=\"GREEN\""
+      | 'L' -> "BGCOLOR=\"GREEN\""
       | _ -> "BGCOLOR=\"GREY\""
 
   let rec print_dot_proof fmt p =
