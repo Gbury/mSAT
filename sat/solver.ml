@@ -268,6 +268,7 @@ module Make (F : Formula_intf.S)
   let enqueue a lvl reason =
     assert (not a.is_true && not a.neg.is_true &&
             a.var.level < 0 && a.var.reason = None && lvl >= 0);
+    assert (lvl = decision_level ());
     (* keep the reason for proof/unsat-core *)
     (*let reason = if lvl = 0 then None else reason in*)
     a.is_true <- true;
@@ -408,7 +409,7 @@ module Make (F : Formula_intf.S)
       match atoms with
       | [] ->
         report_unsat init0;
-      | a::_::_ ->
+      | a::b::_ ->
         let name = fresh_name () in
         let clause = make_clause name atoms size (history <> History []) history in
         Log.debug 10 "New clause : %a" St.pp_clause init0;
@@ -418,6 +419,10 @@ module Make (F : Formula_intf.S)
           let lvl = List.fold_left (fun m a -> max m a.var.level) 0 atoms in
           cancel_until lvl;
           add_boolean_conflict clause
+        end else if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
+          let lvl = List.fold_left (fun m a -> max m a.var.level) 0 atoms in
+          cancel_until lvl;
+          enqueue a lvl (Some clause)
         end
       | [a]   ->
         cancel_until 0;
