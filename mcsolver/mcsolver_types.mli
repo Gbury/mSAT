@@ -4,33 +4,15 @@
 (*             Combining model checking algorithms and SMT solvers        *)
 (*                                                                        *)
 (*                  Sylvain Conchon and Alain Mebsout                     *)
-(*                  Stephane Lescuyer                                     *)
-(*                  INRIA, Universite Paris-Sud 11                        *)
+(*                  Universite Paris-Sud 11                               *)
 (*                                                                        *)
 (*  Copyright 2011. This file is distributed under the terms of the       *)
 (*  Apache Software License version 2.0                                   *)
 (*                                                                        *)
 (**************************************************************************)
 
-module type S = sig
-  (** Signature for explanations. To be modified to allow passing bulks of assumptions to the theories. *)
+module type S = Solver_types_intf.S
 
-  type t
-  type exp
-  type atom
-
-  val empty : t
-  val singleton : atom -> t
-
-  val union : t -> t -> t
-  val merge : t -> t -> t
-
-  val iter_atoms : (atom -> unit)  -> t -> unit
-  val fold_atoms : (atom -> 'a -> 'a )  -> t -> 'a -> 'a
-
-  val fresh_exp : unit -> int
-  val add_fresh : int -> t -> t
-  val remove_fresh : int -> t -> t option
-
-  val print : Format.formatter -> t -> unit
-end
+module Make : functor (E : Expr_intf.S)(Th : Theory_intf.S)
+  -> S with type formula = E.Formula.t and type proof = Th.proof
+(** Functor to instantiate the types of clauses for the Solver. *)

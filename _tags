@@ -2,6 +2,8 @@
 <util/*.native>: package(unix)
 <smt/*.cmx>: for-pack(Msat), package(zarith)
 <sat/*.cmx>: for-pack(Msat)
+<solver/*.cmx>: for-pack(Msat)
+<mcsolver/*.cmx>: for-pack(Msat)
 
 # enable stronger inlining everywhere
 <util/{vec,hashcons,hstring,iheap}.cmx>: inline(15)

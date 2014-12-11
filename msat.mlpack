@@ -1,34 +1,26 @@
-# Sat Modules
-Explanation
+# Solver Modules
 Formula_intf
-Res
-Sat
 Solver
 Solver_types
 Theory_intf
+
+# Mcsat Solver modules
+Expr_intf
+Mcsolver
+Mcsolver_types
+Plugin_intf
+
+# Auxiliary modules
+Res
 Tseitin
 Tseitin_intf
+
+# Sat modules
+Sat
 
 # Smt Modules
 Cc
 Sig
 Smt
 Unionfind
-
-# Old modules
-#Arith
-#Cc
-#Combine
-#Exception
-#Fm
-#Intervals
-#Literal
-#Polynome
-#Smt
-#Sum
-#Symbols
-#Term
-#Ty
-#Uf
-#Use
 
