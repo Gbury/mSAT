@@ -12,19 +12,20 @@
 (**************************************************************************)
 
 module Make (E : Expr_intf.S)
-    (Th : Theory_intf.S with type formula = E.Formula.t) : sig
-  (** Functor to create a SMT Solver parametrised by the atomic
-      formulas and a theory. *)
+    (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t) : sig
+  (** Functor to create a  McSolver parametrised by the atomic formulas and a theory. *)
 
   exception Unsat
 
   module St : Mcsolver_types.S
     with type formula = E.Formula.t
 
+  (*
   module Proof : Res.S
     with type atom = St.atom
      and type clause = St.clause
      and type lemma = Th.proof
+  *)
 
   val solve : unit -> unit
   (** Try and solves the current set of assumptions.

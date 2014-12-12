@@ -15,16 +15,23 @@
 module type S = sig
   (** Singature for theories to be given to the Solver. *)
 
+  type term
+  (** The type of terms. Should be compatible with Expr_intf.Term.t*)
+
   type formula
-  (** The type of formulas. Should be compatble with Formula_intf.S *)
+  (** The type of formulas. Should be compatble with Expr_intf.Formula.t *)
 
   type proof
   (** A custom type for the proofs of lemmas produced by the theory. *)
 
+  type assumption =
+    | Lit of formula
+    | Assign of term * term (* Assign(x, alpha) *)
+
   type slice = {
     start : int;
     length : int;
-    get : int -> formula;
+    get : int -> assumption;
     push : formula list -> proof -> unit;
   }
   (** The type for a slice of litterals to assume/propagate in the theory.
@@ -42,6 +49,10 @@ module type S = sig
     | Sat of level
     | Unsat of formula list * proof
 
+  type eval_res =
+    | Bool of bool
+    | Unknown
+
   val dummy : level
   (** A dummy level. *)
 
@@ -56,6 +67,15 @@ module type S = sig
   val backtrack : level -> unit
   (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
       same state as when it returned the value [l], *)
+
+  val assign : term -> term
+  (** Returns an assignment value for the given term. *)
+
+  val iter_assignable : (term -> unit) -> formula -> unit
+  (** An iterator over the subterms of a formula that should be assigned a value (usually the poure subterms) *)
+
+  val eval : formula -> eval_res
+  (** Returns the evaluation of the formula in the current assignment *)
 
 end
 

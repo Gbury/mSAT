@@ -15,23 +15,34 @@ open Printf
 
 module type S = Mcsolver_types_intf.S
 
-module Make (E : Expr_intf.S)(Th : Theory_intf.S) = struct
+module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
 
+  (* Types declarations *)
+
+  type term = E.Term.t
   type formula = E.Formula.t
   type proof = Th.proof
 
-  type var =
-    {  vid : int;
-       pa : atom;
-       na : atom;
-       mutable weight : float;
-       mutable seen : bool;
-       mutable level : int;
-       mutable reason: reason;
-       mutable vpremise : premise}
+  type 'a var =
+    { vid : int;
+      tag : 'a;
+      mutable weight : float;
+      mutable level : int; }
+
+  type semantic =
+    { term : term;
+      mutable assigned : term option; }
+
+  type boolean = {
+    pa : atom;
+    na : atom;
+    mutable seen : bool;
+    mutable reason : reason;
+    mutable vpremise : premise
+  }
 
   and atom =
-    { var : var;
+    { var : boolean var;
       lit : formula;
       neg : atom;
       mutable watched : clause Vec.t;
@@ -46,23 +57,53 @@ module Make (E : Expr_intf.S)(Th : Theory_intf.S) = struct
       learnt : bool;
       cpremise : premise }
 
-  and reason = clause option
+  and reason =
+      | Semantic of int
+      | Bcp of clause option
 
   and premise =
       | History of clause list
       | Lemma of proof
 
+  type elt =
+      | Term of semantic var
+      | Formula of boolean var
+
+  (* Accessors for variables *)
+  let get_elt_id = function
+      | Term v -> v.vid
+      | Formula v -> v.vid
+
+  let get_elt_weight = function
+      | Term v -> v.weight
+      | Formula v -> v.weight
+
+  let get_elt_level = function
+      | Term v -> v.level
+      | Formula v -> v.level
+
+  let set_elt_weight e w = match e with
+      | Term v -> v.weight <- w
+      | Formula v -> v.weight <- w
+
+  let set_elt_level e l = match e with
+      | Term v -> v.level <- l
+      | Formula v -> v.level <- l
+
+  (* Dummy values *)
   let dummy_lit = E.dummy
 
   let rec dummy_var =
     { vid = -101;
-      pa = dummy_atom;
-      na = dummy_atom;
       level = -1;
-      reason = None;
       weight = -1.;
-      seen = false;
-      vpremise = History [] }
+      tag = {
+        pa = dummy_atom;
+        na = dummy_atom;
+        reason = None;
+        seen = false;
+        vpremise = History []; };
+    }
   and dummy_atom =
     { var = dummy_var;
       lit = dummy_lit;
@@ -72,7 +113,6 @@ module Make (E : Expr_intf.S)(Th : Theory_intf.S) = struct
       neg = dummy_atom;
       is_true = false;
       aid = -102 }
-
   let dummy_clause =
     { name = "";
       atoms = Vec.make_empty dummy_atom;
@@ -84,33 +124,36 @@ module Make (E : Expr_intf.S)(Th : Theory_intf.S) = struct
   let () =
     dummy_atom.watched <- Vec.make_empty dummy_clause
 
-  module MA = Map.Make(E.Formula)
+  (* Constructors *)
+  module MF = Map.Make(E.Formula)
+  module MT = Map.Make(E.Term)
 
-  let normal_form = E.norm
+  let f_map = ref MF.empty
+  let t_map = ref MT.empty
 
-  let ma = ref MA.empty
-  let vars = Vec.make 107 dummy_var
-
+  let vars = Vec.make 107 (Formula dummy_var)
   let nb_vars () = Vec.size vars
   let get_var i = Vec.get vars i
   let iter_vars f = Vec.iter f vars
 
   let cpt_mk_var = ref 0
-  let make_var =
+
+  let make_boolean_var =
     fun lit ->
-      let lit, negated = normal_form lit in
-      try MA.find lit !ma, negated
+      let lit, negated = E.norm lit in
+      try MF.find lit !f_map, negated
       with Not_found ->
         let cpt_fois_2 = !cpt_mk_var lsl 1 in
         let rec var  =
           { vid = !cpt_mk_var;
-            pa = pa;
-            na = na;
             level = -1;
-            reason = None;
             weight = 0.;
-            seen = false;
-            vpremise = History [];
+            tag = {
+              pa = pa;
+              na = na;
+              reason = Bcp None;
+              seen = false;
+              vpremise = History [];};
           }
         and pa =
           { var = var;
@@ -126,15 +169,32 @@ module Make (E : Expr_intf.S)(Th : Theory_intf.S) = struct
             neg = pa;
             is_true = false;
             aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in
-        ma := MA.add lit var !ma;
+        f_map := MF.add lit var !f_map;
         incr cpt_mk_var;
-        Vec.push vars var;
-        assert (Vec.get vars var.vid == var && !cpt_mk_var = Vec.size vars);
+        Vec.push vars (Formula var);
         var, negated
 
+  let make_semantic_var t =
+      try MT.find t !t_map
+      with Not_found ->
+        let res = {
+          vid = !cpt_mk_var;
+          weight = 0.;
+          level = -1;
+          tag = {
+            term = t;
+            assigned = None; };
+        } in
+        incr cpt_mk_var;
+        t_map := MT.add t res !t_map;
+        Vec.push vars (Term res);
+        res
+
+  let add_term t = make_semantic_var t
+
   let add_atom lit =
-    let var, negated = make_var lit in
-    if negated then var.na else var.pa
+    let var, negated = make_boolean_var lit in
+    if negated then var.tag.na else var.tag.pa
 
   let make_clause name ali sz_ali is_learnt premise =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
@@ -147,6 +207,7 @@ module Make (E : Expr_intf.S)(Th : Theory_intf.S) = struct
 
   let empty_clause = make_clause "Empty" [] 0 false (History [])
 
+  (* Name generation *)
   let fresh_lname =
     let cpt = ref 0 in
     fun () -> incr cpt; "L" ^ (string_of_int !cpt)
@@ -158,10 +219,6 @@ module Make (E : Expr_intf.S)(Th : Theory_intf.S) = struct
   let fresh_name =
     let cpt = ref 0 in
     fun () -> incr cpt; "C" ^ (string_of_int !cpt)
-
-  let clear () =
-    cpt_mk_var := 0;
-    ma := MA.empty
 
   (* Pretty printing for atoms and clauses *)
   let print_atom fmt a = E.Formula.print fmt a.lit
@@ -178,15 +235,16 @@ module Make (E : Expr_intf.S)(Th : Theory_intf.S) = struct
     Format.fprintf fmt "%s : %a" c.name print_atoms c.atoms
 
   (* Complete debug printing *)
-  let sign a = if a==a.var.pa then "" else "-"
+  let sign a = if a==a.var.tag.pa then "" else "-"
 
   let level a =
-    match a.var.level, a.var.reason with
+    match a.var.level, a.var.tag.reason with
     | n, _ when n < 0 -> assert false
-    | 0, Some c -> sprintf "->0/%s" c.name
-    | 0, None   -> "@0"
-    | n, Some c -> sprintf "->%d/%s" n c.name
-    | n, None   -> sprintf "@@%d" n
+    | 0, Bcp (Some c) -> sprintf "->0/%s" c.name
+    | 0, Bcp None   -> "@0"
+    | n, Bcp (Some c) -> sprintf "->%d/%s" n c.name
+    | n, Bcp None   -> sprintf "@@%d" n
+    | _ -> assert false
 
   let value a =
     if a.is_true then sprintf "[T%s]" (level a)
@@ -200,7 +258,7 @@ module Make (E : Expr_intf.S)(Th : Theory_intf.S) = struct
   let pp_atom b a =
     bprintf b "%s%d%s [lit:%s] vpremise={{%a}}"
       (sign a) (a.var.vid+1) (value a) (Log.on_fmt E.Formula.print a.lit)
-      pp_premise a.var.vpremise
+      pp_premise a.var.tag.vpremise
 
   let pp_atoms_vec b vec =
     for i = 0 to Vec.size vec - 1 do

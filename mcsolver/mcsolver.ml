@@ -11,10 +11,10 @@
 (**************************************************************************)
 
 module Make (E : Expr_intf.S)
-    (Th : Plugin_intf.S with type formula = E.Formula.t) = struct
+    (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t) = struct
 
   module St = Mcsolver_types.Make(E)(Th)
-  module Proof = Res.Make(St)
+  (* module Proof = Res.Make(St) *)
 
   open St
 
@@ -29,6 +29,11 @@ module Make (E : Expr_intf.S)
     ul_clauses : int; (* number of clauses *)
     ul_learnt : int; (* number of learnt clauses *)
   }
+
+  (* Type for trail elements *)
+  type trail_elt =
+      | Semantic of semantic var
+      | Boolean of atom
 
   (* Singleton type containing the current state *)
   type env = {
@@ -51,7 +56,7 @@ module Make (E : Expr_intf.S)
     mutable var_inc : float;
     (* increment for variables' activity *)
 
-    trail : atom Vec.t;
+    trail : trail_elt Vec.t;
     (* decision stack + propagated atoms *)
 
     trail_lim : int Vec.t;
@@ -111,7 +116,6 @@ module Make (E : Expr_intf.S)
     mutable max_literals : int;
     mutable tot_literals : int;
     mutable nb_init_clauses : int;
-    mutable model : var Vec.t;
     mutable tenv_queue : Th.level Vec.t;
     mutable tatoms_qhead : int;
   }
@@ -123,7 +127,7 @@ module Make (E : Expr_intf.S)
     learnts = Vec.make 0 dummy_clause; (*updated during parsing*)
     clause_inc = 1.;
     var_inc = 1.;
-    trail = Vec.make 601 dummy_atom;
+    trail = Vec.make 601 (Boolean dummy_atom);
     trail_lim = Vec.make 601 (-1);
     user_levels = Vec.make 20 {ul_trail=0;ul_learnt=0;ul_clauses=0};
     qhead = 0;
@@ -149,7 +153,6 @@ module Make (E : Expr_intf.S)
     max_literals = 0;
     tot_literals = 0;
     nb_init_clauses = 0;
-    model = Vec.make 0 dummy_var;
     tenv_queue = Vec.make 100 Th.dummy;
     tatoms_qhead = 0;
   }
@@ -158,16 +161,32 @@ module Make (E : Expr_intf.S)
   let to_float i = float_of_int i
   let to_int f = int_of_float f
 
+  let get_elt_weight = function
+      | Term v -> v.weight
+      | Formula v -> v.weight
+
+  let set_elt_weight e w = match e with
+      | Term v -> v.weight <- w
+      | Formula v -> v.weight <- w
+
+  let get_elt_level = function
+      | Term v -> v.level
+      | Formula v -> v.level
+
   let f_weight i j =
-    (St.get_var j).weight < (St.get_var i).weight
+    get_elt_weight (St.get_var j) < get_elt_weight (St.get_var i)
 
   let f_filter i =
-    (St.get_var i).level < 0
-
+    get_elt_level (St.get_var i) < 0
 
   (* Var/clause activity *)
-  let insert_var_order v =
-    Iheap.insert f_weight env.order v.vid
+  let rec insert_var_order = function
+      | Term v ->
+              Iheap.insert f_weight env.order v.vid
+      | Formula v ->
+              Iheap.insert f_weight env.order v.vid;
+              Th.iter_assignable
+                (fun t -> insert_var_order (Term (St.add_term t))) v.tag.pa.lit
 
   let var_decay_activity () =
     env.var_inc <- env.var_inc *. env.var_decay
@@ -179,7 +198,7 @@ module Make (E : Expr_intf.S)
     v.weight <- v.weight +. env.var_inc;
     if v.weight > 1e100 then begin
       for i = 0 to (St.nb_vars ()) - 1 do
-        (St.get_var i).weight <- (St.get_var i).weight *. 1e-100
+        set_elt_weight (St.get_var i) ((get_elt_weight (St.get_var i)) *. 1e-100)
       done;
       env.var_inc <- env.var_inc *. 1e-100;
     end;
@@ -244,13 +263,15 @@ module Make (E : Expr_intf.S)
       env.qhead <- Vec.get env.trail_lim lvl;
       env.tatoms_qhead <- env.qhead;
       for c = Vec.size env.trail - 1 downto env.qhead do
-        let a = Vec.get env.trail c in
-        a.is_true <- false;
-        a.neg.is_true <- false;
-        a.var.level <- -1;
-        a.var.reason <- None;
-        a.var.vpremise <- History [];
-        insert_var_order a.var
+        match Vec.get env.trail c with
+        | Boolean a ->
+          a.is_true <- false;
+          a.neg.is_true <- false;
+          a.var.level <- -1;
+          a.var.tag.reason <- Bcp None;
+          a.var.tag.vpremise <- History [];
+          insert_var_order (Formula a.var)
+        | Semantic a -> ()
       done;
       Th.backtrack (Vec.get env.tenv_queue lvl); (* recover the right tenv *)
       Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
@@ -265,17 +286,22 @@ module Make (E : Expr_intf.S)
     env.is_unsat <- true;
     raise Unsat
 
-  let enqueue a lvl reason =
-    assert (not a.is_true && not a.neg.is_true &&
-            a.var.level < 0 && a.var.reason = None && lvl >= 0);
+  let enqueue_bool a lvl reason =
+    assert (not a.is_true && not a.neg.is_true && a.var.level < 0
+            && a.var.tag.reason = Bcp None && lvl >= 0);
     assert (lvl = decision_level ());
     (* keep the reason for proof/unsat-core *)
     (*let reason = if lvl = 0 then None else reason in*)
     a.is_true <- true;
     a.var.level <- lvl;
-    a.var.reason <- reason;
+    a.var.tag.reason <- reason;
     Log.debug 8 "Enqueue: %a" pp_atom a;
-    Vec.push env.trail a
+    Vec.push env.trail (Boolean a)
+
+  let enqueue_assign v value lvl =
+    v.tag.assigned <- Some value;
+    v.level <- lvl;
+    Vec.push env.trail (Semantic v)
 
   (* conflict analysis *)
   let analyze c_clause =
@@ -296,9 +322,9 @@ module Make (E : Expr_intf.S)
         let q = Vec.get !c.atoms j in
         (*printf "I visit %a@." D1.atom q;*)
         assert (q.is_true || q.neg.is_true && q.var.level >= 0); (* Pas sur *)
-        if not q.var.seen && q.var.level > 0 then begin
+        if not q.var.tag.seen && q.var.level > 0 then begin
           var_bump_activity q.var;
-          q.var.seen <- true;
+          q.var.tag.seen <- true;
           seen := q :: !seen;
           if q.var.level >= decision_level () then begin
             incr pathC
@@ -330,12 +356,12 @@ module Make (E : Expr_intf.S)
       | [] -> assert false
       | [fuip] ->
         assert (blevel = 0);
-        fuip.var.vpremise <- history;
+        fuip.var.tag.vpremise <- history;
         let name = fresh_lname () in
         let uclause = make_clause name learnt size true history in
         Log.debug 2 "Unit clause learnt : %a" St.pp_clause uclause;
         Vec.push env.learnts uclause;
-        enqueue fuip 0 (Some uclause)
+        enqueue_bool fuip 0 (Bcp (Some uclause))
       | fuip :: _ ->
         let name = fresh_lname () in
         let lclause = make_clause name learnt size true history in
@@ -343,7 +369,7 @@ module Make (E : Expr_intf.S)
         Vec.push env.learnts lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
-        enqueue fuip blevel (Some lclause)
+        enqueue_bool fuip blevel (Bcp (Some lclause))
     end;
     var_decay_activity ();
     clause_decay_activity ()
@@ -364,7 +390,7 @@ module Make (E : Expr_intf.S)
       let aux (atoms, init) a =
           if a.is_true then raise Trivial;
           if a.neg.is_true then
-              match a.var.vpremise with
+              match a.var.tag.vpremise with
               | History v -> atoms, [init0]
               | Lemma p -> assert false
           else
@@ -381,7 +407,7 @@ module Make (E : Expr_intf.S)
           if a.var.level = 0 then raise Trivial
           else (a::trues) @ unassigned @ falses @ r, init
         else if a.neg.is_true then
-          if a.var.level = 0 then match a.var.vpremise with
+          if a.var.level = 0 then match a.var.tag.vpremise with
           | History v ->
             partition_aux trues unassigned falses [init0] r
           | Lemma _ -> assert false
@@ -422,24 +448,14 @@ module Make (E : Expr_intf.S)
         end else if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
           let lvl = List.fold_left (fun m a -> max m a.var.level) 0 atoms in
           cancel_until lvl;
-          enqueue a lvl (Some clause)
+          enqueue_bool a lvl (Bcp (Some clause))
         end
       | [a]   ->
         cancel_until 0;
-        a.var.vpremise <- history;
-        enqueue a 0 (match init with [init0] -> Some init0 | _ -> None)
+        a.var.tag.vpremise <- history;
+        enqueue_bool a 0 (Bcp (match init with [init0] -> Some init0 | _ -> None))
     with Trivial -> ()
 
-
-  (* Decide on a new litteral *)
-  let rec pick_branch_lit () =
-    let max = Iheap.remove_min f_weight env.order in
-    let v = St.get_var max in
-    if v.level>= 0 then  begin
-      assert (v.pa.is_true || v.na.is_true);
-      pick_branch_lit ()
-    end else
-      v
 
   let progress_estimate () =
     let prg = ref 0. in
@@ -495,7 +511,7 @@ module Make (E : Expr_intf.S)
           Vec.set watched !new_sz c;
           incr new_sz;
           Log.debug 5 "Unit clause : %a" St.pp_clause c;
-          enqueue first (decision_level ()) (Some c)
+          enqueue_bool first (decision_level ()) (Bcp (Some c))
         end
       with Exit -> ()
 
@@ -520,12 +536,16 @@ module Make (E : Expr_intf.S)
 
   (* Propagation (boolean and theory *)
   let _th_cnumber = ref 0
-  let slice_get i = (Vec.get env.trail i).lit
+  let slice_get i = match (Vec.get env.trail i) with
+    | Boolean a -> Th.Lit a.lit
+    | Semantic {tag={term; assigned = Some v}} -> Th.Assign (term, v)
+    | _ -> assert false
+
   let slice_push l lemma =
     decr _th_cnumber;
     let atoms = List.rev_map (fun x -> add_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_vars ());
-    List.iter (fun a -> insert_var_order a.var) atoms;
+    List.iter (fun a -> insert_var_order (Formula a.var)) atoms;
     add_clause ~cnumber:!_th_cnumber atoms (Lemma lemma)
 
   let current_slice () = Th.({
@@ -553,10 +573,12 @@ module Make (E : Expr_intf.S)
       let num_props = ref 0 in
       let res = ref None in
       while env.qhead < Vec.size env.trail do
-        let a = Vec.get env.trail env.qhead in
-        env.qhead <- env.qhead + 1;
-        incr num_props;
-        propagate_atom a res;
+        match Vec.get env.trail env.qhead with
+        | Boolean a ->
+          env.qhead <- env.qhead + 1;
+          incr num_props;
+          propagate_atom a res
+        | Semantic a -> ()
       done;
       env.propagations <- env.propagations + !num_props;
       env.simpDB_props <- env.simpDB_props - !num_props;
@@ -637,6 +659,34 @@ module Make (E : Expr_intf.S)
       env.simpDB_props <- env.clauses_literals + env.learnts_literals;
     end
 
+  (* Decide on a new litteral *)
+  let rec pick_branch_lit () =
+    let max = Iheap.remove_min f_weight env.order in
+    match St.get_var max with
+    | Term v ->
+        let value = Th.assign v.tag.term in
+        env.decisions <- env.decisions + 1;
+        new_decision_level();
+        let current_level = decision_level () in
+        assert (v.level < 0);
+(*         Log.debug 5 "Assigning %a to %a" St.pp_atom v.tag.pa; *)
+        enqueue_assign v value current_level
+    | Formula v ->
+      if v.level>= 0 then begin
+          assert (v.tag.pa.is_true || v.tag.na.is_true);
+          pick_branch_lit ()
+      end else match Th.eval v.tag.pa.lit with
+        | Th.Unknown ->
+          env.decisions <- env.decisions + 1;
+          new_decision_level();
+          let current_level = decision_level () in
+          assert (v.level < 0);
+          Log.debug 5 "Deciding on %a" St.pp_atom v.tag.pa;
+          enqueue_bool v.tag.pa current_level (Bcp None)
+        | Th.Bool b ->
+          let a = if b then v.tag.pa else v.tag.na in
+          enqueue_bool a (decision_level ()) (Bcp None)
+
   let search n_of_conflicts n_of_learnts =
     let conflictC = ref 0 in
     env.starts <- env.starts + 1;
@@ -660,14 +710,7 @@ module Make (E : Expr_intf.S)
            Vec.size env.learnts - nb_assigns() >= n_of_learnts then
           reduce_db();
 
-        env.decisions <- env.decisions + 1;
-
-        new_decision_level();
-        let next = pick_branch_lit () in
-        let current_level = decision_level () in
-        assert (next.level < 0);
-        Log.debug 5 "Deciding on %a" St.pp_atom next.pa;
-        enqueue next.pa current_level None
+        pick_branch_lit ()
     done
 
   let check_clause c =
@@ -682,11 +725,6 @@ module Make (E : Expr_intf.S)
   let check_vec vec =
     for i = 0 to Vec.size vec - 1 do check_clause (Vec.get vec i) done
 
-  (*
-  let check_model () =
-    check_vec env.clauses;
-    check_vec env.learnts
-  *)
 
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)
@@ -720,7 +758,6 @@ module Make (E : Expr_intf.S)
     Iheap.grow_to_by_double env.order nbv;
     (* List.iter (List.iter (fun a -> insert_var_order a.var)) cnf; *)
     St.iter_vars insert_var_order;
-    Vec.grow_to_by_double env.model nbv;
     Vec.grow_to_by_double env.clauses nbc;
     Vec.grow_to_by_double env.learnts nbc;
     env.nb_init_clauses <- nbc;
@@ -732,9 +769,9 @@ module Make (E : Expr_intf.S)
     init_solver cnf ~cnumber
 
   let eval lit =
-    let var, negated = make_var lit in
-    assert (var.pa.is_true || var.na.is_true);
-    let truth = var.pa.is_true in
+    let var, negated = make_boolean_var lit in
+    assert (var.tag.pa.is_true || var.tag.na.is_true);
+    let truth = var.tag.pa.is_true in
     if negated then not truth else truth
 
   let history () = env.learnts
