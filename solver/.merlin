@@ -1,7 +1,6 @@
 S ./
-S ../common/
+S ../util/
 
 B ../_build/
-B ../_build/sat/
+B ../_build/solver/
 B ../_build/util/
-B ../_build/common/

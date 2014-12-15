@@ -50,7 +50,7 @@ module type S = sig
     | Unsat of formula list * proof
 
   type eval_res =
-    | Bool of bool
+    | Valued of bool * int
     | Unknown
 
   val dummy : level

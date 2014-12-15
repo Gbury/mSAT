@@ -14,5 +14,5 @@
 module type S = Mcsolver_types_intf.S
 
 module Make : functor (E : Expr_intf.S)(Th : Plugin_intf.S)
-  -> S with type term= E.Term.t and type formula = E.Formula.t and type proof = Th.proof
+  -> S with type term = E.Term.t and type formula = E.Formula.t and type proof = Th.proof
 (** Functor to instantiate the types of clauses for the Solver. *)

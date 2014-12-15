@@ -18,7 +18,6 @@ module type S = sig
   type formula
   type proof
 
-
   type 'a var =
     { vid : int;
       tag : 'a;
@@ -62,9 +61,7 @@ module type S = sig
       | History of clause list
       | Lemma of proof
 
-  type elt =
-      | Term of semantic var
-      | Formula of boolean var
+  type elt = (semantic var, boolean var) Either.t
   (** Recursive types for literals (atoms) and clauses *)
 
   val dummy_var : boolean var
@@ -96,10 +93,12 @@ module type S = sig
   (** Fresh names for clauses *)
 
   val print_atom : Format.formatter -> atom -> unit
+  val print_semantic_var : Format.formatter -> semantic var -> unit
   val print_clause : Format.formatter -> clause -> unit
   (** Pretty printing functions for atoms and clauses *)
 
   val pp_atom : Buffer.t -> atom -> unit
+  val pp_semantic_var : Buffer.t -> semantic var -> unit
   val pp_clause : Buffer.t -> clause -> unit
   (** Debug function for atoms and clauses (very verbose) *)
 

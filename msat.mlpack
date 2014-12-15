@@ -12,6 +12,7 @@ Plugin_intf
 
 # Auxiliary modules
 Res
+Mcproof
 Tseitin
 Tseitin_intf
 

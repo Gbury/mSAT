@@ -6,7 +6,7 @@ Copyright 2014 Simon Cruanes
 
 module type S = Res_intf.S
 
-module Make(St : Solver_types.S) = struct
+module Make(St : Mcsolver_types.S) = struct
 
   (* Type definitions *)
   type lemma = St.proof
@@ -65,7 +65,7 @@ module Make(St : Solver_types.S) = struct
         if equal_atoms a b then
           aux resolved (a :: acc) r
         else if equal_atoms St.(a.neg) b then
-          aux (St.(a.var.pa) :: resolved) acc r
+          aux (St.(a.var.tag.pa) :: resolved) acc r
         else
           aux resolved (a :: acc) (b :: r)
     in
@@ -85,7 +85,7 @@ module Make(St : Solver_types.S) = struct
 
   (* Adding hyptoheses *)
   let is_unit_hyp = function
-    | [a] -> St.(a.var.level = 0 && a.var.reason = None && a.var.vpremise <> History [])
+    | [a] -> St.(a.var.level = 0 && a.var.tag.reason = Bcp None && a.var.tag.vpremise <> History [])
     | _ -> false
 
   let make_unit_hyp a =
@@ -98,7 +98,7 @@ module Make(St : Solver_types.S) = struct
       assert false
 
   let unit_hyp a =
-    let a = St.(a.var.pa) in
+    let a = St.(a.var.tag.pa) in
     try
       H.find unit_hyp [a]
     with Not_found ->
@@ -146,9 +146,9 @@ module Make(St : Solver_types.S) = struct
         diff_learnt (b :: acc) l r'
     | _ -> raise (Resolution_error "Impossible to derive correct clause")
 
-  let clause_unit a = match St.(a.var.level, a.var.reason) with
-    | 0, Some c -> c, to_list c
-    | 0, None ->
+  let clause_unit a = match St.(a.var.level, a.var.tag.reason) with
+    | 0, St.Bcp Some c -> c, to_list c
+    | 0, St.Bcp None ->
       let c, cl = unit_hyp a in
       if is_proved (c, cl) then
         c, cl
@@ -207,9 +207,9 @@ module Make(St : Solver_types.S) = struct
     | [] -> true
     | a :: r ->
       Log.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
-      let d = match St.(a.var.level, a.var.reason) with
-        | 0, Some d -> d
-        | 0, None ->
+      let d = match St.(a.var.level, a.var.tag.reason) with
+        | 0, St.Bcp Some d -> d
+        | 0, St.Bcp None ->
           let d, cl_d = unit_hyp a in
           if is_proved (d, cl_d) then d else raise Exit
         | _ -> raise Exit

@@ -14,7 +14,7 @@ module Make (E : Expr_intf.S)
     (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t) = struct
 
   module St = Mcsolver_types.Make(E)(Th)
-  (* module Proof = Res.Make(St) *)
+  module Proof = Mcproof.Make(St)
 
   open St
 
@@ -29,11 +29,6 @@ module Make (E : Expr_intf.S)
     ul_clauses : int; (* number of clauses *)
     ul_learnt : int; (* number of learnt clauses *)
   }
-
-  (* Type for trail elements *)
-  type trail_elt =
-      | Semantic of semantic var
-      | Boolean of atom
 
   (* Singleton type containing the current state *)
   type env = {
@@ -56,7 +51,7 @@ module Make (E : Expr_intf.S)
     mutable var_inc : float;
     (* increment for variables' activity *)
 
-    trail : trail_elt Vec.t;
+    trail : (semantic var, atom) Either.t Vec.t;
     (* decision stack + propagated atoms *)
 
     trail_lim : int Vec.t;
@@ -127,7 +122,7 @@ module Make (E : Expr_intf.S)
     learnts = Vec.make 0 dummy_clause; (*updated during parsing*)
     clause_inc = 1.;
     var_inc = 1.;
-    trail = Vec.make 601 (Boolean dummy_atom);
+    trail = Vec.make 601 (Either.mk_right dummy_atom);
     trail_lim = Vec.make 601 (-1);
     user_levels = Vec.make 20 {ul_trail=0;ul_learnt=0;ul_clauses=0};
     qhead = 0;
@@ -161,17 +156,20 @@ module Make (E : Expr_intf.S)
   let to_float i = float_of_int i
   let to_int f = int_of_float f
 
-  let get_elt_weight = function
-      | Term v -> v.weight
-      | Formula v -> v.weight
+  (* Accessors for variables *)
+  let get_var_id v = v.vid
+  let get_var_level v = v.level
+  let get_var_weight v = v.weight
 
-  let set_elt_weight e w = match e with
-      | Term v -> v.weight <- w
-      | Formula v -> v.weight <- w
+  let set_var_weight v w = v.weight <- w
+  let set_var_level v l = v.level <- l
 
-  let get_elt_level = function
-      | Term v -> v.level
-      | Formula v -> v.level
+  let get_elt_id e = Either.destruct e get_var_id get_var_id
+  let get_elt_weight e = Either.destruct e get_var_weight get_var_weight
+  let get_elt_level e = Either.destruct e get_var_level get_var_level
+
+  let set_elt_weight e = Either.destruct e set_var_weight set_var_weight
+  let set_elt_level e = Either.destruct e set_var_level set_var_level
 
   let f_weight i j =
     get_elt_weight (St.get_var j) < get_elt_weight (St.get_var i)
@@ -180,13 +178,12 @@ module Make (E : Expr_intf.S)
     get_elt_level (St.get_var i) < 0
 
   (* Var/clause activity *)
-  let rec insert_var_order = function
-      | Term v ->
-              Iheap.insert f_weight env.order v.vid
-      | Formula v ->
-              Iheap.insert f_weight env.order v.vid;
-              Th.iter_assignable
-                (fun t -> insert_var_order (Term (St.add_term t))) v.tag.pa.lit
+  let rec insert_var_order e = Either.destruct e
+      (fun v -> Iheap.insert f_weight env.order v.vid)
+      (fun v ->
+          Iheap.insert f_weight env.order v.vid;
+          Th.iter_assignable (fun t ->
+              insert_var_order (Either.mk_left (St.add_term t))) v.tag.pa.lit)
 
   let var_decay_activity () =
     env.var_inc <- env.var_inc *. env.var_decay
@@ -263,15 +260,15 @@ module Make (E : Expr_intf.S)
       env.qhead <- Vec.get env.trail_lim lvl;
       env.tatoms_qhead <- env.qhead;
       for c = Vec.size env.trail - 1 downto env.qhead do
-        match Vec.get env.trail c with
-        | Boolean a ->
+        Either.destruct (Vec.get env.trail c)
+        (fun a -> ())
+        (fun a ->
           a.is_true <- false;
           a.neg.is_true <- false;
           a.var.level <- -1;
           a.var.tag.reason <- Bcp None;
           a.var.tag.vpremise <- History [];
-          insert_var_order (Formula a.var)
-        | Semantic a -> ()
+          insert_var_order (Either.mk_right a.var))
       done;
       Th.backtrack (Vec.get env.tenv_queue lvl); (* recover the right tenv *)
       Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
@@ -296,24 +293,58 @@ module Make (E : Expr_intf.S)
     a.var.level <- lvl;
     a.var.tag.reason <- reason;
     Log.debug 8 "Enqueue: %a" pp_atom a;
-    Vec.push env.trail (Boolean a)
+    Vec.push env.trail (Either.mk_right a)
 
   let enqueue_assign v value lvl =
     v.tag.assigned <- Some value;
     v.level <- lvl;
-    Vec.push env.trail (Semantic v)
+    Log.debug 5 "Enqueue: %a" St.pp_semantic_var v;
+    Vec.push env.trail (Either.mk_left v)
 
   (* conflict analysis *)
+  let max_lvl_atoms l =
+      List.fold_left (fun (max_lvl, acc) a ->
+          if a.var.level = max_lvl then (max_lvl, a :: acc)
+          else if a.var.level > max_lvl then (a.var.level, [a])
+          else (max_lvl, acc)) (0, []) l
+
   let analyze c_clause =
-    let pathC  = ref 0 in
-    let learnt = ref [] in
-    let cond   = ref true in
-    let blevel = ref 0 in
-    let seen   = ref [] in
-    let c      = ref c_clause in
-    let tr_ind = ref (Vec.size env.trail - 1) in
-    let size   = ref 1 in
+    let tr_ind  = ref (Vec.size env.trail) in
+    let blevel  = ref 0 in
+    let is_uip  = ref false in
+    let c       = ref (Proof.to_list c_clause) in
     let history = ref [] in
+
+    let is_semantic a = match a.var.tag.reason with
+        | Semantic _ -> true
+        | _ -> false
+    in
+
+    try while true do
+        let l, atoms = max_lvl_atoms !c in
+        match atoms with
+        | [] |  _ :: [] ->
+                blevel := -1;
+                raise Exit
+        | _ when List.for_all is_semantic atoms ->
+                blevel := l - 1;
+                raise Exit
+        | _ ->
+                decr tr_ind;
+                Either.destruct (Vec.get env.trail !tr_ind)
+                (fun v -> ())
+                (fun a -> match a.var.tag.reason with
+                    | Bcp (Some d) ->
+                            let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
+                            begin match tmp with
+                            | [b] when b == a.neg -> c := !c
+                            | _ -> ()
+                            end
+                    | _ -> ())
+    done; assert false
+    with Exit ->
+      !blevel, !c, !history, !is_uip
+    (*
     while !cond do
       if !c.learnt then clause_bump_activity !c;
       history := !c :: !history;
@@ -349,27 +380,33 @@ module Make (E : Expr_intf.S)
       | n, Some cl -> c := cl
     done;
     List.iter (fun q -> q.var.seen <- false) !seen;
-    !blevel, !learnt, !history, !size
+    *)
 
-  let record_learnt_clause blevel learnt history size =
+  let record_learnt_clause blevel learnt history is_uip =
     begin match learnt with
       | [] -> assert false
       | [fuip] ->
         assert (blevel = 0);
         fuip.var.tag.vpremise <- history;
         let name = fresh_lname () in
-        let uclause = make_clause name learnt size true history in
+        let uclause = make_clause name learnt (List.length learnt) true history in
         Log.debug 2 "Unit clause learnt : %a" St.pp_clause uclause;
         Vec.push env.learnts uclause;
         enqueue_bool fuip 0 (Bcp (Some uclause))
       | fuip :: _ ->
         let name = fresh_lname () in
-        let lclause = make_clause name learnt size true history in
+        let lclause = make_clause name learnt (List.length learnt) true history in
         Log.debug 2 "New clause learnt : %a" St.pp_clause lclause;
         Vec.push env.learnts lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
-        enqueue_bool fuip blevel (Bcp (Some lclause))
+        if is_uip then
+            enqueue_bool fuip blevel (Bcp (Some lclause))
+        else begin
+            env.decisions <- env.decisions + 1;
+            new_decision_level();
+            enqueue_bool fuip blevel (Bcp None)
+        end
     end;
     var_decay_activity ();
     clause_decay_activity ()
@@ -377,9 +414,9 @@ module Make (E : Expr_intf.S)
   let add_boolean_conflict confl =
     env.conflicts <- env.conflicts + 1;
     if decision_level() = 0 then report_unsat confl; (* Top-level conflict *)
-    let blevel, learnt, history, size = analyze confl in
+    let blevel, learnt, history, is_uip = analyze confl in
     cancel_until blevel;
-    record_learnt_clause blevel learnt (History history) size
+    record_learnt_clause blevel learnt (History history) is_uip
 
   (* Add a new clause *)
   exception Trivial
@@ -536,16 +573,15 @@ module Make (E : Expr_intf.S)
 
   (* Propagation (boolean and theory *)
   let _th_cnumber = ref 0
-  let slice_get i = match (Vec.get env.trail i) with
-    | Boolean a -> Th.Lit a.lit
-    | Semantic {tag={term; assigned = Some v}} -> Th.Assign (term, v)
-    | _ -> assert false
+  let slice_get i = Either.destruct (Vec.get env.trail i)
+    (function {tag={term; assigned = Some v}} -> Th.Assign (term, v) | _ -> assert false)
+    (fun a -> Th.Lit a.lit)
 
   let slice_push l lemma =
     decr _th_cnumber;
     let atoms = List.rev_map (fun x -> add_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_vars ());
-    List.iter (fun a -> insert_var_order (Formula a.var)) atoms;
+    List.iter (fun a -> insert_var_order (Either.mk_right a.var)) atoms;
     add_clause ~cnumber:!_th_cnumber atoms (Lemma lemma)
 
   let current_slice () = Th.({
@@ -573,12 +609,12 @@ module Make (E : Expr_intf.S)
       let num_props = ref 0 in
       let res = ref None in
       while env.qhead < Vec.size env.trail do
-        match Vec.get env.trail env.qhead with
-        | Boolean a ->
+        Either.destruct (Vec.get env.trail env.qhead)
+        (fun a -> ())
+        (fun a ->
           env.qhead <- env.qhead + 1;
           incr num_props;
-          propagate_atom a res
-        | Semantic a -> ()
+          propagate_atom a res)
       done;
       env.propagations <- env.propagations + !num_props;
       env.simpDB_props <- env.simpDB_props - !num_props;
@@ -598,7 +634,7 @@ module Make (E : Expr_intf.S)
     if sz1 > 2 && (sz2 = 2 || c < 0) then -1
     else 1
 
-  (* returns true if the clause is used as a reason for a propagation,
+(* returns true if the clause is used as a reason for a propagation,
       and therefore can be needed in case of conflict. In this case
       the clause can't be forgotten *)
   let locked c = false (*
@@ -662,16 +698,16 @@ module Make (E : Expr_intf.S)
   (* Decide on a new litteral *)
   let rec pick_branch_lit () =
     let max = Iheap.remove_min f_weight env.order in
-    match St.get_var max with
-    | Term v ->
+    Either.destruct (St.get_var max)
+    (fun v ->
         let value = Th.assign v.tag.term in
         env.decisions <- env.decisions + 1;
         new_decision_level();
         let current_level = decision_level () in
         assert (v.level < 0);
-(*         Log.debug 5 "Assigning %a to %a" St.pp_atom v.tag.pa; *)
-        enqueue_assign v value current_level
-    | Formula v ->
+        Log.debug 5 "Deciding on %a" St.pp_semantic_var v;
+        enqueue_assign v value current_level)
+    (fun v ->
       if v.level>= 0 then begin
           assert (v.tag.pa.is_true || v.tag.na.is_true);
           pick_branch_lit ()
@@ -683,9 +719,9 @@ module Make (E : Expr_intf.S)
           assert (v.level < 0);
           Log.debug 5 "Deciding on %a" St.pp_atom v.tag.pa;
           enqueue_bool v.tag.pa current_level (Bcp None)
-        | Th.Bool b ->
+        | Th.Valued (b, lvl) ->
           let a = if b then v.tag.pa else v.tag.na in
-          enqueue_bool a (decision_level ()) (Bcp None)
+          enqueue_bool a lvl (Bcp None))
 
   let search n_of_conflicts n_of_learnts =
     let conflictC = ref 0 in

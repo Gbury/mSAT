@@ -65,30 +65,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
       | History of clause list
       | Lemma of proof
 
-  type elt =
-      | Term of semantic var
-      | Formula of boolean var
-
-  (* Accessors for variables *)
-  let get_elt_id = function
-      | Term v -> v.vid
-      | Formula v -> v.vid
-
-  let get_elt_weight = function
-      | Term v -> v.weight
-      | Formula v -> v.weight
-
-  let get_elt_level = function
-      | Term v -> v.level
-      | Formula v -> v.level
-
-  let set_elt_weight e w = match e with
-      | Term v -> v.weight <- w
-      | Formula v -> v.weight <- w
-
-  let set_elt_level e l = match e with
-      | Term v -> v.level <- l
-      | Formula v -> v.level <- l
+  type elt = (semantic var, boolean var) Either.t
 
   (* Dummy values *)
   let dummy_lit = E.dummy
@@ -100,7 +77,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
       tag = {
         pa = dummy_atom;
         na = dummy_atom;
-        reason = None;
+        reason = Bcp None;
         seen = false;
         vpremise = History []; };
     }
@@ -131,7 +108,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
   let f_map = ref MF.empty
   let t_map = ref MT.empty
 
-  let vars = Vec.make 107 (Formula dummy_var)
+  let vars = Vec.make 107 (Either.mk_right dummy_var)
   let nb_vars () = Vec.size vars
   let get_var i = Vec.get vars i
   let iter_vars f = Vec.iter f vars
@@ -171,7 +148,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
             aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in
         f_map := MF.add lit var !f_map;
         incr cpt_mk_var;
-        Vec.push vars (Formula var);
+        Vec.push vars (Either.mk_right var);
         var, negated
 
   let make_semantic_var t =
@@ -187,7 +164,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
         } in
         incr cpt_mk_var;
         t_map := MT.add t res !t_map;
-        Vec.push vars (Term res);
+        Vec.push vars (Either.mk_left res);
         res
 
   let add_term t = make_semantic_var t
@@ -221,6 +198,8 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
     fun () -> incr cpt; "C" ^ (string_of_int !cpt)
 
   (* Pretty printing for atoms and clauses *)
+  let print_semantic_var fmt v = E.Term.print fmt v.tag.term
+
   let print_atom fmt a = E.Formula.print fmt a.lit
 
   let print_atoms fmt v =
@@ -254,6 +233,14 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
   let pp_premise b = function
       | History v -> List.iter (fun {name=name} -> bprintf b "%s," name) v
       | Lemma _ -> bprintf b "th_lemma"
+
+  let pp_assign b = function
+      | None -> ()
+      | Some t -> bprintf b "[assignment: %s]" (Log.on_fmt E.Term.print t)
+
+  let pp_semantic_var b v =
+    bprintf b "%d [lit:%s]%a"
+      (v.vid+1) (Log.on_fmt E.Term.print v.tag.term) pp_assign v.tag.assigned
 
   let pp_atom b a =
     bprintf b "%s%d%s [lit:%s] vpremise={{%a}}"
