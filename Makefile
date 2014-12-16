@@ -5,7 +5,7 @@ COMP=ocamlbuild -log $(LOG) -use-ocamlfind -classic-display
 FLAGS=
 DIRS=-Is solver,sat,smt,util,util/smtlib
 DOC=msat.docdir/index.html
-TEST=sat_solve.native mcsat_solve.native
+TEST=sat_solve.native
 
 NAME=msat
 
@@ -23,7 +23,8 @@ build-test:
 	$(COMP) $(FLAGS) $(DIRS) $(TEST)
 
 test: build-test
-	./tests/run
+	@./tests/run smt
+	@./tests/run mcsat
 
 bench: build-test
 	cd bench && $(MAKE)

@@ -1,7 +1,8 @@
 
 module F = Expr
 module T = Cnf.S
-module S = Smt.Make(struct end)
+module Smt = Smt.Make(struct end)
+module Mcsat = Mcsat.Make(struct end)
 
 exception Incorrect_model
 exception Out_of_time
@@ -18,8 +19,13 @@ type sat_output =
   | Standard (* Only output problem status *)
   | Dot
 
+type solver =
+  | Smt
+  | Mcsat
+
 let input = ref Auto
 let output = ref Standard
+let solver = ref Smt
 
 let input_list = [
   "auto", Auto;
@@ -29,20 +35,25 @@ let input_list = [
 let output_list = [
   "dot", Dot;
 ]
+let solver_list = [
+  "smt", Smt;
+  "mcsat", Mcsat;
+]
 
 let error_msg opt arg l =
   Format.fprintf Format.str_formatter "'%s' is not a valid argument for '%s', valid arguments are : %a"
     arg opt (fun fmt -> List.iter (fun (s, _) -> Format.fprintf fmt "%s, " s)) l;
   Format.flush_str_formatter ()
 
-let set_io opt arg flag l =
+let set_flag opt arg flag l =
   try
     flag := List.assoc arg l
   with Not_found ->
     invalid_arg (error_msg opt arg l)
 
-let set_input s = set_io "Input" s input input_list
-let set_output s = set_io "Output" s output output_list
+let set_input s = set_flag "Input" s input input_list
+let set_output s = set_flag "Output" s output output_list
+let set_solver s = set_flag "Solver" s solver solver_list
 
 (* Input Parsing *)
 let rec rev_flat_map f acc = function
@@ -80,7 +91,11 @@ let print format = match !output with
 
 let print_proof proof = match !output with
   | Standard -> ()
-  | Dot -> S.print_proof std proof
+  | Dot -> Smt.print_proof std proof
+
+let print_mcproof proof = match !output with
+  | Standard -> ()
+  | Dot -> Mcsat.print_proof std proof
 
 let rec print_cl fmt = function
   | [] -> Format.fprintf fmt "[]"
@@ -91,7 +106,10 @@ let print_lcl l =
   List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) l
 
 let print_lclause l =
-  List.iter (fun c -> Format.fprintf std "%a@\n" S.print_clause c) l
+  List.iter (fun c -> Format.fprintf std "%a@\n" Smt.print_clause c) l
+
+let print_mclause l =
+  List.iter (fun c -> Format.fprintf std "%a@\n" Mcsat.print_clause c) l
 
 let print_cnf cnf = match !output with
   | Standard -> print_lcl cnf
@@ -99,6 +117,10 @@ let print_cnf cnf = match !output with
 
 let print_unsat_core u = match !output with
   | Standard -> print_lclause u
+  | Dot -> ()
+
+let print_mc_unsat_core u = match !output with
+  | Standard -> print_mclause u
   | Dot -> ()
 
 (* Arguments parsing *)
@@ -153,6 +175,8 @@ let argspec = Arg.align [
     " Sets the input format (default auto)";
     "-o", Arg.String set_output,
     " Sets the output format (default none)";
+    "-s", Arg.String set_solver,
+    " Sets the solver to use (default smt)";
     "-size", Arg.String (int_arg size_limit),
     "<s>[kMGT] Sets the size limit for the sat solver";
     "-time", Arg.String (int_arg time_limit),
@@ -189,23 +213,45 @@ let main () =
   let cnf = get_cnf () in
   if !p_cnf then
     print_cnf cnf;
-  S.assume cnf;
-  let res = S.solve () in
-  Gc.delete_alarm al;
-  match res with
-  | S.Sat ->
-    print "Sat";
-    if !p_check then
-      if not (List.for_all (List.exists S.eval) cnf) then
-          raise Incorrect_model
-  | S.Unsat ->
-    print "Unsat";
-    if !p_check then begin
-      let p = S.get_proof () in
-      print_proof p;
-      if !p_unsat_core then
-        print_unsat_core (S.unsat_core p)
-    end
+  match !solver with
+  | Smt ->
+          Smt.assume cnf;
+          let res = Smt.solve () in
+          Gc.delete_alarm al;
+          begin match res with
+          | Smt.Sat ->
+                  print "Sat";
+                  if !p_check then
+                    if not (List.for_all (List.exists Smt.eval) cnf) then
+                      raise Incorrect_model
+          | Smt.Unsat ->
+                  print "Unsat";
+                  if !p_check then begin
+                    let p = Smt.get_proof () in
+                    print_proof p;
+                    if !p_unsat_core then
+                        print_unsat_core (Smt.unsat_core p)
+                  end
+          end
+  | Mcsat ->
+          Mcsat.assume cnf;
+          let res = Mcsat.solve () in
+          Gc.delete_alarm al;
+          begin match res with
+          | Mcsat.Sat ->
+                  print "Sat";
+                  if !p_check then
+                    if not (List.for_all (List.exists Mcsat.eval) cnf) then
+                      raise Incorrect_model
+          | Mcsat.Unsat ->
+                  print "Unsat";
+                  if !p_check then begin
+                    let p = Mcsat.get_proof () in
+                    print_mcproof p;
+                    if !p_unsat_core then
+                        print_mc_unsat_core (Mcsat.unsat_core p)
+                  end
+          end
 
 let () =
   try
