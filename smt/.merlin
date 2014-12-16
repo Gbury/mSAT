@@ -1,8 +1,10 @@
 S ./
 S ../sat/
 S ../util/
+S ../solver/
 
 B ../_build/
 B ../_build/sat/
 B ../_build/smt/
 B ../_build/util/
+B ../_build/solver/

@@ -15,7 +15,8 @@ open Printf
 
 module type S = Mcsolver_types_intf.S
 
-module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
+module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
+    type formula = E.Formula.t and type term = E.Term.t) = struct
 
   (* Types declarations *)
 
@@ -115,6 +116,22 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
 
   let cpt_mk_var = ref 0
 
+  let make_semantic_var t =
+      try MT.find t !t_map
+      with Not_found ->
+        let res = {
+          vid = !cpt_mk_var;
+          weight = 1.;
+          level = -1;
+          tag = {
+            term = t;
+            assigned = None; };
+        } in
+        incr cpt_mk_var;
+        t_map := MT.add t res !t_map;
+        Vec.push vars (Either.mk_left res);
+        res
+
   let make_boolean_var =
     fun lit ->
       let lit, negated = E.norm lit in
@@ -149,23 +166,8 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S) = struct
         f_map := MF.add lit var !f_map;
         incr cpt_mk_var;
         Vec.push vars (Either.mk_right var);
+        Th.iter_assignable (fun t -> ignore (make_semantic_var t)) lit;
         var, negated
-
-  let make_semantic_var t =
-      try MT.find t !t_map
-      with Not_found ->
-        let res = {
-          vid = !cpt_mk_var;
-          weight = 0.;
-          level = -1;
-          tag = {
-            term = t;
-            assigned = None; };
-        } in
-        incr cpt_mk_var;
-        t_map := MT.add t res !t_map;
-        Vec.push vars (Either.mk_left res);
-        res
 
   let add_term t = make_semantic_var t
 

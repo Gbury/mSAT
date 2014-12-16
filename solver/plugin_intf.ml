@@ -31,7 +31,7 @@ module type S = sig
   type slice = {
     start : int;
     length : int;
-    get : int -> assumption;
+    get : int -> assumption * int;
     push : formula list -> proof -> unit;
   }
   (** The type for a slice of litterals to assume/propagate in the theory.

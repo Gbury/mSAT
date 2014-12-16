@@ -12,4 +12,7 @@ module Make(T : Sig.OrderedType) : sig
     val empty : t
     val add_eq : t -> T.t -> T.t -> t
     val add_neq : t -> T.t -> T.t -> t
+
+    val repr : t -> T.t -> T.t
+    val are_neq : t -> T.t -> T.t -> bool
 end

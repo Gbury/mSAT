@@ -23,6 +23,8 @@ module Make(T : Sig.OrderedType) = struct
         size = M.empty;
     }
 
+    let repr t a = U.find t.repr a
+
     let map_find m v default = try M.find v m with Not_found -> default
     let find_parent v m = map_find m v v
 
@@ -87,5 +89,11 @@ module Make(T : Sig.OrderedType) = struct
         with U.Unsat (a, b) ->
             raise (Unsat (a, b, expl t a b))
 
+    let are_neq t a b =
+        try
+            ignore (U.union t.repr a b);
+            false
+        with U.Unsat _ ->
+            true
 
 end

@@ -4,19 +4,10 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Fsmt : sig
-    include Formula_intf.S
-    val mk_prop : int -> t
-    val mk_eq : string -> string -> t
-    val mk_neq : string -> string -> t
-end
-
-module Tseitin : Tseitin.S with type atom = Fsmt.t
-
 module Make(Dummy: sig end) : sig
   (** Fonctor to make a pure SAT Solver module with built-in literals. *)
 
-  type atom = Fsmt.t
+  type atom = Expr.Formula.t
   (** Type for atoms, i.e boolean literals. *)
 
   type clause

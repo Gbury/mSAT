@@ -178,12 +178,12 @@ module Make (E : Expr_intf.S)
     get_elt_level (St.get_var i) < 0
 
   (* Var/clause activity *)
-  let rec insert_var_order e = Either.destruct e
+  let insert_var_order e = Either.destruct e
       (fun v -> Iheap.insert f_weight env.order v.vid)
       (fun v ->
           Iheap.insert f_weight env.order v.vid;
-          Th.iter_assignable (fun t ->
-              insert_var_order (Either.mk_left (St.add_term t))) v.tag.pa.lit)
+          Th.iter_assignable (fun t -> Iheap.insert f_weight env.order (St.add_term t).vid) v.tag.pa.lit
+      )
 
   let var_decay_activity () =
     env.var_inc <- env.var_inc *. env.var_decay
@@ -191,7 +191,7 @@ module Make (E : Expr_intf.S)
   let clause_decay_activity () =
     env.clause_inc <- env.clause_inc *. env.clause_decay
 
-  let var_bump_activity v =
+  let var_bump_activity_aux v =
     v.weight <- v.weight +. env.var_inc;
     if v.weight > 1e100 then begin
       for i = 0 to (St.nb_vars ()) - 1 do
@@ -201,6 +201,10 @@ module Make (E : Expr_intf.S)
     end;
     if Iheap.in_heap env.order v.vid then
       Iheap.decrease f_weight env.order v.vid
+
+  let var_bump_activity v =
+      var_bump_activity_aux v;
+      Th.iter_assignable (fun t -> var_bump_activity_aux (St.add_term t)) v.tag.pa.lit
 
   let clause_bump_activity c =
     c.activity <- c.activity +. env.clause_inc;
@@ -259,16 +263,21 @@ module Make (E : Expr_intf.S)
     if decision_level () > lvl then begin
       env.qhead <- Vec.get env.trail_lim lvl;
       env.tatoms_qhead <- env.qhead;
-      for c = Vec.size env.trail - 1 downto env.qhead do
+      for c = env.qhead to Vec.size env.trail - 1 do
         Either.destruct (Vec.get env.trail c)
         (fun a -> ())
         (fun a ->
-          a.is_true <- false;
-          a.neg.is_true <- false;
-          a.var.level <- -1;
-          a.var.tag.reason <- Bcp None;
-          a.var.tag.vpremise <- History [];
-          insert_var_order (Either.mk_right a.var))
+            if a.var.level <= lvl then begin
+              Vec.set env.trail env.qhead (Either.mk_right a);
+              env.qhead <- env.qhead + 1
+            end else begin
+              a.is_true <- false;
+              a.neg.is_true <- false;
+              a.var.level <- -1;
+              a.var.tag.reason <- Bcp None;
+              a.var.tag.vpremise <- History [];
+              insert_var_order (Either.mk_right a.var)
+            end)
       done;
       Th.backtrack (Vec.get env.tenv_queue lvl); (* recover the right tenv *)
       Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
@@ -286,9 +295,6 @@ module Make (E : Expr_intf.S)
   let enqueue_bool a lvl reason =
     assert (not a.is_true && not a.neg.is_true && a.var.level < 0
             && a.var.tag.reason = Bcp None && lvl >= 0);
-    assert (lvl = decision_level ());
-    (* keep the reason for proof/unsat-core *)
-    (*let reason = if lvl = 0 then None else reason in*)
     a.is_true <- true;
     a.var.level <- lvl;
     a.var.tag.reason <- reason;
@@ -299,7 +305,8 @@ module Make (E : Expr_intf.S)
     v.tag.assigned <- Some value;
     v.level <- lvl;
     Log.debug 5 "Enqueue: %a" St.pp_semantic_var v;
-    Vec.push env.trail (Either.mk_left v)
+    Vec.push env.trail (Either.mk_left v);
+    Log.debug 15 "Done."
 
   (* conflict analysis *)
   let max_lvl_atoms l =
@@ -308,42 +315,65 @@ module Make (E : Expr_intf.S)
           else if a.var.level > max_lvl then (a.var.level, [a])
           else (max_lvl, acc)) (0, []) l
 
+  let backtrack_lvl is_uip = function
+    | [] -> 0
+    | a :: r when not is_uip -> a.var.level - 1
+    | a :: r ->
+            let rec aux = function
+                | [] -> 0
+                | b :: r when b.var.level <> a.var.level -> b.var.level
+                | _ :: r -> aux r
+            in
+            aux r
+
   let analyze c_clause =
     let tr_ind  = ref (Vec.size env.trail) in
-    let blevel  = ref 0 in
     let is_uip  = ref false in
     let c       = ref (Proof.to_list c_clause) in
-    let history = ref [] in
-
+    let history = ref [c_clause] in
+    clause_bump_activity c_clause;
     let is_semantic a = match a.var.tag.reason with
         | Semantic _ -> true
         | _ -> false
     in
-
     try while true do
         let l, atoms = max_lvl_atoms !c in
+        Log.debug 15 "Current conflict clause :";
+        List.iter (fun a -> Log.debug 15 " |- %a" St.pp_atom a) !c;
         match atoms with
         | [] |  _ :: [] ->
-                blevel := -1;
+                Log.debug 15 "Found UIP clause";
+                is_uip := true;
                 raise Exit
         | _ when List.for_all is_semantic atoms ->
-                blevel := l - 1;
+                Log.debug 15 "Found Semantic backtrack clause";
                 raise Exit
         | _ ->
                 decr tr_ind;
+                Log.debug 20 "Looking at trail element %d" !tr_ind;
                 Either.destruct (Vec.get env.trail !tr_ind)
-                (fun v -> ())
+                (fun v -> Log.debug 15 "%a" St.pp_semantic_var v)
                 (fun a -> match a.var.tag.reason with
                     | Bcp (Some d) ->
+                            Log.debug 15 "Propagation : %a" St.pp_atom a;
+                            Log.debug 15 " |- %a" St.pp_clause d;
                             let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
                             begin match tmp with
-                            | [b] when b == a.neg -> c := !c
-                            | _ -> ()
+                            | [] -> Log.debug 15 "No lit to resolve over."
+                            | [b] when b == a.var.tag.pa ->
+                                    clause_bump_activity d;
+                                    var_bump_activity a.var;
+                                    history := d :: !history;
+                                    c := res
+                            | _ -> assert false
                             end
-                    | _ -> ())
+                    | _ -> Log.debug 15 "Decision : %a" St.pp_atom a)
     done; assert false
     with Exit ->
-      !blevel, !c, !history, !is_uip
+      let learnt = List.sort (fun a b -> Pervasives.compare b.var.level a.var.level) !c in
+      let blevel = backtrack_lvl !is_uip learnt in
+      blevel, learnt, !history, !is_uip
+
     (*
     while !cond do
       if !c.learnt then clause_bump_activity !c;
@@ -439,7 +469,7 @@ module Make (E : Expr_intf.S)
   let partition atoms init0 =
     let rec partition_aux trues unassigned falses init = function
       | [] -> trues @ unassigned @ falses, init
-      | a::r ->
+      | a :: r ->
         if a.is_true then
           if a.var.level = 0 then raise Trivial
           else (a::trues) @ unassigned @ falses @ r, init
@@ -574,8 +604,8 @@ module Make (E : Expr_intf.S)
   (* Propagation (boolean and theory *)
   let _th_cnumber = ref 0
   let slice_get i = Either.destruct (Vec.get env.trail i)
-    (function {tag={term; assigned = Some v}} -> Th.Assign (term, v) | _ -> assert false)
-    (fun a -> Th.Lit a.lit)
+      (function {level; tag={term; assigned = Some v}} -> Th.Assign (term, v), level | _ -> assert false)
+      (fun a -> Th.Lit a.lit, a.var.level)
 
   let slice_push l lemma =
     decr _th_cnumber;
@@ -612,9 +642,9 @@ module Make (E : Expr_intf.S)
         Either.destruct (Vec.get env.trail env.qhead)
         (fun a -> ())
         (fun a ->
-          env.qhead <- env.qhead + 1;
           incr num_props;
-          propagate_atom a res)
+          propagate_atom a res);
+        env.qhead <- env.qhead + 1
       done;
       env.propagations <- env.propagations + !num_props;
       env.simpDB_props <- env.simpDB_props - !num_props;
@@ -797,8 +827,11 @@ module Make (E : Expr_intf.S)
     Vec.grow_to_by_double env.clauses nbc;
     Vec.grow_to_by_double env.learnts nbc;
     env.nb_init_clauses <- nbc;
+    St.iter_vars (fun e -> Either.destruct e
+        (fun v -> Log.debug 50 " -- %a" St.pp_semantic_var v)
+        (fun a -> Log.debug 50 " -- %a" St.pp_atom a.tag.pa)
+    );
     add_clauses cnf ~cnumber
-
 
   let assume cnf ~cnumber =
     let cnf = List.rev_map (List.rev_map St.add_atom) cnf in

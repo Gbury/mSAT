@@ -3,8 +3,6 @@ Formula_intf
 Solver
 Solver_types
 Theory_intf
-
-# Mcsat Solver modules
 Expr_intf
 Mcsolver
 Mcsolver_types
@@ -16,10 +14,11 @@ Mcproof
 Tseitin
 Tseitin_intf
 
-# Sat modules
+# Sat/Smt modules
+Expr
+Cnf
 Sat
-
-# Smt Modules
+Mcsat
 Cc
 Sig
 Smt

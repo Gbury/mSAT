@@ -1,7 +1,7 @@
 
 module F = Expr
 module T = Cnf.S
-module S = Smt.Make(struct end)
+module S = Mcsat.Make(struct end)
 
 exception Incorrect_model
 exception Out_of_time

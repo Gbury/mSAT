@@ -2,8 +2,8 @@
 
 open Smtlib_syntax
 
-module F = Smt.Fsmt
-module T = Smt.Tseitin
+module F = Expr
+module T = Cnf.S
 
 exception Bad_arity of string
 exception Unknown_command
