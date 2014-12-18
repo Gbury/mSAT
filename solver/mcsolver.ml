@@ -841,6 +841,7 @@ module Make (E : Expr_intf.S)
 
   let unsat_conflict () = env.unsat_conflict
 
+  (* Push/Pop *)
   type level = int
 
   let base_level = 0
