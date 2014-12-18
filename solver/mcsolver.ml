@@ -182,7 +182,7 @@ module Make (E : Expr_intf.S)
       (fun v -> Iheap.insert f_weight env.order v.vid)
       (fun v ->
           Iheap.insert f_weight env.order v.vid;
-          Th.iter_assignable (fun t -> Iheap.insert f_weight env.order (St.add_term t).vid) v.tag.pa.lit
+          iter_sub (fun t -> Iheap.insert f_weight env.order t.vid) v
       )
 
   let var_decay_activity () =
@@ -204,7 +204,7 @@ module Make (E : Expr_intf.S)
 
   let var_bump_activity v =
       var_bump_activity_aux v;
-      Th.iter_assignable (fun t -> var_bump_activity_aux (St.add_term t)) v.tag.pa.lit
+      iter_sub (fun t -> var_bump_activity_aux t) v
 
   let clause_bump_activity c =
     c.activity <- c.activity +. env.clause_inc;

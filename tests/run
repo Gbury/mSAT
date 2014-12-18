@@ -15,7 +15,7 @@ solvertest () {
             exit 2
         fi
     done
-    echo -e "\r\033[K\e[32m[OK]\e[0m $2-$3"
+    echo -e "\r\033[K\e[32m[OK]\e[0m $3/$2"
 }
 
 solvertest "$CURDIR/sat/" "Sat" $1

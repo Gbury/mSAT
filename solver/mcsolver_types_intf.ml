@@ -82,6 +82,10 @@ module type S = sig
   (** Returns the variable linked with the given formula, and wether the atom associated with the formula
       is [var.pa] or [var.na] *)
 
+  val iter_sub : (semantic var -> unit) -> boolean var -> unit
+  (** Iterates over the semantic var corresponding to subterms of the fiven literal, according
+      to Th.iter_assignable *)
+
   val empty_clause : clause
   (** The empty clause *)
   val make_clause : string -> atom list -> int -> bool -> premise -> clause

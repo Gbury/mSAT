@@ -199,6 +199,19 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
     let cpt = ref 0 in
     fun () -> incr cpt; "C" ^ (string_of_int !cpt)
 
+  (* Iteration over subterms *)
+  module Mi = Map.Make(struct type t = int let compare= Pervasives.compare end)
+  let iter_map = ref Mi.empty
+
+  let iter_sub f v =
+      try
+          List.iter f (Mi.find v.vid !iter_map)
+      with Not_found ->
+          let l = ref [] in
+          Th.iter_assignable (fun t -> l := add_term t :: !l) v.tag.pa.lit;
+          iter_map := Mi.add v.vid !l !iter_map;
+          List.iter f !l
+
   (* Pretty printing for atoms and clauses *)
   let print_semantic_var fmt v = E.Term.print fmt v.tag.term
 
