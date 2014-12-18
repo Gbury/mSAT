@@ -12,7 +12,7 @@ module Tsmt = struct
   module CC = Cc.Make(String)
 
   (* Type definitions *)
-  type term = Fsmt.var
+  type term = Fsmt.Term.t
   type formula = Fsmt.t
 
   type proof = unit
@@ -72,7 +72,6 @@ module Tsmt = struct
                   env := { !env with cc = CC.add_eq !env.cc i j }
                 | Fsmt.Distinct (i, j) ->
                   env := { !env with cc = CC.add_neq !env.cc i j }
-                | _ -> assert false
           done;
           Sat (current_level ())
       with CC.Unsat x ->

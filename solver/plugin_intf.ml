@@ -13,7 +13,7 @@
 (**************************************************************************)
 
 module type S = sig
-  (** Singature for theories to be given to the Solver. *)
+  (** Signature for theories to be given to the Model Constructing Solver. *)
 
   type term
   (** The type of terms. Should be compatible with Expr_intf.Term.t*)

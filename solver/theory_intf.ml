@@ -13,7 +13,7 @@
 (**************************************************************************)
 
 module type S = sig
-  (** Singature for theories to be given to the Solver. *)
+  (** Signature for theories to be given to the Solver. *)
 
   type formula
   (** The type of formulas. Should be compatble with Formula_intf.S *)

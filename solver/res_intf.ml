@@ -1,4 +1,8 @@
-(* Copyright 2014 Guillaume Bury *)
+(*
+MSAT is free software, using the Apache license, see file LICENSE
+Copyright 2014 Guillaume Bury
+Copyright 2014 Simon Cruanes
+*)
 
 module type S = sig
   (** Signature for a module handling proof by resolution from sat solving traces *)
