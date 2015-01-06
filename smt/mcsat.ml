@@ -26,6 +26,7 @@ module Tsmt = struct
     length : int;
     get : int -> assumption * int;
     push : formula list -> proof -> unit;
+    propagate : formula -> int -> unit;
   }
 
   type level = {
@@ -86,6 +87,8 @@ module Tsmt = struct
       | Fsmt.Prop _ -> ()
       | Fsmt.Equal(a, b)
       | Fsmt.Distinct (a, b) -> f a; f b
+
+  let max (a: int) (b: int) = if a < b then b else a
 
   let eval = function
       | Fsmt.Prop _ -> Unknown

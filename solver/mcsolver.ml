@@ -287,13 +287,17 @@ module Make (E : Expr_intf.S)
     raise Unsat
 
   let enqueue_bool a lvl reason =
-    assert (not a.is_true && not a.neg.is_true && a.var.level < 0
-            && a.var.tag.reason = Bcp None && lvl >= 0);
-    a.is_true <- true;
-    a.var.level <- lvl;
-    a.var.tag.reason <- reason;
-    Log.debug 8 "Enqueue: %a" pp_atom a;
-    Vec.push env.trail (Either.mk_right a)
+    assert (not a.neg.is_true);
+    if a.is_true then
+      Log.debug 10 "Litteral %a alreayd in queue" pp_atom a
+    else begin
+      assert (a.var.level < 0 && a.var.tag.reason = Bcp None && lvl >= 0);
+      a.is_true <- true;
+      a.var.level <- lvl;
+      a.var.tag.reason <- reason;
+      Log.debug 8 "Enqueue: %a" pp_atom a;
+      Vec.push env.trail (Either.mk_right a)
+    end
 
   let enqueue_assign v value lvl =
     v.tag.assigned <- Some value;
@@ -331,11 +335,11 @@ module Make (E : Expr_intf.S)
         | _ -> false
     in
     try while true do
-        let l, atoms = max_lvl_atoms !c in
+        let _, atoms = max_lvl_atoms !c in
         Log.debug 15 "Current conflict clause :";
         List.iter (fun a -> Log.debug 15 " |- %a" St.pp_atom a) !c;
         match atoms with
-        | [] |  _ :: [] ->
+        | [] | _ :: [] ->
                 Log.debug 15 "Found UIP clause";
                 is_uip := true;
                 raise Exit
@@ -361,7 +365,8 @@ module Make (E : Expr_intf.S)
                                     c := res
                             | _ -> assert false
                             end
-                    | _ -> Log.debug 15 "Decision : %a" St.pp_atom a)
+                    | Bcp None -> Log.debug 15 "Decision : %a" St.pp_atom a
+                    | Semantic _ -> Log.debug 15 "Semantic propagation : %a" St.pp_atom a)
     done; assert false
     with Exit ->
       let learnt = List.sort (fun a b -> Pervasives.compare b.var.level a.var.level) !c in
@@ -429,7 +434,7 @@ module Make (E : Expr_intf.S)
         else begin
             env.decisions <- env.decisions + 1;
             new_decision_level();
-            enqueue_bool fuip blevel (Bcp None)
+            enqueue_bool fuip.neg blevel (Bcp None)
         end
     end;
     var_decay_activity ();
@@ -597,6 +602,7 @@ module Make (E : Expr_intf.S)
 
   (* Propagation (boolean and theory *)
   let _th_cnumber = ref 0
+
   let slice_get i = Either.destruct (Vec.get env.trail i)
       (function {level; tag={term; assigned = Some v}} -> Th.Assign (term, v), level | _ -> assert false)
       (fun a -> Th.Lit a.lit, a.var.level)
@@ -605,14 +611,25 @@ module Make (E : Expr_intf.S)
     decr _th_cnumber;
     let atoms = List.rev_map (fun x -> add_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_vars ());
-    List.iter (fun a -> insert_var_order (Either.mk_right a.var)) atoms;
+    List.iter (fun a ->
+        insert_var_order (Either.mk_right a.var);
+        match Th.eval a.lit with
+        | Th.Unknown -> ()
+        | Th.Valued (b, lvl) ->
+          let atom = if b then a else a.neg in
+          enqueue_bool atom lvl (Semantic lvl)
+        ) atoms;
     add_clause ~cnumber:!_th_cnumber atoms (Lemma lemma)
+
+  let slice_propagate f lvl =
+    enqueue_bool (add_atom f) lvl (Semantic lvl)
 
   let current_slice () = Th.({
       start = env.tatoms_qhead;
       length = (Vec.size env.trail) - env.tatoms_qhead;
       get = slice_get;
       push = slice_push;
+      propagate = slice_propagate;
     })
 
   let rec theory_propagate () =
@@ -732,7 +749,7 @@ module Make (E : Expr_intf.S)
         Log.debug 5 "Deciding on %a" St.pp_semantic_var v;
         enqueue_assign v value current_level)
     (fun v ->
-      if v.level>= 0 then begin
+      if v.level >= 0 then begin
           assert (v.tag.pa.is_true || v.tag.na.is_true);
           pick_branch_lit ()
       end else match Th.eval v.tag.pa.lit with
@@ -745,7 +762,7 @@ module Make (E : Expr_intf.S)
           enqueue_bool v.tag.pa current_level (Bcp None)
         | Th.Valued (b, lvl) ->
           let a = if b then v.tag.pa else v.tag.na in
-          enqueue_bool a lvl (Bcp None))
+          enqueue_bool a lvl (Semantic lvl))
 
   let search n_of_conflicts n_of_learnts =
     let conflictC = ref 0 in

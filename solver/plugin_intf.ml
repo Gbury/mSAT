@@ -33,6 +33,7 @@ module type S = sig
     length : int;
     get : int -> assumption * int;
     push : formula list -> proof -> unit;
+    propagate : formula -> int -> unit;
   }
   (** The type for a slice of litterals to assume/propagate in the theory.
       [get] operations should only be used for integers [ start <= i < start + length].
