@@ -11,7 +11,8 @@ module Make (E : Expr_intf.S)
   exception Unsat
 
   module St : Mcsolver_types.S
-    with type formula = E.Formula.t
+    with type term = E.Term.t
+     and type formula = E.Formula.t
 
   module Proof : Res.S
     with type atom = St.atom
