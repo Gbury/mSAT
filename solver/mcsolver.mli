@@ -39,6 +39,9 @@ module Make (E : Expr_intf.S)
   (** Returns the unsat clause found at the toplevel, if it exists (i.e if
       [solve] has raised [Unsat]) *)
 
+  val model : unit -> (St.term * St.term) list
+  (** Returns the model found if the formula is satisfiable. *)
+
   type level
   (** Abstract notion of assumption level. *)
 
