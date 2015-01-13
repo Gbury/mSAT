@@ -261,7 +261,8 @@ module Make (E : Expr_intf.S)
         Either.destruct (Vec.get env.trail c)
         (fun v ->
             v.tag.assigned <- None;
-            v.level <- -1
+            v.level <- -1;
+            insert_var_order (Either.mk_left v)
         )
         (fun a ->
             if a.var.level <= lvl then begin
@@ -744,13 +745,16 @@ module Make (E : Expr_intf.S)
     let max = Iheap.remove_min f_weight env.order in
     Either.destruct (St.get_var max)
     (fun v ->
-        let value = Th.assign v.tag.term in
-        env.decisions <- env.decisions + 1;
-        new_decision_level();
-        let current_level = decision_level () in
-        assert (v.level < 0);
-        Log.debug 5 "Deciding on %a" St.pp_semantic_var v;
-        enqueue_assign v value current_level)
+        if v.level >= 0 then
+            pick_branch_lit ()
+        else begin
+            let value = Th.assign v.tag.term in
+            env.decisions <- env.decisions + 1;
+            new_decision_level();
+            let current_level = decision_level () in
+            Log.debug 5 "Deciding on %a" St.pp_semantic_var v;
+            enqueue_assign v value current_level
+        end)
     (fun v ->
       if v.level >= 0 then begin
           assert (v.tag.pa.is_true || v.tag.na.is_true);
@@ -760,7 +764,6 @@ module Make (E : Expr_intf.S)
           env.decisions <- env.decisions + 1;
           new_decision_level();
           let current_level = decision_level () in
-          assert (v.level < 0);
           Log.debug 5 "Deciding on %a" St.pp_atom v.tag.pa;
           enqueue_bool v.tag.pa current_level (Bcp None)
         | Th.Valued (b, lvl) ->
