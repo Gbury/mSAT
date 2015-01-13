@@ -635,7 +635,7 @@ module Make (E : Expr_intf.S)
   let rec theory_propagate () =
     let head = Vec.size env.trail in
     match Th.assume (current_slice ()) with
-    | Th.Sat _ ->
+    | Th.Sat ->
       env.tatoms_qhead <- head;
       propagate ()
     | Th.Unsat (l, p) ->

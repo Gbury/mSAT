@@ -47,7 +47,7 @@ module type S = sig
       Formulas in the unsat clause must come from the current set of assumptions, i.e
       must have been encountered in a slice. *)
   type res =
-    | Sat of level
+    | Sat
     | Unsat of formula list * proof
 
   type eval_res =

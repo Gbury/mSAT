@@ -35,7 +35,7 @@ module Tsmt = struct
   }
 
   type res =
-    | Sat of level
+    | Sat
     | Unsat of formula list * proof
 
   type eval_res =
@@ -74,7 +74,7 @@ module Tsmt = struct
                 | Fsmt.Distinct (i, j) ->
                   env := { !env with cc = CC.add_neq !env.cc i j }
           done;
-          Sat (current_level ())
+          Sat
       with CC.Unsat x ->
         Log.debug 8 "Making explanation clause...";
         Unsat (to_clause x, ())
