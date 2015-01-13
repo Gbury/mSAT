@@ -11,7 +11,8 @@ module Make (E : Expr_intf.S)
   exception Unsat
 
   module St : Mcsolver_types.S
-    with type formula = E.Formula.t
+    with type term = E.Term.t
+     and type formula = E.Formula.t
 
   module Proof : Res.S
     with type atom = St.atom
@@ -38,6 +39,9 @@ module Make (E : Expr_intf.S)
   val unsat_conflict : unit -> St.clause option
   (** Returns the unsat clause found at the toplevel, if it exists (i.e if
       [solve] has raised [Unsat]) *)
+
+  val model : unit -> (St.term * St.term) list
+  (** Returns the model found if the formula is satisfiable. *)
 
   type level
   (** Abstract notion of assumption level. *)

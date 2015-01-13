@@ -858,6 +858,13 @@ module Make (E : Expr_intf.S)
 
   let unsat_conflict () = env.unsat_conflict
 
+  let model () =
+    let opt = function Some a -> a | None -> assert false in
+    Vec.fold (fun acc e -> Either.destruct e
+      (fun v -> (v.tag.term, opt v.tag.assigned)  :: acc)
+      (fun _ -> acc)
+    ) [] env.trail
+
   (* Push/Pop *)
   type level = int
 
