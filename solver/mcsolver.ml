@@ -259,7 +259,10 @@ module Make (E : Expr_intf.S)
       env.tatoms_qhead <- env.qhead;
       for c = env.qhead to Vec.size env.trail - 1 do
         Either.destruct (Vec.get env.trail c)
-        (fun a -> ())
+        (fun v ->
+            v.tag.assigned <- None;
+            v.level <- -1
+        )
         (fun a ->
             if a.var.level <= lvl then begin
               Vec.set env.trail env.qhead (Either.mk_right a);
