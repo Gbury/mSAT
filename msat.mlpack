@@ -1,4 +1,5 @@
 # Solver Modules
+Log_intf
 Formula_intf
 Solver
 Solver_types

@@ -108,7 +108,7 @@ module Tsmt = struct
 end
 
 module Make(Dummy:sig end) = struct
-  module SmtSolver = Mcsolver.Make(Fsmt)(Tsmt)
+  module SmtSolver = Mcsolver.Make(Log)(Fsmt)(Tsmt)
 
   type atom = Fsmt.t
   type clause = SmtSolver.St.clause

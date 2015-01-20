@@ -4,7 +4,7 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Make (E : Expr_intf.S)
+module Make (L : Log_intf.S)(E : Expr_intf.S)
     (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t) : sig
   (** Functor to create a  McSolver parametrised by the atomic formulas and a theory. *)
 

@@ -62,7 +62,7 @@ module Tsmt = struct
 end
 
 module Make(Dummy:sig end) = struct
-  module SmtSolver = Solver.Make(Fsmt)(Tsmt)
+  module SmtSolver = Solver.Make(Log)(Fsmt)(Tsmt)
 
   type atom = Fsmt.t
   type clause = SmtSolver.St.clause
