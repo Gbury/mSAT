@@ -238,7 +238,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
     | 0, Bcp None   -> "@0"
     | n, Bcp (Some c) -> sprintf "->%d/%s" n c.name
     | n, Bcp None   -> sprintf "@@%d" n
-    | _ -> assert false
+    | n, Semantic lvl -> sprintf "::%d/%d" n lvl
 
   let value a =
     if a.is_true then sprintf "[T%s]" (level a)
