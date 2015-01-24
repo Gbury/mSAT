@@ -638,7 +638,8 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     })
 
   let rec theory_propagate () =
-    let head = Vec.size env.trail in
+    let head = env.qhead in
+    L.debug 5 "Propagating to theory (with head = %d)" head;
     match Th.assume (current_slice ()) with
     | Th.Sat ->
       L.debug 5 "env.tatoms_qhead : %d -> %d" env.tatoms_qhead head;
