@@ -281,8 +281,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
       Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - lvl);
       Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - lvl);
-      L.debug 5 "env.qhead : %d" env.qhead;
-      L.debug 5 "env.tatoms_qhead : %d" env.tatoms_qhead
     end;
     assert (Vec.size env.trail_lim = Vec.size env.tenv_queue)
 
@@ -301,15 +299,15 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       a.is_true <- true;
       a.var.level <- lvl;
       a.var.tag.reason <- reason;
-      L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) pp_atom a;
-      Vec.push env.trail (Either.mk_right a)
+      Vec.push env.trail (Either.mk_right a);
+      L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) pp_atom a
     end
 
   let enqueue_assign v value lvl =
     v.tag.assigned <- Some value;
     v.level <- lvl;
-    L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) St.pp_semantic_var v;
-    Vec.push env.trail (Either.mk_left v)
+    Vec.push env.trail (Either.mk_left v);
+    L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) St.pp_semantic_var v
 
   (* conflict analysis *)
   let max_lvl_atoms l =
@@ -638,12 +636,10 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     })
 
   let rec theory_propagate () =
-    let head = nb_assigns () in
-    L.debug 5 "Propagating to theory (with head = %d)" head;
-    match Th.assume (current_slice ()) with
+    let slice = current_slice () in
+    env.tatoms_qhead <- nb_assigns ();
+    match Th.assume slice with
     | Th.Sat ->
-      L.debug 5 "env.tatoms_qhead : %d -> %d" env.tatoms_qhead head;
-      env.tatoms_qhead <- head;
       propagate ()
     | Th.Unsat (l, p) ->
       let l = List.rev_map St.add_atom l in
