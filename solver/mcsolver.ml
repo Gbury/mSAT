@@ -280,7 +280,9 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       Th.backtrack (Vec.get env.tenv_queue lvl); (* recover the right tenv *)
       Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
       Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - lvl);
-      Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - lvl)
+      Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - lvl);
+      L.debug 5 "env.qhead : %d" env.qhead;
+      L.debug 5 "env.tatoms_qhead : %d" env.tatoms_qhead
     end;
     assert (Vec.size env.trail_lim = Vec.size env.tenv_queue)
 
@@ -639,6 +641,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     let head = Vec.size env.trail in
     match Th.assume (current_slice ()) with
     | Th.Sat ->
+      L.debug 5 "env.tatoms_qhead : %d -> %d" env.tatoms_qhead head;
       env.tatoms_qhead <- head;
       propagate ()
     | Th.Unsat (l, p) ->
