@@ -301,14 +301,14 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       a.is_true <- true;
       a.var.level <- lvl;
       a.var.tag.reason <- reason;
-      L.debug 2 "Enqueue: %a" pp_atom a;
+      L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) pp_atom a;
       Vec.push env.trail (Either.mk_right a)
     end
 
   let enqueue_assign v value lvl =
     v.tag.assigned <- Some value;
     v.level <- lvl;
-    L.debug 2 "Enqueue: %a" St.pp_semantic_var v;
+    L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) St.pp_semantic_var v;
     Vec.push env.trail (Either.mk_left v)
 
   (* conflict analysis *)
@@ -638,7 +638,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     })
 
   let rec theory_propagate () =
-    let head = env.qhead in
+    let head = nb_assigns () in
     L.debug 5 "Propagating to theory (with head = %d)" head;
     match Th.assume (current_slice ()) with
     | Th.Sat ->
