@@ -243,7 +243,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
   let value a =
     if a.is_true then sprintf "[T%s]" (level a)
     else if a.neg.is_true then sprintf "[F%s]" (level a)
-    else ""
+    else "[]"
 
   let pp_premise b = function
       | History v -> List.iter (fun {name=name} -> bprintf b "%s," name) v
@@ -258,7 +258,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
       (v.vid+1) (Log.on_fmt E.Term.print v.tag.term) pp_assign v.tag.assigned
 
   let pp_atom b a =
-    bprintf b "%s%d%s [lit:%s] vpremise={{%a}}"
+    bprintf b "%s%d%s[lit:%s] vpremise={{%a}}"
       (sign a) (a.var.vid+1) (value a) (Log.on_fmt E.Formula.print a.lit)
       pp_premise a.var.tag.vpremise
 

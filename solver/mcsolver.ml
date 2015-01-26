@@ -253,7 +253,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
   (* cancel down to [lvl] excluded *)
   let cancel_until lvl =
-    L.debug 5 "Bactracking to decision level %d (excluded)" lvl;
+    L.debug 5 "Backtracking to decision level %d (excluded)" lvl;
     if decision_level () > lvl then begin
       env.qhead <- Vec.get env.trail_lim lvl;
       env.tatoms_qhead <- env.qhead;
@@ -309,6 +309,15 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     Vec.push env.trail (Either.mk_left v);
     L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) St.pp_semantic_var v
 
+  let th_eval a =
+    if a.is_true || a.neg.is_true then None
+    else match Th.eval a.lit with
+    | Th.Unknown -> None
+    | Th.Valued (b, lvl) ->
+      let atom = if b then a else a.neg in
+      enqueue_bool atom lvl (Semantic lvl);
+      Some b
+
   (* conflict analysis *)
   let max_lvl_atoms l =
       List.fold_left (fun (max_lvl, acc) a ->
@@ -319,13 +328,8 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
   let backtrack_lvl is_uip = function
     | [] -> 0
     | a :: r when not is_uip -> a.var.level - 1
-    | a :: r ->
-            let rec aux = function
-                | [] -> 0
-                | b :: r when b.var.level <> a.var.level -> b.var.level
-                | _ :: r -> aux r
-            in
-            aux r
+    | a :: [] -> 0
+    | a :: b :: r -> assert(a.var.level <> b.var.level); b.var.level
 
   let analyze c_clause =
     let tr_ind  = ref (Vec.size env.trail) in
@@ -569,7 +573,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
           end
         done;
         (* no watch lit found *)
-        if first.neg.is_true then begin
+        if first.neg.is_true || (th_eval first = Some false) then begin
           (* clause is false *)
           env.qhead <- Vec.size env.trail;
           for k = i to Vec.size watched - 1 do
@@ -607,7 +611,13 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     let dead_part = Vec.size watched - !new_sz_w in
     Vec.shrink watched dead_part
 
-  (* Propagation (boolean and theory *)
+  (* Propagation (boolean and theory) *)
+  let new_atom f =
+      let a = add_atom f in
+      L.debug 10 "New atom : %a" St.pp_atom a;
+      ignore (th_eval a);
+      a
+
   let _th_cnumber = ref 0
 
   let slice_get i = Either.destruct (Vec.get env.trail i)
@@ -616,16 +626,9 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
   let slice_push l lemma =
     decr _th_cnumber;
-    let atoms = List.rev_map (fun x -> add_atom x) l in
+    let atoms = List.rev_map (fun x -> new_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_vars ());
-    List.iter (fun a ->
-        insert_var_order (Either.mk_right a.var);
-        match Th.eval a.lit with
-        | Th.Unknown -> ()
-        | Th.Valued (b, lvl) ->
-          let atom = if b then a else a.neg in
-          enqueue_bool atom lvl (Semantic lvl)
-        ) atoms;
+    List.iter (fun a -> insert_var_order (Either.mk_right a.var)) atoms;
     add_clause ~cnumber:!_th_cnumber atoms (Lemma lemma)
 
   let slice_propagate f lvl =
@@ -646,7 +649,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     | Th.Sat ->
       propagate ()
     | Th.Unsat (l, p) ->
-      let l = List.rev_map St.add_atom l in
+      let l = List.rev_map new_atom l in
       let c = St.make_clause (St.fresh_name ()) l (List.length l) true (Lemma p) in
       Some c
 
