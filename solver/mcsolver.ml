@@ -280,12 +280,12 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       Th.backtrack (Vec.get env.tenv_queue lvl); (* recover the right tenv *)
       Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
       Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - lvl);
-      Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - lvl)
+      Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - lvl);
     end;
     assert (Vec.size env.trail_lim = Vec.size env.tenv_queue)
 
   let report_unsat ({atoms=atoms} as confl) =
-    L.debug 5 "Unsat conflict : %a" St.pp_clause confl;
+    L.debug 4 "Unsat conflict : %a" St.pp_clause confl;
     env.unsat_conflict <- Some confl;
     env.is_unsat <- true;
     raise Unsat
@@ -299,16 +299,15 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       a.is_true <- true;
       a.var.level <- lvl;
       a.var.tag.reason <- reason;
-      L.debug 8 "Enqueue: %a" pp_atom a;
-      Vec.push env.trail (Either.mk_right a)
+      Vec.push env.trail (Either.mk_right a);
+      L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) pp_atom a
     end
 
   let enqueue_assign v value lvl =
     v.tag.assigned <- Some value;
     v.level <- lvl;
-    L.debug 5 "Enqueue: %a" St.pp_semantic_var v;
     Vec.push env.trail (Either.mk_left v);
-    L.debug 15 "Done."
+    L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) St.pp_semantic_var v
 
   (* conflict analysis *)
   let max_lvl_atoms l =
@@ -426,14 +425,14 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
           fuip.var.tag.vpremise <- history;
           let name = fresh_lname () in
           let uclause = make_clause name learnt (List.length learnt) true history in
-          L.debug 2 "Unit clause learnt : %a" St.pp_clause uclause;
+          L.debug 1 "Unit clause learnt : %a" St.pp_clause uclause;
           Vec.push env.learnts uclause;
           enqueue_bool fuip 0 (Bcp (Some uclause))
         end
       | fuip :: _ ->
         let name = fresh_lname () in
         let lclause = make_clause name learnt (List.length learnt) true history in
-        L.debug 2 "New clause learnt : %a" St.pp_clause lclause;
+        L.debug 1 "New clause learnt : %a" St.pp_clause lclause;
         Vec.push env.learnts lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
@@ -512,7 +511,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       | a::b::_ ->
         let name = fresh_name () in
         let clause = make_clause name atoms size (history <> History []) history in
-        L.debug 10 "New clause : %a" St.pp_clause init0;
+        L.debug 1 "New clause : %a" St.pp_clause init0;
         attach_clause clause;
         Vec.push env.clauses clause;
         if a.neg.is_true then begin
@@ -641,10 +640,10 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     })
 
   let rec theory_propagate () =
-    let head = Vec.size env.trail in
-    match Th.assume (current_slice ()) with
+    let slice = current_slice () in
+    env.tatoms_qhead <- nb_assigns ();
+    match Th.assume slice with
     | Th.Sat ->
-      env.tatoms_qhead <- head;
       propagate ()
     | Th.Unsat (l, p) ->
       let l = List.rev_map St.add_atom l in
