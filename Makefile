@@ -23,8 +23,8 @@ build-test:
 	$(COMP) $(FLAGS) $(DIRS) $(TEST)
 
 test: build-test
-	@./tests/run smt
-	@./tests/run mcsat
+	@/usr/bin/time -f "%e" ./tests/run smt
+	@/usr/bin/time -f "%e" ./tests/run mcsat
 
 bench: build-test
 	cd bench && $(MAKE)

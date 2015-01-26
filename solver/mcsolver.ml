@@ -415,17 +415,21 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     List.iter (fun q -> q.var.seen <- false) !seen;
     *)
 
-  let record_learnt_clause blevel learnt history is_uip =
+  let record_learnt_clause confl blevel learnt history is_uip =
     begin match learnt with
       | [] -> assert false
       | [fuip] ->
         assert (blevel = 0);
-        fuip.var.tag.vpremise <- history;
-        let name = fresh_lname () in
-        let uclause = make_clause name learnt (List.length learnt) true history in
-        L.debug 2 "Unit clause learnt : %a" St.pp_clause uclause;
-        Vec.push env.learnts uclause;
-        enqueue_bool fuip 0 (Bcp (Some uclause))
+        if fuip.neg.is_true then
+            report_unsat confl
+        else begin
+          fuip.var.tag.vpremise <- history;
+          let name = fresh_lname () in
+          let uclause = make_clause name learnt (List.length learnt) true history in
+          L.debug 2 "Unit clause learnt : %a" St.pp_clause uclause;
+          Vec.push env.learnts uclause;
+          enqueue_bool fuip 0 (Bcp (Some uclause))
+        end
       | fuip :: _ ->
         let name = fresh_lname () in
         let lclause = make_clause name learnt (List.length learnt) true history in
@@ -449,7 +453,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     if decision_level() = 0 then report_unsat confl; (* Top-level conflict *)
     let blevel, learnt, history, is_uip = analyze confl in
     cancel_until blevel;
-    record_learnt_clause blevel learnt (History history) is_uip
+    record_learnt_clause confl blevel learnt (History history) is_uip
 
   (* Add a new clause *)
   exception Trivial
