@@ -650,6 +650,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       propagate ()
     | Th.Unsat (l, p) ->
       let l = List.rev_map new_atom l in
+      Iheap.grow_to_by_double env.order (St.nb_vars ());
       List.iter (fun a -> insert_var_order (Either.mk_right a.var)) l;
       let c = St.make_clause (St.fresh_name ()) l (List.length l) true (Lemma p) in
       Some c
