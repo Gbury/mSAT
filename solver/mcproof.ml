@@ -346,10 +346,14 @@ module Make(St : Mcsolver_types.S) = struct
             print_clause p.conclusion St.(p.conclusion.name)
         in
         print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
-      | Lemma _ ->
+      | Lemma proof ->
+        let name, args, color = St.proof_debug proof in
+        assert (args <> []);
+        let color = match color with None -> "YELLOW" | Some c -> c in
         let aux fmt () =
-          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD BGCOLOR=\"YELLOW\">Lemma</TD><TD>%s</TD></TR>"
-            print_clause p.conclusion St.(p.conclusion.name)
+          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD BGCOLOR=\"%s\" rowspan=\"%d\">%s</TD>%a</TR>"
+            print_clause p.conclusion color (List.length args) name
+            (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TD>%a</TD>" St.print_semantic_var v)) args
         in
         print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
       | Resolution (proof1, proof2, a) ->

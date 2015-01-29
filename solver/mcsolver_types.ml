@@ -212,6 +212,11 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
           iter_map := Mi.add v.vid !l !iter_map;
           List.iter f !l
 
+  (* Proof debug info *)
+  let proof_debug p =
+      let name, l, color = Th.proof_debug p in
+      name, (List.map add_term l), color
+
   (* Pretty printing for atoms and clauses *)
   let print_semantic_var fmt v = E.Term.print fmt v.tag.term
 

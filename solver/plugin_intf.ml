@@ -78,5 +78,10 @@ module type S = sig
   val eval : formula -> eval_res
   (** Returns the evaluation of the formula in the current assignment *)
 
+  val proof_debug : proof -> string * (term list) * (string option)
+  (** Returns debugging information on a proof, as a triplet consisting of
+      a name/identification string associated with the proof, arguments of the proof,
+      and an optional color for the proof background *)
+
 end
 

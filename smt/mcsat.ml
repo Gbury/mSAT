@@ -17,6 +17,9 @@ module Tsmt = struct
 
   type proof = unit
 
+  let proof_debug () =
+      "Proof", ["..."], Some "PURPLE"
+
   type assumption =
     | Lit of formula
     | Assign of term * term
