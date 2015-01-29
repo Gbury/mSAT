@@ -353,11 +353,11 @@ module Make(St : Mcsolver_types.S) = struct
           Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD BGCOLOR=\"%s\" rowspan=\"%d\">%s</TD>"
             print_clause p.conclusion color (List.length f_args + List.length t_args) name;
           if f_args <> [] then
-              Format.fprintf fmt "<TD>%a</TD>%a%a" St.print_atom (List.hd f_args)
+              Format.fprintf fmt "<TD>%a</TD></TR>%a%a" St.print_atom (List.hd f_args)
                 (fun fmt -> List.iter (fun a -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_atom a)) (List.tl f_args)
                 (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_semantic_var v)) t_args
           else
-              Format.fprintf fmt "<TD>%a</TD>%a" St.print_semantic_var (List.hd t_args)
+          Format.fprintf fmt "<TD>%a</TD></TR>%a" St.print_semantic_var (List.hd t_args)
                 (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_semantic_var v)) (List.tl t_args)
         in
         print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
