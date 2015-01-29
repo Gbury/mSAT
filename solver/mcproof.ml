@@ -78,10 +78,7 @@ module Make(St : Mcsolver_types.S) = struct
     for i = 0 to Vec.size v - 1 do
       l := (Vec.get v i) :: !l
     done;
-    let l, res = resolve (List.sort_uniq compare_atoms !l) in
-    if l <> [] then
-      raise (Resolution_error "Input cause is a tautology");
-    res
+    List.sort_uniq compare_atoms !l
 
   (* Adding hyptoheses *)
   let is_unit_hyp = function
