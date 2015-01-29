@@ -18,7 +18,7 @@ module Tsmt = struct
   type proof = unit
 
   let proof_debug () =
-      "Proof", ["..."], Some "PURPLE"
+      "Proof", [], ["..."], Some "PURPLE"
 
   type assumption =
     | Lit of formula

@@ -96,7 +96,7 @@ module type S = sig
   val fresh_dname : unit -> string
   (** Fresh names for clauses *)
 
-  val proof_debug : proof -> string * (semantic var list) * (string option)
+  val proof_debug : proof -> string * (atom list) * (semantic var list) * (string option)
   (** Debugging info for proofs (see Plugin_intf). *)
 
   val print_atom : Format.formatter -> atom -> unit

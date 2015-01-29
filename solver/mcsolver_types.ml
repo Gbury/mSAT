@@ -214,8 +214,8 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
 
   (* Proof debug info *)
   let proof_debug p =
-      let name, l, color = Th.proof_debug p in
-      name, (List.map add_term l), color
+      let name, l, l', color = Th.proof_debug p in
+      name, (List.map add_atom l), (List.map add_term l'), color
 
   (* Pretty printing for atoms and clauses *)
   let print_semantic_var fmt v = E.Term.print fmt v.tag.term
