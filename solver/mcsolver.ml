@@ -370,10 +370,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
                                     var_bump_activity a.var;
                                     history := d :: !history;
                                     c := res
-                            | _ ->
-                                L.debug 0 "Found %d resolution lits" (List.length tmp);
-                                List.iter (fun c -> L.debug 0 " |- %a" St.pp_atom c) tmp;
-                                assert false
+                            | _ -> assert false
                             end
                     | Bcp None -> L.debug 15 "Decision : %a" St.pp_atom a
                     | Semantic _ -> L.debug 15 "Semantic propagation : %a" St.pp_atom a)
