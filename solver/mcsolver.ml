@@ -436,7 +436,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       | fuip :: _ ->
         let name = fresh_lname () in
         let lclause = make_clause name learnt (List.length learnt) true history in
-        L.debug 1 "New clause learnt : %a" St.pp_clause lclause;
+        L.debug 2 "New clause learnt : %a" St.pp_clause lclause;
         Vec.push env.learnts lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
@@ -632,7 +632,9 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     add_clause ~cnumber:!_th_cnumber atoms (Lemma lemma)
 
   let slice_propagate f lvl =
-    enqueue_bool (add_atom f) lvl (Semantic lvl)
+    let a = add_atom f in
+    Iheap.grow_to_by_double env.order (St.nb_vars ());
+    enqueue_bool a lvl (Semantic lvl)
 
   let current_slice () = Th.({
       start = env.tatoms_qhead;

@@ -80,7 +80,7 @@ module Make(St : Mcsolver_types.S) = struct
     done;
     let l, res = resolve (List.sort_uniq compare_atoms !l) in
     if l <> [] then
-      raise (Resolution_error "Input cause is a tautology");
+      raise (Resolution_error "Input clause is a tautology");
     res
 
   (* Adding hyptoheses *)
