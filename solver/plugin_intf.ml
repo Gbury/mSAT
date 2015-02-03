@@ -78,6 +78,10 @@ module type S = sig
   val eval : formula -> eval_res
   (** Returns the evaluation of the formula in the current assignment *)
 
+  val if_sat : slice -> unit
+  (** Called at the end of the search in case a model has been found. If no new clause is
+      pushed, then 'sat' is returned, else search is resumed. *)
+
   val proof_debug : proof -> string * (formula list) * (term list) * (string option)
   (** Returns debugging information on a proof, as a triplet consisting of
       a name/identification string associated with the proof, arguments of the proof,

@@ -644,6 +644,14 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       propagate = slice_propagate;
     })
 
+  let full_slice tag = Th.({
+      start = 0;
+      length = Vec.size env.trail;
+      get = slice_get;
+      push = (fun cl proof -> tag := true; slice_push cl proof);
+      propagate = (fun _ -> assert false);
+    })
+
   let rec theory_propagate () =
     let slice = current_slice () in
     env.tatoms_qhead <- nb_assigns ();
@@ -818,6 +826,13 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
   let check_vec vec =
     for i = 0 to Vec.size vec - 1 do check_clause (Vec.get vec i) done
 
+  let add_clauses cnf ~cnumber =
+    let aux cl =
+        add_clause ~cnumber cl (History []);
+        match propagate () with
+        | None -> () | Some confl -> report_unsat confl
+    in
+    List.iter aux cnf
 
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)
@@ -829,21 +844,18 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       while true do
         begin try
             search (to_int !n_of_conflicts) (to_int !n_of_learnts);
-          with Restart -> ()
+          with
+          | Restart -> ()
+          | Sat ->
+            let tag = ref false in
+            Th.if_sat (full_slice tag);
+            if not !tag then raise Sat
         end;
         n_of_conflicts := !n_of_conflicts *. env.restart_inc;
         n_of_learnts   := !n_of_learnts *. env.learntsize_inc;
       done;
     with
     | Sat -> ()
-
-  let add_clauses cnf ~cnumber =
-    let aux cl =
-        add_clause ~cnumber cl (History []);
-        match propagate () with
-        | None -> () | Some confl -> report_unsat confl
-    in
-    List.iter aux cnf
 
   let init_solver cnf ~cnumber =
     let nbv = St.nb_vars () in

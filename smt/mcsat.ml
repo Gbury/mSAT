@@ -108,6 +108,8 @@ module Tsmt = struct
                   Valued (not (Fsmt.Term.equal a' b'), max lvl_a lvl_b)
               with Not_found -> Unknown end
 
+  let if_sat _ = ()
+
 end
 
 module Make(Dummy:sig end) = struct
