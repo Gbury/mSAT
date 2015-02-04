@@ -253,7 +253,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
   (* cancel down to [lvl] excluded *)
   let cancel_until lvl =
-    L.debug 5 "Backtracking to decision level %d (excluded)" lvl;
+    L.debug 1 "Backtracking to decision level %d (excluded)" lvl;
     if decision_level () > lvl then begin
       env.qhead <- Vec.get env.trail_lim lvl;
       env.tatoms_qhead <- env.qhead;
@@ -285,7 +285,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     assert (Vec.size env.trail_lim = Vec.size env.tenv_queue)
 
   let report_unsat ({atoms=atoms} as confl) =
-    L.debug 4 "Unsat conflict : %a" St.pp_clause confl;
+    L.debug 5 "Unsat conflict : %a" St.pp_clause confl;
     env.unsat_conflict <- Some confl;
     env.is_unsat <- true;
     raise Unsat
