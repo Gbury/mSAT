@@ -394,10 +394,10 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     else
         partition_aux [] [] [] [] atoms
 
-  let add_clause ~cnumber atoms history =
+  let add_clause ?tag name atoms history =
     if env.is_unsat then raise Unsat;
-    let init_name = string_of_int cnumber in
-    let init0 = make_clause init_name atoms (List.length atoms) (history <> History []) history in
+    let init_name = name in
+    let init0 = make_clause ?tag init_name atoms (List.length atoms) (history <> History []) history in
     Log.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
       let atoms, init = partition atoms init0 in
@@ -526,7 +526,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     let atoms = List.rev_map (fun x -> add_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_vars ());
     List.iter (fun a -> insert_var_order a.var) atoms;
-    add_clause ~cnumber:!_th_cnumber atoms (Lemma lemma)
+    add_clause "lemma" atoms (Lemma lemma)
 
   let current_slice () = Th.({
       start = env.tatoms_qhead;
@@ -706,15 +706,15 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     with
     | Sat -> ()
 
-  let add_clauses cnf ~cnumber =
+  let add_clauses ?tag cnf =
     let aux cl =
-        add_clause ~cnumber cl (History []);
+        add_clause ?tag "hyp" cl (History []);
         match propagate () with
         | None -> () | Some confl -> report_unsat confl
     in
     List.iter aux cnf
 
-  let init_solver cnf ~cnumber =
+  let init_solver ?tag cnf =
     let nbv = St.nb_vars () in
     let nbc = env.nb_init_clauses + List.length cnf in
     Iheap.grow_to_by_double env.order nbv;
@@ -724,12 +724,11 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     Vec.grow_to_by_double env.clauses nbc;
     Vec.grow_to_by_double env.learnts nbc;
     env.nb_init_clauses <- nbc;
-    add_clauses cnf ~cnumber
+    add_clauses ?tag cnf
 
-
-  let assume cnf ~cnumber =
+  let assume ?tag cnf =
     let cnf = List.rev_map (List.rev_map St.add_atom) cnf in
-    init_solver cnf ~cnumber
+    init_solver ?tag cnf
 
   let eval lit =
     let var, negated = make_var lit in

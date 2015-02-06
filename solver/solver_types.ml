@@ -40,6 +40,7 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
 
   and clause =
     { name : string;
+      tag : int option;
       atoms : atom Vec.t ;
       mutable activity : float;
       mutable removed : bool;
@@ -75,6 +76,7 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
 
   let dummy_clause =
     { name = "";
+      tag = None;
       atoms = Vec.make_empty dummy_atom;
       activity = -1.;
       removed = false;
@@ -136,9 +138,10 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
     let var, negated = make_var lit in
     if negated then var.na else var.pa
 
-  let make_clause name ali sz_ali is_learnt premise =
+  let make_clause ?tag name ali sz_ali is_learnt premise =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
     { name  = name;
+      tag = tag;
       atoms = atoms;
       removed = false;
       learnt = is_learnt;

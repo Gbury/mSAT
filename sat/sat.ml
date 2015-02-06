@@ -94,11 +94,11 @@ module Make(Dummy : sig end) = struct
   type clause = SatSolver.St.clause
   type proof = SatSolver.Proof.proof
 
+  let tag_clause cl = SatSolver.St.(cl.tag)
+
   type res =
     | Sat
     | Unsat
-
-  let _i = ref 0
 
   let new_atom () =
     try
@@ -126,10 +126,9 @@ module Make(Dummy : sig end) = struct
       Sat
     with SatSolver.Unsat -> Unsat
 
-  let assume l =
-    incr _i;
+  let assume ?tag l =
     try
-      SatSolver.assume l !_i
+      SatSolver.assume ?tag l
     with SatSolver.Unsat -> ()
 
   let eval = SatSolver.eval

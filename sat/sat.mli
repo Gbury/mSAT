@@ -4,7 +4,7 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Fsat : Formula_intf.S
+module Fsat : Formula_intf.S with type t = int
 
 module Tseitin : Tseitin.S with type atom = Fsat.t
 
@@ -52,8 +52,11 @@ module Make(Dummy: sig end) : sig
   val eval : atom -> bool
   (** Return the current assignement of the literals. *)
 
-  val assume : atom list list -> unit
+  val assume : ?tag:int -> atom list list -> unit
   (** Add a list of clauses to the set of assumptions. *)
+
+  val tag_clause : clause -> int option
+  (** Returns the tag associated with the clause. *)
 
   val get_proof : unit -> proof
   (** Returns the resolution proof found, if [solve] returned [Unsat]. *)

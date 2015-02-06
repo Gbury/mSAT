@@ -39,6 +39,7 @@ module type S = sig
 
   and clause = {
     name : string;
+    tag : int option;
     atoms : atom Vec.t;
     mutable activity : float;
     mutable removed : bool;
@@ -67,7 +68,7 @@ module type S = sig
   (** Returns the variable linked with the given formula, and wether the atom associated with the formula
       is [var.pa] or [var.na] *)
 
-  val make_clause : string -> atom list -> int -> bool -> premise -> clause
+  val make_clause : ?tag:int -> string -> atom list -> int -> bool -> premise -> clause
   (** [make_clause name atoms size learnt premise] creates a clause with the given attributes. *)
 
   val nb_vars : unit -> int
