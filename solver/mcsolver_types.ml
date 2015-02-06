@@ -103,11 +103,11 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
     dummy_atom.watched <- Vec.make_empty dummy_clause
 
   (* Constructors *)
-  module MF = Map.Make(E.Formula)
-  module MT = Map.Make(E.Term)
+  module MF = Hashtbl.Make(E.Formula)
+  module MT = Hashtbl.Make(E.Term)
 
-  let f_map = ref MF.empty
-  let t_map = ref MT.empty
+  let f_map = MF.create 1007
+  let t_map = MT.create 1007
 
   let vars = Vec.make 107 (Either.mk_right dummy_var)
   let nb_vars () = Vec.size vars
@@ -117,7 +117,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
   let cpt_mk_var = ref 0
 
   let make_semantic_var t =
-      try MT.find t !t_map
+      try MT.find t_map t
       with Not_found ->
         let res = {
           vid = !cpt_mk_var;
@@ -128,14 +128,14 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
             assigned = None; };
         } in
         incr cpt_mk_var;
-        t_map := MT.add t res !t_map;
+        MT.add t_map t res;
         Vec.push vars (Either.mk_left res);
         res
 
   let make_boolean_var =
     fun lit ->
       let lit, negated = E.norm lit in
-      try MF.find lit !f_map, negated
+      try MF.find f_map lit, negated
       with Not_found ->
         let cpt_fois_2 = !cpt_mk_var lsl 1 in
         let rec var  =
@@ -163,7 +163,7 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
             neg = pa;
             is_true = false;
             aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in
-        f_map := MF.add lit var !f_map;
+        MF.add f_map lit var;
         incr cpt_mk_var;
         Vec.push vars (Either.mk_right var);
         Th.iter_assignable (fun t -> ignore (make_semantic_var t)) lit;
