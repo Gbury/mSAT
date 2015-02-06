@@ -273,14 +273,14 @@ module Make(St : Solver_types.S) = struct
     aux (to_list c, to_list d)
 
   let unsat_core proof =
-    let rec aux proof =
+    let rec aux acc proof =
       let p = proof () in
       match p.step with
-      | Hypothesis | Lemma _ -> [p.conclusion]
+      | Hypothesis | Lemma _ -> p.conclusion :: acc
       | Resolution (proof1, proof2, _) ->
-        List.rev_append (aux proof1) (aux proof2)
+        aux (aux acc proof1) proof2
     in
-    List.sort_uniq compare_cl (aux proof)
+    List.sort_uniq compare_cl (aux [] proof)
 
   (* Print proof graph *)
   let _i = ref 0
