@@ -338,15 +338,23 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     let history = ref [c_clause] in
     clause_bump_activity c_clause;
     let is_semantic a = match a.var.tag.reason with
-        | Semantic _ -> true
-        | _ -> false
+      | Semantic _ -> true
+      | _ -> false
+    in
+    let is_decision a = match a.var.tag.reason with
+      | Bcp None -> true
+      | _ -> false
     in
     try while true do
         let _, atoms = max_lvl_atoms !c in
         L.debug 15 "Current conflict clause :";
         List.iter (fun a -> L.debug 15 " |- %a" St.pp_atom a) !c;
         match atoms with
-        | [] | _ :: [] ->
+        | [] ->
+                L.debug 15 "Found Empty clause";
+                is_uip := true;
+                raise Exit
+        | [a] when is_decision a ->
                 L.debug 15 "Found UIP clause";
                 is_uip := true;
                 raise Exit
@@ -356,6 +364,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         | _ ->
                 decr tr_ind;
                 L.debug 20 "Looking at trail element %d" !tr_ind;
+                assert (!tr_ind >= 0);
                 Either.destruct (Vec.get env.trail !tr_ind)
                 (fun v -> L.debug 15 "%a" St.pp_semantic_var v)
                 (fun a -> match a.var.tag.reason with
