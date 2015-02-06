@@ -351,7 +351,7 @@ module Make(St : Mcsolver_types.S) = struct
         let color = match color with None -> "YELLOW" | Some c -> c in
         let aux fmt () =
           Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD BGCOLOR=\"%s\" rowspan=\"%d\">%s</TD>"
-            print_clause p.conclusion color (min (List.length f_args + List.length t_args) 1) name;
+            print_clause p.conclusion color (max (List.length f_args + List.length t_args) 1) name;
           if f_args <> [] then
               Format.fprintf fmt "<TD>%a</TD></TR>%a%a" St.print_atom (List.hd f_args)
                 (fun fmt -> List.iter (fun a -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_atom a)) (List.tl f_args)
