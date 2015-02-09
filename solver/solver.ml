@@ -411,7 +411,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
         report_unsat init0;
       | a::b::_ ->
         let name = fresh_name () in
-        let clause = make_clause name atoms size (history <> History []) history in
+        let clause = make_clause ?tag name atoms size (history <> History []) history in
         Log.debug 10 "New clause : %a" St.pp_clause init0;
         attach_clause clause;
         Vec.push env.clauses clause;
