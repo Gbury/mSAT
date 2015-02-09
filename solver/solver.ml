@@ -207,15 +207,15 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
   let new_decision_level() =
     Vec.push env.trail_lim (Vec.size env.trail);
     Vec.push env.tenv_queue (Th.current_level ()); (* save the current tenv *)
-    Log.debug 5 "New decision level : %d (%d in env queue)(%d in trail)"
+    L.debug 5 "New decision level : %d (%d in env queue)(%d in trail)"
       (Vec.size env.trail_lim) (Vec.size env.tenv_queue) (Vec.size env.trail);
     ()
 
   let attach_clause c =
     Vec.push (Vec.get c.atoms 0).neg.watched c;
     Vec.push (Vec.get c.atoms 1).neg.watched c;
-    Log.debug 8 "%a <-- %a" St.pp_atom (Vec.get c.atoms 0).neg St.pp_clause c;
-    Log.debug 8 "%a <-- %a" St.pp_atom (Vec.get c.atoms 1).neg St.pp_clause c;
+    L.debug 8 "%a <-- %a" St.pp_atom (Vec.get c.atoms 0).neg St.pp_clause c;
+    L.debug 8 "%a <-- %a" St.pp_atom (Vec.get c.atoms 1).neg St.pp_clause c;
     if c.learnt then
       env.learnts_literals <- env.learnts_literals + Vec.size c.atoms
     else
@@ -239,7 +239,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
 
   (* cancel down to [lvl] excluded *)
   let cancel_until lvl =
-    Log.debug 5 "Bactracking to decision level %d (excluded)" lvl;
+    L.debug 5 "Bactracking to decision level %d (excluded)" lvl;
     if decision_level () > lvl then begin
       env.qhead <- Vec.get env.trail_lim lvl;
       env.tatoms_qhead <- env.qhead;
@@ -260,7 +260,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     assert (Vec.size env.trail_lim = Vec.size env.tenv_queue)
 
   let report_unsat ({atoms=atoms} as confl) =
-    Log.debug 5 "Unsat conflict : %a" St.pp_clause confl;
+    L.debug 5 "Unsat conflict : %a" St.pp_clause confl;
     env.unsat_conflict <- Some confl;
     env.is_unsat <- true;
     raise Unsat
@@ -274,7 +274,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     a.is_true <- true;
     a.var.level <- lvl;
     a.var.reason <- reason;
-    Log.debug 8 "Enqueue: %a" pp_atom a;
+    L.debug 8 "Enqueue: %a" pp_atom a;
     Vec.push env.trail a
 
   (* conflict analysis *)
@@ -333,13 +333,13 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
         fuip.var.vpremise <- history;
         let name = fresh_lname () in
         let uclause = make_clause name learnt size true history in
-        Log.debug 2 "Unit clause learnt : %a" St.pp_clause uclause;
+        L.debug 2 "Unit clause learnt : %a" St.pp_clause uclause;
         Vec.push env.learnts uclause;
         enqueue fuip 0 (Some uclause)
       | fuip :: _ ->
         let name = fresh_lname () in
         let lclause = make_clause name learnt size true history in
-        Log.debug 2 "New clause learnt : %a" St.pp_clause lclause;
+        L.debug 2 "New clause learnt : %a" St.pp_clause lclause;
         Vec.push env.learnts lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
@@ -398,7 +398,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     if env.is_unsat then raise Unsat;
     let init_name = name in
     let init0 = make_clause ?tag init_name atoms (List.length atoms) (history <> History []) history in
-    Log.debug 10 "Adding clause : %a" St.pp_clause init0;
+    L.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
       let atoms, init = partition atoms init0 in
       let size = List.length atoms in
@@ -411,7 +411,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
             if init then init0
             else make_clause ?tag (init_name ^ "_" ^ name) atoms size true (History [init0])
         in
-        Log.debug 10 "New clause : %a" St.pp_clause init0;
+        L.debug 10 "New clause : %a" St.pp_clause init0;
         attach_clause clause;
         Vec.push env.clauses clause;
         if a.neg.is_true then begin
@@ -474,7 +474,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
             Vec.set atoms 1 ak;
             Vec.set atoms k a.neg;
             Vec.push ak.neg.watched c;
-            Log.debug 8 "New watcher (%a) for clause : %a" St.pp_atom ak.neg St.pp_clause c;
+            L.debug 8 "New watcher (%a) for clause : %a" St.pp_atom ak.neg St.pp_clause c;
             raise Exit
           end
         done;
@@ -486,23 +486,23 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
             Vec.set watched !new_sz (Vec.get watched k);
             incr new_sz;
           done;
-          Log.debug 3 "Conflict found : %a" St.pp_clause c;
+          L.debug 3 "Conflict found : %a" St.pp_clause c;
           raise (Conflict c)
         end
         else begin
           (* clause is unit *)
           Vec.set watched !new_sz c;
           incr new_sz;
-          Log.debug 5 "Unit clause : %a" St.pp_clause c;
+          L.debug 5 "Unit clause : %a" St.pp_clause c;
           enqueue first (decision_level ()) (Some c)
         end
       with Exit -> ()
 
   let propagate_atom a res =
-    Log.debug 8 "Propagating %a" St.pp_atom a;
+    L.debug 8 "Propagating %a" St.pp_atom a;
     let watched = a.watched in
-    Log.debug 10 "Watching %a :" St.pp_atom a;
-    Vec.iter (fun c -> Log.debug 10 "  %a" St.pp_clause c) watched;
+    L.debug 10 "Watching %a :" St.pp_atom a;
+    Vec.iter (fun c -> L.debug 10 "  %a" St.pp_clause c) watched;
     let new_sz_w = ref 0 in
     begin
       try
@@ -665,7 +665,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
         let next = pick_branch_lit () in
         let current_level = decision_level () in
         assert (next.level < 0);
-        Log.debug 5 "Deciding on %a" St.pp_atom next.pa;
+        L.debug 5 "Deciding on %a" St.pp_atom next.pa;
         enqueue next.pa current_level None
     done
 
