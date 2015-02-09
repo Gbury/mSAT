@@ -4,7 +4,7 @@ version: "0.1"
 author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "Guillaume Bury"]
 maintainer: ["guillaume.bury@gmail.com" "simon.cruanes@inria.fr"]
 build: [
-    [make "all"]
+    [make "lib"]
 ]
 install: [
     [make "install"]
