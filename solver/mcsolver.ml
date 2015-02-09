@@ -445,7 +445,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         else begin
             env.decisions <- env.decisions + 1;
             new_decision_level();
-            enqueue_bool fuip.neg blevel (Bcp None)
+            enqueue_bool fuip.neg (decision_level ()) (Bcp None)
         end
     end;
     var_decay_activity ();
