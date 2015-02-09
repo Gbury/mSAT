@@ -85,7 +85,7 @@ module Tsat = struct
 
 end
 
-module Make(Dummy : sig end) = struct
+module Make(Log : Log_intf.S) = struct
   module SatSolver = Solver.Make(Log)(Fsat)(Tsat)
 
   exception Bad_atom

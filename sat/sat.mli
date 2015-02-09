@@ -8,7 +8,7 @@ module Fsat : Formula_intf.S with type t = int
 
 module Tseitin : Tseitin.S with type atom = Fsat.t
 
-module Make(Dummy: sig end) : sig
+module Make(Log: Log_intf.S) : sig
   (** Fonctor to make a pure SAT Solver module with built-in literals. *)
 
   exception Bad_atom
