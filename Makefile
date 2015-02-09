@@ -40,7 +40,7 @@ clean:
 
 TO_INSTALL=META $(addprefix _build/,$(LIB) $(NAME).a $(NAME).cmi)
 
-install: all
+install: lib
 	ocamlfind install msat $(TO_INSTALL)
 
 uninstall:
