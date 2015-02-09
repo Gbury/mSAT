@@ -31,9 +31,7 @@ module type S = sig
   type boolean = {
     pa : atom;
     na : atom;
-    mutable seen : bool;
     mutable reason : reason;
-    mutable vpremise : premise
   }
 
   and atom = {

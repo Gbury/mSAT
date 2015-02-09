@@ -273,7 +273,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
               a.neg.is_true <- false;
               a.var.level <- -1;
               a.var.tag.reason <- Bcp None;
-              a.var.tag.vpremise <- History [];
               insert_var_order (Either.mk_right a.var)
             end)
       done;
@@ -427,7 +426,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         if fuip.neg.is_true then
             report_unsat confl
         else begin
-          fuip.var.tag.vpremise <- history;
           let name = fresh_lname () in
           let uclause = make_clause name learnt (List.length learnt) true history in
           L.debug 1 "Unit clause learnt : %a" St.pp_clause uclause;
@@ -469,13 +467,11 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       let aux (atoms, init) a =
           if a.is_true then raise Trivial;
           if a.neg.is_true then
-              match a.var.tag.vpremise with
-              | History v -> atoms, [init0]
-              | Lemma p -> assert false
+              atoms, false
           else
               a::atoms, init
       in
-      let atoms, init = List.fold_left aux ([], []) atoms in
+      let atoms, init = List.fold_left aux ([], true) atoms in
       List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
 
   let partition atoms init0 =
@@ -486,37 +482,35 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
           if a.var.level = 0 then raise Trivial
           else (a::trues) @ unassigned @ falses @ r, init
         else if a.neg.is_true then
-          if a.var.level = 0 then match a.var.tag.vpremise with
-          | History v ->
-            partition_aux trues unassigned falses [init0] r
-          | Lemma _ -> assert false
+          if a.var.level = 0 then
+            partition_aux trues unassigned falses false r
           else
-          partition_aux trues unassigned (a::falses) init r
-        else partition_aux trues (a::unassigned) falses init r
+            partition_aux trues unassigned (a::falses) init r
+        else
+          partition_aux trues (a::unassigned) falses init r
     in
     if decision_level () = 0 then
         simplify_zero atoms init0
     else
-        partition_aux [] [] [] [] atoms
+        partition_aux [] [] [] true atoms
 
-  let add_clause ~cnumber atoms history =
+  let add_clause name atoms history =
     if env.is_unsat then raise Unsat;
-    let init_name = string_of_int cnumber in
+    let init_name = name in
     let init0 = make_clause init_name atoms (List.length atoms) (history <> History []) history in
     L.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
       let atoms, init = partition atoms init0 in
-      let history = match init with
-      | [] -> history
-      | l -> History l
-      in
       let size = List.length atoms in
       match atoms with
       | [] ->
         report_unsat init0;
       | a::b::_ ->
         let name = fresh_name () in
-        let clause = make_clause name atoms size (history <> History []) history in
+        let clause =
+            if init then init0
+            else make_clause name atoms size true (History [init0])
+        in
         L.debug 1 "New clause : %a" St.pp_clause init0;
         attach_clause clause;
         Vec.push env.clauses clause;
@@ -531,8 +525,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         end
       | [a]   ->
         cancel_until 0;
-        a.var.tag.vpremise <- history;
-        enqueue_bool a 0 (Bcp (match init with [init0] -> Some init0 | _ -> None))
+        enqueue_bool a 0 (Bcp (Some init0))
     with Trivial -> ()
 
 
@@ -620,18 +613,15 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       ignore (th_eval a);
       a
 
-  let _th_cnumber = ref 0
-
   let slice_get i = Either.destruct (Vec.get env.trail i)
       (function {level; tag={term; assigned = Some v}} -> Th.Assign (term, v), level | _ -> assert false)
       (fun a -> Th.Lit a.lit, a.var.level)
 
   let slice_push l lemma =
-    decr _th_cnumber;
     let atoms = List.rev_map (fun x -> new_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_vars ());
     List.iter (fun a -> insert_var_order (Either.mk_right a.var)) atoms;
-    add_clause ~cnumber:!_th_cnumber atoms (Lemma lemma)
+    add_clause "lemma" atoms (Lemma lemma)
 
   let slice_propagate f lvl =
     let a = add_atom f in
@@ -830,7 +820,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
   let add_clauses cnf ~cnumber =
     let aux cl =
-        add_clause ~cnumber cl (History []);
+        add_clause "hyp" cl (History []);
         match propagate () with
         | None -> () | Some confl -> report_unsat confl
     in

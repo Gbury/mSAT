@@ -39,7 +39,6 @@ module Make(St : Mcsolver_types.S) = struct
       let equal = equal_cl
     end)
   let proof : node H.t = H.create 1007;;
-  let unit_hyp : (clause * St.atom list) H.t = H.create 37;;
 
   (* Misc functions *)
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
@@ -84,33 +83,10 @@ module Make(St : Mcsolver_types.S) = struct
     res
 
   (* Adding hyptoheses *)
-  let is_unit_hyp = function
-    | [a] -> St.(a.var.level = 0 && a.var.tag.reason = Bcp None && a.var.tag.vpremise <> History [])
-    | _ -> false
-
-  let make_unit_hyp a =
-    let aux a = St.(make_clause (fresh_name ()) [a] 1 false (History [])) in
-    if St.(a.is_true) then
-      aux a
-    else if St.(a.neg.is_true) then
-      aux St.(a.neg)
-    else
-      assert false
-
-  let unit_hyp a =
-    let a = St.(a.var.tag.pa) in
-    try
-      H.find unit_hyp [a]
-    with Not_found ->
-      let c = make_unit_hyp a in
-      let cl = to_list c in
-      H.add unit_hyp [a] (c, cl);
-      (c, cl)
-
   let is_proved (c, cl) =
     if H.mem proof cl then
       true
-    else if is_unit_hyp cl || not St.(c.learnt) then begin
+    else if not St.(c.learnt) then begin
       H.add proof cl Assumption;
       true
     end else match St.(c.cpremise) with
@@ -148,12 +124,6 @@ module Make(St : Mcsolver_types.S) = struct
 
   let clause_unit a = match St.(a.var.level, a.var.tag.reason) with
     | 0, St.Bcp Some c -> c, to_list c
-    | 0, St.Bcp None ->
-      let c, cl = unit_hyp a in
-      if is_proved (c, cl) then
-        c, cl
-      else
-        assert false
     | _ ->
       raise (Resolution_error "Could not find a reason needed to resolve")
 
@@ -209,9 +179,6 @@ module Make(St : Mcsolver_types.S) = struct
       Log.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
       let d = match St.(a.var.level, a.var.tag.reason) with
         | 0, St.Bcp Some d -> d
-        | 0, St.Bcp None ->
-          let d, cl_d = unit_hyp a in
-          if is_proved (d, cl_d) then d else raise Exit
         | _ -> raise Exit
       in
       prove d;
@@ -273,14 +240,14 @@ module Make(St : Mcsolver_types.S) = struct
     aux (to_list c, to_list d)
 
   let unsat_core proof =
-    let rec aux proof =
+    let rec aux acc proof =
       let p = proof () in
       match p.step with
-      | Hypothesis | Lemma _ -> [p.conclusion]
+      | Hypothesis | Lemma _ -> p.conclusion :: acc
       | Resolution (proof1, proof2, _) ->
-        List.rev_append (aux proof1) (aux proof2)
+        aux (aux acc proof1) proof2
     in
-    List.sort_uniq compare_cl (aux proof)
+    List.sort_uniq compare_cl (aux [] proof)
 
   (* Print proof graph *)
   let _i = ref 0
