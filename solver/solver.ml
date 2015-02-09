@@ -365,8 +365,8 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
         if a.is_true then raise Trivial;
         if a.neg.is_true then
             match a.var.vpremise with
-            | History v -> atoms, false
-            | Lemma p -> assert false
+            | History _ -> atoms, false
+            | Lemma _ -> assert false
         else
             a::atoms, init
     in
@@ -426,7 +426,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
       | [a]   ->
         cancel_until 0;
         a.var.vpremise <- History [init0];
-        enqueue a 0 (if init then None else Some init0)
+        enqueue a 0 (Some init0)
     with Trivial -> ()
 
 
