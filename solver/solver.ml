@@ -359,19 +359,19 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
   exception Trivial
 
   let simplify_zero atoms init0 =
-      (* TODO: could be more efficient than [@] everywhere? *)
-      assert (decision_level () = 0);
-      let aux (atoms, init) a =
-          if a.is_true then raise Trivial;
-          if a.neg.is_true then
-              match a.var.vpremise with
-              | History v -> atoms, [init0]
-              | Lemma p -> assert false
-          else
-              a::atoms, init
-      in
-      let atoms, init = List.fold_left aux ([], []) atoms in
-      List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
+    (* TODO: could be more efficient than [@] everywhere? *)
+    assert (decision_level () = 0);
+    let aux (atoms, init) a =
+        if a.is_true then raise Trivial;
+        if a.neg.is_true then
+            match a.var.vpremise with
+            | History v -> atoms, [init0]
+            | Lemma p -> assert false
+        else
+            a::atoms, init
+    in
+    let atoms, init = List.fold_left aux ([], []) atoms in
+    List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
 
   let partition atoms init0 =
     let rec partition_aux trues unassigned falses init = function
