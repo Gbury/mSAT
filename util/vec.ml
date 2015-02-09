@@ -147,6 +147,14 @@ let exists p t =
     false
   with ExitVec -> true
 
+let for_all p t =
+  try
+    for i = 0 to t.sz - 1 do
+      if not (p (Array.unsafe_get t.data i)) then raise ExitVec
+    done;
+    true
+  with ExitVec -> false
+
 (*
 template<class V, class T>
 static inline void remove(V& ts, const T& t)

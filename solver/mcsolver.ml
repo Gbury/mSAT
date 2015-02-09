@@ -454,7 +454,8 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
   let add_boolean_conflict confl =
     env.conflicts <- env.conflicts + 1;
-    if decision_level() = 0 then report_unsat confl; (* Top-level conflict *)
+    if decision_level() = 0 || Vec.for_all (fun a -> a.var.level = 0) confl.atoms then
+        report_unsat confl; (* Top-level conflict *)
     let blevel, learnt, history, is_uip = analyze confl in
     cancel_until blevel;
     record_learnt_clause confl blevel learnt (History history) is_uip

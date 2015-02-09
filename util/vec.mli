@@ -96,3 +96,6 @@ val fold : ('b -> 'a -> 'b) -> 'b -> 'a t -> 'b
 val exists : ('a -> bool) -> 'a t -> bool
 (** Does there exist an element that satisfies the predicate? *)
 
+val for_all : ('a -> bool) -> 'a t -> bool
+(** Do all elements satisfy the predicate? *)
+
