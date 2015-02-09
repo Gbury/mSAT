@@ -365,12 +365,12 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
         if a.is_true then raise Trivial;
         if a.neg.is_true then
             match a.var.vpremise with
-            | History v -> atoms, [init0]
+            | History v -> atoms, false
             | Lemma p -> assert false
         else
             a::atoms, init
     in
-    let atoms, init = List.fold_left aux ([], []) atoms in
+    let atoms, init = List.fold_left aux ([], true) atoms in
     List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
 
   let partition atoms init0 =
@@ -383,7 +383,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
         else if a.neg.is_true then
           if a.var.level = 0 then match a.var.vpremise with
           | History v ->
-            partition_aux trues unassigned falses [init0] r
+            partition_aux trues unassigned falses false r
           | Lemma _ -> assert false
           else
           partition_aux trues unassigned (a::falses) init r
@@ -392,7 +392,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     if decision_level () = 0 then
         simplify_zero atoms init0
     else
-        partition_aux [] [] [] [] atoms
+        partition_aux [] [] [] true atoms
 
   let add_clause ?tag name atoms history =
     if env.is_unsat then raise Unsat;
@@ -401,17 +401,16 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     Log.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
       let atoms, init = partition atoms init0 in
-      let history = match init with
-      | [] -> history
-      | l -> History l
-      in
       let size = List.length atoms in
       match atoms with
       | [] ->
         report_unsat init0;
       | a::b::_ ->
         let name = fresh_name () in
-        let clause = make_clause ?tag (init_name ^ "_" ^ name) atoms size (history <> History []) history in
+        let clause =
+            if init then init0
+            else make_clause ?tag (init_name ^ "_" ^ name) atoms size true (History [init0])
+        in
         Log.debug 10 "New clause : %a" St.pp_clause init0;
         attach_clause clause;
         Vec.push env.clauses clause;
@@ -426,8 +425,8 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
         end
       | [a]   ->
         cancel_until 0;
-        a.var.vpremise <- history;
-        enqueue a 0 (match init with [init0] -> Some init0 | _ -> None)
+        a.var.vpremise <- History [init0];
+        enqueue a 0 (if init then None else Some init0)
     with Trivial -> ()
 
 
