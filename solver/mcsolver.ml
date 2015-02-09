@@ -327,7 +327,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
   let backtrack_lvl is_uip = function
     | [] -> 0
-    | a :: r when not is_uip -> a.var.level - 1
+    | a :: r when not is_uip -> max (a.var.level - 1) 0
     | a :: [] -> 0
     | a :: b :: r -> assert(a.var.level <> b.var.level); b.var.level
 
@@ -342,9 +342,10 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         | _ -> false
     in
     try while true do
-        let _, atoms = max_lvl_atoms !c in
+        let lvl, atoms = max_lvl_atoms !c in
         L.debug 15 "Current conflict clause :";
         List.iter (fun a -> L.debug 15 " |- %a" St.pp_atom a) !c;
+        if lvl = 0 then raise Exit;
         match atoms with
         | [] | _ :: [] ->
                 L.debug 15 "Found UIP clause";
