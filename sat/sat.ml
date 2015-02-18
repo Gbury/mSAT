@@ -25,6 +25,10 @@ module Fsat = struct
 
   let neg a = - a
   let norm a = abs a, a < 0
+  let abs = abs
+  let sign i = i > 0
+  let apply_sign b i = if b then i else neg i
+  let set_sign b i = if b then abs i else neg (abs i)
 
   let hash (a:int) = Hashtbl.hash a
   let equal (a:int) b = a=b
@@ -110,7 +114,12 @@ module Make(Log : Log_intf.S) = struct
     with Fsat.Dummy _ ->
       raise Bad_atom
 
+
+  let abs = Fsat.abs
   let neg = Fsat.neg
+  let sign = Fsat.sign
+  let apply_sign = Fsat.apply_sign
+  let set_sign = Fsat.set_sign
 
   let hash = Fsat.hash
   let equal = Fsat.equal

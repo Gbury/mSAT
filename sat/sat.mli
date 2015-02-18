@@ -37,6 +37,11 @@ module Make(Log: Log_intf.S) : sig
   val neg : atom -> atom
   (** [neg a] returns the negation of a literal. Involutive, i.e [neg (neg a) = a]. *)
 
+  val abs : atom -> atom
+  val sign : atom -> bool
+  val apply_sign : bool -> atom -> atom
+  val set_sign : bool -> atom -> atom
+
   val hash : atom -> int
   val equal : atom -> atom -> bool
   val compare : atom -> atom -> int
