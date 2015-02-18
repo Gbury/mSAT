@@ -7,8 +7,6 @@ Copyright 2014 Simon Cruanes
 module Fsat = struct
   exception Dummy of int
 
-  (* Until the constant true_ and false_ are not needed anymore,
-   * wa can't simply use sigend integers to represent literals *)
   type t = int
 
   let max_lit = max_int

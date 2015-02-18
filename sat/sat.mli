@@ -4,7 +4,7 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Fsat : Formula_intf.S with type t = int
+module Fsat : Formula_intf.S with type t = private int
 
 module Tseitin : Tseitin.S with type atom = Fsat.t
 

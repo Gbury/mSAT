@@ -1,4 +1,4 @@
-<util/*.cmx>: package(unix)
+<util/*.cmx>: for-pack(Msat), package(unix)
 <util/*.native>: package(unix)
 <smt/*.cmx>: for-pack(Msat), package(zarith)
 <sat/*.cmx>: for-pack(Msat)

@@ -1,3 +1,5 @@
+util/Log
+
 solver/Log_intf
 solver/Formula_intf
 solver/Expr_intf
