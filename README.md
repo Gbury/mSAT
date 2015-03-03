@@ -15,16 +15,19 @@ This program is distributed under the Apache Software License version
 
 ## USAGE
 
+### Sat Solver
+
 A ready-to-use SAT solver is available in the Sat module. It can be used
 as shown in the following code :
 
+```ocaml
     (* Module initialization *)
     module F = Msat.Sat.Tseitin
     module Sat = Msat.Sat.Make(Msat.Log)
 
     (* We create here two distinct atoms *)
     let a = Sat.new_atom () (* A 'new_atom' is always distinct from any other atom *)
-    let b = Sat.make 1      (* Atoms can be creted from integers *)
+    let b = Sat.make 1      (* Atoms can be created from integers *)
 
     (* Let's create some formulas *)
     let p = F.make_and [a; b]
@@ -38,6 +41,11 @@ as shown in the following code :
      * the formula 'p' in our assumptions *)
     Sat.assume (F.make_cnf q)
     let _ = Sat.solve ()        (* Should return Sat.Unsat *)
+```
+
+### Generic SAT/SMT Solver
+
+A modular implementation of the SMT algorithm can be found in the `Msat.`
 
 ## INSTALLATION
 
