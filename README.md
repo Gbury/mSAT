@@ -30,16 +30,18 @@ as shown in the following code :
     let b = Sat.make 1      (* Atoms can be created from integers *)
 
     (* Let's create some formulas *)
-    let p = F.make_and [a; b]
-    let q = F.make_or [F.make_not a; F.make_not b]
+    let p = F.make_atom a
+    let q = F.make_atom b
+    let r = F.make_and [p; q]
+    let s = F.make_or [F.make_not p; F.make_not q]
 
     (* We can try and check the satisfiability of the given formulas *)
-    Sat.assume (F.make_cnf p)
+    Sat.assume (F.make_cnf r)
     let _ = Sat.solve ()        (* Should return Sat.Sat *)
 
     (* The Sat solver has an incremental mutable state, so we still have
-     * the formula 'p' in our assumptions *)
-    Sat.assume (F.make_cnf q)
+     * the formula 'r' in our assumptions *)
+    Sat.assume (F.make_cnf s)
     let _ = Sat.solve ()        (* Should return Sat.Unsat *)
 ```
 
