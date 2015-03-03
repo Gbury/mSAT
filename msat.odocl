@@ -18,6 +18,7 @@ solver/Mcsolver_types_intf
 solver/Theory_intf
 solver/Plugin_intf
 
-#sat/Sat
-#smt/Smt
-#smt/Mcsat
+solver/Tseitin
+solver/Tseitin_intf
+
+sat/Sat

@@ -5,7 +5,7 @@ Copyright 2014 Simon Cruanes
 *)
 
 module type S = sig
-  (** Signature of formulas that parametrises the SMT Solver Module. *)
+  (** Signature of formulas that parametrises the SAT/SMT Solver Module. *)
 
   type t
   (** The type of atomic formulas. *)

@@ -5,7 +5,7 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make(Dummy: sig end) : sig
-  (** Fonctor to make a pure SAT Solver module with built-in literals. *)
+  (** Fonctor to make a SMT Solver module with built-in literals. *)
 
   type atom = Expr.Formula.t
   (** Type for atoms, i.e boolean literals. *)
