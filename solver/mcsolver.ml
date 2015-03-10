@@ -495,11 +495,13 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         partition_aux [] [] [] true atoms
 
   let add_clause name atoms history =
-    if env.is_unsat then raise Unsat;
+    if env.is_unsat then raise Unsat; (* is it necessary ? *)
     let init_name = name in
     let init0 = make_clause init_name atoms (List.length atoms) (history <> History []) history in
-    L.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
+      if Proof.has_been_proved init0 then raise Trivial;
+      assert (Proof.is_proven init0);
+      L.debug 10 "Adding clause : %a" St.pp_clause init0;
       let atoms, init = partition atoms init0 in
       let size = List.length atoms in
       match atoms with
@@ -527,7 +529,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         cancel_until 0;
         enqueue_bool a 0 (Bcp (Some init0))
     with Trivial -> ()
-
 
   let progress_estimate () =
     let prg = ref 0. in

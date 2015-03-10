@@ -42,8 +42,15 @@ module type S = sig
 
   (** {3 Proof building functions} *)
 
+  val has_been_proved : clause -> bool
+  (** Returns [true] if the clause is part of the current proof graph. This function does not alter
+      the proof graph (contrary to [is_proven]). *)
+
   val is_proven : clause -> bool
-  (** Returns [true] if the clause has a derivation in the current proof graph, and [false] otherwise. *)
+  (** Checks if the given clause has a derivation in the current state. Whatever the result,
+      new proven clauses (including the given clause) may be added to the proof graph. In particular,
+      hyptohesis and theory lemmas always have trivial derivations, and as such [is_proven c] (where [c]
+      is a hypothesis or lemma) will always return [true] and add it to the proof graph. *)
 
   val learn : clause Vec.t -> unit
   (** Learn and build proofs for the clause in the vector. Clauses in the vector should be in the order they were learned. *)

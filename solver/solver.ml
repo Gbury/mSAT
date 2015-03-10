@@ -400,6 +400,8 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     let init0 = make_clause ?tag init_name atoms (List.length atoms) (history <> History []) history in
     L.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
+      if Proof.has_been_proved init0 then raise Trivial;
+      assert (Proof.is_proven init0);
       let atoms, init = partition atoms init0 in
       let size = List.length atoms in
       match atoms with

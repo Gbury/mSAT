@@ -83,6 +83,8 @@ module Make(St : Solver_types.S) = struct
     res
 
   (* Adding hyptoheses *)
+  let has_been_proved c = H.mem proof (to_list c)
+
   let is_proved (c, cl) =
     if H.mem proof cl then
       true
