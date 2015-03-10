@@ -77,9 +77,10 @@ module Make(St : Mcsolver_types.S) = struct
     for i = 0 to Vec.size v - 1 do
       l := (Vec.get v i) :: !l
     done;
-    let l, res = resolve (List.sort_uniq compare_atoms !l) in
+    let res = List.sort_uniq compare_atoms !l in
+    let l, _ = resolve res in
     if l <> [] then
-      raise (Resolution_error "Input clause is a tautology");
+      Log.debug 3 "Input clause is a tautology";
     res
 
   (* Adding hyptoheses *)
