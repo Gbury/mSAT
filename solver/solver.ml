@@ -425,7 +425,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
           cancel_until lvl;
           enqueue a lvl (Some clause)
         end
-      | [a]   ->
+      | [a] ->
         cancel_until 0;
         a.var.vpremise <- History [init0];
         enqueue a 0 (Some init0)
