@@ -40,6 +40,10 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
   (** Returns the valuation of a formula in the current state
       of the sat solver. *)
 
+  val hyps : unit -> St.clause Vec.t
+  (** Returns the vector of assumptions used by the solver. May be slightly different
+      from the clauses assumed because of top-level simplification of clauses. *)
+
   val history : unit -> St.clause Vec.t
   (** Returns the history of learnt clauses, in the right order. *)
 

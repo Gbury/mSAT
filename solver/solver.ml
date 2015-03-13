@@ -737,6 +737,8 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
     let truth = var.pa.is_true in
     if negated then not truth else truth
 
+  let hyps () = env.clauses
+
   let history () = env.learnts
 
   let unsat_conflict () = env.unsat_conflict

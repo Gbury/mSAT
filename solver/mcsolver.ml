@@ -875,6 +875,8 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     let truth = var.tag.pa.is_true in
     if negated then not truth else truth
 
+  let hyps () = env.clauses
+
   let history () = env.learnts
 
   let unsat_conflict () = env.unsat_conflict

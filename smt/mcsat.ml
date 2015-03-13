@@ -135,6 +135,7 @@ module Make(Dummy:sig end) = struct
     with SmtSolver.Unsat -> ()
 
   let get_proof () =
+    SmtSolver.Proof.learn (SmtSolver.hyps ());
     SmtSolver.Proof.learn (SmtSolver.history ());
     match SmtSolver.unsat_conflict () with
     | None -> assert false
