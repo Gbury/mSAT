@@ -512,7 +512,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
             if init then init0
             else make_clause name atoms size true (History [init0])
         in
-        L.debug 1 "New clause : %a" St.pp_clause init0;
+        L.debug 1 "New clause : %a" St.pp_clause clause;
         Proof.prove clause;
         attach_clause clause;
         Vec.push env.clauses clause;
