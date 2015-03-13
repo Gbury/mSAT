@@ -141,8 +141,7 @@ module Make(Log : Log_intf.S) = struct
   let eval = SatSolver.eval
 
   let get_proof () =
-    SatSolver.Proof.learn (SatSolver.hyps ());
-    SatSolver.Proof.learn (SatSolver.history ());
+    (* SatSolver.Proof.learn (SatSolver.history ()); *)
     match SatSolver.unsat_conflict () with
     | None -> assert false
     | Some c -> SatSolver.Proof.prove_unsat c

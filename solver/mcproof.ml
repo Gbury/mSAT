@@ -130,7 +130,15 @@ module Make(L : Log_intf.S)(St : Mcsolver_types.S) = struct
     | _ ->
       raise (Resolution_error "Could not find a reason needed to resolve")
 
-  let add_clause c cl l = (* We assume that all clauses in l are already proved ! *)
+  let need_clause (c, cl) =
+    if is_proved (c, cl) then
+      []
+    else
+      match St.(c.cpremise) with
+      | St.History l -> l
+      | St.Lemma _ -> assert false
+
+  let rec add_clause c cl l = (* We assume that all clauses in l are already proved ! *)
     match l with
     | a :: r ->
       L.debug 5 "Resolving (with history) %a" St.pp_clause c;
@@ -140,21 +148,14 @@ module Make(L : Log_intf.S)(St : Mcsolver_types.S) = struct
       while not (equal_cl cl !new_cl) do
         let unit_to_use = diff_learnt [] cl !new_cl in
         let unit_r = List.map (fun a -> clause_unit a) unit_to_use in
+        do_clause (List.map fst unit_r);
         let temp_c, temp_cl = List.fold_left add_res (!new_c, !new_cl) unit_r in
         new_c := temp_c;
         new_cl := temp_cl;
       done
     | _ -> assert false
 
-  let need_clause (c, cl) =
-    if is_proved (c, cl) then
-      []
-    else
-      match St.(c.cpremise) with
-      | St.History l -> l
-      | St.Lemma _ -> assert false
-
-  let rec do_clause = function
+  and do_clause = function
     | [] -> ()
     | c :: r ->
       let cl = to_list c in
