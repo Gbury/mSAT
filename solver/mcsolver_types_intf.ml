@@ -91,7 +91,8 @@ module type S = sig
 
   val fresh_name : unit -> string
   val fresh_lname : unit -> string
-  val fresh_dname : unit -> string
+  val fresh_tname : unit -> string
+  val fresh_hname : unit -> string
   (** Fresh names for clauses *)
 
   val proof_debug : proof -> string * (atom list) * (semantic var list) * (string option)

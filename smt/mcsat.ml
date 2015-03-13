@@ -123,7 +123,6 @@ module Make(Dummy:sig end) = struct
     | Sat
     | Unsat
 
-  let _i = ref 0
   let solve () =
     try
       SmtSolver.solve ();
@@ -131,9 +130,8 @@ module Make(Dummy:sig end) = struct
     with SmtSolver.Unsat -> Unsat
 
   let assume l =
-    incr _i;
     try
-      SmtSolver.assume l !_i
+      SmtSolver.assume l
     with SmtSolver.Unsat -> ()
 
   let get_proof () =

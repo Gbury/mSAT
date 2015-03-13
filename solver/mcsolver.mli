@@ -24,7 +24,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       @return () if the current set of clauses is satisfiable
       @raise Unsat if a toplevel conflict is found *)
 
-  val assume : E.Formula.t list list -> cnumber:int -> unit
+  val assume : E.Formula.t list list -> unit
   (** Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place.
       @raise Unsat if a conflict is detect when adding the clauses *)

@@ -185,9 +185,13 @@ module Make (E : Expr_intf.S)(Th : Plugin_intf.S with
     let cpt = ref 0 in
     fun () -> incr cpt; "L" ^ (string_of_int !cpt)
 
-  let fresh_dname =
+  let fresh_hname =
     let cpt = ref 0 in
-    fun () -> incr cpt; "D" ^ (string_of_int !cpt)
+    fun () -> incr cpt; "H" ^ (string_of_int !cpt)
+
+  let fresh_tname =
+    let cpt = ref 0 in
+    fun () -> incr cpt; "T" ^ (string_of_int !cpt)
 
   let fresh_name =
     let cpt = ref 0 in

@@ -622,7 +622,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     let atoms = List.rev_map (fun x -> new_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_vars ());
     List.iter (fun a -> insert_var_order (Either.mk_right a.var)) atoms;
-    add_clause "lemma" atoms (Lemma lemma)
+    add_clause (fresh_tname ()) atoms (Lemma lemma)
 
   let slice_propagate f lvl =
     let a = add_atom f in
@@ -655,7 +655,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       let l = List.rev_map new_atom l in
       Iheap.grow_to_by_double env.order (St.nb_vars ());
       List.iter (fun a -> insert_var_order (Either.mk_right a.var)) l;
-      let c = St.make_clause (St.fresh_name ()) l (List.length l) true (Lemma p) in
+      let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) in
       Some c
 
   and propagate () =
@@ -819,9 +819,9 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
   let check_vec vec =
     for i = 0 to Vec.size vec - 1 do check_clause (Vec.get vec i) done
 
-  let add_clauses cnf ~cnumber =
+  let add_clauses cnf =
     let aux cl =
-        add_clause "hyp" cl (History []);
+        add_clause (fresh_hname ()) cl (History []);
         match propagate () with
         | None -> () | Some confl -> report_unsat confl
     in
@@ -850,7 +850,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     with
     | Sat -> ()
 
-  let init_solver cnf ~cnumber =
+  let init_solver cnf =
     let nbv = St.nb_vars () in
     let nbc = env.nb_init_clauses + List.length cnf in
     Iheap.grow_to_by_double env.order nbv;
@@ -863,11 +863,11 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         (fun v -> L.debug 50 " -- %a" St.pp_semantic_var v)
         (fun a -> L.debug 50 " -- %a" St.pp_atom a.tag.pa)
     );
-    add_clauses cnf ~cnumber
+    add_clauses cnf
 
-  let assume cnf ~cnumber =
+  let assume cnf =
     let cnf = List.rev_map (List.rev_map St.add_atom) cnf in
-    init_solver cnf ~cnumber
+    init_solver cnf
 
   let eval lit =
     let var, negated = make_boolean_var lit in
