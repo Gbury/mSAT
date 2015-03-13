@@ -6,7 +6,7 @@ Copyright 2014 Simon Cruanes
 
 module type S = Res_intf.S
 
-module Make(St : Mcsolver_types.S) = struct
+module Make(L : Log_intf.S)(St : Mcsolver_types.S) = struct
 
   (* Type definitions *)
   type lemma = St.proof
@@ -80,7 +80,7 @@ module Make(St : Mcsolver_types.S) = struct
     let res = List.sort_uniq compare_atoms !l in
     let l, _ = resolve res in
     if l <> [] then
-      Log.debug 3 "Input clause is a tautology";
+      L.debug 3 "Input clause is a tautology";
     res
 
   (* Adding hyptoheses *)
@@ -99,9 +99,9 @@ module Make(St : Mcsolver_types.S) = struct
   let is_proven c = is_proved (c, to_list c)
 
   let add_res (c, cl_c) (d, cl_d) =
-    Log.debug 7 "  Resolving clauses :";
-    Log.debug 7 "    %a" St.pp_clause c;
-    Log.debug 7 "    %a" St.pp_clause d;
+    L.debug 7 "  Resolving clauses :";
+    L.debug 7 "    %a" St.pp_clause c;
+    L.debug 7 "    %a" St.pp_clause d;
     assert (is_proved (c, cl_c));
     assert (is_proved (d, cl_d));
     let l = merge cl_c cl_d in
@@ -111,7 +111,7 @@ module Make(St : Mcsolver_types.S) = struct
     | [a] ->
       H.add proof new_clause (Resolution (a, (c, cl_c), (d, cl_d)));
       let new_c = St.make_clause (fresh_pcl_name ()) new_clause (List.length new_clause) true St.(History [c; d]) in
-      Log.debug 5 "New clause : %a" St.pp_clause new_c;
+      L.debug 5 "New clause : %a" St.pp_clause new_c;
       new_c, new_clause
     | _ -> raise (Resolution_error "Resolved to a tautology")
 
@@ -133,9 +133,9 @@ module Make(St : Mcsolver_types.S) = struct
   let add_clause c cl l = (* We assume that all clauses in l are already proved ! *)
     match l with
     | a :: r ->
-      Log.debug 5 "Resolving (with history) %a" St.pp_clause c;
+      L.debug 5 "Resolving (with history) %a" St.pp_clause c;
       let temp_c, temp_cl = List.fold_left add_res a r in
-      Log.debug 10 " Switching to unit resolutions";
+      L.debug 10 " Switching to unit resolutions";
       let new_c, new_cl = (ref temp_c, ref temp_cl) in
       while not (equal_cl cl !new_cl) do
         let unit_to_use = diff_learnt [] cl !new_cl in
@@ -172,14 +172,14 @@ module Make(St : Mcsolver_types.S) = struct
         end
 
   let prove c =
-    Log.debug 3 "Proving : %a" St.pp_clause c;
+    L.debug 3 "Proving : %a" St.pp_clause c;
     do_clause [c];
-    Log.debug 3 "Proved : %a" St.pp_clause c
+    L.debug 3 "Proved : %a" St.pp_clause c
 
   let rec prove_unsat_cl (c, cl) = match cl with
     | [] -> true
     | a :: r ->
-      Log.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
+      L.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
       let d = match St.(a.var.level, a.var.tag.reason) with
         | 0, St.Bcp Some d -> d
         | _ -> raise Exit
@@ -195,11 +195,11 @@ module Make(St : Mcsolver_types.S) = struct
       false
 
   let learn v =
-    Vec.iter (fun c -> Log.debug 15 "history : %a" St.pp_clause c) v;
+    Vec.iter (fun c -> L.debug 15 "history : %a" St.pp_clause c) v;
     Vec.iter prove v
 
   let assert_can_prove_unsat c =
-    Log.debug 1 "=================== Proof =====================";
+    L.debug 1 "=================== Proof =====================";
     prove c;
     if not (prove_unsat_cl (c, to_list c)) then
       raise Insuficient_hyps
@@ -216,7 +216,7 @@ module Make(St : Mcsolver_types.S) = struct
     | Resolution of proof * proof * atom
 
   let rec return_proof (c, cl) () =
-    Log.debug 8 "Returning proof for : %a" St.pp_clause c;
+    L.debug 8 "Returning proof for : %a" St.pp_clause c;
     let st = match H.find proof cl with
       | Assumption -> Hypothesis
       | Lemma l -> Lemma l

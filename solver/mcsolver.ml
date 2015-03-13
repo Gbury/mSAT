@@ -8,7 +8,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t) = struct
 
   module St = Mcsolver_types.Make(E)(Th)
-  module Proof = Mcproof.Make(St)
+  module Proof = Mcproof.Make(L)(St)
 
   open St
 
