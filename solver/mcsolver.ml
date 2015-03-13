@@ -501,7 +501,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     L.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
       if Proof.has_been_proved init0 then raise Trivial;
-      assert (Proof.is_proven init0);
       let atoms, init = partition atoms init0 in
       let size = List.length atoms in
       match atoms with
@@ -514,6 +513,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
             else make_clause name atoms size true (History [init0])
         in
         L.debug 1 "New clause : %a" St.pp_clause init0;
+        Proof.prove clause;
         attach_clause clause;
         Vec.push env.clauses clause;
         if a.neg.is_true then begin

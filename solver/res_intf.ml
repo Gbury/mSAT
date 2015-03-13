@@ -52,6 +52,9 @@ module type S = sig
       hyptohesis and theory lemmas always have trivial derivations, and as such [is_proven c] (where [c]
       is a hypothesis or lemma) will always return [true] and add it to the proof graph. *)
 
+  val prove : clause -> unit
+  (** Same as 'learn', but works on single clauses instead of vectors. *)
+
   val learn : clause Vec.t -> unit
   (** Learn and build proofs for the clause in the vector. Clauses in the vector should be in the order they were learned. *)
 
