@@ -572,6 +572,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         done;
         (* no watch lit found *)
         if first.neg.is_true || (th_eval first = Some false) then begin
+            L.debug 100 "clause is false";
           (* clause is false *)
           env.qhead <- Vec.size env.trail;
           for k = i to Vec.size watched - 1 do
@@ -580,8 +581,8 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
           done;
           L.debug 3 "Conflict found : %a" St.pp_clause c;
           raise (Conflict c)
-        end
-        else begin
+        end else begin
+          L.debug 100 "clause is unit";
           (* clause is unit *)
           Vec.set watched !new_sz c;
           incr new_sz;
