@@ -627,8 +627,11 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     add_clause (fresh_tname ()) atoms (Lemma lemma)
 
   let slice_propagate f lvl =
+    L.debug 100 "entering slice.propagate";
     let a = add_atom f in
+    L.debug 100 "atom added";
     Iheap.grow_to_by_double env.order (St.nb_vars ());
+    L.debug 100 "heap grown";
     enqueue_bool a lvl (Semantic lvl)
 
   let current_slice () = Th.({
