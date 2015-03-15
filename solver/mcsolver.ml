@@ -794,6 +794,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         if nb_assigns() = St.nb_vars () (* env.nb_init_vars *) then raise Sat;
         if n_of_conflicts >= 0 && !conflictC >= n_of_conflicts then
           begin
+            L.debug 1 "Restarting...";
             env.progress_estimate <- progress_estimate();
             cancel_until 0;
             raise Restart
