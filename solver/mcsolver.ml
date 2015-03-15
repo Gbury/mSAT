@@ -839,14 +839,14 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         begin try
             search (to_int !n_of_conflicts) (to_int !n_of_learnts);
           with
-          | Restart -> ()
+          | Restart ->
+            n_of_conflicts := !n_of_conflicts *. env.restart_inc;
+            n_of_learnts   := !n_of_learnts *. env.learntsize_inc
           | Sat ->
             let tag = ref false in
             Th.if_sat (full_slice tag);
             if not !tag then raise Sat
-        end;
-        n_of_conflicts := !n_of_conflicts *. env.restart_inc;
-        n_of_learnts   := !n_of_learnts *. env.learntsize_inc;
+        end
       done;
     with
     | Sat -> ()
