@@ -58,6 +58,7 @@ let grow_to_double_size t =
   grow_to t size
 
 let grow_to_by_double t new_capa =
+  assert (new_capa >= 0);
   if new_capa > Sys.max_array_length then _size_too_big ();
   let data = t.data in
   let capa = ref (Array.length data + 1) in
@@ -65,7 +66,6 @@ let grow_to_by_double t new_capa =
     capa := min (2 * !capa) Sys.max_array_length;
   done;
   grow_to t !capa
-
 
 let is_full t = Array.length t.data = t.sz
 
