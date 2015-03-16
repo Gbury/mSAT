@@ -800,7 +800,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
       | None -> (* No Conflict *)
         if nb_assigns() = St.nb_vars () (* env.nb_init_vars *) then raise Sat;
-        if n_of_conflicts >= 0 && !conflictC >= n_of_conflicts then begin
+        if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
             L.debug 1 "Restarting...";
             env.progress_estimate <- progress_estimate();
             cancel_until 0;
@@ -846,14 +846,14 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         begin try
             search (to_int !n_of_conflicts) (to_int !n_of_learnts)
           with
-          | Restart -> ()
+          | Restart ->
+            n_of_conflicts := !n_of_conflicts *. env.restart_inc;
+            n_of_learnts   := !n_of_learnts *. env.learntsize_inc
           | Sat ->
             let tag = ref false in
             Th.if_sat (full_slice tag);
             if not !tag then raise Sat
-        end;
-        n_of_conflicts := !n_of_conflicts *. env.restart_inc;
-        n_of_learnts   := !n_of_learnts *. env.learntsize_inc
+        end
       done
     with
     | Sat -> ()
