@@ -792,6 +792,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     let conflictC = ref 0 in
     env.starts <- env.starts + 1;
     while (true) do
+      L.debug 100 "searching %d/%d (%d)" !conflictC n_of_conflicts n_of_learnts;
       match propagate () with
       | Some confl -> (* Conflict *)
         incr conflictC;
@@ -799,13 +800,12 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
       | None -> (* No Conflict *)
         if nb_assigns() = St.nb_vars () (* env.nb_init_vars *) then raise Sat;
-        if n_of_conflicts >= 0 && !conflictC >= n_of_conflicts then
-          begin
+        if n_of_conflicts >= 0 && !conflictC >= n_of_conflicts then begin
             L.debug 1 "Restarting...";
             env.progress_estimate <- progress_estimate();
             cancel_until 0;
             raise Restart
-          end;
+        end;
         if decision_level() = 0 then simplify ();
 
         if n_of_learnts >= 0 &&
