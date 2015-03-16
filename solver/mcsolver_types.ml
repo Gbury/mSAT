@@ -172,9 +172,9 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
   let add_term t = make_semantic_var t
 
   let add_atom lit =
-    Log.debug 100 "entering add_atom";
+    L.debug 100 "entering add_atom";
     let var, negated = make_boolean_var lit in
-    Log.debug 100 "found atom";
+    L.debug 100 "found atom";
     if negated then var.tag.na else var.tag.pa
 
   let make_clause name ali sz_ali is_learnt premise =

@@ -612,10 +612,11 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
   (* Propagation (boolean and theory) *)
   let new_atom f =
-      let a = add_atom f in
-      L.debug 10 "New atom : %a" St.pp_atom a;
-      ignore (th_eval a);
-      a
+    L.debug 100 "New_atom";
+    let a = add_atom f in
+    L.debug 10 "New atom : %a" St.pp_atom a;
+    ignore (th_eval a);
+    a
 
   let slice_get i = Either.destruct (Vec.get env.trail i)
       (function {level; tag={term; assigned = Some v}} -> Th.Assign (term, v), level | _ -> assert false)
