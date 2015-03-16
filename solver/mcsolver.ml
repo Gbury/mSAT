@@ -844,7 +844,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     try
       while true do
         begin try
-            search (to_int !n_of_conflicts) (to_int !n_of_learnts);
+            search (to_int !n_of_conflicts) (to_int !n_of_learnts)
           with
           | Restart ->
             n_of_conflicts := !n_of_conflicts *. env.restart_inc;
@@ -854,7 +854,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
             Th.if_sat (full_slice tag);
             if not !tag then raise Sat
         end
-      done;
+      done
     with
     | Sat -> ()
 
