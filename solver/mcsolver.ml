@@ -631,7 +631,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
   let slice_propagate f lvl =
     L.debug 100 "entering slice.propagate";
     let a = add_atom f in
-    L.debug 100 "atom added";
+    L.debug 100 "atom added. growing heap...";
     Iheap.grow_to_by_double env.order (St.nb_vars ());
     L.debug 100 "heap grown";
     enqueue_bool a lvl (Semantic lvl)

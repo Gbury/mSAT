@@ -48,6 +48,7 @@ let size t = t.sz
 let is_empty t = t.sz = 0
 
 let grow_to t new_capa =
+  assert (new_capa >= Array.length t.data);
   let data = t.data in
   let capa = Array.length data in
   t.data <- Array.init new_capa (fun i -> if i < capa then data.(i) else t.dummy)

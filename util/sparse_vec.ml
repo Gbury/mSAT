@@ -23,6 +23,7 @@ let init sz f default =
 let length {sz} = sz
 
 let grow_to t new_capa =
+  assert (new_capa >= Array.length t.data);
   let data = t.data in
   let capa = Array.length data in
   t.data <- Array.init new_capa (fun i -> if i < capa then data.(i) else t.default)
