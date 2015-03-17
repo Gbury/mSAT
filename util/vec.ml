@@ -48,6 +48,7 @@ let size t = t.sz
 let is_empty t = t.sz = 0
 
 let grow_to t new_capa =
+  assert (new_capa >= Array.length t.data);
   let data = t.data in
   let capa = Array.length data in
   t.data <- Array.init new_capa (fun i -> if i < capa then data.(i) else t.dummy)
@@ -85,12 +86,10 @@ let get t i =
 
 let set t i v =
   if i < 0 || i > t.sz then invalid_arg "vec.set";
-  t.sz <- max t.sz (i+1);  (* can set first empty slot *)
-  Array.unsafe_set t.data i v
-
-let set_unsafe t i v =
-  if i < 0 || i >= Array.length t.data then invalid_arg "vec.set_unsafe";
-  t.sz <- max t.sz (i+1);
+  if i = t.sz then begin
+    grow_to_double_size t;
+    t.sz <- i + 1
+  end;
   Array.unsafe_set t.data i v
 
 let copy t =
