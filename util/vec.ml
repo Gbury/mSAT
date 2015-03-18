@@ -82,15 +82,14 @@ let last t =
 
 let get t i =
   if i < 0 || i >= t.sz then invalid_arg "vec.get";
-  Array.unsafe_get t.data i
+  Array.get t.data i
 
 let set t i v =
   if i < 0 || i > t.sz then invalid_arg "vec.set";
-  if i = t.sz then begin
-    grow_to_double_size t;
-    t.sz <- i + 1
-  end;
-  Array.unsafe_set t.data i v
+  if i = t.sz then
+    push t v
+  else
+    Array.set t.data i v
 
 let copy t =
   let data = Array.copy t.data in
@@ -99,7 +98,6 @@ let copy t =
 let move_to t t' =
   t'.data <- Array.copy t.data;
   t'.sz <- t.sz
-
 
 let remove t e =
   let j = ref 0 in
@@ -132,7 +130,7 @@ let fold f acc t =
     if i=t.sz
     then acc
     else
-      let acc' = f acc (Array.unsafe_get t.data i) in
+      let acc' = f acc (Array.get t.data i) in
       _fold f acc' t (i+1)
   in _fold f acc t 0
 
@@ -141,7 +139,7 @@ exception ExitVec
 let exists p t =
   try
     for i = 0 to t.sz - 1 do
-      if p (Array.unsafe_get t.data i) then raise ExitVec
+      if p (Array.get t.data i) then raise ExitVec
     done;
     false
   with ExitVec -> true
@@ -149,7 +147,7 @@ let exists p t =
 let for_all p t =
   try
     for i = 0 to t.sz - 1 do
-      if not (p (Array.unsafe_get t.data i)) then raise ExitVec
+      if not (p (Array.get t.data i)) then raise ExitVec
     done;
     true
   with ExitVec -> false
