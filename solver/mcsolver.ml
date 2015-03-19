@@ -572,7 +572,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
         done;
         (* no watch lit found *)
         if first.neg.is_true || (th_eval first = Some false) then begin
-            L.debug 100 "clause is false";
           (* clause is false *)
           env.qhead <- Vec.size env.trail;
           for k = i to Vec.size watched - 1 do
@@ -582,7 +581,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
           L.debug 3 "Conflict found : %a" St.pp_clause c;
           raise (Conflict c)
         end else begin
-          L.debug 100 "clause is unit";
           (* clause is unit *)
           Vec.set watched !new_sz c;
           incr new_sz;
@@ -612,7 +610,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
 
   (* Propagation (boolean and theory) *)
   let new_atom f =
-    L.debug 100 "New_atom";
     let a = add_atom f in
     L.debug 10 "New atom : %a" St.pp_atom a;
     ignore (th_eval a);
@@ -629,11 +626,8 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     add_clause (fresh_tname ()) atoms (Lemma lemma)
 
   let slice_propagate f lvl =
-    L.debug 100 "entering slice.propagate";
     let a = add_atom f in
-    L.debug 100 "atom added. growing heap...";
     Iheap.grow_to_by_double env.order (St.nb_vars ());
-    L.debug 100 "heap grown";
     enqueue_bool a lvl (Semantic lvl)
 
   let current_slice () = Th.({
@@ -792,7 +786,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     let conflictC = ref 0 in
     env.starts <- env.starts + 1;
     while (true) do
-      L.debug 100 "searching %d/%d (%d)" !conflictC n_of_conflicts n_of_learnts;
       match propagate () with
       | Some confl -> (* Conflict *)
         incr conflictC;

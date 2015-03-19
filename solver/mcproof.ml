@@ -71,13 +71,21 @@ module Make(L : Log_intf.S)(St : Mcsolver_types.S) = struct
     let resolved, new_clause = aux [] [] l in
     resolved, List.rev new_clause
 
+  (* List.sort_uniq is only since 4.02.0 *)
+  let sort_uniq compare l =
+    let rec aux = function
+      | x :: ((y :: _) as r) -> if compare x y = 0 then aux r else x :: aux r
+      | l -> l
+    in
+    aux (List.sort compare l)
+
   let to_list c =
     let v = St.(c.atoms) in
     let l = ref [] in
     for i = 0 to Vec.size v - 1 do
       l := (Vec.get v i) :: !l
     done;
-    let res = List.sort_uniq compare_atoms !l in
+    let res = sort_uniq compare_atoms !l in
     let l, _ = resolve res in
     if l <> [] then
       L.debug 3 "Input clause is a tautology";
@@ -251,7 +259,7 @@ module Make(L : Log_intf.S)(St : Mcsolver_types.S) = struct
       | Resolution (proof1, proof2, _) ->
         aux (aux acc proof1) proof2
     in
-    List.sort_uniq compare_cl (aux [] proof)
+    sort_uniq compare_cl (aux [] proof)
 
   (* Print proof graph *)
   let _i = ref 0

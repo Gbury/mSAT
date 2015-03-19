@@ -102,8 +102,8 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
   module MF = Hashtbl.Make(E.Formula)
   module MT = Hashtbl.Make(E.Term)
 
-  let f_map = MF.create 1007
-  let t_map = MT.create 1007
+  let f_map = MF.create 4096
+  let t_map = MT.create 4096
 
   let vars = Vec.make 107 (Either.mk_right dummy_var)
   let nb_vars () = Vec.size vars
@@ -130,11 +130,9 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
 
   let make_boolean_var =
     fun lit ->
-      L.debug 100 "normalizing lit";
       let lit, negated = E.norm lit in
       try MF.find f_map lit, negated
       with Not_found ->
-        L.debug 100 "Lit not in table";
         let cpt_fois_2 = !cpt_mk_var lsl 1 in
         let rec var  =
           { vid = !cpt_mk_var;
@@ -159,22 +157,16 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
             neg = pa;
             is_true = false;
             aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in
-        L.debug 100 "adding lit to table...";
         MF.add f_map lit var;
-        L.debug 100 "done";
         incr cpt_mk_var;
         Vec.push vars (Either.mk_right var);
-        L.debug 100 "iterating on new lit...";
         Th.iter_assignable (fun t -> ignore (make_semantic_var t)) lit;
-        L.debug 100 "done";
         var, negated
 
   let add_term t = make_semantic_var t
 
   let add_atom lit =
-    L.debug 100 "entering add_atom";
     let var, negated = make_boolean_var lit in
-    L.debug 100 "found atom";
     if negated then var.tag.na else var.tag.pa
 
   let make_clause name ali sz_ali is_learnt premise =

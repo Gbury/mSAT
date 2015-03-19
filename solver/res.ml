@@ -71,13 +71,21 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     let resolved, new_clause = aux [] [] l in
     resolved, List.rev new_clause
 
+  (* List.sort_uniq is only since 4.02.0 *)
+  let sort_uniq compare l =
+    let rec aux = function
+      | x :: ((y :: _) as r) -> if compare x y = 0 then aux r else x :: aux r
+      | l -> l
+    in
+    aux (List.sort compare l)
+
   let to_list c =
     let v = St.(c.atoms) in
     let l = ref [] in
     for i = 0 to Vec.size v - 1 do
       l := (Vec.get v i) :: !l
     done;
-    let l, res = resolve (List.sort_uniq compare_atoms !l) in
+    let l, res = resolve (sort_uniq compare_atoms !l) in
     if l <> [] then
       raise (Resolution_error "Input clause is a tautology");
     res
@@ -250,7 +258,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
       | Resolution (proof1, proof2, _) ->
         aux (aux acc proof1) proof2
     in
-    List.sort_uniq compare_cl (aux [] proof)
+    sort_uniq compare_cl (aux [] proof)
 
   (* Print proof graph *)
   let _i = ref 0
