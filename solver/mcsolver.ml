@@ -290,7 +290,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     raise Unsat
 
   let enqueue_bool a lvl reason =
-    L.debug 99 "Entering enqueue_bool";
     assert (not a.neg.is_true);
     if a.is_true then
       L.debug 10 "Litteral %a already in queue" pp_atom a
@@ -304,7 +303,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
     end
 
   let enqueue_assign v value lvl =
-    L.debug 99 "Entering enqueue_assign";
     v.tag.assigned <- Some value;
     v.level <- lvl;
     Vec.push env.trail (Either.mk_left v);
