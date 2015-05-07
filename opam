@@ -12,7 +12,7 @@ install: [
 remove: [
     ["ocamlfind" "remove" "msat"]
 ]
-depends: ["ocamlfind" {build} "base-unix"]
+depends: ["ocamlfind" {build} "base-unix" "zarith"]
 tags: [ "sat" "smt" ]
 homepage: "https://github.com/Gbury/mSAT"
 dev-repo: "https://github.com/Gbury/mSAT.git"
