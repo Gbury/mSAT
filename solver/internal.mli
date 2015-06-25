@@ -4,15 +4,11 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Make (L : Log_intf.S)(E : Expr_intf.S)
-    (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t) : sig
+module Make (L : Log_intf.S)(St : Solver_types.S)
+    (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof) : sig
   (** Functor to create a solver parametrised by the atomic formulas and a theory. *)
 
   exception Unsat
-
-  module St : Solver_types.S
-    with type term = E.Term.t
-     and type formula = E.Formula.t
 
   module Proof : Res.S
     with type atom = St.atom
@@ -24,12 +20,12 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
       @return () if the current set of clauses is satisfiable
       @raise Unsat if a toplevel conflict is found *)
 
-  val assume : ?tag:int -> E.Formula.t list list -> unit
+  val assume : ?tag:int -> St.formula list list -> unit
   (** Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place.
       @raise Unsat if a conflict is detect when adding the clauses *)
 
-  val eval : E.Formula.t -> bool
+  val eval : St.formula -> bool
   (** Returns the valuation of a formula in the current state
       of the sat solver. *)
 

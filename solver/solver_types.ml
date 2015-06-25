@@ -15,23 +15,38 @@ open Printf
 
 module type S = Solver_types_intf.S
 
-module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
+module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
+    type formula = E.Formula.t and type term = E.Term.t) = struct
 
-  type formula = F.t
+  (* Flag for Mcsat v.s Pure Sat *)
+  let mcsat = true
+
+  (* Types declarations *)
+
+  type term = E.Term.t
+  type formula = E.Formula.t
   type proof = Th.proof
 
-  type var =
-    {  vid : int;
-       pa : atom;
-       na : atom;
-       mutable weight : float;
-       mutable seen : bool;
-       mutable level : int;
-       mutable reason: reason;
-       mutable vpremise : premise}
+  type 'a var =
+    { vid : int;
+      tag : 'a;
+      mutable weight : float;
+      mutable level : int;
+      mutable seen : bool;
+    }
+
+  type semantic =
+    { term : term;
+      mutable assigned : term option; }
+
+  type boolean = {
+    pa : atom;
+    na : atom;
+    mutable reason : reason;
+  }
 
   and atom =
-    { var : var;
+    { var : boolean var;
       lit : formula;
       neg : atom;
       mutable watched : clause Vec.t;
@@ -47,23 +62,29 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
       learnt : bool;
       cpremise : premise }
 
-  and reason = clause option
+  and reason =
+      | Semantic of int
+      | Bcp of clause option
 
   and premise =
       | History of clause list
       | Lemma of proof
 
-  let dummy_lit = F.dummy
+  type elt = (semantic var, boolean var) Either.t
+
+  (* Dummy values *)
+  let dummy_lit = E.dummy
 
   let rec dummy_var =
     { vid = -101;
-      pa = dummy_atom;
-      na = dummy_atom;
       level = -1;
-      reason = None;
       weight = -1.;
       seen = false;
-      vpremise = History [] }
+      tag = {
+        pa = dummy_atom;
+        na = dummy_atom;
+        reason = Bcp None; };
+    }
   and dummy_atom =
     { var = dummy_var;
       lit = dummy_lit;
@@ -73,7 +94,6 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
       neg = dummy_atom;
       is_true = false;
       aid = -102 }
-
   let dummy_clause =
     { name = "";
       tag = None;
@@ -86,33 +106,52 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
   let () =
     dummy_atom.watched <- Vec.make_empty dummy_clause
 
-  module MA = Map.Make(F)
+  (* Constructors *)
+  module MF = Hashtbl.Make(E.Formula)
+  module MT = Hashtbl.Make(E.Term)
 
-  let normal_form = F.norm
+  let f_map = MF.create 4096
+  let t_map = MT.create 4096
 
-  let ma = ref MA.empty
-  let vars = Vec.make 107 dummy_var
-
+  let vars = Vec.make 107 (Either.mk_right dummy_var)
   let nb_vars () = Vec.size vars
   let get_var i = Vec.get vars i
   let iter_vars f = Vec.iter f vars
 
   let cpt_mk_var = ref 0
-  let make_var =
+
+  let make_semantic_var t =
+      try MT.find t_map t
+      with Not_found ->
+        let res = {
+          vid = !cpt_mk_var;
+          weight = 1.;
+          level = -1;
+          seen = false;
+          tag = {
+            term = t;
+            assigned = None; };
+        } in
+        incr cpt_mk_var;
+        MT.add t_map t res;
+        Vec.push vars (Either.mk_left res);
+        res
+
+  let make_boolean_var =
     fun lit ->
-      let lit, negated = normal_form lit in
-      try MA.find lit !ma, negated
+      let lit, negated = E.norm lit in
+      try MF.find f_map lit, negated
       with Not_found ->
         let cpt_fois_2 = !cpt_mk_var lsl 1 in
         let rec var  =
           { vid = !cpt_mk_var;
-            pa = pa;
-            na = na;
             level = -1;
-            reason = None;
             weight = 0.;
             seen = false;
-            vpremise = History [];
+            tag = {
+              pa = pa;
+              na = na;
+              reason = Bcp None;};
           }
         and pa =
           { var = var;
@@ -123,20 +162,22 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
             aid = cpt_fois_2 (* aid = vid*2 *) }
         and na =
           { var = var;
-            lit = F.neg lit;
+            lit = E.neg lit;
             watched = Vec.make 10 dummy_clause;
             neg = pa;
             is_true = false;
             aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in
-        ma := MA.add lit var !ma;
+        MF.add f_map lit var;
         incr cpt_mk_var;
-        Vec.push vars var;
-        assert (Vec.get vars var.vid == var && !cpt_mk_var = Vec.size vars);
+        Vec.push vars (Either.mk_right var);
+        Th.iter_assignable (fun t -> ignore (make_semantic_var t)) lit;
         var, negated
 
+  let add_term t = make_semantic_var t
+
   let add_atom lit =
-    let var, negated = make_var lit in
-    if negated then var.na else var.pa
+    let var, negated = make_boolean_var lit in
+    if negated then var.tag.na else var.tag.pa
 
   let make_clause ?tag name ali sz_ali is_learnt premise =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
@@ -150,24 +191,45 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
 
   let empty_clause = make_clause "Empty" [] 0 false (History [])
 
+  (* Name generation *)
   let fresh_lname =
     let cpt = ref 0 in
     fun () -> incr cpt; "L" ^ (string_of_int !cpt)
 
-  let fresh_dname =
+  let fresh_hname =
     let cpt = ref 0 in
-    fun () -> incr cpt; "D" ^ (string_of_int !cpt)
+    fun () -> incr cpt; "H" ^ (string_of_int !cpt)
+
+  let fresh_tname =
+    let cpt = ref 0 in
+    fun () -> incr cpt; "T" ^ (string_of_int !cpt)
 
   let fresh_name =
     let cpt = ref 0 in
     fun () -> incr cpt; "C" ^ (string_of_int !cpt)
 
-  let clear () =
-    cpt_mk_var := 0;
-    ma := MA.empty
+  (* Iteration over subterms *)
+  module Mi = Map.Make(struct type t = int let compare= Pervasives.compare end)
+  let iter_map = ref Mi.empty
+
+  let iter_sub f v =
+      try
+          List.iter f (Mi.find v.vid !iter_map)
+      with Not_found ->
+          let l = ref [] in
+          Th.iter_assignable (fun t -> l := add_term t :: !l) v.tag.pa.lit;
+          iter_map := Mi.add v.vid !l !iter_map;
+          List.iter f !l
+
+  (* Proof debug info *)
+  let proof_debug p =
+      let name, l, l', color = Th.proof_debug p in
+      name, (List.map add_atom l), (List.map add_term l'), color
 
   (* Pretty printing for atoms and clauses *)
-  let print_atom fmt a = F.print fmt a.lit
+  let print_semantic_var fmt (v: semantic var) = E.Term.print fmt v.tag.term
+
+  let print_atom fmt a = E.Formula.print fmt a.lit
 
   let print_atoms fmt v =
     print_atom fmt (Vec.get v 0);
@@ -181,29 +243,37 @@ module Make (F : Formula_intf.S)(Th : Theory_intf.S) = struct
     Format.fprintf fmt "%s : %a" c.name print_atoms c.atoms
 
   (* Complete debug printing *)
-  let sign a = if a==a.var.pa then "" else "-"
+  let sign a = if a==a.var.tag.pa then "" else "-"
 
   let level a =
-    match a.var.level, a.var.reason with
+    match a.var.level, a.var.tag.reason with
     | n, _ when n < 0 -> assert false
-    | 0, Some c -> sprintf "->0/%s" c.name
-    | 0, None   -> "@0"
-    | n, Some c -> sprintf "->%d/%s" n c.name
-    | n, None   -> sprintf "@@%d" n
+    | 0, Bcp (Some c) -> sprintf "->0/%s" c.name
+    | 0, Bcp None   -> "@0"
+    | n, Bcp (Some c) -> sprintf "->%d/%s" n c.name
+    | n, Bcp None   -> sprintf "@@%d" n
+    | n, Semantic lvl -> sprintf "::%d/%d" n lvl
 
   let value a =
     if a.is_true then sprintf "[T%s]" (level a)
     else if a.neg.is_true then sprintf "[F%s]" (level a)
-    else ""
+    else "[]"
 
   let pp_premise b = function
-      | History v -> List.iter (fun {name=name} -> bprintf b "%s," name) v
-      | Lemma _ -> bprintf b "th_lemma"
+    | History v -> List.iter (fun {name=name} -> bprintf b "%s," name) v
+    | Lemma _ -> bprintf b "th_lemma"
+
+  let pp_assign b = function
+      | None -> ()
+      | Some t -> bprintf b "[assignment: %s]" (Log.on_fmt E.Term.print t)
+
+  let pp_semantic_var b v =
+    bprintf b "%d [lit:%s]%a"
+      (v.vid+1) (Log.on_fmt E.Term.print v.tag.term) pp_assign v.tag.assigned
 
   let pp_atom b a =
-    bprintf b "%s%d%s [lit:%s] vpremise={{%a}}"
-      (sign a) (a.var.vid+1) (value a) (Log.on_fmt F.print a.lit)
-      pp_premise a.var.vpremise
+    bprintf b "%s%d%s[lit:%s]"
+      (sign a) (a.var.vid+1) (value a) (Log.on_fmt E.Formula.print a.lit)
 
   let pp_atoms_vec b vec =
     for i = 0 to Vec.size vec - 1 do

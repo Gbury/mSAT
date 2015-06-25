@@ -1,22 +1,24 @@
 # Debug
 Log
 
-# Solver Modules
+# Interface definitions
 Log_intf
 Formula_intf
-Solver
-Solver_types
 Theory_intf
-Expr_intf
-Mcsolver
-Mcsolver_types
 Plugin_intf
+Expr_intf
+Tseitin_intf
+Res_intf
+
+# Solver Modules
+Internal
+Solver
+Mcsolver
+Solver_types
 
 # Auxiliary modules
 Res
-Mcproof
 Tseitin
-Tseitin_intf
 
 # Sat/Smt modules
 Expr

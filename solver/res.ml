@@ -64,7 +64,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
         if equal_atoms a b then
           aux resolved (a :: acc) r
         else if equal_atoms St.(a.neg) b then
-          aux (St.(a.var.pa) :: resolved) acc r
+          aux (St.(a.var.tag.pa) :: resolved) acc r
         else
           aux resolved (a :: acc) (b :: r)
     in
@@ -85,9 +85,10 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     for i = 0 to Vec.size v - 1 do
       l := (Vec.get v i) :: !l
     done;
-    let l, res = resolve (sort_uniq compare_atoms !l) in
+    let res = sort_uniq compare_atoms !l in
+    let l, _ = resolve res in
     if l <> [] then
-      raise (Resolution_error "Input clause is a tautology");
+      L.debug 3 "Input clause is a tautology";
     res
 
   (* Adding hyptoheses *)
@@ -132,8 +133,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
         diff_learnt (b :: acc) l r'
     | _ -> raise (Resolution_error "Impossible to derive correct clause")
 
-  let clause_unit a = match St.(a.var.level, a.var.reason) with
-    | 0, Some c -> c, to_list c
+  let clause_unit a = match St.(a.var.level, a.var.tag.reason) with
+    | 0, St.Bcp Some c -> c, to_list c
     | _ ->
       raise (Resolution_error "Could not find a reason needed to resolve")
 
@@ -188,8 +189,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     | [] -> true
     | a :: r ->
       L.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
-      let d = match St.(a.var.level, a.var.reason) with
-        | 0, Some d -> d
+      let d = match St.(a.var.level, a.var.tag.reason) with
+        | 0, St.Bcp Some d -> d
         | _ -> raise Exit
       in
       prove d;
@@ -324,10 +325,21 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
             print_clause p.conclusion St.(p.conclusion.name)
         in
         print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
-      | Lemma _ ->
+      | Lemma proof ->
+        let name, f_args, t_args, color = St.proof_debug proof in
+        let color = match color with None -> "YELLOW" | Some c -> c in
         let aux fmt () =
-          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD BGCOLOR=\"YELLOW\">Lemma</TD><TD>%s</TD></TR>"
-            print_clause p.conclusion St.(p.conclusion.name)
+          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD BGCOLOR=\"%s\" rowspan=\"%d\">%s</TD>"
+            print_clause p.conclusion color (max (List.length f_args + List.length t_args) 1) name;
+          if f_args <> [] then
+              Format.fprintf fmt "<TD>%a</TD></TR>%a%a" St.print_atom (List.hd f_args)
+                (fun fmt -> List.iter (fun a -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_atom a)) (List.tl f_args)
+                (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_semantic_var v)) t_args
+          else if t_args <> [] then
+          Format.fprintf fmt "<TD>%a</TD></TR>%a" St.print_semantic_var (List.hd t_args)
+                (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_semantic_var v)) (List.tl t_args)
+          else
+              Format.fprintf fmt "<TD></TD></TR>"
         in
         print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
       | Resolution (proof1, proof2, a) ->
