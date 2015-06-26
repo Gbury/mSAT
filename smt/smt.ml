@@ -46,11 +46,8 @@ module Tsmt = struct
               Log.debug 10 "Propagating in th : %s" (Log.on_fmt Fsmt.print (s.get i));
               match s.get i with
               | Fsmt.Prop _ -> ()
-              | Fsmt.Equal (i, j) as f ->
-                      env := CC.add_eq !env i j
-              | Fsmt.Distinct (i, j) as f ->
-                      env := CC.add_neq !env i j
-              | _ -> assert false
+              | Fsmt.Equal (i, j) -> env := CC.add_eq !env i j
+              | Fsmt.Distinct (i, j) -> env := CC.add_neq !env i j
           done;
           Sat (current_level ())
       with CC.Unsat x ->
@@ -84,7 +81,6 @@ module Make(Dummy:sig end) = struct
     with SmtSolver.Unsat -> ()
 
   let get_proof () =
-    (* SmtSolver.Proof.learn (SmtSolver.history ()); *)
     match SmtSolver.unsat_conflict () with
     | None -> assert false
     | Some c -> SmtSolver.Proof.prove_unsat c

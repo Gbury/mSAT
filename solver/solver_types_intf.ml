@@ -16,6 +16,9 @@ module type S = sig
 
   val mcsat : bool
 
+
+  (** {2 Type definitions} *)
+
   type term
   type formula
   type proof
@@ -65,23 +68,48 @@ module type S = sig
     | History of clause list
     | Lemma of proof
 
-  type elt = (lit, var) Either.t
-  (** Recursive types for literals (atoms) and clauses *)
+  (** {2 Decisions and propagations} *)
+  type t
+  (** Either a lit of an atom *)
+
+  val of_lit : lit -> t
+  val of_atom : atom -> t
+  val destruct : t -> (lit -> 'a) -> (atom -> 'a) -> 'a
+  (** Constructors and destructors *)
+
+  (** {2 Elements} *)
+
+  type elt
+  (** Either a lit of a var *)
+
+  val nb_elt : unit -> int
+  val get_elt : int -> elt
+  val iter_elt : (elt -> unit) -> unit
+  (** Read access to the vector of variables created *)
+
+  val elt_of_lit : lit -> elt
+  val elt_of_var : var -> elt
+  val destruct_elt : elt -> (lit -> 'a) -> (var -> 'a) -> 'a
+  (** Constructors & destructor for elements *)
+
+  val get_elt_id : elt -> int
+  val get_elt_level : elt -> int
+  val get_elt_weight : elt -> float
+  val set_elt_level : elt -> int -> unit
+  val set_elt_weight : elt -> float -> unit
+  (** Accessors for elements *)
+
+  (** {2 Variables, Litterals & Clauses } *)
 
   val dummy_var : var
   val dummy_atom : atom
   val dummy_clause : clause
   (** Dummy values for use in vector dummys *)
 
-  val nb_vars : unit -> int
-  val get_var : int -> elt
-  val iter_vars : (elt -> unit) -> unit
-  (** Read access to the vector of variables created *)
-
-  val add_atom : formula -> atom
-  (** Returns the atom associated with the given formula *)
   val add_term : term -> lit
   (** Returns the variable associated with the term *)
+  val add_atom : formula -> atom
+  (** Returns the atom associated with the given formula *)
   val make_boolean_var : formula -> var * bool
   (** Returns the variable linked with the given formula, and wether the atom associated with the formula
       is [var.pa] or [var.na] *)
@@ -95,6 +123,8 @@ module type S = sig
   val make_clause : ?tag:int -> string -> atom list -> int -> bool -> premise -> clause
   (** [make_clause name atoms size learnt premise] creates a clause with the given attributes. *)
 
+  (** {2 Proof management} *)
+
   val fresh_name : unit -> string
   val fresh_lname : unit -> string
   val fresh_tname : unit -> string
@@ -103,6 +133,8 @@ module type S = sig
 
   val proof_debug : proof -> string * (atom list) * (lit list) * (string option)
   (** Debugging info for proofs (see Plugin_intf). *)
+
+  (** {2 Printing} *)
 
   val print_lit : Format.formatter -> lit -> unit
   val print_atom : Format.formatter -> atom -> unit

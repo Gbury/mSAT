@@ -43,7 +43,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     mutable var_inc : float;
     (* increment for variables' activity *)
 
-    trail : (lit, atom) Either.t Vec.t;
+    trail : t Vec.t;
     (* decision stack + propagated atoms *)
 
     trail_lim : int Vec.t;
@@ -114,7 +114,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     learnts = Vec.make 0 dummy_clause; (*updated during parsing*)
     clause_inc = 1.;
     var_inc = 1.;
-    trail = Vec.make 601 (Either.mk_right dummy_atom);
+    trail = Vec.make 601 (of_atom dummy_atom);
     trail_lim = Vec.make 601 (-1);
     user_levels = Vec.make 20 {ul_trail=0;ul_learnt=0;ul_clauses=0};
     qhead = 0;
@@ -148,35 +148,15 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let to_float i = float_of_int i
   let to_int f = int_of_float f
 
-  (* Accessors for variables *)
-  let get_var_id v = v.vid
-  let get_var_level v = v.level
-  let get_var_weight v = v.weight
-  let set_var_weight v w = v.weight <- w
-  let set_var_level v l = v.level <- l
-
   (* Accessors for litterals *)
-  let get_lit_id v = v.lid
-  let get_lit_level (v : lit) = v.level
-  let get_lit_weight (v : lit) = v.weight
-  let set_lit_weight (v : lit) w = v.weight <- w
-  let set_lit_level (v : lit) l = v.level <- l
-
-  let get_elt_id e = Either.destruct e get_lit_id get_var_id
-  let get_elt_weight e = Either.destruct e get_lit_weight get_var_weight
-  let get_elt_level e = Either.destruct e get_lit_level get_var_level
-
-  let set_elt_weight e = Either.destruct e set_lit_weight set_var_weight
-  let set_elt_level e = Either.destruct e set_lit_level set_var_level
-
   let f_weight i j =
-    get_elt_weight (St.get_var j) < get_elt_weight (St.get_var i)
+    get_elt_weight (St.get_elt j) < get_elt_weight (St.get_elt i)
 
   let f_filter i =
-    get_elt_level (St.get_var i) < 0
+    get_elt_level (St.get_elt i) < 0
 
   (* Var/clause activity *)
-  let insert_var_order e = Either.destruct e
+  let insert_var_order e = destruct_elt e
       (fun v -> Iheap.insert f_weight env.order v.lid)
       (fun v ->
           Iheap.insert f_weight env.order v.vid;
@@ -192,8 +172,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let var_bump_activity_aux v =
     v.weight <- v.weight +. env.var_inc;
     if v.weight > 1e100 then begin
-      for i = 0 to (St.nb_vars ()) - 1 do
-        set_elt_weight (St.get_var i) ((get_elt_weight (St.get_var i)) *. 1e-100)
+      for i = 0 to (St.nb_elt ()) - 1 do
+        set_elt_weight (St.get_elt i) ((get_elt_weight (St.get_elt i)) *. 1e-100)
       done;
       env.var_inc <- env.var_inc *. 1e-100;
     end;
@@ -203,8 +183,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let lit_bump_activity_aux (v : lit) =
     v.weight <- v.weight +. env.var_inc;
     if v.weight > 1e100 then begin
-      for i = 0 to (St.nb_vars ()) - 1 do
-        set_elt_weight (St.get_var i) ((get_elt_weight (St.get_var i)) *. 1e-100)
+      for i = 0 to (St.nb_elt ()) - 1 do
+        set_elt_weight (St.get_elt i) ((get_elt_weight (St.get_elt i)) *. 1e-100)
       done;
       env.var_inc <- env.var_inc *. 1e-100;
     end;
@@ -231,7 +211,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let nb_assigns () = Vec.size env.trail
   let nb_clauses () = Vec.size env.clauses
   let nb_learnts () = Vec.size env.learnts
-  let nb_vars    () = St.nb_vars ()
+  let nb_vars    () = St.nb_elt ()
 
   let new_decision_level() =
     Vec.push env.trail_lim (Vec.size env.trail);
@@ -273,22 +253,22 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       env.qhead <- Vec.get env.trail_lim lvl;
       env.tatoms_qhead <- env.qhead;
       for c = env.qhead to Vec.size env.trail - 1 do
-        Either.destruct (Vec.get env.trail c)
+        destruct (Vec.get env.trail c)
         (fun v ->
             v.assigned <- None;
             v.level <- -1;
-            insert_var_order (Either.mk_left v)
+            insert_var_order (elt_of_lit v)
         )
         (fun a ->
             if a.var.level <= lvl then begin
-              Vec.set env.trail env.qhead (Either.mk_right a);
+              Vec.set env.trail env.qhead (of_atom a);
               env.qhead <- env.qhead + 1
             end else begin
               a.is_true <- false;
               a.neg.is_true <- false;
               a.var.level <- -1;
               a.var.reason <- Bcp None;
-              insert_var_order (Either.mk_right a.var)
+              insert_var_order (elt_of_var a.var)
             end)
       done;
       Th.backtrack (Vec.get env.tenv_queue lvl); (* recover the right tenv *)
@@ -313,14 +293,14 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       a.is_true <- true;
       a.var.level <- lvl;
       a.var.reason <- reason;
-      Vec.push env.trail (Either.mk_right a);
+      Vec.push env.trail (of_atom a);
       L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) pp_atom a
     end
 
   let enqueue_assign v value lvl =
     v.assigned <- Some value;
     v.level <- lvl;
-    Vec.push env.trail (Either.mk_left v);
+    Vec.push env.trail (of_lit v);
     L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) St.pp_lit v
 
   let th_eval a =
@@ -371,7 +351,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
         | _ ->
                 decr tr_ind;
                 L.debug 20 "Looking at trail element %d" !tr_ind;
-                Either.destruct (Vec.get env.trail !tr_ind)
+                destruct (Vec.get env.trail !tr_ind)
                 (fun v -> L.debug 15 "%a" St.pp_lit v)
                 (fun a -> match a.var.reason with
                     | Bcp (Some d) ->
@@ -396,7 +376,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       blevel, learnt, !history, !is_uip
 
   let get_atom i =
-    Either.destruct (Vec.get env.trail i)
+    destruct (Vec.get env.trail i)
       (fun _ -> assert false) (fun x -> x)
 
   let analyze_sat c_clause =
@@ -647,19 +627,19 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     ignore (th_eval a);
     a
 
-  let slice_get i = Either.destruct (Vec.get env.trail i)
+  let slice_get i = destruct (Vec.get env.trail i)
       (function {level; term; assigned = Some v} -> Th.Assign (term, v), level | _ -> assert false)
       (fun a -> Th.Lit a.lit, a.var.level)
 
   let slice_push l lemma =
     let atoms = List.rev_map (fun x -> new_atom x) l in
-    Iheap.grow_to_by_double env.order (St.nb_vars ());
-    List.iter (fun a -> insert_var_order (Either.mk_right a.var)) atoms;
+    Iheap.grow_to_by_double env.order (St.nb_elt ());
+    List.iter (fun a -> insert_var_order (elt_of_var a.var)) atoms;
     add_clause (fresh_tname ()) atoms (Lemma lemma)
 
   let slice_propagate f lvl =
     let a = add_atom f in
-    Iheap.grow_to_by_double env.order (St.nb_vars ());
+    Iheap.grow_to_by_double env.order (St.nb_elt ());
     enqueue_bool a lvl (Semantic lvl)
 
   let current_slice () = Th.({
@@ -686,8 +666,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       propagate ()
     | Th.Unsat (l, p) ->
       let l = List.rev_map new_atom l in
-      Iheap.grow_to_by_double env.order (St.nb_vars ());
-      List.iter (fun a -> insert_var_order (Either.mk_right a.var)) l;
+      Iheap.grow_to_by_double env.order (St.nb_elt ());
+      List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
       let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) in
       Some c
 
@@ -698,7 +678,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       let num_props = ref 0 in
       let res = ref None in
       while env.qhead < Vec.size env.trail do
-        Either.destruct (Vec.get env.trail env.qhead)
+        destruct (Vec.get env.trail env.qhead)
           (fun a -> ())
           (fun a ->
              incr num_props;
@@ -787,7 +767,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   (* Decide on a new litteral *)
   let rec pick_branch_lit () =
     let max = Iheap.remove_min f_weight env.order in
-    Either.destruct (St.get_var max)
+    destruct_elt (St.get_elt max)
       (fun v ->
          if v.level >= 0 then
            pick_branch_lit ()
@@ -824,7 +804,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
         add_boolean_conflict confl
 
       | None -> (* No Conflict *)
-        if nb_assigns() = St.nb_vars () (* env.nb_init_vars *) then raise Sat;
+        if nb_assigns() = St.nb_elt () (* env.nb_init_vars *) then raise Sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
           L.debug 1 "Restarting...";
           env.progress_estimate <- progress_estimate();
@@ -884,15 +864,15 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     | Sat -> ()
 
   let init_solver ?tag cnf =
-    let nbv = St.nb_vars () in
+    let nbv = St.nb_elt () in
     let nbc = env.nb_init_clauses + List.length cnf in
     Iheap.grow_to_by_double env.order nbv;
     (* List.iter (List.iter (fun a -> insert_var_order a.var)) cnf; *)
-    St.iter_vars insert_var_order;
+    St.iter_elt insert_var_order;
     Vec.grow_to_by_double env.clauses nbc;
     Vec.grow_to_by_double env.learnts nbc;
     env.nb_init_clauses <- nbc;
-    St.iter_vars (fun e -> Either.destruct e
+    St.iter_elt (fun e -> destruct_elt e
                      (fun v -> L.debug 50 " -- %a" St.pp_lit v)
                      (fun a -> L.debug 50 " -- %a" St.pp_atom a.pa)
                  );
@@ -916,7 +896,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   let model () =
     let opt = function Some a -> a | None -> assert false in
-    Vec.fold (fun acc e -> Either.destruct e
+    Vec.fold (fun acc e -> destruct e
                  (fun v -> (v.term, opt v.assigned)  :: acc)
                  (fun _ -> acc)
              ) [] env.trail
