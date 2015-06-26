@@ -1,6 +1,6 @@
 opam-version: "1.2"
 license: "Apache"
-version: "1.0"
+version: "1.1"
 author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "Guillaume Bury"]
 maintainer: ["guillaume.bury@gmail.com" "simon.cruanes@inria.fr"]
 build: [

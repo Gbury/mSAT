@@ -5,9 +5,10 @@
 <solver/*.cmx>: for-pack(Msat)
 
 # enable stronger inlining everywhere
-<util/{vec,hashcons,hstring,iheap}.cmx>: inline(15)
-<sat/**/*.cmx>: inline(10)
-<smt/**/*.cmx>: inline(10)
+<util/{vec,hashcons,hstring,iheap}.cmx>: inline(100)
+<solver/*.cmx>: inline(1000)
+<sat/**/*.cmx>: inline(100)
+<smt/**/*.cmx>: inline(100)
 
 # more warnings
 <**/*.ml>: warn_K, warn_Y, warn_X

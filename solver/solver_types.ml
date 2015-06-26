@@ -15,6 +15,10 @@ open Printf
 
 module type S = Solver_types_intf.S
 
+
+(* Solver types for McSat Solving *)
+(* ************************************************************************ *)
+
 module McMake (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
     type formula = E.Formula.t and type term = E.Term.t) = struct
 
@@ -307,6 +311,13 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
     bprintf b "%s%s{ %a} cpremise={{%a}}" name (if learnt then "!" else ":") pp_atoms_vec arr pp_premise cp
 
 end
+
+
+
+(* Solver types for pure SAT Solving *)
+(* ************************************************************************ *)
+
+
 
 module SatMake (L : Log_intf.S)(E : Formula_intf.S)
     (Th : Theory_intf.S with type formula = E.t ) = struct
