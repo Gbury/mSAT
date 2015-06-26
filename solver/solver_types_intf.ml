@@ -20,53 +20,55 @@ module type S = sig
   type formula
   type proof
 
-  type 'a var =
-    { vid : int;
-      tag : 'a;
-      mutable weight : float;
-      mutable level : int;
-      mutable seen : bool; }
+  type lit = {
+    lid : int;
+    term : term;
+    mutable level : int;
+    mutable weight : float;
+    mutable assigned : term option;
+  }
 
-  type semantic =
-    { term : term;
-      mutable assigned : term option; }
-
-  type boolean = {
+  type var = {
+    vid : int;
     pa : atom;
     na : atom;
+    mutable seen : bool;
+    mutable level : int;
+    mutable weight : float;
     mutable reason : reason;
   }
 
   and atom = {
-    var : boolean var;
-    lit : formula;
+    aid : int;
+    var : var;
     neg : atom;
-    mutable watched : clause Vec.t;
+    lit : formula;
     mutable is_true : bool;
-    aid : int
+    mutable watched : clause Vec.t;
   }
 
   and clause = {
     name : string;
     tag : int option;
     atoms : atom Vec.t;
+    learnt : bool;
+    cpremise : premise;
     mutable activity : float;
     mutable removed : bool;
-    learnt : bool;
-    cpremise : premise
   }
 
   and reason =
-      | Semantic of int
-      | Bcp of clause option
-  and premise =
-      | History of clause list
-      | Lemma of proof
+    | Semantic of int
+    | Bcp of clause option
 
-  type elt = (semantic var, boolean var) Either.t
+  and premise =
+    | History of clause list
+    | Lemma of proof
+
+  type elt = (lit, var) Either.t
   (** Recursive types for literals (atoms) and clauses *)
 
-  val dummy_var : boolean var
+  val dummy_var : var
   val dummy_atom : atom
   val dummy_clause : clause
   (** Dummy values for use in vector dummys *)
@@ -78,13 +80,13 @@ module type S = sig
 
   val add_atom : formula -> atom
   (** Returns the atom associated with the given formula *)
-  val add_term : term -> semantic var
+  val add_term : term -> lit
   (** Returns the variable associated with the term *)
-  val make_boolean_var : formula -> boolean var * bool
+  val make_boolean_var : formula -> var * bool
   (** Returns the variable linked with the given formula, and wether the atom associated with the formula
       is [var.pa] or [var.na] *)
 
-  val iter_sub : (semantic var -> unit) -> boolean var -> unit
+  val iter_sub : (lit -> unit) -> var -> unit
   (** Iterates over the semantic var corresponding to subterms of the fiven literal, according
       to Th.iter_assignable *)
 
@@ -99,16 +101,16 @@ module type S = sig
   val fresh_hname : unit -> string
   (** Fresh names for clauses *)
 
-  val proof_debug : proof -> string * (atom list) * (semantic var list) * (string option)
+  val proof_debug : proof -> string * (atom list) * (lit list) * (string option)
   (** Debugging info for proofs (see Plugin_intf). *)
 
+  val print_lit : Format.formatter -> lit -> unit
   val print_atom : Format.formatter -> atom -> unit
-  val print_semantic_var : Format.formatter -> semantic var -> unit
   val print_clause : Format.formatter -> clause -> unit
   (** Pretty printing functions for atoms and clauses *)
 
+  val pp_lit : Buffer.t -> lit -> unit
   val pp_atom : Buffer.t -> atom -> unit
-  val pp_semantic_var : Buffer.t -> semantic var -> unit
   val pp_clause : Buffer.t -> clause -> unit
   (** Debug function for atoms and clauses (very verbose) *)
 

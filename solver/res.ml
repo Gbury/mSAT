@@ -64,7 +64,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
         if equal_atoms a b then
           aux resolved (a :: acc) r
         else if equal_atoms St.(a.neg) b then
-          aux (St.(a.var.tag.pa) :: resolved) acc r
+          aux (St.(a.var.pa) :: resolved) acc r
         else
           aux resolved (a :: acc) (b :: r)
     in
@@ -133,7 +133,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
         diff_learnt (b :: acc) l r'
     | _ -> raise (Resolution_error "Impossible to derive correct clause")
 
-  let clause_unit a = match St.(a.var.level, a.var.tag.reason) with
+  let clause_unit a = match St.(a.var.level, a.var.reason) with
     | 0, St.Bcp Some c -> c, to_list c
     | _ ->
       raise (Resolution_error "Could not find a reason needed to resolve")
@@ -189,7 +189,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     | [] -> true
     | a :: r ->
       L.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
-      let d = match St.(a.var.level, a.var.tag.reason) with
+      let d = match St.(a.var.level, a.var.reason) with
         | 0, St.Bcp Some d -> d
         | _ -> raise Exit
       in
@@ -334,10 +334,10 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
           if f_args <> [] then
               Format.fprintf fmt "<TD>%a</TD></TR>%a%a" St.print_atom (List.hd f_args)
                 (fun fmt -> List.iter (fun a -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_atom a)) (List.tl f_args)
-                (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_semantic_var v)) t_args
+                (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_lit v)) t_args
           else if t_args <> [] then
-          Format.fprintf fmt "<TD>%a</TD></TR>%a" St.print_semantic_var (List.hd t_args)
-                (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_semantic_var v)) (List.tl t_args)
+          Format.fprintf fmt "<TD>%a</TD></TR>%a" St.print_lit (List.hd t_args)
+                (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_lit v)) (List.tl t_args)
           else
               Format.fprintf fmt "<TD></TD></TR>"
         in

@@ -27,63 +27,64 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
   type formula = E.Formula.t
   type proof = Th.proof
 
-  type 'a var =
-    { vid : int;
-      tag : 'a;
-      mutable weight : float;
-      mutable level : int;
-      mutable seen : bool;
-    }
+  type lit = {
+    lid : int;
+    term : term;
+    mutable level : int;
+    mutable weight : float;
+    mutable assigned : term option;
+  }
 
-  type semantic =
-    { term : term;
-      mutable assigned : term option; }
-
-  type boolean = {
+  type var = {
+    vid : int;
     pa : atom;
     na : atom;
+    mutable seen : bool;
+    mutable level : int;
+    mutable weight : float;
     mutable reason : reason;
   }
 
-  and atom =
-    { var : boolean var;
-      lit : formula;
-      neg : atom;
-      mutable watched : clause Vec.t;
-      mutable is_true : bool;
-      aid : int }
+  and atom = {
+    aid : int;
+    var : var;
+    neg : atom;
+    lit : formula;
+    mutable is_true : bool;
+    mutable watched : clause Vec.t;
+  }
 
-  and clause =
-    { name : string;
-      tag : int option;
-      atoms : atom Vec.t ;
-      mutable activity : float;
-      mutable removed : bool;
-      learnt : bool;
-      cpremise : premise }
+  and clause = {
+    name : string;
+    tag : int option;
+    atoms : atom Vec.t;
+    learnt : bool;
+    cpremise : premise;
+    mutable activity : float;
+    mutable removed : bool;
+  }
 
   and reason =
-      | Semantic of int
-      | Bcp of clause option
+    | Semantic of int
+    | Bcp of clause option
 
   and premise =
-      | History of clause list
-      | Lemma of proof
+    | History of clause list
+    | Lemma of proof
 
-  type elt = (semantic var, boolean var) Either.t
+  type elt = (lit, var) Either.t
 
   (* Dummy values *)
   let dummy_lit = E.dummy
 
   let rec dummy_var =
     { vid = -101;
+      pa = dummy_atom;
+      na = dummy_atom;
+      seen = false;
       level = -1;
       weight = -1.;
-      seen = false;
-      tag = {
-        pa = dummy_atom;
-        na = dummy_atom;
-        reason = Bcp None; };
+      reason = Bcp None;
     }
   and dummy_atom =
     { var = dummy_var;
@@ -121,21 +122,19 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
   let cpt_mk_var = ref 0
 
   let make_semantic_var t =
-      try MT.find t_map t
-      with Not_found ->
-        let res = {
-          vid = !cpt_mk_var;
-          weight = 1.;
-          level = -1;
-          seen = false;
-          tag = {
-            term = t;
-            assigned = None; };
-        } in
-        incr cpt_mk_var;
-        MT.add t_map t res;
-        Vec.push vars (Either.mk_left res);
-        res
+    try MT.find t_map t
+    with Not_found ->
+      let res = {
+        lid = !cpt_mk_var;
+        term = t;
+        weight = 1.;
+        level = -1;
+        assigned = None;
+      } in
+      incr cpt_mk_var;
+      MT.add t_map t res;
+      Vec.push vars (Either.mk_left res);
+      res
 
   let make_boolean_var =
     fun lit ->
@@ -145,13 +144,12 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
         let cpt_fois_2 = !cpt_mk_var lsl 1 in
         let rec var  =
           { vid = !cpt_mk_var;
+            pa = pa;
+            na = na;
+            seen = false;
             level = -1;
             weight = 0.;
-            seen = false;
-            tag = {
-              pa = pa;
-              na = na;
-              reason = Bcp None;};
+            reason = Bcp None;
           }
         and pa =
           { var = var;
@@ -177,7 +175,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
 
   let add_atom lit =
     let var, negated = make_boolean_var lit in
-    if negated then var.tag.na else var.tag.pa
+    if negated then var.na else var.pa
 
   let make_clause ?tag name ali sz_ali is_learnt premise =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
@@ -213,21 +211,21 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
   let iter_map = ref Mi.empty
 
   let iter_sub f v =
-      try
-          List.iter f (Mi.find v.vid !iter_map)
-      with Not_found ->
-          let l = ref [] in
-          Th.iter_assignable (fun t -> l := add_term t :: !l) v.tag.pa.lit;
-          iter_map := Mi.add v.vid !l !iter_map;
-          List.iter f !l
+    try
+      List.iter f (Mi.find v.vid !iter_map)
+    with Not_found ->
+      let l = ref [] in
+      Th.iter_assignable (fun t -> l := add_term t :: !l) v.pa.lit;
+      iter_map := Mi.add v.vid !l !iter_map;
+      List.iter f !l
 
   (* Proof debug info *)
   let proof_debug p =
-      let name, l, l', color = Th.proof_debug p in
-      name, (List.map add_atom l), (List.map add_term l'), color
+    let name, l, l', color = Th.proof_debug p in
+    name, (List.map add_atom l), (List.map add_term l'), color
 
   (* Pretty printing for atoms and clauses *)
-  let print_semantic_var fmt (v: semantic var) = E.Term.print fmt v.tag.term
+  let print_lit fmt v = E.Term.print fmt v.term
 
   let print_atom fmt a = E.Formula.print fmt a.lit
 
@@ -243,10 +241,10 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
     Format.fprintf fmt "%s : %a" c.name print_atoms c.atoms
 
   (* Complete debug printing *)
-  let sign a = if a==a.var.tag.pa then "" else "-"
+  let sign a = if a == a.var.pa then "" else "-"
 
   let level a =
-    match a.var.level, a.var.tag.reason with
+    match a.var.level, a.var.reason with
     | n, _ when n < 0 -> assert false
     | 0, Bcp (Some c) -> sprintf "->0/%s" c.name
     | 0, Bcp None   -> "@0"
@@ -264,12 +262,12 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
     | Lemma _ -> bprintf b "th_lemma"
 
   let pp_assign b = function
-      | None -> ()
-      | Some t -> bprintf b "[assignment: %s]" (Log.on_fmt E.Term.print t)
+    | None -> ()
+    | Some t -> bprintf b "[assignment: %s]" (Log.on_fmt E.Term.print t)
 
-  let pp_semantic_var b v =
+  let pp_lit b v =
     bprintf b "%d [lit:%s]%a"
-      (v.vid+1) (Log.on_fmt E.Term.print v.tag.term) pp_assign v.tag.assigned
+      (v.lid+1) (Log.on_fmt E.Term.print v.term) pp_assign v.assigned
 
   let pp_atom b a =
     bprintf b "%s%d%s[lit:%s]"

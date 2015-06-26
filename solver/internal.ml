@@ -43,7 +43,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     mutable var_inc : float;
     (* increment for variables' activity *)
 
-    trail : (semantic var, atom) Either.t Vec.t;
+    trail : (lit, atom) Either.t Vec.t;
     (* decision stack + propagated atoms *)
 
     trail_lim : int Vec.t;
@@ -152,16 +152,22 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let get_var_id v = v.vid
   let get_var_level v = v.level
   let get_var_weight v = v.weight
-
   let set_var_weight v w = v.weight <- w
   let set_var_level v l = v.level <- l
 
-  let get_elt_id e = Either.destruct e get_var_id get_var_id
-  let get_elt_weight e = Either.destruct e get_var_weight get_var_weight
-  let get_elt_level e = Either.destruct e get_var_level get_var_level
+  (* Accessors for litterals *)
+  let get_lit_id v = v.lid
+  let get_lit_level (v : lit) = v.level
+  let get_lit_weight (v : lit) = v.weight
+  let set_lit_weight (v : lit) w = v.weight <- w
+  let set_lit_level (v : lit) l = v.level <- l
 
-  let set_elt_weight e = Either.destruct e set_var_weight set_var_weight
-  let set_elt_level e = Either.destruct e set_var_level set_var_level
+  let get_elt_id e = Either.destruct e get_lit_id get_var_id
+  let get_elt_weight e = Either.destruct e get_lit_weight get_var_weight
+  let get_elt_level e = Either.destruct e get_lit_level get_var_level
+
+  let set_elt_weight e = Either.destruct e set_lit_weight set_var_weight
+  let set_elt_level e = Either.destruct e set_lit_level set_var_level
 
   let f_weight i j =
     get_elt_weight (St.get_var j) < get_elt_weight (St.get_var i)
@@ -171,10 +177,10 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   (* Var/clause activity *)
   let insert_var_order e = Either.destruct e
-      (fun v -> Iheap.insert f_weight env.order v.vid)
+      (fun v -> Iheap.insert f_weight env.order v.lid)
       (fun v ->
           Iheap.insert f_weight env.order v.vid;
-          iter_sub (fun t -> Iheap.insert f_weight env.order t.vid) v
+          iter_sub (fun t -> Iheap.insert f_weight env.order t.lid) v
       )
 
   let var_decay_activity () =
@@ -194,9 +200,20 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     if Iheap.in_heap env.order v.vid then
       Iheap.decrease f_weight env.order v.vid
 
+  let lit_bump_activity_aux (v : lit) =
+    v.weight <- v.weight +. env.var_inc;
+    if v.weight > 1e100 then begin
+      for i = 0 to (St.nb_vars ()) - 1 do
+        set_elt_weight (St.get_var i) ((get_elt_weight (St.get_var i)) *. 1e-100)
+      done;
+      env.var_inc <- env.var_inc *. 1e-100;
+    end;
+    if Iheap.in_heap env.order v.lid then
+      Iheap.decrease f_weight env.order v.lid
+
   let var_bump_activity v =
-      var_bump_activity_aux v;
-      iter_sub (fun t -> var_bump_activity_aux t) v
+    var_bump_activity_aux v;
+    iter_sub lit_bump_activity_aux v
 
   let clause_bump_activity c =
     c.activity <- c.activity +. env.clause_inc;
@@ -258,7 +275,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       for c = env.qhead to Vec.size env.trail - 1 do
         Either.destruct (Vec.get env.trail c)
         (fun v ->
-            v.tag.assigned <- None;
+            v.assigned <- None;
             v.level <- -1;
             insert_var_order (Either.mk_left v)
         )
@@ -270,7 +287,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
               a.is_true <- false;
               a.neg.is_true <- false;
               a.var.level <- -1;
-              a.var.tag.reason <- Bcp None;
+              a.var.reason <- Bcp None;
               insert_var_order (Either.mk_right a.var)
             end)
       done;
@@ -292,19 +309,19 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     if a.is_true then
       L.debug 10 "Litteral %a already in queue" pp_atom a
     else begin
-      assert (a.var.level < 0 && a.var.tag.reason = Bcp None && lvl >= 0);
+      assert (a.var.level < 0 && a.var.reason = Bcp None && lvl >= 0);
       a.is_true <- true;
       a.var.level <- lvl;
-      a.var.tag.reason <- reason;
+      a.var.reason <- reason;
       Vec.push env.trail (Either.mk_right a);
       L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) pp_atom a
     end
 
-  let enqueue_assign (v: semantic var) value lvl =
-    v.tag.assigned <- Some value;
+  let enqueue_assign v value lvl =
+    v.assigned <- Some value;
     v.level <- lvl;
     Vec.push env.trail (Either.mk_left v);
-    L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) St.pp_semantic_var v
+    L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) St.pp_lit v
 
   let th_eval a =
     if a.is_true || a.neg.is_true then None
@@ -334,7 +351,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     let c       = ref (Proof.to_list c_clause) in
     let history = ref [c_clause] in
     clause_bump_activity c_clause;
-    let is_semantic a = match a.var.tag.reason with
+    let is_semantic a = match a.var.reason with
         | Semantic _ -> true
         | _ -> false
     in
@@ -355,15 +372,15 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
                 decr tr_ind;
                 L.debug 20 "Looking at trail element %d" !tr_ind;
                 Either.destruct (Vec.get env.trail !tr_ind)
-                (fun v -> L.debug 15 "%a" St.pp_semantic_var v)
-                (fun a -> match a.var.tag.reason with
+                (fun v -> L.debug 15 "%a" St.pp_lit v)
+                (fun a -> match a.var.reason with
                     | Bcp (Some d) ->
                             L.debug 15 "Propagation : %a" St.pp_atom a;
                             L.debug 15 " |- %a" St.pp_clause d;
                             let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
                             begin match tmp with
                             | [] -> L.debug 15 "No lit to resolve over."
-                            | [b] when b == a.var.tag.pa ->
+                            | [b] when b == a.var.pa ->
                                     clause_bump_activity d;
                                     var_bump_activity a.var;
                                     history := d :: !history;
@@ -419,7 +436,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       decr pathC;
       let p = get_atom !tr_ind in
       decr tr_ind;
-      match !pathC, p.var.tag.reason with
+      match !pathC, p.var.reason with
       | 0, _ ->
         cond := false;
         learnt := p.neg :: (List.rev !learnt)
@@ -429,7 +446,11 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     List.iter (fun q -> q.var.seen <- false) !seen;
     !blevel, !learnt, !history, true
 
-  let analyze c_clause = if St.mcsat then analyze_mcsat c_clause else analyze_sat c_clause
+  let analyze c_clause =
+    if St.mcsat then
+      analyze_mcsat c_clause
+    else
+      analyze_sat c_clause
 
   let record_learnt_clause confl blevel learnt history is_uip =
     begin match learnt with
@@ -437,7 +458,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       | [fuip] ->
         assert (blevel = 0);
         if fuip.neg.is_true then
-            report_unsat confl
+          report_unsat confl
         else begin
           let name = fresh_lname () in
           let uclause = make_clause name learnt (List.length learnt) true history in
@@ -453,11 +474,11 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
         attach_clause lclause;
         clause_bump_activity lclause;
         if is_uip then
-            enqueue_bool fuip blevel (Bcp (Some lclause))
+          enqueue_bool fuip blevel (Bcp (Some lclause))
         else begin
-            env.decisions <- env.decisions + 1;
-            new_decision_level();
-            enqueue_bool fuip.neg (decision_level ()) (Bcp None)
+          env.decisions <- env.decisions + 1;
+          new_decision_level();
+          enqueue_bool fuip.neg (decision_level ()) (Bcp None)
         end
     end;
     var_decay_activity ();
@@ -466,7 +487,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let add_boolean_conflict confl =
     env.conflicts <- env.conflicts + 1;
     if decision_level() = 0 || Vec.for_all (fun a -> a.var.level = 0) confl.atoms then
-        report_unsat confl; (* Top-level conflict *)
+      report_unsat confl; (* Top-level conflict *)
     let blevel, learnt, history, is_uip = analyze confl in
     cancel_until blevel;
     record_learnt_clause confl blevel learnt (History history) is_uip
@@ -475,17 +496,17 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   exception Trivial
 
   let simplify_zero atoms init0 =
-      (* TODO: could be more efficient than [@] everywhere? *)
-      assert (decision_level () = 0);
-      let aux (atoms, init) a =
-          if a.is_true then raise Trivial;
-          if a.neg.is_true then
-              atoms, false
-          else
-              a::atoms, init
-      in
-      let atoms, init = List.fold_left aux ([], true) atoms in
-      List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
+    (* TODO: could be more efficient than [@] everywhere? *)
+    assert (decision_level () = 0);
+    let aux (atoms, init) a =
+      if a.is_true then raise Trivial;
+      if a.neg.is_true then
+        atoms, false
+      else
+        a::atoms, init
+    in
+    let atoms, init = List.fold_left aux ([], true) atoms in
+    List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
 
   let partition atoms init0 =
     let rec partition_aux trues unassigned falses init = function
@@ -503,9 +524,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
           partition_aux trues (a::unassigned) falses init r
     in
     if decision_level () = 0 then
-        simplify_zero atoms init0
+      simplify_zero atoms init0
     else
-        partition_aux [] [] [] true atoms
+      partition_aux [] [] [] true atoms
 
   let add_clause ?tag name atoms history =
     if env.is_unsat then raise Unsat; (* is it necessary ? *)
@@ -523,8 +544,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       | a::b::_ ->
         let name = fresh_name () in
         let clause =
-            if init then init0
-            else make_clause ?tag name atoms size true (History [init0])
+          if init then init0
+          else make_clause ?tag name atoms size true (History [init0])
         in
         L.debug 1 "New clause : %a" St.pp_clause clause;
         attach_clause clause;
@@ -627,7 +648,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     a
 
   let slice_get i = Either.destruct (Vec.get env.trail i)
-      (function {level; tag={term; assigned = Some v}} -> Th.Assign (term, v), level | _ -> assert false)
+      (function {level; term; assigned = Some v} -> Th.Assign (term, v), level | _ -> assert false)
       (fun a -> Th.Lit a.lit, a.var.level)
 
   let slice_push l lemma =
@@ -678,10 +699,10 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       let res = ref None in
       while env.qhead < Vec.size env.trail do
         Either.destruct (Vec.get env.trail env.qhead)
-        (fun a -> ())
-        (fun a ->
-          incr num_props;
-          propagate_atom a res);
+          (fun a -> ())
+          (fun a ->
+             incr num_props;
+             propagate_atom a res);
         env.qhead <- env.qhead + 1
       done;
       env.propagations <- env.propagations + !num_props;
@@ -702,9 +723,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     if sz1 > 2 && (sz2 = 2 || c < 0) then -1
     else 1
 
-(* returns true if the clause is used as a reason for a propagation,
-      and therefore can be needed in case of conflict. In this case
-      the clause can't be forgotten *)
+  (* returns true if the clause is used as a reason for a propagation,
+        and therefore can be needed in case of conflict. In this case
+        the clause can't be forgotten *)
   let locked c = false (*
     Vec.exists
       (fun v -> match v.reason with
@@ -767,31 +788,31 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let rec pick_branch_lit () =
     let max = Iheap.remove_min f_weight env.order in
     Either.destruct (St.get_var max)
-    (fun v ->
-        if v.level >= 0 then
-            pick_branch_lit ()
-        else begin
-            let value = Th.assign v.tag.term in
-            env.decisions <- env.decisions + 1;
-            new_decision_level();
-            let current_level = decision_level () in
-            L.debug 5 "Deciding on %a" St.pp_semantic_var v;
-            enqueue_assign v value current_level
-        end)
-    (fun v ->
-      if v.level >= 0 then begin
-          assert (v.tag.pa.is_true || v.tag.na.is_true);
-          pick_branch_lit ()
-      end else match Th.eval v.tag.pa.lit with
-        | Th.Unknown ->
-          env.decisions <- env.decisions + 1;
-          new_decision_level();
-          let current_level = decision_level () in
-          L.debug 5 "Deciding on %a" St.pp_atom v.tag.pa;
-          enqueue_bool v.tag.pa current_level (Bcp None)
-        | Th.Valued (b, lvl) ->
-          let a = if b then v.tag.pa else v.tag.na in
-          enqueue_bool a lvl (Semantic lvl))
+      (fun v ->
+         if v.level >= 0 then
+           pick_branch_lit ()
+         else begin
+           let value = Th.assign v.term in
+           env.decisions <- env.decisions + 1;
+           new_decision_level();
+           let current_level = decision_level () in
+           L.debug 5 "Deciding on %a" St.pp_lit v;
+           enqueue_assign v value current_level
+         end)
+      (fun v ->
+         if v.level >= 0 then begin
+           assert (v.pa.is_true || v.na.is_true);
+           pick_branch_lit ()
+         end else match Th.eval v.pa.lit with
+           | Th.Unknown ->
+             env.decisions <- env.decisions + 1;
+             new_decision_level();
+             let current_level = decision_level () in
+             L.debug 5 "Deciding on %a" St.pp_atom v.pa;
+             enqueue_bool v.pa current_level (Bcp None)
+           | Th.Valued (b, lvl) ->
+             let a = if b then v.pa else v.na in
+             enqueue_bool a lvl (Semantic lvl))
 
   let search n_of_conflicts n_of_learnts =
     let conflictC = ref 0 in
@@ -805,10 +826,10 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       | None -> (* No Conflict *)
         if nb_assigns() = St.nb_vars () (* env.nb_init_vars *) then raise Sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
-            L.debug 1 "Restarting...";
-            env.progress_estimate <- progress_estimate();
-            cancel_until 0;
-            raise Restart
+          L.debug 1 "Restarting...";
+          env.progress_estimate <- progress_estimate();
+          cancel_until 0;
+          raise Restart
         end;
         if decision_level() = 0 then simplify ();
 
@@ -833,9 +854,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   let add_clauses ?tag cnf =
     let aux cl =
-        add_clause ?tag (fresh_hname ()) cl (History []);
-        match propagate () with
-        | None -> () | Some confl -> report_unsat confl
+      add_clause ?tag (fresh_hname ()) cl (History []);
+      match propagate () with
+      | None -> () | Some confl -> report_unsat confl
     in
     List.iter aux cnf
 
@@ -872,9 +893,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     Vec.grow_to_by_double env.learnts nbc;
     env.nb_init_clauses <- nbc;
     St.iter_vars (fun e -> Either.destruct e
-        (fun v -> L.debug 50 " -- %a" St.pp_semantic_var v)
-        (fun a -> L.debug 50 " -- %a" St.pp_atom a.tag.pa)
-    );
+                     (fun v -> L.debug 50 " -- %a" St.pp_lit v)
+                     (fun a -> L.debug 50 " -- %a" St.pp_atom a.pa)
+                 );
     add_clauses ?tag cnf
 
   let assume ?tag cnf =
@@ -883,8 +904,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   let eval lit =
     let var, negated = make_boolean_var lit in
-    assert (var.tag.pa.is_true || var.tag.na.is_true);
-    let truth = var.tag.pa.is_true in
+    assert (var.pa.is_true || var.na.is_true);
+    let truth = var.pa.is_true in
     if negated then not truth else truth
 
   let hyps () = env.clauses
@@ -896,9 +917,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let model () =
     let opt = function Some a -> a | None -> assert false in
     Vec.fold (fun acc e -> Either.destruct e
-      (fun (v: semantic var) -> (v.tag.term, opt v.tag.assigned)  :: acc)
-      (fun _ -> acc)
-    ) [] env.trail
+                 (fun v -> (v.term, opt v.assigned)  :: acc)
+                 (fun _ -> acc)
+             ) [] env.trail
 
   (* Push/Pop *)
   type level = int
@@ -918,7 +939,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   let pop l =
     if l > current_level()
-      then invalid_arg "cannot pop() to level, it is too high";
+    then invalid_arg "cannot pop() to level, it is too high";
     let ul = Vec.get env.user_levels l in
     (* see whether we can reset [env.is_unsat] *)
     if env.is_unsat && not (Vec.is_empty env.trail_lim) then (
