@@ -72,13 +72,20 @@ module type S = sig
   val expand : proof -> proof_node
   (** Return the proof step at the root of a given proof. *)
 
+  val fold : ('a -> proof_node -> 'a) -> 'a -> proof -> 'a
+  (** [fold f acc p], fold [f] over the proof [p] and all its node. It is guaranteed that
+      [f] is executed exactly once on each proof ndoe in the tree, and that the execution of
+      [f] on a proof node happens after the execution on the children of the nodes. *)
+
   val unsat_core : proof -> clause list
   (** Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof. *)
 
   val print_dot : Format.formatter -> proof -> unit
   (** Print the given proof in dot format on the given formatter.
-      @deprecated *)
+      @deprecated use the Dot backend module instead. *)
 
-  module Dot : Backend_intf.S with type t := proof
+  (** {3 Misc} *)
+  val print_clause : Format.formatter -> clause -> unit
+  (** A nice looking printer for clauses, which sort the atoms before printing. *)
 
 end

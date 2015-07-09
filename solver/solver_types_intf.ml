@@ -16,7 +16,6 @@ module type S = sig
 
   val mcsat : bool
 
-
   (** {2 Type definitions} *)
 
   type term

@@ -91,6 +91,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
       L.debug 3 "Input clause is a tautology";
     res
 
+  let print_clause fmt c = print_cl fmt (to_list c)
+
   (* Adding hyptoheses *)
   let has_been_proved c = H.mem proof (to_list c)
 
@@ -225,7 +227,6 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     | Resolution of proof * proof * atom
 
   let expand (c, cl) =
-    L.debug 8 "Returning proof for : %a" St.pp_clause c;
     let st = match H.find proof cl with
       | Assumption -> Hypothesis
       | Lemma l -> Lemma l
@@ -261,6 +262,38 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     in
     sort_uniq compare_cl (aux [] proof)
 
+  (* Iter on proofs *)
+  type task =
+    | Enter of proof
+    | Leaving of proof
+
+  let pop s = try Some (Stack.pop s) with Stack.Empty -> None
+
+  let rec fold_aux s h f acc =
+    match pop s with
+    | None -> acc
+    | Some (Leaving ((_, cl) as p)) ->
+      H.add h cl true;
+      fold_aux s h f (f acc (expand p))
+    | Some (Enter ((_, cl) as p)) ->
+      if not (H.mem h cl) then begin
+        Stack.push (Leaving p) s;
+        let node = expand p in
+        begin match node.step with
+        | Resolution (p1, p2, _) ->
+          Stack.push (Enter p2) s;
+          Stack.push (Enter p1) s
+        | _ -> ()
+        end
+      end;
+      fold_aux s h f acc
+
+  let fold f acc p =
+    let h = H.create 42 in
+    let s = Stack.create () in
+    Stack.push (Enter p) s;
+    fold_aux s h f acc
+
   (* Dot proof printing *)
   module Dot = struct
     let _i = ref 0
@@ -288,10 +321,6 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
         Hashtbl.replace ids c (true, id)
       else
         ()
-
-    (* We use a custom function instead of the functions in Solver_type,
-       so that atoms are sorted before printing. *)
-    let print_clause fmt c = print_cl fmt (to_list c)
 
     let print_dot_rule opt f arg fmt cl =
       Format.fprintf fmt "%s [shape=plaintext, label=<<TABLE %s %s>%a</TABLE>>];@\n"

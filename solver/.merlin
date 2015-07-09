@@ -1,6 +1,0 @@
-S ./
-S ../util/
-
-B ../_build/
-B ../_build/solver/
-B ../_build/util/

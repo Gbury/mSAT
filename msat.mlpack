@@ -17,6 +17,7 @@ Mcsolver
 Solver_types
 
 # Backends
+Dot
 Dedukti
 
 # Auxiliary modules

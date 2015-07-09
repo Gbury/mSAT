@@ -521,10 +521,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       | [] ->
         report_unsat init0;
       | a::b::_ ->
-        let name = fresh_name () in
         let clause =
           if init then init0
-          else make_clause ?tag name atoms size true (History [init0])
+          else make_clause ?tag (fresh_name ()) atoms size true (History [init0])
         in
         L.debug 1 "New clause : %a" St.pp_clause clause;
         attach_clause clause;

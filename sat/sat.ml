@@ -88,7 +88,9 @@ module Tsat = struct
 end
 
 module Make(Log : Log_intf.S) = struct
+
   module SatSolver = Solver.Make(Log)(Fsat)(Tsat)
+  module Dot = Dot.Make(SatSolver.St)(SatSolver.Proof)
 
   exception Bad_atom
 
@@ -150,6 +152,6 @@ module Make(Log : Log_intf.S) = struct
 
   let print_atom = Fsat.print
   let print_clause = SatSolver.St.print_clause
-  let print_proof = SatSolver.Proof.print_dot
+  let print_proof = Dot.print
 
 end

@@ -259,11 +259,15 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
   let print_atom fmt a = E.Formula.print fmt a.lit
 
   let print_atoms fmt v =
-    print_atom fmt (Vec.get v 0);
-    if (Vec.size v) > 1 then begin
-      for i = 1 to (Vec.size v) - 1 do
-        Format.fprintf fmt " ∨ %a" print_atom (Vec.get v i)
-      done
+    if Vec.size v = 0 then
+      Format.fprintf fmt "∅"
+    else begin
+      print_atom fmt (Vec.get v 0);
+      if (Vec.size v) > 1 then begin
+        for i = 1 to (Vec.size v) - 1 do
+          Format.fprintf fmt " ∨ %a" print_atom (Vec.get v i)
+        done
+      end
     end
 
   let print_clause fmt c =
@@ -518,7 +522,7 @@ module SatMake (L : Log_intf.S)(E : Formula_intf.S)
   let iter_sub _ _ = ()
 
   (* Proof debug info *)
-  let proof_debug _ = assert false
+  let proof_debug _ = "lemma", [], [], None
 
   (* Pretty printing for atoms and clauses *)
   let print_lit _ _ = assert false
@@ -526,11 +530,15 @@ module SatMake (L : Log_intf.S)(E : Formula_intf.S)
   let print_atom fmt a = E.print fmt a.lit
 
   let print_atoms fmt v =
-    print_atom fmt (Vec.get v 0);
-    if (Vec.size v) > 1 then begin
-      for i = 1 to (Vec.size v) - 1 do
-        Format.fprintf fmt " ∨ %a" print_atom (Vec.get v i)
-      done
+    if Vec.size v = 0 then
+      Format.fprintf fmt "∅"
+    else begin
+      print_atom fmt (Vec.get v 0);
+      if (Vec.size v) > 1 then begin
+        for i = 1 to (Vec.size v) - 1 do
+          Format.fprintf fmt " ∨ %a" print_atom (Vec.get v i)
+        done
+      end
     end
 
   let print_clause fmt c =

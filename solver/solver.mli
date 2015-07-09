@@ -20,6 +20,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
 
   module St : Solver_types.S
     with type formula = F.t
+     and type proof = Th.proof
 
   module Proof : Res.S
     with type atom = St.atom

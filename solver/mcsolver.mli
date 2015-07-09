@@ -13,6 +13,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
   module St : Solver_types.S
     with type term = E.Term.t
      and type formula = E.Formula.t
+     and type proof = Th.proof
 
   module Proof : Res.S
     with type atom = St.atom
