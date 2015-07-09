@@ -7,7 +7,7 @@ Copyright 2014 Simon Cruanes
 module type S = sig
   (** Signature for a module handling proof by resolution from sat solving traces *)
 
-    (** {3 Type declarations} *)
+  (** {3 Type declarations} *)
 
   exception Insuficient_hyps
   (** Raised when a complete resolution derivation cannot be found using the current hypotheses. *)
@@ -15,18 +15,18 @@ module type S = sig
   type atom
   type clause
   type lemma
-  (** Abstract types for atoms, clauses and theoriy-specific lemmas *)
+  (** Abstract types for atoms, clauses and theory-specific lemmas *)
 
-  type proof_node = {
+  type proof
+  and proof_node = {
     conclusion : clause;
     step : step;
   }
-  and proof = unit -> proof_node
   and step =
     | Hypothesis
     | Lemma of lemma
     | Resolution of proof * proof * atom
-  (** Lazy type for proof trees. *)
+  (** Lazy type for proof trees. Proofs can be extended to proof nodes using functions defined later. *)
 
   (** {3 Resolution helpers} *)
   val to_list : clause -> atom list
@@ -67,10 +67,18 @@ module type S = sig
       the proof if it succeeds.
       @raise Insuficient_hyps if it does not succeed. *)
 
+  (** {3 Proof Manipulation} *)
+
+  val expand : proof -> proof_node
+  (** Return the proof step at the root of a given proof. *)
+
   val unsat_core : proof -> clause list
   (** Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof. *)
 
   val print_dot : Format.formatter -> proof -> unit
-  (** Print the given proof in dot format on the given formatter. *)
+  (** Print the given proof in dot format on the given formatter.
+      @deprecated *)
+
+  module Dot : Backend_intf.S with type t := proof
 
 end

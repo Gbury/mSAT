@@ -395,7 +395,6 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       (* visit the current predecessors *)
       for j = 0 to Vec.size !c.atoms - 1 do
         let q = Vec.get !c.atoms j in
-        (*printf "I visit %a@." D1.atom q;*)
         assert (q.is_true || q.neg.is_true && q.var.level >= 0); (* Pas sur *)
         if not q.var.seen && q.var.level > 0 then begin
           var_bump_activity q.var;

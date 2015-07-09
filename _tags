@@ -3,6 +3,7 @@
 <smt/*.cmx>: for-pack(Msat)
 <sat/*.cmx>: for-pack(Msat)
 <solver/*.cmx>: for-pack(Msat)
+<backend/*.cmx>: for-pack(Msat)
 
 # enable stronger inlining everywhere
 <util/{vec,hashcons,hstring,iheap}.cmx>: inline(100)

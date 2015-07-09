@@ -218,25 +218,25 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     conclusion : clause;
     step : step;
   }
-  and proof = unit -> proof_node
+  and proof = clause * atom list
   and step =
     | Hypothesis
     | Lemma of lemma
     | Resolution of proof * proof * atom
 
-  let rec return_proof (c, cl) () =
+  let expand (c, cl) =
     L.debug 8 "Returning proof for : %a" St.pp_clause c;
     let st = match H.find proof cl with
       | Assumption -> Hypothesis
       | Lemma l -> Lemma l
       | Resolution (a, cl_c, cl_d) ->
-        Resolution (return_proof cl_c, return_proof cl_d, a)
+        Resolution (cl_c, cl_d, a)
     in
     { conclusion = c; step = st }
 
   let prove_unsat c =
     assert_can_prove_unsat c;
-    return_proof (St.empty_clause, [])
+    (St.empty_clause, [])
 
   (* Compute unsat-core *)
   let compare_cl c d =
@@ -253,7 +253,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
 
   let unsat_core proof =
     let rec aux acc proof =
-      let p = proof () in
+      let p = expand proof in
       match p.step with
       | Hypothesis | Lemma _ -> p.conclusion :: acc
       | Resolution (proof1, proof2, _) ->
@@ -261,105 +261,109 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     in
     sort_uniq compare_cl (aux [] proof)
 
-  (* Print proof graph *)
-  let _i = ref 0
-  let new_id () = incr _i; "id_" ^ (string_of_int !_i)
+  (* Dot proof printing *)
+  module Dot = struct
+    let _i = ref 0
+    let new_id () = incr _i; "id_" ^ (string_of_int !_i)
 
-  let ids : (clause, (bool * string)) Hashtbl.t = Hashtbl.create 1007;;
-  let c_id c =
-    try
-      snd (Hashtbl.find ids c)
-    with Not_found ->
+    let ids : (clause, (bool * string)) Hashtbl.t = Hashtbl.create 1007;;
+    let c_id c =
+      try
+        snd (Hashtbl.find ids c)
+      with Not_found ->
+        let id = new_id () in
+        Hashtbl.add ids c (false, id);
+        id
+
+    let clear_ids () =
+      Hashtbl.iter (fun c (_, id) -> Hashtbl.replace ids c (false, id)) ids
+
+    let is_drawn c =
+      ignore (c_id c);
+      fst (Hashtbl.find ids c)
+
+    let has_drawn c =
+      if not (is_drawn c) then
+        let b, id = Hashtbl.find ids c in
+        Hashtbl.replace ids c (true, id)
+      else
+        ()
+
+    (* We use a custom function instead of the functions in Solver_type,
+       so that atoms are sorted before printing. *)
+    let print_clause fmt c = print_cl fmt (to_list c)
+
+    let print_dot_rule opt f arg fmt cl =
+      Format.fprintf fmt "%s [shape=plaintext, label=<<TABLE %s %s>%a</TABLE>>];@\n"
+        (c_id cl) "BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"" opt f arg
+
+    let print_dot_edge id_c fmt id_d =
+      Format.fprintf fmt "%s -> %s;@\n" id_c id_d
+
+    let print_res_atom id fmt a =
+      Format.fprintf fmt "%s [label=\"%a\"]" id St.print_atom a
+
+    let print_res_node concl p1 p2 fmt atom =
       let id = new_id () in
-      Hashtbl.add ids c (false, id);
-      id
+      Format.fprintf fmt "%a;@\n%a%a%a"
+        (print_res_atom id) atom
+        (print_dot_edge (c_id concl)) id
+        (print_dot_edge id) (c_id p1)
+        (print_dot_edge id) (c_id p2)
 
-  let clear_ids () =
-    Hashtbl.iter (fun c (_, id) -> Hashtbl.replace ids c (false, id)) ids
-
-  let is_drawn c =
-    ignore (c_id c);
-    fst (Hashtbl.find ids c)
-
-  let has_drawn c =
-    if not (is_drawn c) then
-      let b, id = Hashtbl.find ids c in
-      Hashtbl.replace ids c (true, id)
-    else
-      ()
-
-  (* We use a custom function instead of the functions in Solver_type,
-     so that atoms are sorted before printing. *)
-  let print_clause fmt c = print_cl fmt (to_list c)
-
-  let print_dot_rule opt f arg fmt cl =
-    Format.fprintf fmt "%s [shape=plaintext, label=<<TABLE %s %s>%a</TABLE>>];@\n"
-      (c_id cl) "BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\"" opt f arg
-
-  let print_dot_edge id_c fmt id_d =
-    Format.fprintf fmt "%s -> %s;@\n" id_c id_d
-
-  let print_res_atom id fmt a =
-    Format.fprintf fmt "%s [label=\"%a\"]" id St.print_atom a
-
-  let print_res_node concl p1 p2 fmt atom =
-    let id = new_id () in
-    Format.fprintf fmt "%a;@\n%a%a%a"
-      (print_res_atom id) atom
-      (print_dot_edge (c_id concl)) id
-      (print_dot_edge id) (c_id p1)
-      (print_dot_edge id) (c_id p2)
-
-  let color s = match s.[0] with
+    let color s = match s.[0] with
       | 'E' -> "BGCOLOR=\"GREEN\""
       | 'L' -> "BGCOLOR=\"GREEN\""
       | _ -> "BGCOLOR=\"GREY\""
 
-  let rec print_dot_proof fmt p =
-    if not (is_drawn p.conclusion) then begin
-      has_drawn p.conclusion;
-      match p.step with
-      | Hypothesis ->
-        let aux fmt () =
-          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>Hypothesis</TD><TD>%s</TD></TR>"
-            print_clause p.conclusion St.(p.conclusion.name)
-        in
-        print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
-      | Lemma proof ->
-        let name, f_args, t_args, color = St.proof_debug proof in
-        let color = match color with None -> "YELLOW" | Some c -> c in
-        let aux fmt () =
-          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD BGCOLOR=\"%s\" rowspan=\"%d\">%s</TD>"
-            print_clause p.conclusion color (max (List.length f_args + List.length t_args) 1) name;
-          if f_args <> [] then
+    let rec print_dot_proof fmt p =
+      if not (is_drawn p.conclusion) then begin
+        has_drawn p.conclusion;
+        match p.step with
+        | Hypothesis ->
+          let aux fmt () =
+            Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>Hypothesis</TD><TD>%s</TD></TR>"
+              print_clause p.conclusion St.(p.conclusion.name)
+          in
+          print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
+        | Lemma proof ->
+          let name, f_args, t_args, color = St.proof_debug proof in
+          let color = match color with None -> "YELLOW" | Some c -> c in
+          let aux fmt () =
+            Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD BGCOLOR=\"%s\" rowspan=\"%d\">%s</TD>"
+              print_clause p.conclusion color (max (List.length f_args + List.length t_args) 1) name;
+            if f_args <> [] then
               Format.fprintf fmt "<TD>%a</TD></TR>%a%a" St.print_atom (List.hd f_args)
                 (fun fmt -> List.iter (fun a -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_atom a)) (List.tl f_args)
                 (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_lit v)) t_args
-          else if t_args <> [] then
-          Format.fprintf fmt "<TD>%a</TD></TR>%a" St.print_lit (List.hd t_args)
+            else if t_args <> [] then
+              Format.fprintf fmt "<TD>%a</TD></TR>%a" St.print_lit (List.hd t_args)
                 (fun fmt -> List.iter (fun v -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" St.print_lit v)) (List.tl t_args)
-          else
+            else
               Format.fprintf fmt "<TD></TD></TR>"
-        in
-        print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
-      | Resolution (proof1, proof2, a) ->
-        let aux fmt () =
-          Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>%s</TD><TD>%s</TD></TR>"
-            print_clause p.conclusion
-            "Resolution" St.(p.conclusion.name)
-        in
-        let p1 = proof1 () in
-        let p2 = proof2 () in
-        Format.fprintf fmt "%a%a%a%a"
-          (print_dot_rule (color p.conclusion.St.name) aux ()) p.conclusion
-          (print_res_node p.conclusion p1.conclusion p2.conclusion) a
-          print_dot_proof p1
-          print_dot_proof p2
-    end
+          in
+          print_dot_rule "BGCOLOR=\"LIGHTBLUE\"" aux () fmt p.conclusion
+        | Resolution (proof1, proof2, a) ->
+          let aux fmt () =
+            Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR><TR><TD>%s</TD><TD>%s</TD></TR>"
+              print_clause p.conclusion
+              "Resolution" St.(p.conclusion.name)
+          in
+          let p1 = expand proof1 in
+          let p2 = expand proof2 in
+          Format.fprintf fmt "%a%a%a%a"
+            (print_dot_rule (color p.conclusion.St.name) aux ()) p.conclusion
+            (print_res_node p.conclusion p1.conclusion p2.conclusion) a
+            print_dot_proof p1
+            print_dot_proof p2
+      end
 
-  let print_dot fmt proof =
-    clear_ids ();
-    Format.fprintf fmt "digraph proof {@\n%a@\n}@." print_dot_proof (proof ())
+    let print fmt proof =
+      clear_ids ();
+      Format.fprintf fmt "digraph proof {@\n%a@\n}@." print_dot_proof (expand proof)
+  end
+
+  let print_dot = Dot.print
 
 end
 

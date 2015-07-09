@@ -22,3 +22,5 @@ solver/Tseitin
 solver/Tseitin_intf
 
 sat/Sat
+
+backend/Dedukti

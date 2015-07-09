@@ -16,6 +16,9 @@ Solver
 Mcsolver
 Solver_types
 
+# Backends
+Dedukti
+
 # Auxiliary modules
 Res
 Tseitin

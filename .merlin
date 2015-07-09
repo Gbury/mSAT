@@ -2,9 +2,11 @@ S sat
 S smt
 S solver
 S util
+S backend
 
 B _build/
 B _build/sat
 B _build/smt
 B _build/solver
 B _build/util
+B _build/backend

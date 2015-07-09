@@ -3,7 +3,7 @@
 LOG=build.log
 COMP=ocamlbuild -log $(LOG) -use-ocamlfind -classic-display
 FLAGS=
-DIRS=-Is solver,sat,smt,util,util/smtlib
+DIRS=-Is solver,sat,smt,backend,util,util/smtlib
 DOC=msat.docdir/index.html
 TEST=sat_solve.native
 
