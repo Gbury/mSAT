@@ -80,11 +80,8 @@ module type S = sig
   val unsat_core : proof -> clause list
   (** Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof. *)
 
-  val print_dot : Format.formatter -> proof -> unit
-  (** Print the given proof in dot format on the given formatter.
-      @deprecated use the Dot backend module instead. *)
-
   (** {3 Misc} *)
+
   val print_clause : Format.formatter -> clause -> unit
   (** A nice looking printer for clauses, which sort the atoms before printing. *)
 

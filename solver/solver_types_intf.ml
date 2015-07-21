@@ -64,8 +64,8 @@ module type S = sig
     | Bcp of clause option
 
   and premise =
-    | History of clause list
     | Lemma of proof
+    | History of clause list
 
   (** {2 Decisions and propagations} *)
   type t
@@ -113,10 +113,6 @@ module type S = sig
   (** Returns the variable linked with the given formula, and wether the atom associated with the formula
       is [var.pa] or [var.na] *)
 
-  val iter_sub : (lit -> unit) -> var -> unit
-  (** Iterates over the semantic var corresponding to subterms of the fiven literal, according
-      to Th.iter_assignable *)
-
   val empty_clause : clause
   (** The empty clause *)
   val make_clause : ?tag:int -> string -> atom list -> int -> bool -> premise -> clause
@@ -129,9 +125,6 @@ module type S = sig
   val fresh_tname : unit -> string
   val fresh_hname : unit -> string
   (** Fresh names for clauses *)
-
-  val proof_debug : proof -> string * (atom list) * (lit list) * (string option)
-  (** Debugging info for proofs (see Plugin_intf). *)
 
   (** {2 Printing} *)
 

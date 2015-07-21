@@ -10,6 +10,9 @@ module type S = sig
   type t
   (** The type of atomic formulas. *)
 
+  type proof
+  (** An abstract type for proofs *)
+
   val dummy : t
   (** Formula constants. A valid formula should never be physically equal to [dummy] *)
 

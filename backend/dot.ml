@@ -1,15 +1,19 @@
 
 module type S = Backend_intf.S
 
-module Make
-    (St : Solver_types.S)
-    (S : Res.S with type clause = St.clause
-                and type lemma = St.proof
-                and type atom = St.atom) = struct
+module type Arg = sig
+  type atom
+  type clause
+  type lemma
 
-  let clause_id c = St.(c.name)
+  val clause_name : clause -> string
+  val print_atom : Format.formatter -> atom -> unit
+  val lemma_info : lemma -> string * string option * atom list
+end
 
-  let node_id n = clause_id S.(n.conclusion)
+module Make(S : Res.S)(A : Arg with type atom := S.atom and type clause := S.clause and type lemma := S.lemma) = struct
+
+  let node_id n = A.clause_name S.(n.conclusion)
 
   let res_node_id n = (node_id n) ^ "_res"
 
@@ -43,7 +47,7 @@ module Make
       id table_options color table (c, rule, rule_color, l)
 
   let print_dot_res_node fmt id a =
-    Format.fprintf fmt "%s [label=\"%a\"];@\n" id St.print_atom a
+    Format.fprintf fmt "%s [label=\"%a\"];@\n" id A.print_atom a
 
   let ttify f c = fun fmt () -> f fmt c
 
@@ -51,16 +55,15 @@ module Make
     match S.(n.step) with
     | S.Hypothesis ->
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) "Hypothesis" "LIGHTBLUE"
-        [(fun fmt () -> (Format.fprintf fmt "%s" n.S.conclusion.St.name))];
+        [(fun fmt () -> (Format.fprintf fmt "%s" (A.clause_name n.S.conclusion)))];
     | S.Lemma lemma ->
-      let rule, f_args, t_args, color = St.proof_debug lemma in
+      let rule, color, args = A.lemma_info lemma in
       let color = match color with None -> "YELLOW" | Some c -> c in
-      let l = List.map (ttify St.print_atom) f_args @
-              List.map (ttify St.print_lit) t_args in
+      let l = List.map (ttify A.print_atom) args in
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) rule color l
     | S.Resolution (_, _, a) ->
       print_dot_node fmt (node_id n) "GREY" S.(n.conclusion) "Resolution" "GREY"
-        [(fun fmt () -> (Format.fprintf fmt "%s" n.S.conclusion.St.name))];
+        [(fun fmt () -> (Format.fprintf fmt "%s" (A.clause_name n.S.conclusion)))];
       print_dot_res_node fmt (res_node_id n) a;
       print_edge fmt (node_id n) (res_node_id n)
 

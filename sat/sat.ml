@@ -8,6 +8,7 @@ module Fsat = struct
   exception Dummy of int
 
   type t = int
+  type proof = unit
 
   let max_lit = max_int
   let max_fresh = ref (-1)
@@ -90,7 +91,11 @@ end
 module Make(Log : Log_intf.S) = struct
 
   module SatSolver = Solver.Make(Log)(Fsat)(Tsat)
-  module Dot = Dot.Make(SatSolver.St)(SatSolver.Proof)
+  module Dot = Dot.Make(SatSolver.Proof)(struct
+      let clause_name c = SatSolver.St.(c.name)
+      let print_atom = SatSolver.St.print_atom
+      let lemma_info () = "()", None, []
+    end)
 
   exception Bad_atom
 

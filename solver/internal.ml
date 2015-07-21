@@ -7,8 +7,9 @@ Copyright 2014 Simon Cruanes
 module Make (L : Log_intf.S)(St : Solver_types.S)
     (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof) = struct
 
-  open St
   module Proof = Res.Make(L)(St)
+
+  open St
 
   exception Sat
   exception Unsat
@@ -143,6 +144,24 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     tenv_queue = Vec.make 100 Th.dummy;
     tatoms_qhead = 0;
   }
+
+  (* Iteration over subterms *)
+  module Mi = Map.Make(struct type t = int let compare = Pervasives.compare end)
+  let iter_map = ref Mi.empty
+
+  let iter_sub f v =
+    try
+      List.iter f (Mi.find v.vid !iter_map)
+    with Not_found ->
+      let l = ref [] in
+      Th.iter_assignable (fun t -> l := add_term t :: !l) v.pa.lit;
+      iter_map := Mi.add v.vid !l !iter_map;
+      List.iter f !l
+
+  let atom lit =
+    let res = add_atom lit in
+    iter_sub ignore res.var;
+    res
 
   (* Misc functions *)
   let to_float i = float_of_int i
@@ -620,7 +639,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   (* Propagation (boolean and theory) *)
   let new_atom f =
-    let a = add_atom f in
+    let a = atom f in
     L.debug 10 "New atom : %a" St.pp_atom a;
     ignore (th_eval a);
     a
@@ -636,7 +655,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     add_clause (fresh_tname ()) atoms (Lemma lemma)
 
   let slice_propagate f lvl =
-    let a = add_atom f in
+    let a = atom f in
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     enqueue_bool a lvl (Semantic lvl)
 
@@ -877,7 +896,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     add_clauses ?tag cnf
 
   let assume ?tag cnf =
-    let cnf = List.rev_map (List.rev_map St.add_atom) cnf in
+    let cnf = List.rev_map (List.rev_map atom) cnf in
     init_solver ?tag cnf
 
   let eval lit =

@@ -11,13 +11,7 @@
 (**************************************************************************)
 
 module Make (L : Log_intf.S)(E : Formula_intf.S)
-    (Th : Theory_intf.S with type formula = E.t) = struct
-
-  module Expr = struct
-    module Term = E
-    module Formula = E
-    include E
-  end
+    (Th : Theory_intf.S with type formula = E.t and type proof = E.proof) = struct
 
   module Plugin = struct
     type term = E.t
@@ -76,7 +70,7 @@ module Make (L : Log_intf.S)(E : Formula_intf.S)
     let proof_debug _ = assert false
   end
 
-  module St = Solver_types.SatMake(L)(E)(Th)
+  module St = Solver_types.SatMake(L)(E)
 
   module S = Internal.Make(L)(St)(Plugin)
 

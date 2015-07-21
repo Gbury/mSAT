@@ -12,7 +12,7 @@
 (**************************************************************************)
 
 module Make (L : Log_intf.S)(F : Formula_intf.S)
-    (Th : Theory_intf.S with type formula = F.t) : sig
+    (Th : Theory_intf.S with type formula = F.t and type proof = F.proof) : sig
   (** Functor to create a SMT Solver parametrised by the atomic
       formulas and a theory. *)
 
@@ -20,7 +20,7 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
 
   module St : Solver_types.S
     with type formula = F.t
-     and type proof = Th.proof
+     and type proof = F.proof
 
   module Proof : Res.S
     with type atom = St.atom

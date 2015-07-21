@@ -61,7 +61,11 @@ end
 module Make(Dummy:sig end) = struct
 
   module SmtSolver = Solver.Make(Log)(Fsmt)(Tsmt)
-  module Dot = Dot.Make(SmtSolver.St)(SmtSolver.Proof)
+  module Dot = Dot.Make(SmtSolver.Proof)(struct
+      let clause_name c = SmtSolver.St.(c.name)
+      let print_atom = SmtSolver.St.print_atom
+      let lemma_info () = "Proof", Some "PURPLE", []
+    end)
 
   type atom = Fsmt.t
   type clause = SmtSolver.St.clause

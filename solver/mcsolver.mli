@@ -5,7 +5,7 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make (L : Log_intf.S)(E : Expr_intf.S)
-    (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t) : sig
+    (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t and type proof = E.proof) : sig
   (** Functor to create a solver parametrised by the atomic formulas and a theory. *)
 
   exception Unsat
@@ -13,7 +13,6 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
   module St : Solver_types.S
     with type term = E.Term.t
      and type formula = E.Formula.t
-     and type proof = Th.proof
 
   module Proof : Res.S
     with type atom = St.atom

@@ -2,25 +2,24 @@ util/Log
 
 solver/Log_intf
 solver/Formula_intf
-solver/Expr_intf
-
-solver/Res
-solver/Res_intf
-solver/Mcproof
-
-solver/Solver
-solver/Solver_types
-solver/Solver_types_intf
-solver/Mcsolver
-solver/Mcsolver_types
-solver/Mcsolver_types_intf
-
 solver/Theory_intf
 solver/Plugin_intf
-
-solver/Tseitin
+solver/Expr_intf
 solver/Tseitin_intf
+solver/Res_intf
+solver/Solver_types_intf
+
+solver/Internal
+solver/Solver
+solver/Mcsolver
+solver/Solver_types
+
+solver/Res
+solver/Tseitin
+
+backend/Dot
+backend/Dedukti
+backend/Backend_intf
 
 sat/Sat
 
-backend/Dedukti

@@ -15,21 +15,14 @@ open Printf
 
 module type S = Solver_types_intf.S
 
-
 (* Solver types for McSat Solving *)
 (* ************************************************************************ *)
 
-module McMake (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
-    type formula = E.Formula.t and type term = E.Term.t) = struct
-
-  (* Flag for Mcsat v.s Pure Sat *)
-  let mcsat = true
-
-  (* Types declarations *)
+module McMake (L : Log_intf.S)(E : Expr_intf.S) = struct
 
   type term = E.Term.t
   type formula = E.Formula.t
-  type proof = Th.proof
+  type proof = E.proof
 
   type lit = {
     lid : int;
@@ -73,8 +66,11 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
     | Bcp of clause option
 
   and premise =
-    | History of clause list
     | Lemma of proof
+    | History of clause list
+
+  (* Flag for Mcsat v.s Pure Sat *)
+  let mcsat = true
 
   type elt = (lit, var) Either.t
 
@@ -172,7 +168,7 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
         MF.add f_map lit var;
         incr cpt_mk_var;
         Vec.push vars (Either.mk_right var);
-        Th.iter_assignable (fun t -> ignore (make_semantic_var t)) lit;
+        (* Th.iter_assignable (fun t -> ignore (make_semantic_var t)) lit; *)
         var, negated
 
   let add_term t = make_semantic_var t
@@ -209,7 +205,7 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
   let get_elt_id = function
     | Either.Left l -> l.lid | Either.Right v ->  v.vid
   let get_elt_level = function
-    | Either.Left (l :lit) -> l.level | Either.Right v ->  v.level
+    | Either.Left (l : lit) -> l.level | Either.Right v ->  v.level
   let get_elt_weight = function
     | Either.Left (l : lit) -> l.weight | Either.Right v ->  v.weight
 
@@ -234,24 +230,6 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
   let fresh_name =
     let cpt = ref 0 in
     fun () -> incr cpt; "C" ^ (string_of_int !cpt)
-
-  (* Iteration over subterms *)
-  module Mi = Map.Make(struct type t = int let compare= Pervasives.compare end)
-  let iter_map = ref Mi.empty
-
-  let iter_sub f v =
-    try
-      List.iter f (Mi.find v.vid !iter_map)
-    with Not_found ->
-      let l = ref [] in
-      Th.iter_assignable (fun t -> l := add_term t :: !l) v.pa.lit;
-      iter_map := Mi.add v.vid !l !iter_map;
-      List.iter f !l
-
-  (* Proof debug info *)
-  let proof_debug p =
-    let name, l, l', color = Th.proof_debug p in
-    name, (List.map add_atom l), (List.map add_term l'), color
 
   (* Pretty printing for atoms and clauses *)
   let print_lit fmt v = E.Term.print fmt v.term
@@ -317,23 +295,14 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S)(Th : Plugin_intf.S with
 end
 
 
-
 (* Solver types for pure SAT Solving *)
 (* ************************************************************************ *)
 
-
-
-module SatMake (L : Log_intf.S)(E : Formula_intf.S)
-    (Th : Theory_intf.S with type formula = E.t ) = struct
-
-  (* Flag for Mcsat v.s Pure Sat *)
-  let mcsat = false
-
-  (* Types declarations *)
+module SatMake (L : Log_intf.S)(E : Formula_intf.S) = struct
 
   type term = E.t
   type formula = E.t
-  type proof = Th.proof
+  type proof = E.proof
 
   type lit = {
     lid : int;
@@ -377,9 +346,14 @@ module SatMake (L : Log_intf.S)(E : Formula_intf.S)
     | Bcp of clause option
 
   and premise =
-    | History of clause list
     | Lemma of proof
+    | History of clause list
 
+  (* Flag for Mcsat v.s Pure Sat *)
+  (* Flag for Mcsat v.s Pure Sat *)
+  let mcsat = false
+
+  (* Types declarations *)
   type elt = var
 
   (* Dummy values *)

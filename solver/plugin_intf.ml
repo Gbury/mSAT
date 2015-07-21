@@ -82,10 +82,5 @@ module type S = sig
   (** Called at the end of the search in case a model has been found. If no new clause is
       pushed, then 'sat' is returned, else search is resumed. *)
 
-  val proof_debug : proof -> string * (formula list) * (term list) * (string option)
-  (** Returns debugging information on a proof, as a triplet consisting of
-      a name/identification string associated with the proof, arguments of the proof,
-      and an optional color for the proof background *)
-
 end
 

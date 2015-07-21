@@ -12,6 +12,7 @@ type formula =
     | Equal of var * var
     | Distinct of var * var
 type t = formula
+type proof = unit
 
 let dummy = Prop 0
 

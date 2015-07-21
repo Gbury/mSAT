@@ -25,6 +25,9 @@ module type S = sig
     val print : Format.formatter -> t -> unit
   end
 
+  type proof
+  (** An abstract type for proofs *)
+
   val dummy : Formula.t
   (** Formula constants. A valid formula should never be physically equal to [dummy] *)
 

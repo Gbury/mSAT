@@ -5,9 +5,9 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make (L : Log_intf.S)(E : Expr_intf.S)
-    (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t) = struct
+    (Th : Plugin_intf.S with type term = E.Term.t and type formula = E.Formula.t and type proof = E.proof) = struct
 
-  module St = Solver_types.McMake(L)(E)(Th)
+  module St = Solver_types.McMake(L)(E)
 
   module M = Internal.Make(L)(St)(Th)
 

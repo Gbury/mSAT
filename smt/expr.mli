@@ -11,6 +11,7 @@ type formula = private
     | Distinct of var * var
 
 type t = formula
+type proof = unit
 
 val dummy : t
 
