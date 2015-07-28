@@ -91,8 +91,11 @@ let parse_input file =
 let std = Format.std_formatter
 
 let print format = match !output with
-  | Standard -> Format.fprintf std "%( fmt %)@." format
-  | Dot -> Format.fprintf std "/* %( fmt %) */@." format
+  | Standard ->
+    Format.kfprintf (fun fmt -> Format.fprintf fmt "@.") std format
+  | Dot ->
+    Format.fprintf std "/* ";
+    Format.kfprintf (fun fmt -> Format.fprintf fmt " */@.") std format
 
 let print_proof proof = match !output with
   | Standard -> ()
@@ -225,12 +228,12 @@ let main () =
           Gc.delete_alarm al;
           begin match res with
           | Smt.Sat ->
-                  print "Sat";
+                  print "Sat (%f)" (Sys.time ());
                   if !p_check then
                     if not (List.for_all (List.exists Smt.eval) cnf) then
                       raise Incorrect_model
           | Smt.Unsat ->
-                  print "Unsat";
+                  print "Unsat (%f)" (Sys.time ());
                   if !p_check then begin
                     let p = Smt.get_proof () in
                     print_proof p;
@@ -244,12 +247,12 @@ let main () =
           Gc.delete_alarm al;
           begin match res with
           | Mcsat.Sat ->
-                  print "Sat";
+                  print "Sat (%f)" (Sys.time ());
                   if !p_check then
                     if not (List.for_all (List.exists Mcsat.eval) cnf) then
                       raise Incorrect_model
           | Mcsat.Unsat ->
-                  print "Unsat";
+                  print "Unsat (%f)" (Sys.time ());
                   if !p_check then begin
                     let p = Mcsat.get_proof () in
                     print_mcproof p;

@@ -8,7 +8,7 @@ module type Arg = sig
 
   val clause_name : clause -> string
   val print_atom : Format.formatter -> atom -> unit
-  val lemma_info : lemma -> string * string option * atom list
+  val lemma_info : lemma -> string * string option * (Format.formatter -> unit -> unit) list
 end
 
 module Make(S : Res.S)(A : Arg with type atom := S.atom and type clause := S.clause and type lemma := S.lemma) = struct
@@ -57,9 +57,8 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type clause := S.cla
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) "Hypothesis" "LIGHTBLUE"
         [(fun fmt () -> (Format.fprintf fmt "%s" (A.clause_name n.S.conclusion)))];
     | S.Lemma lemma ->
-      let rule, color, args = A.lemma_info lemma in
+      let rule, color, l = A.lemma_info lemma in
       let color = match color with None -> "YELLOW" | Some c -> c in
-      let l = List.map (ttify A.print_atom) args in
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) rule color l
     | S.Resolution (_, _, a) ->
       print_dot_node fmt (node_id n) "GREY" S.(n.conclusion) "Resolution" "GREY"
