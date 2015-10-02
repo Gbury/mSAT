@@ -8,6 +8,8 @@ module type S = Res_intf.S
 
 module Make(L : Log_intf.S)(St : Solver_types.S) = struct
 
+  module St = St
+
   (* Type definitions *)
   type lemma = St.proof
   type clause = St.clause

@@ -10,10 +10,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   exception Unsat
 
-  module Proof : Res.S
-    with type atom = St.atom
-     and type clause = St.clause
-     and type lemma = Th.proof
+  module Proof : Res.S with module St = St
 
   val solve : unit -> unit
   (** Try and solves the current set of assumptions.

@@ -13,5 +13,6 @@
 
 # more warnings
 <**/*.ml>: warn_K, warn_Y, warn_X
+<**/*.ml>: keep_locks, short_paths, safe_string, strict_sequence
 <**/*.cm*>: debug
 

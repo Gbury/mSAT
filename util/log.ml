@@ -44,5 +44,5 @@ let on_buffer pp x =
   Buffer.contents buf
 
 let on_fmt pp x =
-  pp Format.str_formatter x;
+  let _ = pp Format.str_formatter x in
   Format.flush_str_formatter ()

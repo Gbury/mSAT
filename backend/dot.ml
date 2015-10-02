@@ -2,18 +2,17 @@
 module type S = Backend_intf.S
 
 module type Arg = sig
+
   type atom
-  type clause
   type lemma
 
-  val clause_name : clause -> string
   val print_atom : Format.formatter -> atom -> unit
   val lemma_info : lemma -> string * string option * (Format.formatter -> unit -> unit) list
 end
 
-module Make(S : Res.S)(A : Arg with type atom := S.atom and type clause := S.clause and type lemma := S.lemma) = struct
+module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemma) = struct
 
-  let node_id n = A.clause_name S.(n.conclusion)
+  let node_id n = n.S.conclusion.S.St.name
 
   let res_node_id n = (node_id n) ^ "_res"
 
@@ -55,14 +54,14 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type clause := S.cla
     match S.(n.step) with
     | S.Hypothesis ->
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) "Hypothesis" "LIGHTBLUE"
-        [(fun fmt () -> (Format.fprintf fmt "%s" (A.clause_name n.S.conclusion)))];
+        [(fun fmt () -> (Format.fprintf fmt "%s" (node_id n)))];
     | S.Lemma lemma ->
       let rule, color, l = A.lemma_info lemma in
       let color = match color with None -> "YELLOW" | Some c -> c in
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) rule color l
     | S.Resolution (_, _, a) ->
       print_dot_node fmt (node_id n) "GREY" S.(n.conclusion) "Resolution" "GREY"
-        [(fun fmt () -> (Format.fprintf fmt "%s" (A.clause_name n.S.conclusion)))];
+        [(fun fmt () -> (Format.fprintf fmt "%s" (node_id n)))];
       print_dot_res_node fmt (res_node_id n) a;
       print_edge fmt (node_id n) (res_node_id n)
 

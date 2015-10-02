@@ -7,14 +7,17 @@ Copyright 2014 Simon Cruanes
 module type S = sig
   (** Signature for a module handling proof by resolution from sat solving traces *)
 
+  module St : Solver_types.S
+  (** Module defining atom and clauses *)
+
   (** {3 Type declarations} *)
 
   exception Insuficient_hyps
   (** Raised when a complete resolution derivation cannot be found using the current hypotheses. *)
 
-  type atom
-  type clause
-  type lemma
+  type atom = St.atom
+  type clause = St.clause
+  type lemma = St.proof
   (** Abstract types for atoms, clauses and theory-specific lemmas *)
 
   type proof

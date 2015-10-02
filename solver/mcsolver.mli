@@ -13,11 +13,10 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
   module St : Solver_types.S
     with type term = E.Term.t
      and type formula = E.Formula.t
+     and type proof = E.proof
 
   module Proof : Res.S
-    with type atom = St.atom
-     and type clause = St.clause
-     and type lemma = Th.proof
+    with module St = St
 
   val solve : unit -> unit
   (** Try and solves the current set of assumptions.

@@ -350,7 +350,6 @@ module SatMake (L : Log_intf.S)(E : Formula_intf.S) = struct
     | History of clause list
 
   (* Flag for Mcsat v.s Pure Sat *)
-  (* Flag for Mcsat v.s Pure Sat *)
   let mcsat = false
 
   (* Types declarations *)

@@ -8,6 +8,5 @@ module type S = Res_intf.S
 
 module Make :
   functor (L : Log_intf.S) ->
-  functor (St : Solver_types.S) ->
-    S with type atom = St.atom and type clause = St.clause and type lemma = St.proof
+  functor (St : Solver_types.S) -> S with module St = St
 (** Functor to create a module building proofs from a sat-solver unsat trace. *)
