@@ -145,6 +145,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     tatoms_qhead = 0;
   }
 
+  (* Level for push/pop operations *)
+  let current_level () = Vec.size env.user_levels
+
   (* Iteration over subterms *)
   module Mi = Map.Make(struct type t = int let compare = Pervasives.compare end)
   let iter_map = ref Mi.empty
@@ -349,6 +352,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     let is_uip  = ref false in
     let c       = ref (Proof.to_list c_clause) in
     let history = ref [c_clause] in
+    let c_level = ref 0 in
     clause_bump_activity c_clause;
     let is_semantic a = match a.var.reason with
         | Semantic _ -> true
@@ -380,6 +384,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
                             begin match tmp with
                             | [] -> L.debug 15 "No lit to resolve over."
                             | [b] when b == a.var.pa ->
+                                    c_level := max !c_level d.c_level;
                                     clause_bump_activity d;
                                     var_bump_activity a.var;
                                     history := d :: !history;
@@ -392,7 +397,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     with Exit ->
       let learnt = List.sort (fun a b -> Pervasives.compare b.var.level a.var.level) !c in
       let blevel = backtrack_lvl !is_uip learnt in
-      blevel, learnt, !history, !is_uip
+      blevel, learnt, !history, !is_uip, !c_level
 
   let get_atom i =
     destruct (Vec.get env.trail i)
@@ -408,6 +413,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     let tr_ind = ref (Vec.size env.trail - 1) in
     let size   = ref 1 in
     let history = ref [] in
+    let c_level = ref 0 in
     while !cond do
       if !c.learnt then clause_bump_activity !c;
       history := !c :: !history;
@@ -438,11 +444,13 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       | 0, _ ->
         cond := false;
         learnt := p.neg :: (List.rev !learnt)
-      | n, Bcp Some cl -> c := cl
+      | n, Bcp Some cl ->
+        c_level := max !c_level cl.c_level;
+        c := cl
       | n, _ -> assert false
     done;
     List.iter (fun q -> q.var.seen <- false) !seen;
-    !blevel, !learnt, !history, true
+    !blevel, !learnt, !history, true, !c_level
 
   let analyze c_clause =
     if St.mcsat then
@@ -450,7 +458,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     else
       analyze_sat c_clause
 
-  let record_learnt_clause confl blevel learnt history is_uip =
+  let record_learnt_clause confl blevel learnt history is_uip lvl =
     begin match learnt with
       | [] -> assert false
       | [fuip] ->
@@ -459,14 +467,14 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
           report_unsat confl
         else begin
           let name = fresh_lname () in
-          let uclause = make_clause name learnt (List.length learnt) true history in
+          let uclause = make_clause name learnt (List.length learnt) true history lvl in
           L.debug 1 "Unit clause learnt : %a" St.pp_clause uclause;
           Vec.push env.learnts uclause;
           enqueue_bool fuip 0 (Bcp (Some uclause))
         end
       | fuip :: _ ->
         let name = fresh_lname () in
-        let lclause = make_clause name learnt (List.length learnt) true history in
+        let lclause = make_clause name learnt (List.length learnt) true history lvl in
         L.debug 2 "New clause learnt : %a" St.pp_clause lclause;
         Vec.push env.learnts lclause;
         attach_clause lclause;
@@ -486,55 +494,61 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     env.conflicts <- env.conflicts + 1;
     if decision_level() = 0 || Vec.for_all (fun a -> a.var.level = 0) confl.atoms then
       report_unsat confl; (* Top-level conflict *)
-    let blevel, learnt, history, is_uip = analyze confl in
+    let blevel, learnt, history, is_uip, lvl = analyze confl in
     cancel_until blevel;
-    record_learnt_clause confl blevel learnt (History history) is_uip
+    record_learnt_clause confl blevel learnt (History history) is_uip lvl
 
   (* Add a new clause *)
   exception Trivial
 
-  let simplify_zero atoms init0 =
+  let simplify_zero atoms level0 =
     (* TODO: could be more efficient than [@] everywhere? *)
     assert (decision_level () = 0);
-    let aux (atoms, init) a =
+    let aux (atoms, init, lvl) a =
       if a.is_true then raise Trivial;
-      if a.neg.is_true then
-        atoms, false
-      else
-        a::atoms, init
+      if a.neg.is_true then begin
+        match a.var.reason with
+        | Bcp (Some cl) -> atoms, true, max lvl cl.c_level
+        | _ -> assert false
+      end else
+        a::atoms, init, lvl
     in
-    let atoms, init = List.fold_left aux ([], true) atoms in
-    List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
+    let atoms, init, lvl = List.fold_left aux ([], false, level0) atoms in
+    List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init, lvl
 
   let partition atoms init0 =
-    let rec partition_aux trues unassigned falses init = function
-      | [] -> trues @ unassigned @ falses, init
+    let rec partition_aux trues unassigned falses init lvl = function
+      | [] -> trues @ unassigned @ falses, init, lvl
       | a :: r ->
         if a.is_true then
           if a.var.level = 0 then raise Trivial
-          else (a::trues) @ unassigned @ falses @ r, init
+          else (a::trues) @ unassigned @ falses @ r, init, lvl
         else if a.neg.is_true then
-          if a.var.level = 0 then
-            partition_aux trues unassigned falses false r
-          else
-            partition_aux trues unassigned (a::falses) init r
+          if a.var.level = 0 then begin
+            match a.var.reason with
+            | Bcp (Some cl) ->
+              partition_aux trues unassigned falses true (max lvl cl.c_level) r
+            | _ -> assert false
+          end else
+            partition_aux trues unassigned (a::falses) init lvl r
         else
-          partition_aux trues (a::unassigned) falses init r
+          partition_aux trues (a::unassigned) falses init lvl r
     in
     if decision_level () = 0 then
       simplify_zero atoms init0
     else
-      partition_aux [] [] [] true atoms
+      partition_aux [] [] [] false init0 atoms
 
   let add_clause ?tag name atoms history =
     if env.is_unsat then raise Unsat; (* is it necessary ? *)
     let init_name = name in
-    let init0 = make_clause ?tag init_name atoms (List.length atoms) (history <> History []) history in
+    let c_level =  current_level () in
+    let init0 = make_clause ?tag init_name atoms (List.length atoms) (history <> History []) history c_level in
     L.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
       if Proof.has_been_proved init0 then raise Trivial;
       assert (Proof.is_proven init0); (* Important side-effect, DO NOT REMOVE *)
-      let atoms, init = partition atoms init0 in
+      let atoms, init, level = partition atoms c_level in
       let size = List.length atoms in
       match atoms with
       | [] ->
@@ -542,7 +556,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       | a::b::_ ->
         let clause =
           if init then init0
-          else make_clause ?tag (fresh_name ()) atoms size true (History [init0])
+          else make_clause ?tag (fresh_name ()) atoms size true (History [init0]) level
         in
         L.debug 1 "New clause : %a" St.pp_clause clause;
         attach_clause clause;
@@ -685,7 +699,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       let l = List.rev_map new_atom l in
       Iheap.grow_to_by_double env.order (St.nb_elt ());
       List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
-      let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) in
+      let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) (current_level ())in
       Some c
 
   and propagate () =
@@ -923,8 +937,6 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   let base_level = 0
 
-  let current_level () = Vec.size env.user_levels
-
   let push () =
     let ul_trail = if Vec.is_empty env.trail_lim
       then base_level
@@ -938,17 +950,20 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     if l > current_level()
     then invalid_arg "cannot pop() to level, it is too high";
     let ul = Vec.get env.user_levels l in
-    (* see whether we can reset [env.is_unsat] *)
-    if env.is_unsat && not (Vec.is_empty env.trail_lim) then (
-      (* level at which the decision that lead to unsat was made *)
-      let last = Vec.last env.trail_lim in
-      if ul.ul_trail < last then env.is_unsat <- false
-    );
+    if env.is_unsat then begin
+      match env.unsat_conflict with
+      | Some cl ->
+        if cl.c_level > l then begin
+          env.unsat_conflict <- None;
+          env.is_unsat <- false
+        end
+      | _ -> assert false
+    end;
     cancel_until ul.ul_trail;
     Vec.shrink env.clauses ul.ul_clauses;
     Vec.shrink env.learnts ul.ul_learnt;
     ()
 
-  let clear () = pop base_level
+  let reset () = pop base_level
 end
 

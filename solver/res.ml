@@ -122,7 +122,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     | [] -> raise (Resolution_error "No literal to resolve over")
     | [a] ->
       H.add proof new_clause (Resolution (a, (c, cl_c), (d, cl_d)));
-      let new_c = St.make_clause (fresh_pcl_name ()) new_clause (List.length new_clause) true St.(History [c; d]) in
+      let new_c = St.make_clause (fresh_pcl_name ()) new_clause (List.length new_clause)
+          true St.(History [c; d]) (max c.St.c_level d.St.c_level) in
       L.debug 5 "New clause : %a" St.pp_clause new_c;
       new_c, new_clause
     | _ -> raise (Resolution_error "Resolved to a tautology")

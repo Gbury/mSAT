@@ -8,6 +8,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof) : sig
   (** Functor to create a solver parametrised by the atomic formulas and a theory. *)
 
+  (** {2 Solving facilities} *)
+
   exception Unsat
 
   module Proof : Res.S with module St = St
@@ -40,6 +42,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   val model : unit -> (St.term * St.term) list
   (** Returns the model found if the formula is satisfiable. *)
 
+
+  (** {2 Backtracking facilities} *)
+
   type level
   (** Abstract notion of assumption level. *)
 
@@ -56,7 +61,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   (** Go back to the given level, forgetting every assumption added since.
       @raise Invalid_argument if the current level is below the argument *)
 
-  val clear : unit -> unit
+  val reset : unit -> unit
   (** Return to level {!base_level} *)
+
 end
 

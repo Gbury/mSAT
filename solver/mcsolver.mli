@@ -62,7 +62,7 @@ module Make (L : Log_intf.S)(E : Expr_intf.S)
   (** Go back to the given level, forgetting every assumption added since.
       @raise Invalid_argument if the current level is below the argument *)
 
-  val clear : unit -> unit
+  val reset : unit -> unit
   (** Return to level {!base_level} *)
 end
 

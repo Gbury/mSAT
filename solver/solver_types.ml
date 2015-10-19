@@ -57,6 +57,7 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S) = struct
     atoms : atom Vec.t;
     learnt : bool;
     cpremise : premise;
+    c_level : int;
     mutable activity : float;
     mutable removed : bool;
   }
@@ -101,6 +102,7 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S) = struct
       atoms = Vec.make_empty dummy_atom;
       activity = -1.;
       removed = false;
+      c_level = -1;
       learnt = false;
       cpremise = History [] }
 
@@ -177,17 +179,18 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S) = struct
     let var, negated = make_boolean_var lit in
     if negated then var.na else var.pa
 
-  let make_clause ?tag name ali sz_ali is_learnt premise =
+  let make_clause ?tag name ali sz_ali is_learnt premise lvl =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
     { name  = name;
       tag = tag;
       atoms = atoms;
       removed = false;
       learnt = is_learnt;
+      c_level = lvl;
       activity = 0.;
       cpremise = premise}
 
-  let empty_clause = make_clause "Empty" [] 0 false (History [])
+  let empty_clause = make_clause "Empty" [] 0 false (History []) 0
 
   (* Decisions & propagations *)
   type t = (lit, atom) Either.t
@@ -337,6 +340,7 @@ module SatMake (L : Log_intf.S)(E : Formula_intf.S) = struct
     atoms : atom Vec.t;
     learnt : bool;
     cpremise : premise;
+    c_level : int;
     mutable activity : float;
     mutable removed : bool;
   }
@@ -382,6 +386,7 @@ module SatMake (L : Log_intf.S)(E : Formula_intf.S) = struct
       atoms = Vec.make_empty dummy_atom;
       activity = -1.;
       removed = false;
+      c_level = -1;
       learnt = false;
       cpremise = History [] }
 
@@ -442,17 +447,18 @@ module SatMake (L : Log_intf.S)(E : Formula_intf.S) = struct
     let var, negated = make_boolean_var lit in
     if negated then var.na else var.pa
 
-  let make_clause ?tag name ali sz_ali is_learnt premise =
+  let make_clause ?tag name ali sz_ali is_learnt premise lvl =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
     { name  = name;
       tag = tag;
       atoms = atoms;
       removed = false;
       learnt = is_learnt;
+      c_level = lvl;
       activity = 0.;
       cpremise = premise}
 
-  let empty_clause = make_clause "Empty" [] 0 false (History [])
+  let empty_clause = make_clause "Empty" [] 0 false (History []) 0
 
   (* Decisions & propagations *)
   type t = atom
