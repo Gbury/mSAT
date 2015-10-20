@@ -508,12 +508,12 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       if a.is_true then raise Trivial;
       if a.neg.is_true then begin
         match a.var.reason with
-        | Bcp (Some cl) -> atoms, true, max lvl cl.c_level
+        | Bcp (Some cl) -> atoms, false, max lvl cl.c_level
         | _ -> assert false
       end else
         a::atoms, init, lvl
     in
-    let atoms, init, lvl = List.fold_left aux ([], false, level0) atoms in
+    let atoms, init, lvl = List.fold_left aux ([], true, level0) atoms in
     List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init, lvl
 
   let partition atoms init0 =
@@ -527,7 +527,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
           if a.var.level = 0 then begin
             match a.var.reason with
             | Bcp (Some cl) ->
-              partition_aux trues unassigned falses true (max lvl cl.c_level) r
+              partition_aux trues unassigned falses false (max lvl cl.c_level) r
             | _ -> assert false
           end else
             partition_aux trues unassigned (a::falses) init lvl r
@@ -542,7 +542,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let add_clause ?tag name atoms history =
     if env.is_unsat then raise Unsat; (* is it necessary ? *)
     let init_name = name in
-    let c_level =  current_level () in
+    let c_level = current_level () in
     let init0 = make_clause ?tag init_name atoms (List.length atoms) (history <> History []) history c_level in
     L.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
