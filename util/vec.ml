@@ -35,9 +35,19 @@ let from_list l sz d =
   let f_init i = match !l with [] -> assert false | e::r -> l := r; e in
   {data = Array.init sz f_init; sz = sz; dummy = d}
 
+let to_list s =
+  let l = ref [] in
+  for i = 0 to s.sz - 1 do
+    l := s.data.(i) :: !l
+  done;
+  List.rev !l
+
 let clear s = s.sz <- 0
 
-let shrink t i = assert (i >= 0 && i<=t.sz); t.sz <- t.sz - i
+let shrink t i =
+  assert (i >= 0);
+  assert (i<=t.sz);
+  t.sz <- t.sz - i
 
 let pop t =
   if t.sz = 0 then invalid_arg "vec.pop";

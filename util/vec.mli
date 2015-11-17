@@ -31,6 +31,10 @@ val from_array : 'a array -> int -> 'a -> 'a t
     used ([size <= Array.length data] must hold) *)
 
 val from_list : 'a list -> int -> 'a -> 'a t
+(** [from_list l n] takes the [n] first elements of list [l] to make a new vector *)
+
+val to_list : 'a t -> 'a list
+(** Returns the list of elements of the vector *)
 
 val clear : 'a t -> unit
 (** Set size to 0, doesn't free elements *)

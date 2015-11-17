@@ -33,7 +33,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       from the clauses assumed because of top-level simplification of clauses. *)
 
   val history : unit -> St.clause Vec.t
-  (** Returns the history of learnt clauses, in the right order. *)
+  (** Returns the history of learnt clauses, with no guarantees on order. *)
 
   val unsat_conflict : unit -> St.clause option
   (** Returns the unsat clause found at the toplevel, if it exists (i.e if

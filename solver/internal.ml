@@ -18,7 +18,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   (* a push/pop state *)
   type user_level = {
-    ul_trail : int; (* height of the decision trail *)
+    (* User levels always refer to decision_level 0 *)
+    ul_trail : int; (* Number of atoms in trail at decision level 0 *)
+    ul_th_env : Th.level; (* Theory state at level 0 *)
     ul_clauses : int; (* number of clauses *)
     ul_learnt : int; (* number of learnt clauses *)
   }
@@ -50,11 +52,17 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     trail_lim : int Vec.t;
     (* decision levels in [trail]  *)
 
+    mutable tenv_queue : Th.level Vec.t;
+    (* Theory levels for backtracking *)
+
     user_levels : user_level Vec.t;
     (* user-defined levels, for {!push} and {!pop} *)
 
     mutable qhead : int;
     (* Start offset in the queue of unit facts to propagate, within the trail *)
+
+    mutable tatoms_qhead : int;
+    (* Start offset in the queue of unit fact not yet seen by the theory *)
 
     mutable simpDB_assigns : int;
     (* number of toplevel assignments since last call to [simplify ()] *)
@@ -104,8 +112,6 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     mutable max_literals : int;
     mutable tot_literals : int;
     mutable nb_init_clauses : int;
-    mutable tenv_queue : Th.level Vec.t;
-    mutable tatoms_qhead : int;
   }
 
   let env = {
@@ -117,7 +123,12 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     var_inc = 1.;
     trail = Vec.make 601 (of_atom dummy_atom);
     trail_lim = Vec.make 601 (-1);
-    user_levels = Vec.make 20 {ul_trail=0;ul_learnt=0;ul_clauses=0};
+    user_levels = Vec.make 20 {
+        ul_trail = 0;
+        ul_learnt = 0;
+        ul_clauses = 0;
+        ul_th_env = Th.dummy;
+      };
     qhead = 0;
     simpDB_assigns = -1;
     simpDB_props = 0;
@@ -146,6 +157,10 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   }
 
   (* Level for push/pop operations *)
+  type level = int
+
+  let base_level = 0
+
   let current_level () = Vec.size env.user_levels
 
   (* Iteration over subterms *)
@@ -235,6 +250,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let nb_learnts () = Vec.size env.learnts
   let nb_vars    () = St.nb_elt ()
 
+  (* Manipulating decision levels *)
   let new_decision_level() =
     Vec.push env.trail_lim (Vec.size env.trail);
     Vec.push env.tenv_queue (Th.current_level ()); (* save the current tenv *)
@@ -242,6 +258,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       (Vec.size env.trail_lim) (Vec.size env.tenv_queue) (Vec.size env.trail);
     ()
 
+  (* Adding/removing clauses *)
   let attach_clause c =
     Vec.push (Vec.get c.atoms 0).neg.watched c;
     Vec.push (Vec.get c.atoms 1).neg.watched c;
@@ -253,8 +270,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       env.clauses_literals <- env.clauses_literals + Vec.size c.atoms
 
   let detach_clause c =
+    L.debug 15 "Removing clause %a" St.pp_clause c;
     c.removed <- true;
-        (*
+        (* Not necessary, cleanup is done during propagation
         Vec.remove (Vec.get c.atoms 0).neg.watched c;
         Vec.remove (Vec.get c.atoms 1).neg.watched c;
         *)
@@ -298,7 +316,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - lvl);
       Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - lvl);
     end;
-    assert (Vec.size env.trail_lim = Vec.size env.tenv_queue)
+    assert (Vec.size env.trail_lim = Vec.size env.tenv_queue);
+    assert (env.qhead = Vec.size env.trail);
+    ()
 
   let report_unsat ({atoms=atoms} as confl) =
     L.debug 5 "Unsat conflict : %a" St.pp_clause confl;
@@ -502,7 +522,6 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   exception Trivial
 
   let simplify_zero atoms level0 =
-    (* TODO: could be more efficient than [@] everywhere? *)
     assert (decision_level () = 0);
     let aux (atoms, init, lvl) a =
       if a.is_true then raise Trivial;
@@ -539,16 +558,17 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     else
       partition_aux [] [] [] false init0 atoms
 
-  let add_clause ?tag name atoms history =
-    if env.is_unsat then raise Unsat; (* is it necessary ? *)
-    let init_name = name in
-    let c_level = current_level () in
-    let init0 = make_clause ?tag init_name atoms (List.length atoms) (history <> History []) history c_level in
+  let add_clause ?(force=false) init0 =
+    let vec = match init0.cpremise with
+      | Lemma _ -> env.learnts
+      | History [] -> env.clauses
+      | History _ -> assert false
+    in
     L.debug 10 "Adding clause : %a" St.pp_clause init0;
     try
-      if Proof.has_been_proved init0 then raise Trivial;
-      assert (Proof.is_proven init0); (* Important side-effect, DO NOT REMOVE *)
-      let atoms, init, level = partition atoms c_level in
+      if not force && Proof.has_been_proved init0 then raise Trivial;
+      if not (Proof.is_proven init0) then assert false; (* Important side-effect, DO NOT REMOVE *)
+      let atoms, init, level = partition (Vec.to_list init0.atoms) init0.c_level in
       let size = List.length atoms in
       match atoms with
       | [] ->
@@ -556,11 +576,11 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       | a::b::_ ->
         let clause =
           if init then init0
-          else make_clause ?tag (fresh_name ()) atoms size true (History [init0]) level
+          else make_clause ?tag:init0.tag (fresh_name ()) atoms size true (History [init0]) level
         in
         L.debug 1 "New clause : %a" St.pp_clause clause;
         attach_clause clause;
-        Vec.push env.clauses clause;
+        Vec.push vec clause;
         if a.neg.is_true then begin
           let lvl = List.fold_left (fun m a -> max m a.var.level) 0 atoms in
           cancel_until lvl;
@@ -571,9 +591,10 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
           enqueue_bool a lvl (Bcp (Some clause))
         end
       | [a]   ->
+        L.debug 1 "New unit clause, propagating : %a" St.pp_atom a;
         cancel_until 0;
         enqueue_bool a 0 (Bcp (Some init0))
-    with Trivial -> ()
+    with Trivial -> L.debug 1 "Trivial clause ignored"
 
   let progress_estimate () =
     let prg = ref 0. in
@@ -666,7 +687,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     let atoms = List.rev_map (fun x -> new_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     List.iter (fun a -> insert_var_order (elt_of_var a.var)) atoms;
-    add_clause (fresh_tname ()) atoms (Lemma lemma)
+    let c = make_clause (fresh_tname ()) atoms (List.length atoms) true (Lemma lemma) base_level in
+    add_clause c
 
   let slice_propagate f lvl =
     let a = atom f in
@@ -699,11 +721,13 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       let l = List.rev_map new_atom l in
       Iheap.grow_to_by_double env.order (St.nb_elt ());
       List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
-      let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) (current_level ())in
+      let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) base_level in
       Some c
 
   and propagate () =
-    if env.qhead = Vec.size env.trail then
+    if env.qhead > Vec.size env.trail then
+      assert false
+    else if env.qhead = Vec.size env.trail then
       None
     else begin
       let num_props = ref 0 in
@@ -865,7 +889,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
   let add_clauses ?tag cnf =
     let aux cl =
-      add_clause ?tag (fresh_hname ()) cl (History []);
+      let c = make_clause ?tag (fresh_hname ()) cl (List.length cl) false (History []) (current_level ()) in
+      add_clause c;
       match propagate () with
       | None -> () | Some confl -> report_unsat confl
     in
@@ -933,35 +958,98 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
              ) [] env.trail
 
   (* Push/Pop *)
-  type level = int
-
-  let base_level = 0
-
   let push () =
-    let ul_trail = if Vec.is_empty env.trail_lim
-      then base_level
-      else Vec.last env.trail_lim
-    and ul_clauses = Vec.size env.clauses
-    and ul_learnt = Vec.size env.learnts in
-    Vec.push env.user_levels {ul_trail; ul_clauses;ul_learnt};
-    Vec.size env.user_levels
+    let res = current_level () in
+    let ul_trail =
+      if Vec.is_empty env.trail_lim then Vec.size env.trail
+      else Vec.get env.trail_lim 0
+    and ul_th_env =
+      if Vec.is_empty env.tenv_queue then Th.current_level ()
+      else Vec.get env.tenv_queue 0
+    in
+    let ul_clauses = Vec.size env.clauses in
+    let ul_learnt = Vec.size env.learnts in
+    Vec.push env.user_levels {ul_trail; ul_th_env; ul_clauses;ul_learnt};
+    res
+
+  (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
+  let reset_until push_lvl trail_lim th_env =
+    L.debug 1 "Resetting to decision level 0 (pop/forced)";
+    env.qhead <- trail_lim;
+    env.tatoms_qhead <- env.qhead;
+    for c = env.qhead to Vec.size env.trail - 1 do
+      destruct (Vec.get env.trail c)
+        (fun v ->
+           v.assigned <- None;
+           v.level <- -1;
+           insert_var_order (elt_of_lit v)
+        )
+        (fun a ->
+           match a.var.reason with
+           | Bcp Some { c_level } when c_level > push_lvl ->
+             a.is_true <- false;
+             a.neg.is_true <- false;
+             a.var.level <- -1;
+             a.var.reason <- Bcp None;
+             insert_var_order (elt_of_var a.var)
+           | _ ->
+             Vec.set env.trail env.qhead (of_atom a);
+             env.qhead <- env.qhead + 1
+        )
+    done;
+    Th.backtrack th_env; (* recover the right tenv *)
+    Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
+    if not (Vec.is_empty env.trail_lim) then begin
+      Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - 1);
+      Vec.set env.trail_lim 0 env.qhead
+    end;
+    if not (Vec.is_empty env.tenv_queue) then begin
+      Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - 1);
+      Vec.set env.tenv_queue 0 th_env
+    end;
+    assert (Vec.size env.trail_lim = Vec.size env.tenv_queue);
+    assert (env.qhead = Vec.size env.trail);
+    ()
 
   let pop l =
-    if l > current_level()
-    then invalid_arg "cannot pop() to level, it is too high";
+    (* Check sanity of pop *)
+    if l > current_level() then invalid_arg "cannot pop() to level, it is too high";
+
     let ul = Vec.get env.user_levels l in
-    if env.is_unsat then begin
-      match env.unsat_conflict with
-      | Some cl ->
-        if cl.c_level > l then begin
-          env.unsat_conflict <- None;
-          env.is_unsat <- false
-        end
-      | _ -> assert false
-    end;
-    cancel_until ul.ul_trail;
-    Vec.shrink env.clauses ul.ul_clauses;
-    Vec.shrink env.learnts ul.ul_learnt;
+    Vec.shrink env.user_levels (max 0 (Vec.size env.user_levels - l - 1));
+
+    (* It is quite hard to check wether unsat status can be kept, so in doubt, we remove it *)
+    env.is_unsat <- false;
+
+    (* Backtrack to the right level *)
+    reset_until l ul.ul_trail ul.ul_th_env;
+
+    (* Clear hypothesis not valid anymore *)
+    for i = ul.ul_clauses to Vec.size env.clauses - 1 do
+      let c = Vec.get env.clauses i in
+      assert (c.c_level > l);
+      remove_clause c
+    done;
+    Vec.shrink env.clauses (Vec.size env.clauses - ul.ul_clauses);
+
+    (* Refresh the known tautologies simplified because of clauses that have been removed *)
+    let s = Stack.create () in
+    let new_sz = ref ul.ul_learnt in
+    for i = ul.ul_learnt to Vec.size env.learnts - 1 do
+      let c = Vec.get env.learnts i in
+      if c.c_level > l then begin
+        remove_clause c;
+        match c.cpremise with
+        | History [ { cpremise = Lemma _ } as c' ] -> Stack.push c' s
+        | _ -> () (* Only simplified clauses can have a level > 0 *)
+      end else begin
+        L.debug 15 "Keeping intact clause %a" St.pp_clause c;
+        Vec.set env.learnts !new_sz c;
+        incr new_sz
+      end
+    done;
+    Vec.shrink env.learnts (Vec.size env.learnts - !new_sz);
+    Stack.iter (add_clause ~force:true) s;
     ()
 
   let reset () = pop base_level
