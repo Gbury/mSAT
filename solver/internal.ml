@@ -317,7 +317,6 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - lvl);
     end;
     assert (Vec.size env.trail_lim = Vec.size env.tenv_queue);
-    assert (env.qhead = Vec.size env.trail);
     ()
 
   let report_unsat ({atoms=atoms} as confl) =
