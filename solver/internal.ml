@@ -999,14 +999,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     done;
     Th.backtrack th_env; (* recover the right tenv *)
     Vec.shrink env.trail ((Vec.size env.trail) - env.qhead);
-    if not (Vec.is_empty env.trail_lim) then begin
-      Vec.shrink env.trail_lim ((Vec.size env.trail_lim) - 1);
-      Vec.set env.trail_lim 0 env.qhead
-    end;
-    if not (Vec.is_empty env.tenv_queue) then begin
-      Vec.shrink env.tenv_queue ((Vec.size env.tenv_queue) - 1);
-      Vec.set env.tenv_queue 0 th_env
-    end;
+    Vec.clear env.trail_lim;
+    Vec.clear env.tenv_queue;
     assert (Vec.size env.trail_lim = Vec.size env.tenv_queue);
     assert (env.qhead = Vec.size env.trail);
     ()
