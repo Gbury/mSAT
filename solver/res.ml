@@ -40,7 +40,18 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
       let hash = hash_cl
       let equal = equal_cl
     end)
-  let proof : node H.t = H.create 1007;;
+  let proof : node H.t ref = ref (H.create 1007);;
+
+  let push_stack = Vec.make 0 (H.create 0)
+
+  let push () =
+    let res = Vec.size push_stack in
+    Vec.push push_stack (H.copy !proof);
+    res
+
+  let pop i =
+    proof := Vec.get push_stack i;
+    Vec.shrink push_stack (Vec.size push_stack - i)
 
   (* Misc functions *)
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
@@ -96,16 +107,16 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
   let print_clause fmt c = print_cl fmt (to_list c)
 
   (* Adding hyptoheses *)
-  let has_been_proved c = H.mem proof (to_list c)
+  let has_been_proved c = H.mem !proof (to_list c)
 
   let is_proved (c, cl) =
-    if H.mem proof cl then
+    if H.mem !proof cl then
       true
     else if not St.(c.learnt) then begin
-      H.add proof cl Assumption;
+      H.add !proof cl Assumption;
       true
     end else match St.(c.cpremise) with
-      | St.Lemma p -> H.add proof cl (Lemma p); true
+      | St.Lemma p -> H.add !proof cl (Lemma p); true
       | St.History _ -> false
 
   let is_proven c = is_proved (c, to_list c)
@@ -121,7 +132,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     match resolved with
     | [] -> raise (Resolution_error "No literal to resolve over")
     | [a] ->
-      H.add proof new_clause (Resolution (a, (c, cl_c), (d, cl_d)));
+      H.add !proof new_clause (Resolution (a, (c, cl_c), (d, cl_d)));
       let new_c = St.make_clause (fresh_pcl_name ()) new_clause (List.length new_clause)
           true St.(History [c; d]) (max c.St.c_level d.St.c_level) in
       L.debug 5 "New clause : %a" St.pp_clause new_c;
@@ -219,28 +230,31 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
       raise Insuficient_hyps
 
   (* Interface exposed *)
-  type proof_node = {
+  type proof = {
+    table : node H.t;
+    clause : clause * atom list;
+  }
+  and proof_node = {
     conclusion : clause;
     step : step;
   }
-  and proof = clause * atom list
   and step =
     | Hypothesis
     | Lemma of lemma
     | Resolution of proof * proof * atom
 
-  let expand (c, cl) =
-    let st = match H.find proof cl with
+  let expand { clause = (c, cl); table; } =
+    let st = match H.find table cl with
       | Assumption -> Hypothesis
       | Lemma l -> Lemma l
       | Resolution (a, cl_c, cl_d) ->
-        Resolution (cl_c, cl_d, a)
+        Resolution ({ clause = cl_c; table}, {clause = cl_d; table}, a)
     in
     { conclusion = c; step = st }
 
   let prove_unsat c =
     assert_can_prove_unsat c;
-    (St.empty_clause, [])
+    {clause = St.empty_clause, []; table = !proof; }
 
   (* Compute unsat-core *)
   let compare_cl c d =
@@ -270,15 +284,15 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     | Enter of proof
     | Leaving of proof
 
-  let pop s = try Some (Stack.pop s) with Stack.Empty -> None
+  let spop s = try Some (Stack.pop s) with Stack.Empty -> None
 
   let rec fold_aux s h f acc =
-    match pop s with
+    match spop s with
     | None -> acc
-    | Some (Leaving ((_, cl) as p)) ->
+    | Some (Leaving ({clause = (_, cl)} as p)) ->
       H.add h cl true;
       fold_aux s h f (f acc (expand p))
-    | Some (Enter ((_, cl) as p)) ->
+    | Some (Enter ({clause = (_, cl)} as p)) ->
       if not (H.mem h cl) then begin
         Stack.push (Leaving p) s;
         let node = expand p in

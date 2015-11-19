@@ -23,6 +23,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     ul_th_env : Th.level; (* Theory state at level 0 *)
     ul_clauses : int; (* number of clauses *)
     ul_learnt : int; (* number of learnt clauses *)
+    ul_proof_lvl : int; (* push/pop index for Res module *)
   }
 
   (* Singleton type containing the current state *)
@@ -128,6 +129,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
         ul_learnt = 0;
         ul_clauses = 0;
         ul_th_env = Th.dummy;
+        ul_proof_lvl = -1;
       };
     qhead = 0;
     simpDB_assigns = -1;
@@ -968,7 +970,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     in
     let ul_clauses = Vec.size env.clauses in
     let ul_learnt = Vec.size env.learnts in
-    Vec.push env.user_levels {ul_trail; ul_th_env; ul_clauses;ul_learnt};
+    let ul_proof_lvl = Proof.push () in
+    Vec.push env.user_levels {ul_trail; ul_th_env; ul_clauses; ul_learnt; ul_proof_lvl;};
     res
 
   (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
@@ -1014,7 +1017,7 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     (* It is quite hard to check wether unsat status can be kept, so in doubt, we remove it *)
     env.is_unsat <- false;
 
-    (* Backtrack to the right level *)
+    (* Backtrack to the level 0 with appropriate settings *)
     reset_until l ul.ul_trail ul.ul_th_env;
 
     (* Clear hypothesis not valid anymore *)
@@ -1024,6 +1027,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       remove_clause c
     done;
     Vec.shrink env.clauses (Vec.size env.clauses - ul.ul_clauses);
+
+    (* Backtrack the Proof module *)
+    Proof.pop ul.ul_proof_lvl;
 
     (* Refresh the known tautologies simplified because of clauses that have been removed *)
     let s = Stack.create () in
