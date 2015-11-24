@@ -65,7 +65,7 @@ let grow_to t new_capa =
 
 let grow_to_double_size t =
   if Array.length t.data = Sys.max_array_length then _size_too_big();
-  let size = min Sys.max_array_length (2* Array.length t.data) in
+  let size = min Sys.max_array_length (2* Array.length t.data + 1) in
   grow_to t size
 
 let grow_to_by_double t new_capa =
@@ -81,7 +81,6 @@ let grow_to_by_double t new_capa =
 let is_full t = Array.length t.data = t.sz
 
 let push t e =
-  (*Format.eprintf "push; sz = %d et capa=%d@." t.sz (Array.length t.data);*)
   if is_full t then grow_to_double_size t;
   t.data.(t.sz) <- e;
   t.sz <- t.sz + 1
