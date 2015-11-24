@@ -33,8 +33,6 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     (* all currently active clauses *)
     clauses_learnt : clause Vec.t;
     (* learnt clauses  *)
-    clauses_pushed : clause Vec.t;
-    (* clauses pushed by theories, i.e tautologies *)
 
     mutable unsat_conflict : clause option;
     (* conflict clause at decision level 0, if any *)
@@ -111,7 +109,6 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
 
     clauses_hyps = Vec.make 0 dummy_clause;
     clauses_learnt = Vec.make 0 dummy_clause;
-    clauses_pushed = Vec.make 0 dummy_clause;
 
     th_head = 0;
     elt_head = 0;
