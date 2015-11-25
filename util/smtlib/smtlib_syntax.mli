@@ -13,18 +13,18 @@ and attributevalue =
     AttributeValSpecConst of Smtlib_util.pd * specconstant
   | AttributeValSymbol of Smtlib_util.pd * symbol
   | AttributeValSexpr of Smtlib_util.pd *
-      attributevalsexpr_attributevalue_sexpr5
+                         attributevalsexpr_attributevalue_sexpr5
 and command =
     CommandSetLogic of Smtlib_util.pd * symbol
   | CommandSetOption of Smtlib_util.pd * an_option
   | CommandSetInfo of Smtlib_util.pd * attribute
   | CommandDeclareSort of Smtlib_util.pd * symbol * string
   | CommandDefineSort of Smtlib_util.pd * symbol *
-      commanddefinesort_command_symbol11 * sort
+                         commanddefinesort_command_symbol11 * sort
   | CommandDeclareFun of Smtlib_util.pd * symbol *
-      commanddeclarefun_command_sort13 * sort
+                         commanddeclarefun_command_sort13 * sort
   | CommandDefineFun of Smtlib_util.pd * symbol *
-      commanddefinefun_command_sortedvar15 * sort * term
+                        commanddefinefun_command_sortedvar15 * sort * term
   | CommandPush of Smtlib_util.pd * string
   | CommandPop of Smtlib_util.pd * string
   | CommandAssert of Smtlib_util.pd * term
@@ -41,7 +41,7 @@ and commands = Commands of Smtlib_util.pd * commands_commands_command30
 and identifier =
     IdSymbol of Smtlib_util.pd * symbol
   | IdUnderscoreSymNum of Smtlib_util.pd * symbol *
-      idunderscoresymnum_identifier_numeral33
+                          idunderscoresymnum_identifier_numeral33
 and infoflag = InfoFlagKeyword of Smtlib_util.pd * string
 and qualidentifier =
     QualIdentifierId of Smtlib_util.pd * identifier
@@ -54,7 +54,7 @@ and sexpr =
 and sort =
     SortIdentifier of Smtlib_util.pd * identifier
   | SortIdSortMulti of Smtlib_util.pd * identifier *
-      sortidsortmulti_sort_sort44
+                       sortidsortmulti_sort_sort44
 and sortedvar = SortedVarSymSort of Smtlib_util.pd * symbol * sort
 and specconstant =
     SpecConstsDec of Smtlib_util.pd * string
@@ -69,12 +69,12 @@ and term =
     TermSpecConst of Smtlib_util.pd * specconstant
   | TermQualIdentifier of Smtlib_util.pd * qualidentifier
   | TermQualIdTerm of Smtlib_util.pd * qualidentifier *
-      termqualidterm_term_term56
+                      termqualidterm_term_term56
   | TermLetTerm of Smtlib_util.pd * termletterm_term_varbinding58 * term
   | TermForAllTerm of Smtlib_util.pd * termforallterm_term_sortedvar60 * term
   | TermExistsTerm of Smtlib_util.pd * termexiststerm_term_sortedvar62 * term
   | TermExclimationPt of Smtlib_util.pd * term *
-      termexclimationpt_term_attribute64
+                         termexclimationpt_term_attribute64
 and varbinding = VarBindingSymTerm of Smtlib_util.pd * symbol * term
 and termexclimationpt_term_attribute64 = Smtlib_util.pd * attribute list
 and termexiststerm_term_sortedvar62 = Smtlib_util.pd * sortedvar list

@@ -61,33 +61,33 @@ module Make (F : Formula_intf.S) = struct
       end
 
   let remove_true l =
-      let aux = function
-          | True -> None
-          | f -> Some f
-      in
-      opt_rev_map aux [] l
+    let aux = function
+      | True -> None
+      | f -> Some f
+    in
+    opt_rev_map aux [] l
 
   let remove_false l =
-      let aux = function
-          | Comb(Not, [True]) -> None
-          | f -> Some f
-      in
-      opt_rev_map aux [] l
+    let aux = function
+      | Comb(Not, [True]) -> None
+      | f -> Some f
+    in
+    opt_rev_map aux [] l
 
 
   let make_not f = make Not [f]
 
   let make_and l =
-      let l' = remove_true (flatten And [] l) in
-      if List.exists ((=) f_false) l' then
-        f_false
-      else
-        make And l'
+    let l' = remove_true (flatten And [] l) in
+    if List.exists ((=) f_false) l' then
+      f_false
+    else
+      make And l'
 
   let make_or l =
     let l' = remove_false (flatten Or [] l) in
     if List.exists ((=) f_true) l' then
-        f_true
+      f_true
     else match l' with
       | [] -> raise Empty_Or
       | [a] -> a
@@ -110,19 +110,19 @@ module Make (F : Formula_intf.S) = struct
     | Comb (And, l) -> sform_list [] l (k %% make_and)
     | Comb (Or, l) -> sform_list [] l (k %% make_or)
     | Comb (Imp, [f1; f2]) ->
-            sform (make_not f1) (fun f1' -> sform f2 (fun f2' -> k (make_or [f1'; f2'])))
+      sform (make_not f1) (fun f1' -> sform f2 (fun f2' -> k (make_or [f1'; f2'])))
     | Comb (Not, [Comb (Imp, [f1; f2])]) ->
-            sform f1 (fun f1' -> sform (make_not f2) (fun f2' -> k (make_and [f1';f2'])))
+      sform f1 (fun f1' -> sform (make_not f2) (fun f2' -> k (make_and [f1';f2'])))
     | Comb ((Imp | Not), _) -> assert false
     | Lit _ -> k f
   and sform_list acc l k = match l with
     | [] -> k acc
     | f :: tail ->
-        sform f (fun f' -> sform_list (f'::acc) tail k)
+      sform f (fun f' -> sform_list (f'::acc) tail k)
   and sform_list_not acc l k = match l with
     | [] -> k acc
     | f :: tail ->
-        sform (make_not f) (fun f' -> sform_list_not (f'::acc) tail k)
+      sform (make_not f) (fun f' -> sform_list_not (f'::acc) tail k)
 
   let ( @@ ) l1 l2 = List.rev_append l1 l2
   let ( @ ) = `Use_rev_append_instead   (* prevent use of non-tailrec append *)

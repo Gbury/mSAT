@@ -6,9 +6,9 @@ Copyright 2014 Simon Cruanes
 
 type var = string
 type formula = private
-    | Prop of int
-    | Equal of var * var
-    | Distinct of var * var
+  | Prop of int
+  | Equal of var * var
+  | Distinct of var * var
 
 type t = formula
 type proof = unit
@@ -34,16 +34,16 @@ val add_label : Hstring.t -> t -> unit
 val print : Format.formatter -> t -> unit
 
 module Term : sig
-    type t = var
-    val hash : t -> int
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val print : Format.formatter -> t -> unit
+  type t = var
+  val hash : t -> int
+  val equal : t -> t -> bool
+  val compare : t -> t -> int
+  val print : Format.formatter -> t -> unit
 end
 module Formula : sig
-    type t = formula
-    val hash : t -> int
-    val equal : t -> t -> bool
-    val compare : t -> t -> int
-    val print : Format.formatter -> t -> unit
+  type t = formula
+  val hash : t -> int
+  val equal : t -> t -> bool
+  val compare : t -> t -> int
+  val print : Format.formatter -> t -> unit
 end
