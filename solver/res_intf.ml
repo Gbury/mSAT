@@ -29,7 +29,7 @@ module type S = sig
     | Hypothesis
     | Lemma of lemma
     | Resolution of proof * proof * atom
-  (** Lazy type for proof trees. Proofs can be extended to proof nodes using functions defined later. *)
+    (** Lazy type for proof trees. Proofs can be extended to proof nodes using functions defined later. *)
 
   (** {3 Resolution helpers} *)
   val to_list : clause -> atom list

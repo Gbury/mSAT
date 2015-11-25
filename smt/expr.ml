@@ -8,9 +8,9 @@ exception Invalid_var
 
 type var = string
 type formula =
-    | Prop of int
-    | Equal of var * var
-    | Distinct of var * var
+  | Prop of int
+  | Equal of var * var
+  | Distinct of var * var
 type t = formula
 type proof = unit
 
@@ -18,16 +18,16 @@ let dummy = Prop 0
 
 let max_fresh = ref 0
 let fresh () =
-    incr max_fresh;
+  incr max_fresh;
   Prop (2 * !max_fresh + 1)
 
 let mk_prop i =
-    if i <> 0 && i < max_int / 2 then Prop (2 * i)
-    else raise Invalid_var
+  if i <> 0 && i < max_int / 2 then Prop (2 * i)
+  else raise Invalid_var
 
 let mk_var i =
-    if i <> "" then i
-    else raise Invalid_var
+  if i <> "" then i
+  else raise Invalid_var
 
 let mk_eq i j = Equal (mk_var (min i j), mk_var (max i j))
 let mk_neq i j = Distinct (mk_var (min i j), mk_var (max i j))
@@ -42,7 +42,7 @@ let norm = function
   | Equal (a, b) -> Equal (a, b), false
   | Distinct (a, b) -> Equal (a, b), true
 
-  (* Only used after normalisation, so usual functions should work *)
+(* Only used after normalisation, so usual functions should work *)
 let hash = Hashtbl.hash
 let equal = (=)
 let compare = Pervasives.compare

@@ -31,28 +31,28 @@ module Tsmt = struct
   let current_level () = !env
 
   let to_clause (a, b, l) =
-      Log.debug 10 "Expl : %s; %s" a b;
-      List.iter (fun s -> Log.debug 10 " |- %s" s) l;
-      let rec aux acc = function
-          | [] | [_] -> acc
-          | x :: ((y :: _) as r) ->
-                  aux (Fsmt.mk_eq x y :: acc) r
-      in
-      (Fsmt.mk_eq a b) :: (List.rev_map Fsmt.neg (aux [] l))
+    Log.debug 10 "Expl : %s; %s" a b;
+    List.iter (fun s -> Log.debug 10 " |- %s" s) l;
+    let rec aux acc = function
+      | [] | [_] -> acc
+      | x :: ((y :: _) as r) ->
+        aux (Fsmt.mk_eq x y :: acc) r
+    in
+    (Fsmt.mk_eq a b) :: (List.rev_map Fsmt.neg (aux [] l))
 
   let assume s =
-      try
-          for i = s.start to s.start + s.length - 1 do
-              Log.debug 10 "Propagating in th : %s" (Log.on_fmt Fsmt.print (s.get i));
-              match s.get i with
-              | Fsmt.Prop _ -> ()
-              | Fsmt.Equal (i, j) -> env := CC.add_eq !env i j
-              | Fsmt.Distinct (i, j) -> env := CC.add_neq !env i j
-          done;
-          Sat (current_level ())
-      with CC.Unsat x ->
-          Log.debug 8 "Making explanation clause...";
-          Unsat (to_clause x, ())
+    try
+      for i = s.start to s.start + s.length - 1 do
+        Log.debug 10 "Propagating in th : %s" (Log.on_fmt Fsmt.print (s.get i));
+        match s.get i with
+        | Fsmt.Prop _ -> ()
+        | Fsmt.Equal (i, j) -> env := CC.add_eq !env i j
+        | Fsmt.Distinct (i, j) -> env := CC.add_neq !env i j
+      done;
+      Sat (current_level ())
+    with CC.Unsat x ->
+      Log.debug 8 "Making explanation clause...";
+      Unsat (to_clause x, ())
 
   let backtrack l = env := l
 

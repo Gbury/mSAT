@@ -5,14 +5,14 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make(T : Sig.OrderedType) : sig
-    type t
+  type t
 
-    exception Unsat of (T.t * T.t * (T.t list))
+  exception Unsat of (T.t * T.t * (T.t list))
 
-    val empty : t
-    val add_eq : t -> T.t -> T.t -> t
-    val add_neq : t -> T.t -> T.t -> t
+  val empty : t
+  val add_eq : t -> T.t -> T.t -> t
+  val add_neq : t -> T.t -> T.t -> t
 
-    val repr : t -> T.t -> T.t
-    val are_neq : t -> T.t -> T.t -> bool
+  val repr : t -> T.t -> T.t
+  val are_neq : t -> T.t -> T.t -> bool
 end
