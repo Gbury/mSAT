@@ -1,7 +1,7 @@
 # MSAT
 
 MSAT is an OCaml library that features a modular SAT-solver and some
-extensions (including SMT). This is *work in progress*.
+extensions (including SMT). This is **work in progress**.
 
 
 It derives from [Alt-Ergo Zero](http://cubicle.lri.fr/alt-ergo-zero).
@@ -65,7 +65,9 @@ For the development version, use:
 
     opam pin add msat https://github.com/Gbury/mSAT.git
 
-### Manual installation You will need ocamlfind. The command is:
+### Manual installation
+
+You will need ocamlfind. The command is:
 
     make install
 
