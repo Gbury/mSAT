@@ -20,6 +20,9 @@ module type S = Solver_types_intf.S
 
 module McMake (L : Log_intf.S)(E : Expr_intf.S) = struct
 
+  (* Flag for Mcsat v.s Pure Sat *)
+  let mcsat = true
+
   type term = E.Term.t
   type formula = E.Formula.t
   type proof = E.proof
@@ -69,9 +72,6 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S) = struct
   and premise =
     | Lemma of proof
     | History of clause list
-
-  (* Flag for Mcsat v.s Pure Sat *)
-  let mcsat = true
 
   type elt = (lit, var) Either.t
 
@@ -302,262 +302,12 @@ end
 (* ************************************************************************ *)
 
 module SatMake (L : Log_intf.S)(E : Formula_intf.S) = struct
+  include McMake(L)(struct
+      include E
+      module Term = E
+      module Formula = E
+    end)
 
-  type term = E.t
-  type formula = E.t
-  type proof = E.proof
-
-  type lit = {
-    lid : int;
-    term : term;
-    mutable level : int;
-    mutable weight : float;
-    mutable assigned : term option;
-  }
-
-  type var = {
-    vid : int;
-    pa : atom;
-    na : atom;
-    mutable seen : bool;
-    mutable level : int;
-    mutable weight : float;
-    mutable reason : reason;
-  }
-
-  and atom = {
-    aid : int;
-    var : var;
-    neg : atom;
-    lit : formula;
-    mutable is_true : bool;
-    mutable watched : clause Vec.t;
-  }
-
-  and clause = {
-    name : string;
-    tag : int option;
-    atoms : atom Vec.t;
-    learnt : bool;
-    cpremise : premise;
-    c_level : int;
-    mutable activity : float;
-    mutable removed : bool;
-  }
-
-  and reason =
-    | Semantic of int
-    | Bcp of clause option
-
-  and premise =
-    | Lemma of proof
-    | History of clause list
-
-  (* Flag for Mcsat v.s Pure Sat *)
   let mcsat = false
-
-  (* Types declarations *)
-  type elt = var
-
-  (* Dummy values *)
-  let dummy_lit = E.dummy
-
-  let rec dummy_var =
-    { vid = -101;
-      pa = dummy_atom;
-      na = dummy_atom;
-      seen = false;
-      level = -1;
-      weight = -1.;
-      reason = Bcp None;
-    }
-  and dummy_atom =
-    { var = dummy_var;
-      lit = dummy_lit;
-      watched = Obj.magic 0;
-      (* should be [Vec.make_empty dummy_clause]
-         but we have to break the cycle *)
-      neg = dummy_atom;
-      is_true = false;
-      aid = -102 }
-  let dummy_clause =
-    { name = "";
-      tag = None;
-      atoms = Vec.make_empty dummy_atom;
-      activity = -1.;
-      removed = false;
-      c_level = -1;
-      learnt = false;
-      cpremise = History [] }
-
-  let () =
-    dummy_atom.watched <- Vec.make_empty dummy_clause
-
-  (* Constructors *)
-  module MF = Hashtbl.Make(E)
-
-  let f_map = MF.create 4096
-
-  let vars = Vec.make 107 dummy_var
-  let nb_elt () = Vec.size vars
-  let get_elt i = Vec.get vars i
-  let iter_elt f = Vec.iter f vars
-
-  let cpt_mk_var = ref 0
-
-  let make_semantic_var _ = assert false
-
-  let make_boolean_var =
-    fun lit ->
-      let lit, negated = E.norm lit in
-      try MF.find f_map lit, negated
-      with Not_found ->
-        let cpt_fois_2 = !cpt_mk_var lsl 1 in
-        let rec var  =
-          { vid = !cpt_mk_var;
-            pa = pa;
-            na = na;
-            seen = false;
-            level = -1;
-            weight = 0.;
-            reason = Bcp None;
-          }
-        and pa =
-          { var = var;
-            lit = lit;
-            watched = Vec.make 10 dummy_clause;
-            neg = na;
-            is_true = false;
-            aid = cpt_fois_2 (* aid = vid*2 *) }
-        and na =
-          { var = var;
-            lit = E.neg lit;
-            watched = Vec.make 10 dummy_clause;
-            neg = pa;
-            is_true = false;
-            aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in
-        MF.add f_map lit var;
-        incr cpt_mk_var;
-        Vec.push vars var;
-        var, negated
-
-  let add_term t = make_semantic_var t
-
-  let add_atom lit =
-    let var, negated = make_boolean_var lit in
-    if negated then var.na else var.pa
-
-  let make_clause ?tag name ali sz_ali is_learnt premise lvl =
-    let atoms = Vec.from_list ali sz_ali dummy_atom in
-    { name  = name;
-      tag = tag;
-      atoms = atoms;
-      removed = false;
-      learnt = is_learnt;
-      c_level = lvl;
-      activity = 0.;
-      cpremise = premise}
-
-  let empty_clause = make_clause "Empty" [] 0 false (History []) 0
-
-  (* Decisions & propagations *)
-  type t = atom
-
-  let of_lit _ = assert false
-  let of_atom a = a
-  let destruct e _ f = f e
-
-  (* Elements *)
-  let elt_of_lit _ = assert false
-  let elt_of_var v = v
-
-  let destruct_elt v _ f = f v
-
-  let get_elt_id v = v.vid
-  let get_elt_level v = v.level
-  let get_elt_weight v = v.weight
-
-  let set_elt_level v lvl = v.level <- lvl
-  let set_elt_weight v w = v.weight <- w
-
-  (* Name generation *)
-  let fresh_lname =
-    let cpt = ref 0 in
-    fun () -> incr cpt; "L" ^ (string_of_int !cpt)
-
-  let fresh_hname =
-    let cpt = ref 0 in
-    fun () -> incr cpt; "H" ^ (string_of_int !cpt)
-
-  let fresh_tname =
-    let cpt = ref 0 in
-    fun () -> incr cpt; "T" ^ (string_of_int !cpt)
-
-  let fresh_name =
-    let cpt = ref 0 in
-    fun () -> incr cpt; "C" ^ (string_of_int !cpt)
-
-  (* Iteration over subterms *)
-  let iter_sub _ _ = ()
-
-  (* Proof debug info *)
-  let proof_debug _ = "lemma", [], [], None
-
-  (* Pretty printing for atoms and clauses *)
-  let print_lit _ _ = assert false
-
-  let print_atom fmt a = E.print fmt a.lit
-
-  let print_atoms fmt v =
-    if Vec.size v = 0 then
-      Format.fprintf fmt "∅"
-    else begin
-      print_atom fmt (Vec.get v 0);
-      if (Vec.size v) > 1 then begin
-        for i = 1 to (Vec.size v) - 1 do
-          Format.fprintf fmt " ∨ %a" print_atom (Vec.get v i)
-        done
-      end
-    end
-
-  let print_clause fmt c =
-    Format.fprintf fmt "%s : %a" c.name print_atoms c.atoms
-
-  (* Complete debug printing *)
-  let sign a = if a == a.var.pa then "" else "-"
-
-  let level a =
-    match a.var.level, a.var.reason with
-    | n, _ when n < 0 -> assert false
-    | 0, Bcp (Some c) -> sprintf "->0/%s" c.name
-    | 0, Bcp None   -> "@0"
-    | n, Bcp (Some c) -> sprintf "->%d/%s" n c.name
-    | n, Bcp None   -> sprintf "@@%d" n
-    | n, Semantic lvl -> sprintf "::%d/%d" n lvl
-
-  let value a =
-    if a.is_true then sprintf "[T%s]" (level a)
-    else if a.neg.is_true then sprintf "[F%s]" (level a)
-    else "[]"
-
-  let pp_premise b = function
-    | History v -> List.iter (fun {name=name} -> bprintf b "%s," name) v
-    | Lemma _ -> bprintf b "th_lemma"
-
-  let pp_assign _ _ = ()
-
-  let pp_lit b v = bprintf b "%d [lit:()]" (v.lid+1)
-
-  let pp_atom b a =
-    bprintf b "%s%d%s[lit:%s]"
-      (sign a) (a.var.vid+1) (value a) (Log.on_fmt E.print a.lit)
-
-  let pp_atoms_vec b vec =
-    for i = 0 to Vec.size vec - 1 do
-      bprintf b "%a ; " pp_atom (Vec.get vec i)
-    done
-
-  let pp_clause b {name=name; atoms=arr; cpremise=cp; learnt=learnt} =
-    bprintf b "%s%s{ %a} cpremise={{%a}}" name (if learnt then "!" else ":") pp_atoms_vec arr pp_premise cp
-
 end
+
