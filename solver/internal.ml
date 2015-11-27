@@ -4,8 +4,11 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Make (L : Log_intf.S)(St : Solver_types.S)
-    (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof) = struct
+module Make
+    (L : Log_intf.S)
+    (St : Solver_types.S)
+    (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof)
+= struct
 
   module Proof = Res.Make(L)(St)
 
@@ -195,8 +198,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let insert_var_order e = destruct_elt e
       (fun v -> Iheap.insert f_weight env.order v.lid)
       (fun v ->
-          Iheap.insert f_weight env.order v.vid;
-          iter_sub (fun t -> Iheap.insert f_weight env.order t.lid) v
+         Iheap.insert f_weight env.order v.vid;
+         iter_sub (fun t -> Iheap.insert f_weight env.order t.lid) v
       )
 
   let var_decay_activity () =
@@ -271,10 +274,10 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let detach_clause c =
     L.debug 15 "Removing clause %a" St.pp_clause c;
     c.removed <- true;
-        (* Not necessary, cleanup is done during propagation
-        Vec.remove (Vec.get c.atoms 0).neg.watched c;
-        Vec.remove (Vec.get c.atoms 1).neg.watched c;
-        *)
+    (* Not necessary, cleanup is done during propagation
+       Vec.remove (Vec.get c.atoms 0).neg.watched c;
+       Vec.remove (Vec.get c.atoms 1).neg.watched c;
+    *)
     if c.learnt then
       env.learnts_literals <- env.learnts_literals - Vec.size c.atoms
     else
@@ -293,22 +296,22 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
       env.th_head <- env.elt_head;
       for c = env.elt_head to Vec.size env.elt_queue - 1 do
         destruct (Vec.get env.elt_queue c)
-        (fun v ->
-            v.assigned <- None;
-            v.level <- -1;
-            insert_var_order (elt_of_lit v)
-        )
-        (fun a ->
-            if a.var.level <= lvl then begin
-              Vec.set env.elt_queue env.elt_head (of_atom a);
-              env.elt_head <- env.elt_head + 1
-            end else begin
-              a.is_true <- false;
-              a.neg.is_true <- false;
-              a.var.level <- -1;
-              a.var.reason <- Bcp None;
-              insert_var_order (elt_of_var a.var)
-            end)
+          (fun v ->
+             v.assigned <- None;
+             v.level <- -1;
+             insert_var_order (elt_of_lit v)
+          )
+          (fun a ->
+             if a.var.level <= lvl then begin
+               Vec.set env.elt_queue env.elt_head (of_atom a);
+               env.elt_head <- env.elt_head + 1
+             end else begin
+               a.is_true <- false;
+               a.neg.is_true <- false;
+               a.var.level <- -1;
+               a.var.reason <- Bcp None;
+               insert_var_order (elt_of_var a.var)
+             end)
       done;
       Th.backtrack (Vec.get env.th_levels lvl); (* recover the right tenv *)
       Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - env.elt_head);
@@ -345,18 +348,18 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
   let th_eval a =
     if a.is_true || a.neg.is_true then None
     else match Th.eval a.lit with
-    | Th.Unknown -> None
-    | Th.Valued (b, lvl) ->
-      let atom = if b then a else a.neg in
-      enqueue_bool atom lvl (Semantic lvl);
-      Some b
+      | Th.Unknown -> None
+      | Th.Valued (b, lvl) ->
+        let atom = if b then a else a.neg in
+        enqueue_bool atom lvl (Semantic lvl);
+        Some b
 
   (* conflict analysis *)
   let max_lvl_atoms l =
-      List.fold_left (fun (max_lvl, acc) a ->
-          if a.var.level = max_lvl then (max_lvl, a :: acc)
-          else if a.var.level > max_lvl then (a.var.level, [a])
-          else (max_lvl, acc)) (0, []) l
+    List.fold_left (fun (max_lvl, acc) a ->
+        if a.var.level = max_lvl then (max_lvl, a :: acc)
+        else if a.var.level > max_lvl then (a.var.level, [a])
+        else (max_lvl, acc)) (0, []) l
 
   let backtrack_lvl is_uip = function
     | [] -> 0
@@ -372,8 +375,8 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     let c_level = ref 0 in
     clause_bump_activity c_clause;
     let is_semantic a = match a.var.reason with
-        | Semantic _ -> true
-        | _ -> false
+      | Semantic _ -> true
+      | _ -> false
     in
     try while true do
         let lvl, atoms = max_lvl_atoms !c in
@@ -382,35 +385,35 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
         if lvl = 0 then raise Exit;
         match atoms with
         | [] | _ :: [] ->
-                L.debug 15 "Found UIP clause";
-                is_uip := true;
-                raise Exit
+          L.debug 15 "Found UIP clause";
+          is_uip := true;
+          raise Exit
         | _ when List.for_all is_semantic atoms ->
-                L.debug 15 "Found Semantic backtrack clause";
-                raise Exit
+          L.debug 15 "Found Semantic backtrack clause";
+          raise Exit
         | _ ->
-                decr tr_ind;
-                L.debug 20 "Looking at trail element %d" !tr_ind;
-                destruct (Vec.get env.elt_queue !tr_ind)
-                (fun v -> L.debug 15 "%a" St.pp_lit v)
-                (fun a -> match a.var.reason with
-                    | Bcp (Some d) ->
-                            L.debug 15 "Propagation : %a" St.pp_atom a;
-                            L.debug 15 " |- %a" St.pp_clause d;
-                            let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
-                            begin match tmp with
-                            | [] -> L.debug 15 "No lit to resolve over."
-                            | [b] when b == a.var.pa ->
-                                    c_level := max !c_level d.c_level;
-                                    clause_bump_activity d;
-                                    var_bump_activity a.var;
-                                    history := d :: !history;
-                                    c := res
-                            | _ -> assert false
-                            end
-                    | Bcp None -> L.debug 15 "Decision : %a" St.pp_atom a
-                    | Semantic _ -> L.debug 15 "Semantic propagation : %a" St.pp_atom a)
-    done; assert false
+          decr tr_ind;
+          L.debug 20 "Looking at trail element %d" !tr_ind;
+          destruct (Vec.get env.elt_queue !tr_ind)
+            (fun v -> L.debug 15 "%a" St.pp_lit v)
+            (fun a -> match a.var.reason with
+               | Bcp (Some d) ->
+                 L.debug 15 "Propagation : %a" St.pp_atom a;
+                 L.debug 15 " |- %a" St.pp_clause d;
+                 let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
+                 begin match tmp with
+                   | [] -> L.debug 15 "No lit to resolve over."
+                   | [b] when b == a.var.pa ->
+                     c_level := max !c_level d.c_level;
+                     clause_bump_activity d;
+                     var_bump_activity a.var;
+                     history := d :: !history;
+                     c := res
+                   | _ -> assert false
+                 end
+               | Bcp None -> L.debug 15 "Decision : %a" St.pp_atom a
+               | Semantic _ -> L.debug 15 "Semantic propagation : %a" St.pp_atom a)
+      done; assert false
     with Exit ->
       let learnt = List.sort (fun a b -> Pervasives.compare b.var.level a.var.level) !c in
       let blevel = backtrack_lvl !is_uip learnt in
@@ -929,9 +932,9 @@ module Make (L : Log_intf.S)(St : Solver_types.S)
     Vec.grow_to_by_double env.clauses_learnt nbc;
     env.nb_init_clauses <- nbc;
     St.iter_elt (fun e -> destruct_elt e
-                     (fun v -> L.debug 50 " -- %a" St.pp_lit v)
-                     (fun a -> L.debug 50 " -- %a" St.pp_atom a.pa)
-                 );
+                    (fun v -> L.debug 50 " -- %a" St.pp_lit v)
+                    (fun a -> L.debug 50 " -- %a" St.pp_atom a.pa)
+                );
     add_clauses ?tag cnf
 
   let assume ?tag cnf =

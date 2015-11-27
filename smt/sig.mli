@@ -6,8 +6,8 @@ Copyright 2014 Simon Cruanes
 
 
 module type OrderedType = sig
-    (** Signature for ordered types (mainly for use in Map.Make) *)
+  (** Signature for ordered types (mainly for use in Map.Make) *)
 
-    type t
-    val compare : t -> t -> int
+  type t
+  val compare : t -> t -> int
 end

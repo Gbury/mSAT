@@ -297,10 +297,10 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
         Stack.push (Leaving p) s;
         let node = expand p in
         begin match node.step with
-        | Resolution (p1, p2, _) ->
-          Stack.push (Enter p2) s;
-          Stack.push (Enter p1) s
-        | _ -> ()
+          | Resolution (p1, p2, _) ->
+            Stack.push (Enter p2) s;
+            Stack.push (Enter p1) s
+          | _ -> ()
         end
       end;
       fold_aux s h f acc

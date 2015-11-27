@@ -223,43 +223,43 @@ let main () =
     print_cnf cnf;
   match !solver with
   | Smt ->
-          Smt.assume cnf;
-          let res = Smt.solve () in
-          Gc.delete_alarm al;
-          begin match res with
-          | Smt.Sat ->
-                  print "Sat (%f)" (Sys.time ());
-                  if !p_check then
-                    if not (List.for_all (List.exists Smt.eval) cnf) then
-                      raise Incorrect_model
-          | Smt.Unsat ->
-                  print "Unsat (%f)" (Sys.time ());
-                  if !p_check then begin
-                    let p = Smt.get_proof () in
-                    print_proof p;
-                    if !p_unsat_core then
-                        print_unsat_core (Smt.unsat_core p)
-                  end
-          end
+    Smt.assume cnf;
+    let res = Smt.solve () in
+    Gc.delete_alarm al;
+    begin match res with
+      | Smt.Sat ->
+        print "Sat (%f)" (Sys.time ());
+        if !p_check then
+          if not (List.for_all (List.exists Smt.eval) cnf) then
+            raise Incorrect_model
+      | Smt.Unsat ->
+        print "Unsat (%f)" (Sys.time ());
+        if !p_check then begin
+          let p = Smt.get_proof () in
+          print_proof p;
+          if !p_unsat_core then
+            print_unsat_core (Smt.unsat_core p)
+        end
+    end
   | Mcsat ->
-          Mcsat.assume cnf;
-          let res = Mcsat.solve () in
-          Gc.delete_alarm al;
-          begin match res with
-          | Mcsat.Sat ->
-                  print "Sat (%f)" (Sys.time ());
-                  if !p_check then
-                    if not (List.for_all (List.exists Mcsat.eval) cnf) then
-                      raise Incorrect_model
-          | Mcsat.Unsat ->
-                  print "Unsat (%f)" (Sys.time ());
-                  if !p_check then begin
-                    let p = Mcsat.get_proof () in
-                    print_mcproof p;
-                    if !p_unsat_core then
-                        print_mc_unsat_core (Mcsat.unsat_core p)
-                  end
-          end
+    Mcsat.assume cnf;
+    let res = Mcsat.solve () in
+    Gc.delete_alarm al;
+    begin match res with
+      | Mcsat.Sat ->
+        print "Sat (%f)" (Sys.time ());
+        if !p_check then
+          if not (List.for_all (List.exists Mcsat.eval) cnf) then
+            raise Incorrect_model
+      | Mcsat.Unsat ->
+        print "Unsat (%f)" (Sys.time ());
+        if !p_check then begin
+          let p = Mcsat.get_proof () in
+          print_mcproof p;
+          if !p_unsat_core then
+            print_mc_unsat_core (Mcsat.unsat_core p)
+        end
+    end
 
 let () =
   try

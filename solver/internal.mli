@@ -4,8 +4,11 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Make (L : Log_intf.S)(St : Solver_types.S)
-    (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof) : sig
+module Make
+  (L : Log_intf.S)
+  (St : Solver_types.S)
+  (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof)
+: sig
   (** Functor to create a solver parametrised by the atomic formulas and a theory. *)
 
   (** {2 Solving facilities} *)
