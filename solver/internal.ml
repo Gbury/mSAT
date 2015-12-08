@@ -22,7 +22,8 @@ module Make
   (* a push/pop state *)
   type user_level = {
     (* User levels always refer to decision_level 0 *)
-    ul_trail : int; (* Number of atoms in trail at decision level 0 *)
+    ul_elt_lvl : int; (* Number of atoms in trail at decision level 0 *)
+    ul_th_lvl : int; (* Number of atoms known by the theory at decicion level 0 *)
     ul_th_env : Th.level; (* Theory state at level 0 *)
     ul_clauses : int; (* number of clauses *)
     ul_learnt : int; (* number of learnt clauses *)
@@ -121,7 +122,8 @@ module Make
     th_levels = Vec.make 100 Th.dummy;
 
     user_levels = Vec.make 20 {
-        ul_trail = 0;
+        ul_elt_lvl = 0;
+        ul_th_lvl = 0;
         ul_learnt = 0;
         ul_clauses = 0;
         ul_th_env = Th.dummy;
@@ -139,7 +141,7 @@ module Make
     simpDB_props = 0;
 
     progress_estimate = 0.;
-    remove_satisfied = true;
+    remove_satisfied = false;
 
     restart_inc = 1.5;
     restart_first = 100;
@@ -247,13 +249,14 @@ module Make
   (* Convenient access *)
   let decision_level () = Vec.size env.elt_levels
 
-  let nb_assigns () = Vec.size env.elt_queue
   let nb_clauses () = Vec.size env.clauses_hyps
   let nb_learnts () = Vec.size env.clauses_learnt
   let nb_vars    () = St.nb_elt ()
 
   (* Manipulating decision levels *)
   let new_decision_level() =
+    assert (env.th_head = Vec.size env.elt_queue);
+    assert (env.elt_head = Vec.size env.elt_queue);
     Vec.push env.elt_levels (Vec.size env.elt_queue);
     Vec.push env.th_levels (Th.current_level ()); (* save the current tenv *)
     ()
@@ -268,7 +271,7 @@ module Make
       env.clauses_literals <- env.clauses_literals + Vec.size c.atoms
 
   let detach_clause c =
-    L.debug 15 "Removing clause %a" St.pp_clause c;
+    L.debug 10 "Removing clause %a" St.pp_clause c;
     c.removed <- true;
     (* Not necessary, cleanup is done during propagation
        Vec.remove (Vec.get c.atoms 0).neg.watched c;
@@ -321,14 +324,17 @@ module Make
     raise Unsat
 
   let enqueue_bool a lvl reason =
-    assert (not a.neg.is_true);
+    if a.neg.is_true then begin
+      L.debug 0 "Trying to enqueue a false litteral: %a" St.pp_atom a;
+      assert false
+    end;
     if not a.is_true then begin
       assert (a.var.level < 0 && a.var.reason = Bcp None && lvl >= 0);
       a.is_true <- true;
       a.var.level <- lvl;
       a.var.reason <- reason;
       Vec.push env.elt_queue (of_atom a);
-      L.debug 2 "Enqueue (%d): %a" (nb_assigns ()) pp_atom a
+      L.debug 20 "Enqueue (%d): %a" (Vec.size env.elt_queue) pp_atom a
     end
 
   let enqueue_assign v value lvl =
@@ -514,7 +520,9 @@ module Make
         match a.var.reason with
         | Bcp (Some cl) -> atoms, false, max lvl cl.c_level
         | Semantic 0 -> atoms, init, lvl
-        | _ -> assert false
+        | _ ->
+          L.debug 0 "Unexpected semantic propagation at level 0: %a" St.pp_atom a;
+          assert false
       end else
         a::atoms, init, lvl
     in
@@ -577,10 +585,10 @@ module Make
           enqueue_bool a lvl (Bcp (Some clause))
         end
       | [a]   ->
-        L.debug 1 "New unit clause, propagating : %a" St.pp_atom a;
+        L.debug 5 "New unit clause, propagating : %a" St.pp_atom a;
         cancel_until 0;
         enqueue_bool a 0 (Bcp (Some init0))
-    with Trivial -> L.debug 1 "Trivial clause ignored"
+    with Trivial -> L.debug 5 "Trivial clause ignored"
 
   let progress_estimate () =
     let prg = ref 0. in
@@ -691,23 +699,28 @@ module Make
     })
 
   let rec theory_propagate () =
-    let slice = current_slice () in
-    env.th_head <- nb_assigns ();
-    match Th.assume slice with
-    | Th.Sat ->
-      propagate ()
-    | Th.Unsat (l, p) ->
-      let l = List.rev_map new_atom l in
-      Iheap.grow_to_by_double env.order (St.nb_elt ());
-      List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
-      let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) base_level in
-      Some c
+    assert (env.elt_head = Vec.size env.elt_queue);
+    if env.th_head >= env.elt_head then
+      None
+    else begin
+      let slice = current_slice () in
+      env.th_head <- env.elt_head;
+      match Th.assume slice with
+      | Th.Sat ->
+        propagate ()
+      | Th.Unsat (l, p) ->
+        let l = List.rev_map new_atom l in
+        Iheap.grow_to_by_double env.order (St.nb_elt ());
+        List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
+        let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) base_level in
+        Some c
+    end
 
   and propagate () =
     if env.elt_head > Vec.size env.elt_queue then
       assert false
     else if env.elt_head = Vec.size env.elt_queue then
-      None
+      theory_propagate ()
     else begin
       let num_props = ref 0 in
       let res = ref None in
@@ -790,11 +803,11 @@ module Make
       | Some confl -> report_unsat confl
       | None -> ()
     end;
-    if nb_assigns() <> env.simpDB_assigns && env.simpDB_props <= 0 then begin
+    if Vec.size env.elt_queue <> env.simpDB_assigns && env.simpDB_props <= 0 then begin
       if Vec.size env.clauses_learnt > 0 then remove_satisfied env.clauses_learnt;
       if env.remove_satisfied then remove_satisfied env.clauses_hyps;
       (*Iheap.filter env.order f_filter f_weight;*)
-      env.simpDB_assigns <- nb_assigns ();
+      env.simpDB_assigns <- Vec.size env.elt_queue;
       env.simpDB_props <- env.clauses_literals + env.learnts_literals;
     end
 
@@ -836,16 +849,16 @@ module Make
         add_boolean_conflict confl
 
       | None -> (* No Conflict *)
-        if nb_assigns() = St.nb_elt () (* env.nb_init_vars *) then raise Sat;
+        if Vec.size env.elt_queue = St.nb_elt () (* env.nb_init_vars *) then raise Sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
           env.progress_estimate <- progress_estimate();
           cancel_until 0;
           raise Restart
         end;
-        if decision_level() = 0 then simplify ();
+        (* if decision_level() = 0 then simplify (); *)
 
         if n_of_learnts >= 0 &&
-           Vec.size env.clauses_learnt - nb_assigns() >= n_of_learnts then
+           Vec.size env.clauses_learnt - Vec.size env.elt_queue >= n_of_learnts then
           reduce_db();
 
         pick_branch_lit ()
@@ -936,9 +949,12 @@ module Make
     if is_unsat () then current_level ()
     else begin
       let res = current_level () in
-      let ul_trail =
-        if Vec.is_empty env.elt_levels then Vec.size env.elt_queue
-        else Vec.get env.elt_levels 0
+      let ul_elt_lvl, ul_th_lvl =
+        if Vec.is_empty env.elt_levels then
+          env.elt_head, env.th_head
+        else
+          let l = Vec.get env.elt_levels 0 in
+          l, l
       and ul_th_env =
         if Vec.is_empty env.th_levels then Th.current_level ()
         else Vec.get env.th_levels 0
@@ -946,15 +962,15 @@ module Make
       let ul_clauses = Vec.size env.clauses_hyps in
       let ul_learnt = Vec.size env.clauses_learnt in
       let ul_proof_lvl = Proof.push () in
-      Vec.push env.user_levels {ul_trail; ul_th_env; ul_clauses; ul_learnt; ul_proof_lvl;};
+      Vec.push env.user_levels {ul_elt_lvl; ul_th_lvl; ul_th_env; ul_clauses; ul_learnt; ul_proof_lvl;};
       res
     end
 
   (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
-  let reset_until push_lvl trail_lim th_env =
+  let reset_until push_lvl elt_lvl th_lvl th_env =
     L.debug 1 "Resetting to decision level 0 (pop/forced)";
-    env.elt_head <- trail_lim;
-    env.th_head <- env.elt_head;
+    env.th_head <- th_lvl;
+    env.elt_head <- elt_lvl;
     for c = env.elt_head to Vec.size env.elt_queue - 1 do
       destruct (Vec.get env.elt_queue c)
         (fun v ->
@@ -971,11 +987,19 @@ module Make
              a.var.reason <- Bcp None;
              insert_var_order (elt_of_var a.var)
            | _ ->
-             Vec.set env.elt_queue env.elt_head (of_atom a);
-             env.elt_head <- env.elt_head + 1
+             if a.var.level = 0 then begin
+               Vec.set env.elt_queue env.elt_head (of_atom a);
+               env.elt_head <- env.elt_head + 1
+             end else begin
+               a.is_true <- false;
+               a.neg.is_true <- false;
+               a.var.level <- -1;
+               a.var.reason <- Bcp None;
+               insert_var_order (elt_of_var a.var)
+             end
         )
     done;
-    Th.backtrack th_env; (* recover the right tenv *)
+    Th.backtrack th_env; (* recover the right theory env *)
     Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - env.elt_head);
     Vec.clear env.elt_levels;
     Vec.clear env.th_levels;
@@ -995,11 +1019,14 @@ module Make
       env.unsat_conflict <- None;
 
       (* Backtrack to the level 0 with appropriate settings *)
-      reset_until l ul.ul_trail ul.ul_th_env;
+      reset_until l ul.ul_elt_lvl ul.ul_th_lvl ul.ul_th_env;
 
       (* Log current assumptions for debugging purposes *)
       for i = 0 to Vec.size env.elt_queue - 1 do
-        L.debug 99 "  %d -- %a" i (fun fmt e ->
+        L.debug 99 "%s%s%d -- %a"
+          (if i = ul.ul_elt_lvl then "*" else " ")
+          (if i = ul.ul_th_lvl then "*" else " ")
+          i (fun fmt e ->
             destruct e (St.pp_lit fmt) (St.pp_atom fmt)) (Vec.get env.elt_queue i)
       done;
 
