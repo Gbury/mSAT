@@ -682,11 +682,11 @@ module Make
       propagate = slice_propagate;
     })
 
-  let full_slice tag = Th.({
+  let full_slice () = Th.({
       start = 0;
       length = Vec.size env.elt_queue;
       get = slice_get;
-      push = (fun cl proof -> tag := true; slice_push cl proof);
+      push = slice_push;
       propagate = (fun _ -> assert false);
     })
 
@@ -887,9 +887,11 @@ module Make
             n_of_conflicts := !n_of_conflicts *. env.restart_inc;
             n_of_learnts   := !n_of_learnts *. env.learntsize_inc
           | Sat ->
-            let tag = ref false in
-            Th.if_sat (full_slice tag);
-            if not !tag then raise Sat
+            let nbc = env.nb_init_clauses in
+            Th.if_sat (full_slice ());
+            if env.nb_init_clauses = nbc &&
+               env.elt_head = Vec.size env.elt_queue then
+              raise Sat
         end
       done
     with
