@@ -40,8 +40,8 @@ module Make
 
     mutable unsat_conflict : clause option;
     (* conflict clause at decision level 0, if any *)
-
-
+    mutable next_decision : atom option;
+    (* When the last conflict was a semantic one, this stores the next decision to make *)
 
     elt_queue : t Vec.t;
     (* decision stack + propagated elements (atoms or assignments) *)
@@ -110,6 +110,7 @@ module Make
 
   let env = {
     unsat_conflict = None;
+    next_decision = None;
 
     clauses_hyps = Vec.make 0 dummy_clause;
     clauses_learnt = Vec.make 0 dummy_clause;
@@ -158,13 +159,14 @@ module Make
     nb_init_clauses = 0;
   }
 
-  let is_unsat () = match env.unsat_conflict with Some _ -> true | None -> false
+  let is_unsat () =
+    match env.unsat_conflict with
+    | Some _ -> true
+    | None -> false
 
   (* Level for push/pop operations *)
   type level = int
-
   let base_level = 0
-
   let current_level () = Vec.size env.user_levels
 
   (* Iteration over subterms *)
@@ -252,6 +254,67 @@ module Make
   let nb_clauses () = Vec.size env.clauses_hyps
   let nb_learnts () = Vec.size env.clauses_learnt
   let nb_vars    () = St.nb_elt ()
+
+  (* Simplify clauses *)
+  exception Trivial
+
+  let simplify_zero atoms level0 =
+    (* Eliminates dead litterals from clauses when at decision level 0 *)
+    assert (decision_level () = 0);
+    let aux (atoms, init, lvl) a =
+      if a.is_true then raise Trivial;
+      if a.neg.is_true then begin
+        match a.var.reason with
+        | Bcp (Some cl) -> atoms, false, max lvl cl.c_level
+        | Semantic 0 -> atoms, init, lvl
+        | _ ->
+          L.debug 0 "Unexpected semantic propagation at level 0: %a" St.pp_atom a;
+          assert false
+      end else
+        a::atoms, init, lvl
+    in
+    let atoms, init, lvl = List.fold_left aux ([], true, level0) atoms in
+    List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init, lvl
+
+  let partition atoms init0 =
+    (* Parittion litterals for new clauses *)
+    let rec partition_aux trues unassigned falses init lvl = function
+      | [] -> trues @ unassigned @ falses, init, lvl
+      | a :: r ->
+        if a.is_true then
+          if a.var.level = 0 then raise Trivial
+          else (a::trues) @ unassigned @ falses @ r, init, lvl
+        else if a.neg.is_true then
+          if a.var.level = 0 then begin
+            match a.var.reason with
+            | Bcp (Some cl) ->
+              partition_aux trues unassigned falses false (max lvl cl.c_level) r
+            | Semantic 0 ->
+              partition_aux trues unassigned falses init lvl r
+            | _ -> assert false
+          end else
+            partition_aux trues unassigned (a::falses) init lvl r
+        else
+          partition_aux trues (a::unassigned) falses init lvl r
+    in
+    if decision_level () = 0 then
+      simplify_zero atoms init0
+    else
+      partition_aux [] [] [] false init0 atoms
+
+  (* Compute a progess estimate *)
+  let progress_estimate () =
+    let prg = ref 0. in
+    let nbv = to_float (nb_vars()) in
+    let lvl = decision_level () in
+    let _F = 1. /. nbv in
+    for i = 0 to lvl do
+      let _beg = if i = 0 then 0 else Vec.get env.elt_levels (i-1) in
+      let _end = if i=lvl then Vec.size env.elt_queue else Vec.get env.elt_levels i in
+      prg := !prg +. _F**(to_float i) *. (to_float (_end - _beg))
+    done;
+    !prg /. nbv
+
 
   (* Manipulating decision levels *)
   let new_decision_level() =
@@ -493,15 +556,14 @@ module Make
         if is_uip then
           enqueue_bool fuip blevel (Bcp (Some lclause))
         else begin
-          env.decisions <- env.decisions + 1;
-          new_decision_level();
-          enqueue_bool fuip.neg (decision_level ()) (Bcp None)
+          env.next_decision <- Some fuip.neg
         end
     end;
     var_decay_activity ();
     clause_decay_activity ()
 
   let add_boolean_conflict confl =
+    env.next_decision <- None;
     env.conflicts <- env.conflicts + 1;
     if decision_level() = 0 || Vec.for_all (fun a -> a.var.level = 0) confl.atoms then
       report_unsat confl; (* Top-level conflict *)
@@ -510,50 +572,6 @@ module Make
     record_learnt_clause confl blevel learnt (History history) is_uip lvl
 
   (* Add a new clause *)
-  exception Trivial
-
-  let simplify_zero atoms level0 =
-    assert (decision_level () = 0);
-    let aux (atoms, init, lvl) a =
-      if a.is_true then raise Trivial;
-      if a.neg.is_true then begin
-        match a.var.reason with
-        | Bcp (Some cl) -> atoms, false, max lvl cl.c_level
-        | Semantic 0 -> atoms, init, lvl
-        | _ ->
-          L.debug 0 "Unexpected semantic propagation at level 0: %a" St.pp_atom a;
-          assert false
-      end else
-        a::atoms, init, lvl
-    in
-    let atoms, init, lvl = List.fold_left aux ([], true, level0) atoms in
-    List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init, lvl
-
-  let partition atoms init0 =
-    let rec partition_aux trues unassigned falses init lvl = function
-      | [] -> trues @ unassigned @ falses, init, lvl
-      | a :: r ->
-        if a.is_true then
-          if a.var.level = 0 then raise Trivial
-          else (a::trues) @ unassigned @ falses @ r, init, lvl
-        else if a.neg.is_true then
-          if a.var.level = 0 then begin
-            match a.var.reason with
-            | Bcp (Some cl) ->
-              partition_aux trues unassigned falses false (max lvl cl.c_level) r
-            | Semantic 0 ->
-              partition_aux trues unassigned falses init lvl r
-            | _ -> assert false
-          end else
-            partition_aux trues unassigned (a::falses) init lvl r
-        else
-          partition_aux trues (a::unassigned) falses init lvl r
-    in
-    if decision_level () = 0 then
-      simplify_zero atoms init0
-    else
-      partition_aux [] [] [] false init0 atoms
-
   let add_clause ?(force=false) init0 =
     let vec = match init0.cpremise with
       | Lemma _ -> env.clauses_learnt
@@ -591,18 +609,6 @@ module Make
         cancel_until 0;
         enqueue_bool a 0 (Bcp (Some init0))
     with Trivial -> L.debug 5 "Trivial clause ignored : %a" St.pp_clause init0
-
-  let progress_estimate () =
-    let prg = ref 0. in
-    let nbv = to_float (nb_vars()) in
-    let lvl = decision_level () in
-    let _F = 1. /. nbv in
-    for i = 0 to lvl do
-      let _beg = if i = 0 then 0 else Vec.get env.elt_levels (i-1) in
-      let _end = if i=lvl then Vec.size env.elt_queue else Vec.get env.elt_levels i in
-      prg := !prg +. _F**(to_float i) *. (to_float (_end - _beg))
-    done;
-    !prg /. nbv
 
   let propagate_in_clause a c i watched new_sz =
     let atoms = c.atoms in
@@ -741,6 +747,7 @@ module Make
       | _ -> !res
     end
 
+  (*
   (* heuristic comparison between clauses, by their size (unary/binary or not)
       and activity *)
   let f_sort_db c1 c2 =
@@ -762,6 +769,7 @@ module Make
          | _ -> false
       ) env.vars
       *)
+  *)
 
   (* remove some learnt clauses *)
   let reduce_db () = () (*
@@ -794,9 +802,6 @@ module Make
       if satisfied c then remove_clause c
     done
 
-  module HUC = Hashtbl.Make
-      (struct type t = clause let equal = (==) let hash = Hashtbl.hash end)
-
   let simplify () =
     assert (decision_level () = 0);
     if is_unsat () then raise Unsat;
@@ -814,32 +819,40 @@ module Make
     end
 
   (* Decide on a new litteral *)
-  let rec pick_branch_lit () =
-    let max = Iheap.remove_min f_weight env.order in
-    destruct_elt (St.get_elt max)
-      (fun v ->
-         if v.level >= 0 then
-           pick_branch_lit ()
-         else begin
-           let value = Th.assign v.term in
-           env.decisions <- env.decisions + 1;
-           new_decision_level();
-           let current_level = decision_level () in
-           enqueue_assign v value current_level
-         end)
-      (fun v ->
-         if v.level >= 0 then begin
-           assert (v.pa.is_true || v.na.is_true);
-           pick_branch_lit ()
-         end else match Th.eval v.pa.lit with
-           | Th.Unknown ->
-             env.decisions <- env.decisions + 1;
-             new_decision_level();
-             let current_level = decision_level () in
-             enqueue_bool v.pa current_level (Bcp None)
-           | Th.Valued (b, lvl) ->
-             let a = if b then v.pa else v.na in
-             enqueue_bool a lvl (Semantic lvl))
+  let rec pick_branch_aux atom =
+    let v = atom.var in
+    if v.level >= 0 then begin
+      assert (v.pa.is_true || v.na.is_true);
+      pick_branch_lit ()
+    end else match Th.eval atom.lit with
+      | Th.Unknown ->
+        env.decisions <- env.decisions + 1;
+        new_decision_level();
+        let current_level = decision_level () in
+        enqueue_bool atom current_level (Bcp None)
+      | Th.Valued (b, lvl) ->
+        let a = if b then atom else atom.neg in
+        enqueue_bool a lvl (Semantic lvl)
+
+  and pick_branch_lit () =
+    match env.next_decision with
+    | Some atom ->
+      env.next_decision <- None;
+      pick_branch_aux atom
+      | None ->
+        destruct_elt (
+          St.get_elt @@ Iheap.remove_min f_weight env.order)
+          (fun v ->
+             if v.level >= 0 then
+               pick_branch_lit ()
+             else begin
+               let value = Th.assign v.term in
+               env.decisions <- env.decisions + 1;
+               new_decision_level();
+               let current_level = decision_level () in
+               enqueue_assign v value current_level
+             end)
+          (fun v -> pick_branch_aux v.pa)
 
   let search n_of_conflicts n_of_learnts =
     let conflictC = ref 0 in
