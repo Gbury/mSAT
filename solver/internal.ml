@@ -567,12 +567,14 @@ module Make
       let size = List.length atoms in
       match atoms with
       | [] ->
-        report_unsat init0;
+        L.debug 1 "New clause (unsat) : %a" St.pp_clause init0;
+        report_unsat init0
       | a::b::_ ->
         let clause =
           if init then init0
           else make_clause ?tag:init0.tag (fresh_name ()) atoms size true (History [init0]) level
         in
+        L.debug 4 "New clause: %a" St.pp_clause clause;
         attach_clause clause;
         Vec.push vec clause;
         if a.neg.is_true then begin
@@ -588,7 +590,7 @@ module Make
         L.debug 5 "New unit clause, propagating : %a" St.pp_atom a;
         cancel_until 0;
         enqueue_bool a 0 (Bcp (Some init0))
-    with Trivial -> L.debug 5 "Trivial clause ignored"
+    with Trivial -> L.debug 5 "Trivial clause ignored : %a" St.pp_clause init0
 
   let progress_estimate () =
     let prg = ref 0. in
@@ -902,7 +904,8 @@ module Make
           | Sat ->
             let nbc = env.nb_init_clauses in
             Th.if_sat (full_slice ());
-            if env.nb_init_clauses = nbc &&
+            if is_unsat () then raise Unsat
+            else if env.nb_init_clauses = nbc &&
                env.elt_head = Vec.size env.elt_queue then
               raise Sat
         end
@@ -1022,6 +1025,7 @@ module Make
       reset_until l ul.ul_elt_lvl ul.ul_th_lvl ul.ul_th_env;
 
       (* Log current assumptions for debugging purposes *)
+      L.debug 99 "Current trail:";
       for i = 0 to Vec.size env.elt_queue - 1 do
         L.debug 99 "%s%s%d -- %a"
           (if i = ul.ul_elt_lvl then "*" else " ")
