@@ -1,5 +1,5 @@
-<util/*.cmx>: for-pack(Msat), package(unix)
-<util/*.native>: package(unix)
+<util/*.cmx>: for-pack(Msat)
+#<util/*.native>: 
 <smt/*.cmx>: for-pack(Msat)
 <sat/*.cmx>: for-pack(Msat)
 <solver/*.cmx>: for-pack(Msat)
