@@ -38,6 +38,12 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
   (** Returns the valuation of a formula in the current state
       of the sat solver. *)
 
+  val eval_level : F.t -> bool * int
+  (** Return the current assignement of the literals, as well as its
+      decision level. If the level is 0, then it is necessary for
+      the atom to have this value; otherwise it is due to choices
+      that can potentially be backtracked. *)
+
   val hyps : unit -> St.clause Vec.t
   (** Returns the vector of assumptions used by the solver. May be slightly different
       from the clauses assumed because of top-level simplification of clauses. *)

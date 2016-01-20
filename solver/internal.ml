@@ -941,11 +941,14 @@ module Make
     let cnf = List.rev_map (List.rev_map atom) cnf in
     init_solver ?tag cnf
 
-  let eval lit =
+  let eval_level lit =
     let var, negated = make_boolean_var lit in
     assert (var.pa.is_true || var.na.is_true);
     let truth = var.pa.is_true in
-    if negated then not truth else truth
+    let value = if negated then not truth else truth in
+    value, var.level
+
+  let eval lit = fst (eval_level lit)
 
   let hyps () = env.clauses_hyps
 

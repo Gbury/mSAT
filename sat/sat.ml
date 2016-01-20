@@ -146,6 +146,7 @@ module Make(Log : Log_intf.S) = struct
     with SatSolver.Unsat -> ()
 
   let eval = SatSolver.eval
+  let eval_level = SatSolver.eval_level
 
   let get_proof () =
     (* SatSolver.Proof.learn (SatSolver.history ()); *)
