@@ -7,7 +7,6 @@ Copyright 2014 Simon Cruanes
 module type S = Res_intf.S
 
 module Make :
-  functor (L : Log_intf.S) ->
   functor (St : Solver_types.S) -> sig
     include S with module St = St
     val push : unit -> int

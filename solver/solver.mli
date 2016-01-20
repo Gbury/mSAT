@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Make (L : Log_intf.S)(F : Formula_intf.S)
+module Make (F : Formula_intf.S)
     (Th : Theory_intf.S with type formula = F.t and type proof = F.proof) : sig
   (** Functor to create a SMT Solver parametrised by the atomic
       formulas and a theory. *)

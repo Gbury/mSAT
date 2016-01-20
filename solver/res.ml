@@ -6,7 +6,7 @@ Copyright 2014 Simon Cruanes
 
 module type S = Res_intf.S
 
-module Make(L : Log_intf.S)(St : Solver_types.S) = struct
+module Make(St : Solver_types.S) = struct
 
   module St = St
 
@@ -65,8 +65,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
   (* Printing functions *)
   let rec print_cl fmt = function
     | [] -> Format.fprintf fmt "[]"
-    | [a] -> St.print_atom fmt a
-    | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" St.print_atom a print_cl r
+    | [a] -> St.pp_atom fmt a
+    | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" St.pp_atom a print_cl r
 
   (* Compute resolution of 2 clauses *)
   let resolve l =
@@ -101,7 +101,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     let res = sort_uniq compare_atoms !l in
     let l, _ = resolve res in
     if l <> [] then
-      L.debug 3 "Input clause is a tautology";
+      Log.debug 3 "Input clause is a tautology";
     res
 
   let print_clause fmt c = print_cl fmt (to_list c)
@@ -122,9 +122,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
   let is_proven c = is_proved (c, to_list c)
 
   let add_res (c, cl_c) (d, cl_d) =
-    L.debug 7 "  Resolving clauses :";
-    L.debug 7 "    %a" St.pp_clause c;
-    L.debug 7 "    %a" St.pp_clause d;
+    Log.debugf 7 "@[<v4>  Resolving clauses : %a@,%a@]"
+      (fun k->k St.pp_clause c St.pp_clause d);
     assert (is_proved (c, cl_c));
     assert (is_proved (d, cl_d));
     let l = merge cl_c cl_d in
@@ -135,7 +134,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
       H.add !proof new_clause (Resolution (a, (c, cl_c), (d, cl_d)));
       let new_c = St.make_clause (fresh_pcl_name ()) new_clause (List.length new_clause)
           true St.(History [c; d]) (max c.St.c_level d.St.c_level) in
-      L.debug 5 "New clause : %a" St.pp_clause new_c;
+      Log.debugf 5 "@[<2>New clause :@ @[%a@]@]" (fun k->k St.pp_clause new_c);
       new_c, new_clause
     | _ -> raise (Resolution_error "Resolved to a tautology")
 
@@ -165,9 +164,9 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
   let rec add_clause c cl l = (* We assume that all clauses in l are already proved ! *)
     match l with
     | a :: r ->
-      L.debug 5 "Resolving (with history) %a" St.pp_clause c;
+      Log.debugf 5 "Resolving (with history) %a" (fun k->k St.pp_clause c);
       let temp_c, temp_cl = List.fold_left add_res a r in
-      L.debug 10 " Switching to unit resolutions";
+      Log.debug 10 " Switching to unit resolutions";
       let new_c, new_cl = (ref temp_c, ref temp_cl) in
       while not (equal_cl cl !new_cl) do
         let unit_to_use = diff_learnt [] cl !new_cl in
@@ -197,14 +196,14 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
         end
 
   let prove c =
-    L.debug 3 "Proving : %a" St.pp_clause c;
+    Log.debugf 3 "Proving : %a" (fun k->k St.pp_clause c);
     do_clause [c];
-    L.debug 3 "Proved : %a" St.pp_clause c
+    Log.debugf 3 "Proved : %a" (fun k->k St.pp_clause c)
 
   let rec prove_unsat_cl (c, cl) = match cl with
     | [] -> true
     | a :: r ->
-      L.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
+      Log.debugf 2 "Eliminating %a in %a" (fun k->k St.pp_atom a St.pp_clause c);
       let d = match St.(a.var.level, a.var.reason) with
         | 0, St.Bcp Some d -> d
         | _ -> raise Exit
@@ -220,11 +219,12 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
       false
 
   let learn v =
-    Vec.iter (fun c -> L.debug 15 "history : %a" St.pp_clause c) v;
+    Log.debugf 15 "@[<2>history : @[<v>%a@]@]"
+      (fun k->k (Vec.print ~sep:"" St.pp_clause) v);
     Vec.iter prove v
 
   let assert_can_prove_unsat c =
-    L.debug 1 "=================== Proof =====================";
+    Log.debug 1 "=================== Proof =====================";
     prove c;
     if not (prove_unsat_cl (c, to_list c)) then
       raise Insuficient_hyps

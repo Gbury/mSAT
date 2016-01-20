@@ -100,3 +100,7 @@ val exists : ('a -> bool) -> 'a t -> bool
 val for_all : ('a -> bool) -> 'a t -> bool
 (** Do all elements satisfy the predicate? *)
 
+val print :
+  ?sep:string ->
+  (Format.formatter -> 'a -> unit) ->
+  Format.formatter -> 'a t -> unit

@@ -88,9 +88,9 @@ module Tsat = struct
 
 end
 
-module Make(Log : Log_intf.S) = struct
+module Make(Dummy : sig end) = struct
 
-  module SatSolver = Solver.Make(Log)(Fsat)(Tsat)
+  module SatSolver = Solver.Make(Fsat)(Tsat)
   module Dot = Dot.Make(SatSolver.Proof)(struct
       let clause_name c = SatSolver.St.(c.name)
       let print_atom = SatSolver.St.print_atom

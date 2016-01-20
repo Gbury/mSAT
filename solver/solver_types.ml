@@ -18,7 +18,7 @@ module type S = Solver_types_intf.S
 (* Solver types for McSat Solving *)
 (* ************************************************************************ *)
 
-module McMake (L : Log_intf.S)(E : Expr_intf.S) = struct
+module McMake (E : Expr_intf.S) = struct
 
   (* Flag for Mcsat v.s Pure Sat *)
   let mcsat = true
@@ -271,29 +271,28 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S) = struct
     else if a.neg.is_true then sprintf "[F%s]" (level a)
     else "[]"
 
-  let pp_premise b = function
-    | History v -> List.iter (fun {name=name} -> bprintf b "%s," name) v
-    | Lemma _ -> bprintf b "th_lemma"
+  let pp_premise out = function
+    | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@," name) v
+    | Lemma _ -> Format.fprintf out "th_lemma"
 
-  let pp_assign b = function
+  let pp_assign out = function
     | None -> ()
-    | Some t -> bprintf b "[assignment: %s]" (Log.on_fmt E.Term.print t)
+    | Some t -> Format.fprintf out "[assignment: %a]" E.Term.print t
 
-  let pp_lit b v =
-    bprintf b "%d [lit:%s]%a"
-      (v.lid+1) (Log.on_fmt E.Term.print v.term) pp_assign v.assigned
+  let pp_lit out v =
+    Format.fprintf out "%d [lit:%a]%a"
+      (v.lid+1) E.Term.print v.term pp_assign v.assigned
 
-  let pp_atom b a =
-    bprintf b "%s%d%s[lit:%s]"
-      (sign a) (a.var.vid+1) (value a) (Log.on_fmt E.Formula.print a.lit)
+  let pp_atom out a =
+    Format.fprintf out "%s%d%s[lit:%a]"
+      (sign a) (a.var.vid+1) (value a) E.Formula.print a.lit
 
-  let pp_atoms_vec b vec =
-    for i = 0 to Vec.size vec - 1 do
-      bprintf b "%a ; " pp_atom (Vec.get vec i)
-    done
+  let pp_atoms_vec out vec =
+    Vec.print ~sep:"; " pp_atom out vec
 
-  let pp_clause b {name=name; atoms=arr; cpremise=cp; learnt=learnt} =
-    bprintf b "%s%s{ %a} cpremise={{%a}}" name (if learnt then "!" else ":") pp_atoms_vec arr pp_premise cp
+  let pp_clause out {name=name; atoms=arr; cpremise=cp; learnt=learnt} =
+    Format.fprintf out "%s%s{ %a} cpremise={{%a}}"
+      name (if learnt then "!" else ":") pp_atoms_vec arr pp_premise cp
 
 end
 
@@ -301,8 +300,8 @@ end
 (* Solver types for pure SAT Solving *)
 (* ************************************************************************ *)
 
-module SatMake (L : Log_intf.S)(E : Formula_intf.S) = struct
-  include McMake(L)(struct
+module SatMake (E : Formula_intf.S) = struct
+  include McMake(struct
       include E
       module Term = E
       module Formula = E

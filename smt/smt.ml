@@ -31,8 +31,9 @@ module Tsmt = struct
   let current_level () = !env
 
   let to_clause (a, b, l) =
-    Log.debug 10 "Expl : %s; %s" a b;
-    List.iter (fun s -> Log.debug 10 " |- %s" s) l;
+    Log.debugf 10 "@[Expl : %s; %s@ %a@]"
+      (fun k->k a b
+        (fun out () -> List.iter (Format.fprintf out "|- %s@ ") l) ());
     let rec aux acc = function
       | [] | [_] -> acc
       | x :: ((y :: _) as r) ->
@@ -43,7 +44,7 @@ module Tsmt = struct
   let assume s =
     try
       for i = s.start to s.start + s.length - 1 do
-        Log.debug 10 "Propagating in th : %s" (Log.on_fmt Fsmt.print (s.get i));
+        Log.debugf 10 "Propagating in th :@ @[%a@]" (fun k->k Fsmt.print (s.get i));
         match s.get i with
         | Fsmt.Prop _ -> ()
         | Fsmt.Equal (i, j) -> env := CC.add_eq !env i j
@@ -60,7 +61,7 @@ end
 
 module Make(Dummy:sig end) = struct
 
-  module SmtSolver = Solver.Make(Log)(Fsmt)(Tsmt)
+  module SmtSolver = Solver.Make(Fsmt)(Tsmt)
   module Dot = Dot.Make(SmtSolver.Proof)(struct
       let clause_name c = SmtSolver.St.(c.name)
       let print_atom = SmtSolver.St.print_atom
