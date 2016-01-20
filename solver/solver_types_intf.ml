@@ -119,7 +119,7 @@ module type S = sig
   val make_clause : ?tag:int -> string -> atom list -> int -> bool -> premise -> int -> clause
   (** [make_clause name atoms size learnt premise level] creates a clause with the given attributes. *)
 
-  (** {2 Proof management} *)
+  (** {2 Clause names} *)
 
   val fresh_name : unit -> string
   val fresh_lname : unit -> string

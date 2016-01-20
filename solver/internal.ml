@@ -261,46 +261,46 @@ module Make
   let simplify_zero atoms level0 =
     (* Eliminates dead litterals from clauses when at decision level 0 *)
     assert (decision_level () = 0);
-    let aux (atoms, init, lvl) a =
+    let aux (atoms, history, lvl) a =
       if a.is_true then raise Trivial;
       if a.neg.is_true then begin
         match a.var.reason with
-        | Bcp (Some cl) -> atoms, false, max lvl cl.c_level
-        | Semantic 0 -> atoms, init, lvl
+        | Bcp (Some cl) -> atoms, cl :: history, max lvl cl.c_level
+        | Semantic 0 -> atoms, history, lvl
         | _ ->
           L.debug 0 "Unexpected semantic propagation at level 0: %a" St.pp_atom a;
           assert false
       end else
-        a::atoms, init, lvl
+        a::atoms, history, lvl
     in
-    let atoms, init, lvl = List.fold_left aux ([], true, level0) atoms in
+    let atoms, init, lvl = List.fold_left aux ([], [], level0) atoms in
     List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init, lvl
 
   let partition atoms init0 =
     (* Parittion litterals for new clauses *)
-    let rec partition_aux trues unassigned falses init lvl = function
-      | [] -> trues @ unassigned @ falses, init, lvl
+    let rec partition_aux trues unassigned falses history lvl = function
+      | [] -> trues @ unassigned @ falses, history, lvl
       | a :: r ->
         if a.is_true then
           if a.var.level = 0 then raise Trivial
-          else (a::trues) @ unassigned @ falses @ r, init, lvl
+          else (a::trues) @ unassigned @ falses @ r, history, lvl
         else if a.neg.is_true then
           if a.var.level = 0 then begin
             match a.var.reason with
             | Bcp (Some cl) ->
-              partition_aux trues unassigned falses false (max lvl cl.c_level) r
+              partition_aux trues unassigned falses (cl :: history) (max lvl cl.c_level) r
             | Semantic 0 ->
-              partition_aux trues unassigned falses init lvl r
+              partition_aux trues unassigned falses history lvl r
             | _ -> assert false
           end else
-            partition_aux trues unassigned (a::falses) init lvl r
+            partition_aux trues unassigned (a::falses) history lvl r
         else
-          partition_aux trues (a::unassigned) falses init lvl r
+          partition_aux trues (a::unassigned) falses history lvl r
     in
     if decision_level () = 0 then
       simplify_zero atoms init0
     else
-      partition_aux [] [] [] false init0 atoms
+      partition_aux [] [] [] [] init0 atoms
 
   (* Compute a progess estimate *)
   let progress_estimate () =
@@ -386,6 +386,19 @@ module Make
     env.unsat_conflict <- Some confl;
     raise Unsat
 
+  let simpl_reason = function
+    | (Bcp Some cl) as r ->
+      let l, history, c_lvl = partition (Vec.to_list cl.atoms) 0 in
+      begin match l with
+        | [ a ] ->
+          if history = [] then r
+          else
+            let tmp_cl = make_clause (fresh_tname ()) l 1 true (History (List.rev (cl :: history))) c_lvl in
+            Bcp (Some tmp_cl)
+        | _ -> assert false
+      end
+    | r -> r
+
   let enqueue_bool a lvl reason =
     if a.neg.is_true then begin
       L.debug 0 "Trying to enqueue a false litteral: %a" St.pp_atom a;
@@ -393,6 +406,10 @@ module Make
     end;
     if not a.is_true then begin
       assert (a.var.level < 0 && a.var.reason = Bcp None && lvl >= 0);
+      let reason =
+        if lvl > 0 then reason
+        else simpl_reason reason
+      in
       a.is_true <- true;
       a.var.level <- lvl;
       a.var.reason <- reason;
@@ -490,6 +507,7 @@ module Make
     let size   = ref 1 in
     let history = ref [] in
     let c_level = ref 0 in
+    assert (decision_level () > 0);
     while !cond do
       if !c.learnt then clause_bump_activity !c;
       history := !c :: !history;
@@ -497,16 +515,24 @@ module Make
       for j = 0 to Vec.size !c.atoms - 1 do
         let q = Vec.get !c.atoms j in
         assert (q.is_true || q.neg.is_true && q.var.level >= 0); (* Pas sur *)
-        if not q.var.seen && q.var.level > 0 then begin
-          var_bump_activity q.var;
+        if q.var.level = 0 then begin
+          assert (q.neg.is_true);
+          match q.var.reason with
+          | Bcp Some cl -> history := cl :: !history
+          | _ -> assert false
+        end;
+        if not q.var.seen then begin
           q.var.seen <- true;
           seen := q :: !seen;
-          if q.var.level >= decision_level () then begin
-            incr pathC
-          end else begin
-            learnt := q :: !learnt;
-            incr size;
-            blevel := max !blevel q.var.level
+          if q.var.level > 0 then begin
+            var_bump_activity q.var;
+            if q.var.level >= decision_level () then begin
+              incr pathC
+            end else begin
+              learnt := q :: !learnt;
+              incr size;
+              blevel := max !blevel q.var.level
+            end
           end
         end
       done;
@@ -589,8 +615,8 @@ module Make
         report_unsat init0
       | a::b::_ ->
         let clause =
-          if init then init0
-          else make_clause ?tag:init0.tag (fresh_name ()) atoms size true (History [init0]) level
+          if history = [] then init0
+          else make_clause ?tag:init0.tag (fresh_name ()) atoms size true (History (init0 :: history)) level
         in
         L.debug 4 "New clause: %a" St.pp_clause clause;
         attach_clause clause;
@@ -839,20 +865,20 @@ module Make
     | Some atom ->
       env.next_decision <- None;
       pick_branch_aux atom
-      | None ->
-        destruct_elt (
-          St.get_elt @@ Iheap.remove_min f_weight env.order)
-          (fun v ->
-             if v.level >= 0 then
-               pick_branch_lit ()
-             else begin
-               let value = Th.assign v.term in
-               env.decisions <- env.decisions + 1;
-               new_decision_level();
-               let current_level = decision_level () in
-               enqueue_assign v value current_level
-             end)
-          (fun v -> pick_branch_aux v.pa)
+    | None ->
+      destruct_elt (
+        St.get_elt @@ Iheap.remove_min f_weight env.order)
+        (fun v ->
+           if v.level >= 0 then
+             pick_branch_lit ()
+           else begin
+             let value = Th.assign v.term in
+             env.decisions <- env.decisions + 1;
+             new_decision_level();
+             let current_level = decision_level () in
+             enqueue_assign v value current_level
+           end)
+        (fun v -> pick_branch_aux v.pa)
 
   let search n_of_conflicts n_of_learnts =
     let conflictC = ref 0 in
@@ -919,7 +945,7 @@ module Make
             Th.if_sat (full_slice ());
             if is_unsat () then raise Unsat
             else if env.nb_init_clauses = nbc &&
-               env.elt_head = Vec.size env.elt_queue then
+                    env.elt_head = Vec.size env.elt_queue then
               raise Sat
         end
       done
@@ -1044,7 +1070,7 @@ module Make
           (if i = ul.ul_elt_lvl then "*" else " ")
           (if i = ul.ul_th_lvl then "*" else " ")
           i (fun fmt e ->
-            destruct e (St.pp_lit fmt) (St.pp_atom fmt)) (Vec.get env.elt_queue i)
+              destruct e (St.pp_lit fmt) (St.pp_atom fmt)) (Vec.get env.elt_queue i)
       done;
 
       (* Clear hypothesis not valid anymore *)

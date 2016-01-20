@@ -7,7 +7,7 @@ solvertest () {
     for f in `find -L $1 -type f -name '*.cnf' -o -name '*.smt2'`
     do
         echo -ne "\r\033[KTesting $f..."
-        "$SOLVER" -s $3 -time 30s -size 1G $f | grep $2
+        "$SOLVER" -s $3 -time 30s -size 1G -check $f | grep $2
         RET=$?
         if [ $RET -ne 0 ];
         then

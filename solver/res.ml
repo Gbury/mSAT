@@ -167,8 +167,11 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     | a :: r ->
       L.debug 5 "Resolving (with history) %a" St.pp_clause c;
       let temp_c, temp_cl = List.fold_left add_res a r in
-      L.debug 10 " Switching to unit resolutions";
-      let new_c, new_cl = (ref temp_c, ref temp_cl) in
+      let tmp = diff_learnt [] cl temp_cl in
+      List.iter (fun a ->
+          L.debug 0 " -> %a" St.pp_atom a) tmp;
+      assert (equal_cl cl temp_cl)
+      (*
       while not (equal_cl cl !new_cl) do
         let unit_to_use = diff_learnt [] cl !new_cl in
         let unit_r = List.map (fun a -> clause_unit a) unit_to_use in
@@ -177,6 +180,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
         new_c := temp_c;
         new_cl := temp_cl;
       done
+         *)
     | _ -> assert false
 
   and do_clause = function
