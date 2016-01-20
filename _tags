@@ -10,6 +10,7 @@
 #<solver/*.cmx>: inline(50)
 #<sat/**/*.cmx>: inline(100)
 #<smt/**/*.cmx>: inline(100)
+<util/log.cmx>: inline(30)
 
 # more warnings
 <**/*.ml>: warn_K, warn_Y, warn_X

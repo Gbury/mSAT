@@ -2,7 +2,6 @@
 Log
 
 # Interface definitions
-Log_intf
 Formula_intf
 Theory_intf
 Plugin_intf
