@@ -146,16 +146,19 @@ module Make(St : Solver_types.S) = struct
       assert (cmp_cl l (to_list conclusion) = 0);
       { conclusion; step = Resolution (c', d', a); }
 
-  (* Compute unsat-core *)
+  (* Compute unsat-core
+     TODO: the uniq sort at the end may be costly, maybe remove it,
+           or compare the clauses faster ? *)
   let unsat_core proof =
-    let rec aux acc proof =
-      let p = expand proof in
-      match p.step with
-      | Hypothesis | Lemma _ -> p.conclusion :: acc
-      | Resolution (proof1, proof2, _) ->
-        aux (aux acc proof1) proof2
+    let rec aux acc = function
+      | [] -> acc
+      | c :: r ->
+        begin match c.St.cpremise with
+          | St.History [] | St.Lemma _ -> aux (c :: acc) r
+          | St.History l -> aux acc (l @ r)
+        end
     in
-    sort_uniq cmp (aux [] proof)
+    sort_uniq cmp (aux [] [proof])
 
   (* Iter on proofs *)
   module H = Hashtbl.Make(struct
