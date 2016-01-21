@@ -6,7 +6,7 @@ Copyright 2014 Simon Cruanes
 
 module type S = Res_intf.S
 
-module Make(L : Log_intf.S)(St : Solver_types.S) = struct
+module Make(St : Solver_types.S) = struct
 
   module St = St
 
@@ -23,16 +23,12 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
   let compare_atoms a b = Pervasives.compare St.(a.aid) St.(b.aid)
 
+  let print_clause = St.pp_clause
+
   let merge = List.merge compare_atoms
 
   let _c = ref 0
   let fresh_pcl_name () = incr _c; "R" ^ (string_of_int !_c)
-
-  (* Printing functions *)
-  let rec print_cl fmt = function
-    | [] -> Format.fprintf fmt "[]"
-    | [a] -> St.print_atom fmt a
-    | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" St.print_atom a print_cl r
 
   (* Compute resolution of 2 clauses *)
   let resolve l =
@@ -67,11 +63,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     let res = sort_uniq compare_atoms !l in
     let l, _ = resolve res in
     if l <> [] then
-      L.debug 3 "Input clause is a tautology";
+      Log.debug 3 "Input clause is a tautology";
     res
-
-  (* Printing *)
-  let print_clause fmt c = print_cl fmt (to_list c)
 
   (* Comparison of clauses *)
   let cmp_cl c d =
@@ -116,9 +109,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
 
   let rec chain_res (c, cl) = function
     | d :: r ->
-      L.debug 10 " Resolving :";
-      L.debug 10 "   - %a" St.pp_clause c;
-      L.debug 10 "   - %a" St.pp_clause d;
+      Log.debugf 7 "@[<v4>  Resolving clauses : %a@,%a@]"
+        (fun k -> k St.pp_clause c St.pp_clause d);
       let dl = to_list d in
       begin match resolve (merge cl dl) with
       | [ a ], l ->
@@ -134,7 +126,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     | _ -> assert false
 
   let rec expand conclusion =
-    L.debug 5 "Expanding : %a" St.pp_clause conclusion;
+    Log.debugf 5 "@[Expanding : %a@]" (fun k -> k St.pp_clause conclusion);
     match conclusion.St.cpremise with
     | St.Lemma l ->
       {conclusion; step = Lemma l; }

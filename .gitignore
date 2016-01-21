@@ -7,3 +7,4 @@ tests/main
 .*.swp
 .session
 *.docdir
+util/log.ml

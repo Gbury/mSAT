@@ -27,6 +27,12 @@ test: build-test
 	@/usr/bin/time -f "%e" ./tests/run smt
 	@/usr/bin/time -f "%e" ./tests/run mcsat
 
+enable_log:
+	cd util; ln -sf log_real.ml log.ml
+
+disable_log:
+	cd util; ln -sf log_dummy.ml log.ml
+
 bench: build-test
 	cd bench && $(MAKE)
 
@@ -51,4 +57,4 @@ reinstall: all
 	ocamlfind remove msat || true
 	ocamlfind install msat $(TO_INSTALL)
 
-.PHONY: clean doc all bench install uninstall reinstall
+.PHONY: clean doc all bench install uninstall reinstall enable_log disable_log

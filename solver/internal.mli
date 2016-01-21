@@ -5,7 +5,6 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make
-  (L : Log_intf.S)
   (St : Solver_types.S)
   (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof)
 : sig
@@ -30,6 +29,12 @@ module Make
   val eval : St.formula -> bool
   (** Returns the valuation of a formula in the current state
       of the sat solver. *)
+
+  val eval_level : St.formula -> bool * int
+  (** Return the current assignement of the literals, as well as its
+      decision level. If the level is 0, then it is necessary for
+      the atom to have this value; otherwise it is due to choices
+      that can potentially be backtracked. *)
 
   val hyps : unit -> St.clause Vec.t
   (** Returns the vector of assumptions used by the solver. May be slightly different

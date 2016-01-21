@@ -11,7 +11,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module Make (L : Log_intf.S)(F : Formula_intf.S)
+module Make (F : Formula_intf.S)
     (Th : Theory_intf.S with type formula = F.t and type proof = F.proof) : sig
   (** Functor to create a SMT Solver parametrised by the atomic
       formulas and a theory. *)
@@ -37,6 +37,12 @@ module Make (L : Log_intf.S)(F : Formula_intf.S)
   val eval : F.t -> bool
   (** Returns the valuation of a formula in the current state
       of the sat solver. *)
+
+  val eval_level : F.t -> bool * int
+  (** Return the current assignement of the literals, as well as its
+      decision level. If the level is 0, then it is necessary for
+      the atom to have this value; otherwise it is due to choices
+      that can potentially be backtracked. *)
 
   val hyps : unit -> St.clause Vec.t
   (** Returns the vector of assumptions used by the solver. May be slightly different

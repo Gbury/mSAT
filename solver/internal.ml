@@ -5,12 +5,11 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make
-    (L : Log_intf.S)
     (St : Solver_types.S)
     (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof)
 = struct
 
-  module Proof = Res.Make(L)(St)
+  module Proof = Res.Make(St)
 
   open St
 
@@ -266,7 +265,8 @@ module Make
         | Bcp (Some cl) -> atoms, cl :: history, max lvl cl.c_level
         | Semantic 0 -> atoms, history, lvl
         | _ ->
-          L.debug 0 "Unexpected semantic propagation at level 0: %a" St.pp_atom a;
+          Log.debugf 0 "Unexpected semantic propagation at level 0: %a"
+            (fun k->k St.pp_atom a);
           assert false
       end else
         a::atoms, history, lvl
@@ -332,7 +332,7 @@ module Make
       env.clauses_literals <- env.clauses_literals + Vec.size c.atoms
 
   let detach_clause c =
-    L.debug 10 "Removing clause %a" St.pp_clause c;
+    Log.debugf 10 "Removing clause @[%a@]" (fun k->k St.pp_clause c);
     c.removed <- true;
     (* Not necessary, cleanup is done during propagation
        Vec.remove (Vec.get c.atoms 0).neg.watched c;
@@ -381,8 +381,7 @@ module Make
     ()
 
   let report_unsat ({atoms=atoms} as confl) =
-    L.debug 5 "Unsat conflict:";
-    L.debug 5 " %a" St.pp_clause confl;
+    Log.debugf 5 "@[Unsat conflict: %a@]" (fun k -> k St.pp_clause confl);
     env.unsat_conflict <- Some confl;
     raise Unsat
 
@@ -401,7 +400,7 @@ module Make
 
   let enqueue_bool a lvl reason =
     if a.neg.is_true then begin
-      L.debug 0 "Trying to enqueue a false litteral: %a" St.pp_atom a;
+      Log.debugf 0 "Trying to enqueue a false litteral: %a" (fun k->k St.pp_atom a);
       assert false
     end;
     if not a.is_true then begin
@@ -414,7 +413,8 @@ module Make
       a.var.level <- lvl;
       a.var.reason <- reason;
       Vec.push env.elt_queue (of_atom a);
-      L.debug 20 "Enqueue (%d): %a" (Vec.size env.elt_queue) pp_atom a
+      Log.debugf 20 "Enqueue (%d): %a"
+        (fun k->k (Vec.size env.elt_queue) pp_atom a)
     end
 
   let enqueue_assign v value lvl =
@@ -467,7 +467,7 @@ module Make
           raise Exit
         | _ ->
           decr tr_ind;
-          L.debug 20 "Looking at trail element %d" !tr_ind;
+          Log.debugf 20 "Looking at trail element %d" (fun k->k !tr_ind);
           destruct (Vec.get env.elt_queue !tr_ind)
             (fun _ -> ()) (* TODO remove *)
             (fun a -> match a.var.reason with
@@ -611,14 +611,14 @@ module Make
       let size = List.length atoms in
       match atoms with
       | [] ->
-        L.debug 1 "New clause (unsat) : %a" St.pp_clause init0;
+        Log.debugf 1 "New clause (unsat) :@ @[%a@]" (fun k->k St.pp_clause init0);
         report_unsat init0
       | a::b::_ ->
         let clause =
           if history = [] then init0
           else make_clause ?tag:init0.tag (fresh_name ()) atoms size true (History (init0 :: history)) level
         in
-        L.debug 4 "New clause: %a" St.pp_clause clause;
+        Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
         attach_clause clause;
         Vec.push vec clause;
         if a.neg.is_true then begin
@@ -631,10 +631,11 @@ module Make
           enqueue_bool a lvl (Bcp (Some clause))
         end
       | [a]   ->
-        L.debug 5 "New unit clause, propagating : %a" St.pp_atom a;
+        Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
         cancel_until 0;
         enqueue_bool a 0 (Bcp (Some init0))
-    with Trivial -> L.debug 5 "Trivial clause ignored : %a" St.pp_clause init0
+    with Trivial ->
+      Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init0)
 
   let propagate_in_clause a c i watched new_sz =
     let atoms = c.atoms in
@@ -967,11 +968,14 @@ module Make
     let cnf = List.rev_map (List.rev_map atom) cnf in
     init_solver ?tag cnf
 
-  let eval lit =
+  let eval_level lit =
     let var, negated = make_boolean_var lit in
     assert (var.pa.is_true || var.na.is_true);
     let truth = var.pa.is_true in
-    if negated then not truth else truth
+    let value = if negated then not truth else truth in
+    value, var.level
+
+  let eval lit = fst (eval_level lit)
 
   let hyps () = env.clauses_hyps
 
@@ -1009,7 +1013,7 @@ module Make
 
   (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
   let reset_until push_lvl elt_lvl th_lvl th_env =
-    L.debug 1 "Resetting to decision level 0 (pop/forced)";
+    Log.debug 1 "Resetting to decision level 0 (pop/forced)";
     env.th_head <- th_lvl;
     env.elt_head <- elt_lvl;
     for c = env.elt_head to Vec.size env.elt_queue - 1 do
@@ -1063,14 +1067,19 @@ module Make
       reset_until l ul.ul_elt_lvl ul.ul_th_lvl ul.ul_th_env;
 
       (* Log current assumptions for debugging purposes *)
-      L.debug 99 "Current trail:";
-      for i = 0 to Vec.size env.elt_queue - 1 do
-        L.debug 99 "%s%s%d -- %a"
-          (if i = ul.ul_elt_lvl then "*" else " ")
-          (if i = ul.ul_th_lvl then "*" else " ")
-          i (fun fmt e ->
-              destruct e (St.pp_lit fmt) (St.pp_atom fmt)) (Vec.get env.elt_queue i)
-      done;
+      Log.debugf 99 "@[<v2>Current trail:@ %a@]"
+        (fun k->
+          let pp out () =
+            for i = 0 to Vec.size env.elt_queue - 1 do
+              Format.fprintf out "%s%s%d -- %a@,"
+                (if i = ul.ul_elt_lvl then "*" else " ")
+                (if i = ul.ul_th_lvl then "*" else " ")
+                i (fun fmt e ->
+                  destruct e (St.pp_lit fmt) (St.pp_atom fmt))
+                (Vec.get env.elt_queue i)
+            done
+          in
+          k pp ());
 
       (* Clear hypothesis not valid anymore *)
       for i = ul.ul_clauses to Vec.size env.clauses_hyps - 1 do
@@ -1091,7 +1100,7 @@ module Make
           | History [ { cpremise = Lemma _ } as c' ] -> Stack.push c' s
           | _ -> () (* Only simplified clauses can have a level > 0 *)
         end else begin
-          L.debug 15 "Keeping intact clause %a" St.pp_clause c;
+          Log.debugf 15 "Keeping intact clause %a" (fun k->k St.pp_clause c);
           Vec.set env.clauses_learnt !new_sz c;
           incr new_sz
         end

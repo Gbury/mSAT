@@ -8,7 +8,7 @@ module Fsat : Formula_intf.S with type t = private int
 
 module Tseitin : Tseitin.S with type atom = Fsat.t
 
-module Make(Log: Log_intf.S) : sig
+module Make(Dummy : sig end) : sig
   (** Fonctor to make a pure SAT Solver module with built-in literals. *)
 
   exception Bad_atom
@@ -56,6 +56,12 @@ module Make(Log: Log_intf.S) : sig
 
   val eval : atom -> bool
   (** Return the current assignement of the literals. *)
+
+  val eval_level : atom -> bool * int
+  (** Return the current assignement of the literals, as well as its
+      decision level. If the level is 0, then it is necessary for
+      the atom to have this value; otherwise it is due to choices
+      that can potentially be backtracked. *)
 
   val assume : ?tag:int -> atom list list -> unit
   (** Add a list of clauses to the set of assumptions. *)

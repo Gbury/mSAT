@@ -161,6 +161,14 @@ let for_all p t =
     true
   with ExitVec -> false
 
+let print ?(sep=", ") pp out v =
+  let first = ref true in
+  iter
+    (fun x ->
+      if !first then first := false else Format.fprintf out "%s@," sep;
+      pp out x)
+    v
+
 (*
 template<class V, class T>
 static inline void remove(V& ts, const T& t)
