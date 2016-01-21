@@ -16,42 +16,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
   type atom = St.atom
   type int_cl = clause * St.atom list
 
-  type node =
-    | Assumption
-    | Lemma of lemma
-    | Resolution of atom * int_cl * int_cl
-    (* lits, c1, c2 with lits the literals used to resolve c1 and c2 *)
-
   exception Insuficient_hyps
   exception Resolution_error of string
-
-  (* Proof graph *)
-  let hash_cl cl =
-    Hashtbl.hash (List.map (fun a -> St.(a.aid)) cl)
-
-  let equal_cl cl_c cl_d =
-    try
-      List.for_all2 (==) cl_c cl_d
-    with Invalid_argument _ ->
-      false
-
-  module H = Hashtbl.Make(struct
-      type t = St.atom list
-      let hash = hash_cl
-      let equal = equal_cl
-    end)
-  let proof : node H.t ref = ref (H.create 1007);;
-
-  let push_stack = Vec.make 0 (H.create 0)
-
-  let push () =
-    let res = Vec.size push_stack in
-    Vec.push push_stack (H.copy !proof);
-    res
-
-  let pop i =
-    proof := Vec.get push_stack i;
-    Vec.shrink push_stack (Vec.size push_stack - i)
 
   (* Misc functions *)
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
@@ -60,7 +26,7 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
   let merge = List.merge compare_atoms
 
   let _c = ref 0
-  let fresh_pcl_name () = incr _c; "P" ^ (string_of_int !_c)
+  let fresh_pcl_name () = incr _c; "R" ^ (string_of_int !_c)
 
   (* Printing functions *)
   let rec print_cl fmt = function
@@ -104,164 +70,11 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
       L.debug 3 "Input clause is a tautology";
     res
 
+  (* Printing *)
   let print_clause fmt c = print_cl fmt (to_list c)
 
-  (* Adding hyptoheses *)
-  let has_been_proved c = H.mem !proof (to_list c)
-
-  let is_proved (c, cl) =
-    if H.mem !proof cl then
-      true
-    else if not St.(c.learnt) then begin
-      H.add !proof cl Assumption;
-      true
-    end else match St.(c.cpremise) with
-      | St.Lemma p -> H.add !proof cl (Lemma p); true
-      | St.History _ -> false
-
-  let is_proven c = is_proved (c, to_list c)
-
-  let add_res (c, cl_c) (d, cl_d) =
-    L.debug 7 "  Resolving clauses :";
-    L.debug 7 "    %a" St.pp_clause c;
-    L.debug 7 "    %a" St.pp_clause d;
-    assert (is_proved (c, cl_c));
-    assert (is_proved (d, cl_d));
-    let l = merge cl_c cl_d in
-    let resolved, new_clause = resolve l in
-    match resolved with
-    | [] -> raise (Resolution_error "No literal to resolve over")
-    | [a] ->
-      H.add !proof new_clause (Resolution (a, (c, cl_c), (d, cl_d)));
-      let new_c = St.make_clause (fresh_pcl_name ()) new_clause (List.length new_clause)
-          true St.(History [c; d]) (max c.St.c_level d.St.c_level) in
-      L.debug 5 "New clause : %a" St.pp_clause new_c;
-      new_c, new_clause
-    | _ -> raise (Resolution_error "Resolved to a tautology")
-
-  let rec diff_learnt acc l l' =
-    match l, l' with
-    | [], _ -> l' @ acc
-    | a :: r, b :: r' ->
-      if equal_atoms a b then
-        diff_learnt acc r r'
-      else
-        diff_learnt (b :: acc) l r'
-    | _ -> raise (Resolution_error "Impossible to derive correct clause")
-
-  let clause_unit a = match St.(a.var.level, a.var.reason) with
-    | 0, St.Bcp Some c -> c, to_list c
-    | _ ->
-      raise (Resolution_error "Could not find a reason needed to resolve")
-
-  let need_clause (c, cl) =
-    if is_proved (c, cl) then
-      []
-    else
-      match St.(c.cpremise) with
-      | St.History l -> l
-      | St.Lemma _ -> assert false
-
-  let rec add_clause c cl l = (* We assume that all clauses in l are already proved ! *)
-    match l with
-    | a :: r ->
-      L.debug 5 "Resolving (with history) %a" St.pp_clause c;
-      let temp_c, temp_cl = List.fold_left add_res a r in
-      let tmp = diff_learnt [] cl temp_cl in
-      List.iter (fun a ->
-          L.debug 0 " -> %a" St.pp_atom a) tmp;
-      assert (equal_cl cl temp_cl)
-      (*
-      while not (equal_cl cl !new_cl) do
-        let unit_to_use = diff_learnt [] cl !new_cl in
-        let unit_r = List.map (fun a -> clause_unit a) unit_to_use in
-        do_clause (List.map fst unit_r);
-        let temp_c, temp_cl = List.fold_left add_res (!new_c, !new_cl) unit_r in
-        new_c := temp_c;
-        new_cl := temp_cl;
-      done
-         *)
-    | _ -> assert false
-
-  and do_clause = function
-    | [] -> ()
-    | c :: r ->
-      let cl = to_list c in
-      match need_clause (c, cl) with
-      | [] -> do_clause r
-      | history ->
-        let history_cl = List.rev_map (fun c -> c, to_list c) history in
-        let to_prove = List.filter (fun (c, cl) -> not (is_proved (c, cl))) history_cl in
-        let to_prove = (List.rev_map fst to_prove) in
-        begin match to_prove with
-          | [] ->
-            add_clause c cl history_cl;
-            do_clause r
-          | _ -> do_clause (to_prove @ (c :: r))
-        end
-
-  let prove c =
-    L.debug 3 "Proving : %a" St.pp_clause c;
-    do_clause [c];
-    L.debug 3 "Proved : %a" St.pp_clause c
-
-  let rec prove_unsat_cl (c, cl) = match cl with
-    | [] -> true
-    | a :: r ->
-      L.debug 2 "Eliminating %a in %a" St.pp_atom a St.pp_clause c;
-      let d = match St.(a.var.level, a.var.reason) with
-        | 0, St.Bcp Some d -> d
-        | _ -> raise Exit
-      in
-      prove d;
-      let cl_d = to_list d in
-      prove_unsat_cl (add_res (c, cl) (d, cl_d))
-
-  let prove_unsat_cl c =
-    try
-      prove_unsat_cl c
-    with Exit ->
-      false
-
-  let learn v =
-    Vec.iter (fun c -> L.debug 15 "history : %a" St.pp_clause c) v;
-    Vec.iter prove v
-
-  let assert_can_prove_unsat c =
-    L.debug 1 "=================== Proof =====================";
-    prove c;
-    if not (prove_unsat_cl (c, to_list c)) then
-      raise Insuficient_hyps
-
-  (* Interface exposed *)
-  type proof = {
-    table : node H.t;
-    clause : clause * atom list;
-  }
-  and proof_node = {
-    conclusion : clause;
-    step : step;
-  }
-  and step =
-    | Hypothesis
-    | Lemma of lemma
-    | Resolution of proof * proof * atom
-
-  let expand { clause = (c, cl); table; } =
-    let st = match H.find table cl with
-      | Assumption -> Hypothesis
-      | Lemma l -> Lemma l
-      | Resolution (a, cl_c, cl_d) ->
-        Resolution ({ clause = cl_c; table}, {clause = cl_d; table}, a)
-    in
-    { conclusion = c; step = st }
-
-  let prove_unsat c =
-    assert_can_prove_unsat c;
-    {clause = St.empty_clause, []; table = !proof; }
-
-  (* Compute unsat-core *)
-  let compare_cl c d =
+  (* Comparison of clauses *)
+  let cmp_cl c d =
     let rec aux = function
       | [], [] -> 0
       | a :: r, a' :: r' -> begin match compare_atoms a a' with
@@ -271,8 +84,77 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
       | _ :: _ , [] -> -1
       | [], _ :: _ -> 1
     in
-    aux (to_list c, to_list d)
+    aux (c, d)
 
+  let cmp c d =
+    cmp_cl (to_list c) (to_list d)
+
+  let prove conclusion =
+    assert St.(conclusion.learnt || conclusion.cpremise <> History []);
+    conclusion
+
+  let prove_unsat c =
+    let l = Vec.to_list c.St.atoms in
+    let l = List.map (fun a ->
+        match St.(a.var.reason) with
+        | St.Bcp Some d -> d
+        | _ -> assert false) l
+    in
+    St.make_clause (fresh_pcl_name ()) [] 0 true (St.History (c :: l))
+      (List.fold_left (fun i c -> max i c.St.c_level) 0 l)
+
+  (* Interface exposed *)
+  type proof = clause
+  and proof_node = {
+    conclusion : clause;
+    step : step;
+  }
+  and step =
+    | Hypothesis
+    | Lemma of lemma
+    | Resolution of proof * proof * atom
+
+  let rec chain_res (c, cl) = function
+    | d :: r ->
+      L.debug 10 " Resolving :";
+      L.debug 10 "   - %a" St.pp_clause c;
+      L.debug 10 "   - %a" St.pp_clause d;
+      let dl = to_list d in
+      begin match resolve (merge cl dl) with
+      | [ a ], l ->
+        begin match r with
+          | [] -> (l, c, d, a)
+          | _ ->
+            let new_clause = St.make_clause (fresh_pcl_name ()) l (List.length l) true
+                (St.History [c; d]) (max c.St.c_level d.St.c_level) in
+            chain_res (new_clause, l) r
+        end
+      | _ -> assert false
+      end
+    | _ -> assert false
+
+  let rec expand conclusion =
+    L.debug 5 "Expanding : %a" St.pp_clause conclusion;
+    match conclusion.St.cpremise with
+    | St.Lemma l ->
+      {conclusion; step = Lemma l; }
+    | St.History [] ->
+      assert (not conclusion.St.learnt);
+      { conclusion; step = Hypothesis; }
+    | St.History [ c ] ->
+      assert (cmp c conclusion = 0);
+      expand c
+    | St.History ( c :: ([d] as r)) ->
+      let (l, c', d', a) = chain_res (c, to_list c) r in
+      assert (cmp_cl l (to_list conclusion) = 0);
+      { conclusion; step = Resolution (c', d', a); }
+    | St.History ( c :: r ) ->
+      let (l, c', d', a) = chain_res (c, to_list c) r in
+      conclusion.St.cpremise <- St.History [c'; d'];
+      assert (cmp_cl l (to_list conclusion) = 0);
+      { conclusion; step = Resolution (c', d', a); }
+
+  (* Compute unsat-core *)
   let unsat_core proof =
     let rec aux acc proof =
       let p = expand proof in
@@ -281,9 +163,16 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
       | Resolution (proof1, proof2, _) ->
         aux (aux acc proof1) proof2
     in
-    sort_uniq compare_cl (aux [] proof)
+    sort_uniq cmp (aux [] proof)
 
   (* Iter on proofs *)
+  module H = Hashtbl.Make(struct
+      type t = clause
+      let hash cl =
+        Vec.fold (fun i a -> Hashtbl.hash St.(a.aid, i)) 0 cl.St.atoms
+      let equal = (==)
+    end)
+
   type task =
     | Enter of proof
     | Leaving of proof
@@ -293,13 +182,13 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
   let rec fold_aux s h f acc =
     match spop s with
     | None -> acc
-    | Some (Leaving ({clause = (_, cl)} as p)) ->
-      H.add h cl true;
-      fold_aux s h f (f acc (expand p))
-    | Some (Enter ({clause = (_, cl)} as p)) ->
-      if not (H.mem h cl) then begin
-        Stack.push (Leaving p) s;
-        let node = expand p in
+    | Some (Leaving c) ->
+      H.add h c true;
+      fold_aux s h f (f acc (expand c))
+    | Some (Enter c) ->
+      if not (H.mem h c) then begin
+        Stack.push (Leaving c) s;
+        let node = expand c in
         begin match node.step with
           | Resolution (p1, p2, _) ->
             Stack.push (Enter p2) s;
@@ -314,6 +203,8 @@ module Make(L : Log_intf.S)(St : Solver_types.S) = struct
     let s = Stack.create () in
     Stack.push (Enter p) s;
     fold_aux s h f acc
+
+  let check p = fold (fun () _ -> ()) () p
 
 end
 

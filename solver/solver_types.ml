@@ -59,8 +59,8 @@ module McMake (L : Log_intf.S)(E : Expr_intf.S) = struct
     tag : int option;
     atoms : atom Vec.t;
     learnt : bool;
-    cpremise : premise;
     c_level : int;
+    mutable cpremise : premise;
     mutable activity : float;
     mutable removed : bool;
   }

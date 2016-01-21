@@ -45,29 +45,11 @@ module type S = sig
 
   (** {3 Proof building functions} *)
 
-  val has_been_proved : clause -> bool
-  (** Returns [true] if the clause is part of the current proof graph. This function does not alter
-      the proof graph (contrary to [is_proven]). *)
-
-  val is_proven : clause -> bool
-  (** Checks if the given clause has a derivation in the current state. Whatever the result,
-      new proven clauses (including the given clause) may be added to the proof graph. In particular,
-      hyptohesis and theory lemmas always have trivial derivations, and as such [is_proven c] (where [c]
-      is a hypothesis or lemma) will always return [true] and add it to the proof graph. *)
-
-  val prove : clause -> unit
+  val prove : clause -> proof
   (** Same as 'learn', but works on single clauses instead of vectors. *)
 
-  val learn : clause Vec.t -> unit
-  (** Learn and build proofs for the clause in the vector. Clauses in the vector should be in the order they were learned. *)
-
-  val assert_can_prove_unsat : clause -> unit
-  (** [assert_can_prove_unsat c] tries and prove the empty clause from [c]. [c] may be a learnt clause not yet proved.
-      @raise Insuficient_hyps if it is impossible. *)
-
   val prove_unsat : clause -> proof
-  (** Given a conflict clause [c], returns a proof of the empty clause. Same as [assert_can_prove_unsat] but returns
-      the proof if it succeeds.
+  (** Given a conflict clause [c], returns a proof of the empty clause.
       @raise Insuficient_hyps if it does not succeed. *)
 
   (** {3 Proof Manipulation} *)
@@ -81,9 +63,13 @@ module type S = sig
       [f] on a proof node happens after the execution on the children of the nodes. *)
 
   val unsat_core : proof -> clause list
-  (** Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof. *)
+  (** Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof.
+      More efficient than using the [fold] function since it has access to the internal representation of proofs *)
 
   (** {3 Misc} *)
+
+  val check : proof -> unit
+  (** Check the contents of a proof. Mainly for internal use *)
 
   val print_clause : Format.formatter -> clause -> unit
   (** A nice looking printer for clauses, which sort the atoms before printing. *)

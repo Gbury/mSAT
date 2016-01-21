@@ -139,7 +139,10 @@ module Make(Dummy:sig end) = struct
     (* SmtSolver.Proof.learn (SmtSolver.history ()); *)
     match SmtSolver.unsat_conflict () with
     | None -> assert false
-    | Some c -> SmtSolver.Proof.prove_unsat c
+    | Some c ->
+      let p = SmtSolver.Proof.prove_unsat c in
+      SmtSolver.Proof.check p;
+      p
 
   let eval = SmtSolver.eval
 

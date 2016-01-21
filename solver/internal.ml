@@ -27,7 +27,6 @@ module Make
     ul_th_env : Th.level; (* Theory state at level 0 *)
     ul_clauses : int; (* number of clauses *)
     ul_learnt : int; (* number of learnt clauses *)
-    ul_proof_lvl : int; (* push/pop index for Res module *)
   }
 
   (* Singleton type containing the current state *)
@@ -128,7 +127,6 @@ module Make
         ul_learnt = 0;
         ul_clauses = 0;
         ul_th_env = Th.dummy;
-        ul_proof_lvl = -1;
       };
 
     order = Iheap.init 0;
@@ -383,6 +381,8 @@ module Make
     ()
 
   let report_unsat ({atoms=atoms} as confl) =
+    L.debug 5 "Unsat conflict:";
+    L.debug 5 " %a" St.pp_clause confl;
     env.unsat_conflict <- Some confl;
     raise Unsat
 
@@ -393,7 +393,7 @@ module Make
         | [ a ] ->
           if history = [] then r
           else
-            let tmp_cl = make_clause (fresh_tname ()) l 1 true (History (List.rev (cl :: history))) c_lvl in
+            let tmp_cl = make_clause (fresh_tname ()) l 1 true (History (cl :: history)) c_lvl in
             Bcp (Some tmp_cl)
         | _ -> assert false
       end
@@ -490,7 +490,7 @@ module Make
     with Exit ->
       let learnt = List.sort (fun a b -> Pervasives.compare b.var.level a.var.level) !c in
       let blevel = backtrack_lvl !is_uip learnt in
-      blevel, learnt, !history, !is_uip, !c_level
+      blevel, learnt, List.rev !history, !is_uip, !c_level
 
   let get_atom i =
     destruct (Vec.get env.elt_queue i)
@@ -552,7 +552,7 @@ module Make
       | n, _ -> assert false
     done;
     List.iter (fun q -> q.var.seen <- false) !seen;
-    !blevel, !learnt, !history, true, !c_level
+    !blevel, !learnt, List.rev !history, true, !c_level
 
   let analyze c_clause =
     if St.mcsat then
@@ -605,9 +605,9 @@ module Make
       | History _ -> assert false
     in
     try
-      if not force && Proof.has_been_proved init0 then raise Trivial;
-      if not (Proof.is_proven init0) then assert false; (* Important side-effect, DO NOT REMOVE *)
-      let atoms, init, level = partition (Vec.to_list init0.atoms) init0.c_level in
+      (* if not force && Proof.has_been_proved init0 then raise Trivial; *)
+      (* if not (Proof.is_proven init0) then assert false; (* Important side-effect, DO NOT REMOVE *) *)
+      let atoms, history, level = partition (Vec.to_list init0.atoms) init0.c_level in
       let size = List.length atoms in
       match atoms with
       | [] ->
@@ -1003,8 +1003,7 @@ module Make
       in
       let ul_clauses = Vec.size env.clauses_hyps in
       let ul_learnt = Vec.size env.clauses_learnt in
-      let ul_proof_lvl = Proof.push () in
-      Vec.push env.user_levels {ul_elt_lvl; ul_th_lvl; ul_th_env; ul_clauses; ul_learnt; ul_proof_lvl;};
+      Vec.push env.user_levels {ul_elt_lvl; ul_th_lvl; ul_th_env; ul_clauses; ul_learnt;};
       res
     end
 
@@ -1080,9 +1079,6 @@ module Make
         remove_clause c
       done;
       Vec.shrink env.clauses_hyps (Vec.size env.clauses_hyps - ul.ul_clauses);
-
-      (* Backtrack the Proof module *)
-      Proof.pop ul.ul_proof_lvl;
 
       (* Refresh the known tautologies simplified because of clauses that have been removed *)
       let s = Stack.create () in
