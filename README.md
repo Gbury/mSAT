@@ -48,9 +48,7 @@ as shown in the following code :
 ### Generic SAT/SMT Solver
 
 A modular implementation of the SMT algorithm can be found in the `Msat.Solver` module,
-as a functor which takes three modules :
-
-  - A log module for debug output
+as a functor which takes two modules :
 
   - A representation of formulas (which implements the `Formula_intf.S` signature)
 
