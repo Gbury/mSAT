@@ -31,7 +31,7 @@ module Fsat = struct
   let apply_sign b i = if b then i else neg i
   let set_sign b i = if b then abs i else neg (abs i)
 
-  let hash (a:int) = Hashtbl.hash a
+  let hash (a:int) = a land max_int
   let equal (a:int) b = a=b
   let compare (a:int) b = Pervasives.compare a b
 

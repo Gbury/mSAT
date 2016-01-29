@@ -27,7 +27,7 @@ module type S = sig
     get : int -> formula;
     push : formula list -> proof -> unit;
   }
-  (** The type for a slice of litterals to assume/propagate in the theory.
+  (** The type for a slice of literals to assume/propagate in the theory.
       [get] operations should only be used for integers [ start <= i < start + length].
       [push clause proof] allows to add a tautological clause to the sat solver. *)
 
