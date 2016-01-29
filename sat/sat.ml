@@ -66,6 +66,7 @@ module Make(Dummy : sig end) = struct
   module SatSolver = Solver.Make(Fsat)(Tsat)
 
   exception Bad_atom
+  exception UndecidedLit = SatSolver.UndecidedLit
 
   type atom = Fsat.t
   type clause = SatSolver.St.clause

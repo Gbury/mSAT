@@ -21,6 +21,7 @@ module Make (F : Formula_intf.S)
       formulas and a theory. *)
 
   exception Unsat
+  exception UndecidedLit
 
   module St : Solver_types.S
     with type formula = F.t
@@ -43,13 +44,15 @@ module Make (F : Formula_intf.S)
 
   val eval : F.t -> bool
   (** Returns the valuation of a formula in the current state
-      of the sat solver. *)
+      of the sat solver.
+      @raise UndecidedLit if the literal is not decided *)
 
   val eval_level : F.t -> bool * int
   (** Return the current assignement of the literals, as well as its
       decision level. If the level is 0, then it is necessary for
       the atom to have this value; otherwise it is due to choices
-      that can potentially be backtracked. *)
+      that can potentially be backtracked.
+      @raise UndecidedLit if the literal is not decided *)
 
   val hyps : unit -> St.clause Vec.t
   (** Returns the vector of assumptions used by the solver. May be slightly different

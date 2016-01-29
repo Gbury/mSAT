@@ -13,6 +13,7 @@ module Make
   (** {2 Solving facilities} *)
 
   exception Unsat
+  exception UndecidedLit
 
   module Proof : Res.S with module St = St
 
@@ -28,13 +29,15 @@ module Make
 
   val eval : St.formula -> bool
   (** Returns the valuation of a formula in the current state
-      of the sat solver. *)
+      of the sat solver.
+      @raise UndecidedLit if the literal is not decided *)
 
   val eval_level : St.formula -> bool * int
   (** Return the current assignement of the literals, as well as its
       decision level. If the level is 0, then it is necessary for
       the atom to have this value; otherwise it is due to choices
-      that can potentially be backtracked. *)
+      that can potentially be backtracked.
+      @raise UndecidedLit if the literal is not decided *)
 
   val hyps : unit -> St.clause Vec.t
   (** Returns the vector of assumptions used by the solver. May be slightly different
