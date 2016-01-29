@@ -71,7 +71,7 @@ module Make(Dummy : sig end) = struct
   type clause = SatSolver.St.clause
   type proof = SatSolver.Proof.proof
 
-  let tag_clause cl = SatSolver.St.(cl.tag)
+  let tag_clause = SatSolver.tag_clause
 
   type res =
     | Sat

@@ -38,6 +38,9 @@ module Make (F : Formula_intf.S)
       Modifies the sat solver state in place.
       @raise Unsat if a conflict is detect when adding the clauses *)
 
+  val tag_clause : St.clause -> int option
+  (** Recover tag from a clause, if any *)
+
   val eval : F.t -> bool
   (** Returns the valuation of a formula in the current state
       of the sat solver. *)
