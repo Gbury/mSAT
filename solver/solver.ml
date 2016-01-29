@@ -10,6 +10,31 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module DummyTheory(F : Formula_intf.S with type proof = unit) = struct
+  (* We don't have anything to do since the SAT Solver already
+   * does propagation and conflict detection *)
+
+  type formula = F.t
+  type proof = unit
+  type level = unit
+
+  type slice = {
+    start : int;
+    length : int;
+    get : int -> formula;
+    push : formula list -> proof -> unit;
+  }
+
+  type res =
+    | Sat of level
+    | Unsat of formula list * proof
+
+  let dummy = ()
+  let current_level () = ()
+  let assume _ = Sat ()
+  let backtrack _ = ()
+end
+
 module Make (E : Formula_intf.S)
     (Th : Theory_intf.S with type formula = E.t and type proof = E.proof) = struct
 

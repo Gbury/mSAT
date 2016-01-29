@@ -57,45 +57,13 @@ module Fsat = struct
       (if a < 0 then "~" else "")
       (if a mod 2 = 0 then "v" else "f")
       ((abs a) / 2)
-
 end
 
 module Tseitin = Tseitin.Make(Fsat)
 
-module Tsat = struct
-  (* We don't have anything to do since the SAT Solver already
-   * does propagation and conflict detection *)
-
-  type formula = Fsat.t
-  type proof = unit
-  type level = unit
-
-  type slice = {
-    start : int;
-    length : int;
-    get : int -> formula;
-    push : formula list -> proof -> unit;
-  }
-
-  type res =
-    | Sat of level
-    | Unsat of formula list * proof
-
-  let dummy = ()
-  let current_level () = ()
-  let assume _ = Sat ()
-  let backtrack _ = ()
-
-end
-
 module Make(Dummy : sig end) = struct
-
+  module Tsat = Solver.DummyTheory(Fsat)
   module SatSolver = Solver.Make(Fsat)(Tsat)
-  module Dot = Dot.Make(SatSolver.Proof)(struct
-      let clause_name c = SatSolver.St.(c.name)
-      let print_atom = SatSolver.St.print_atom
-      let lemma_info () = "()", None, []
-    end)
 
   exception Bad_atom
 
@@ -158,6 +126,12 @@ module Make(Dummy : sig end) = struct
 
   let print_atom = Fsat.print
   let print_clause = SatSolver.St.print_clause
-  let print_proof = Dot.print
-
+  let print_proof out p =
+    let module Dot = Dot.Make(SatSolver.Proof)(struct
+        let clause_name c = SatSolver.St.(c.name)
+        let print_atom = SatSolver.St.print_atom
+        let lemma_info () = "()", None, []
+      end)
+    in
+    Dot.print out p
 end

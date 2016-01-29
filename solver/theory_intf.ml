@@ -12,6 +12,13 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type ('form, 'proof) slice = {
+  start : int;
+  length : int;
+  get : int -> 'form;
+  push : 'form list -> 'proof -> unit;
+}
+
 module type S = sig
   (** Signature for theories to be given to the Solver. *)
 

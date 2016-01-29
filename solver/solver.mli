@@ -11,6 +11,10 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Simple case where the proof type is [unit] and the theory is empty *)
+module DummyTheory(F : Formula_intf.S with type proof = unit) :
+  Theory_intf.S with type formula = F.t and type proof = unit
+
 module Make (F : Formula_intf.S)
     (Th : Theory_intf.S with type formula = F.t and type proof = F.proof) : sig
   (** Functor to create a SMT Solver parametrised by the atomic
