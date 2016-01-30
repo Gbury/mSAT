@@ -6,8 +6,7 @@ FLAGS=
 #-ocamlc ocamlopt -cflag -O3
 DIRS=-Is solver,sat,smt,backend,util,util/smtlib
 DOC=msat.docdir/index.html
-TEST=sat_solve.native
-
+BIN=main.native
 NAME=msat
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
@@ -20,10 +19,11 @@ lib:
 doc:
 	$(COMP) $(FLAGS) $(DIRS) $(DOC)
 
-build-test:
-	$(COMP) $(FLAGS) $(DIRS) $(TEST)
+bin:
+	$(COMP) $(FLAGS) $(DIRS) $(BIN)
+	cp $(BIN) $(NAME) && rm $(BIN)
 
-test: build-test
+test: bin
 	@/usr/bin/time -f "%e" ./tests/run smt
 	@/usr/bin/time -f "%e" ./tests/run mcsat
 
@@ -32,12 +32,6 @@ enable_log:
 
 disable_log:
 	cd util; ln -sf log_dummy.ml log.ml
-
-bench: build-test
-	cd bench && $(MAKE)
-
-stats:
-	@./bench_stats.native
 
 log:
 	cat _build/$(LOG) || true
@@ -57,4 +51,4 @@ reinstall: all
 	ocamlfind remove msat || true
 	ocamlfind install msat $(TO_INSTALL)
 
-.PHONY: clean doc all bench install uninstall reinstall enable_log disable_log
+.PHONY: clean doc all bench install uninstall reinstall enable_log disable_log bin test
