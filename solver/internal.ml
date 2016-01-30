@@ -1097,7 +1097,7 @@ module Make
         if c.c_level > l then begin
           remove_clause c;
           match c.cpremise with
-          | History [ { cpremise = Lemma _ } as c' ] -> Stack.push c' s
+          | History ({ cpremise = Lemma _ } as c' :: _ ) -> Stack.push c' s
           | _ -> () (* Only simplified clauses can have a level > 0 *)
         end else begin
           Log.debugf 15 "Keeping intact clause %a" (fun k->k St.pp_clause c);
