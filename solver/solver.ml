@@ -101,5 +101,6 @@ module Make (E : Formula_intf.S)
 
   include S
 
+  let tag_clause cl = St.(cl.tag)
 end
 

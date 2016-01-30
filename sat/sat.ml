@@ -66,12 +66,13 @@ module Make(Dummy : sig end) = struct
   module SatSolver = Solver.Make(Fsat)(Tsat)
 
   exception Bad_atom
+  exception UndecidedLit = SatSolver.UndecidedLit
 
   type atom = Fsat.t
   type clause = SatSolver.St.clause
   type proof = SatSolver.Proof.proof
 
-  let tag_clause cl = SatSolver.St.(cl.tag)
+  let tag_clause = SatSolver.tag_clause
 
   type res =
     | Sat

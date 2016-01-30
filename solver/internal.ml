@@ -15,6 +15,7 @@ module Make
 
   exception Sat
   exception Unsat
+  exception UndecidedLit
   exception Restart
   exception Conflict of clause
 
@@ -970,7 +971,9 @@ module Make
 
   let eval_level lit =
     let var, negated = make_boolean_var lit in
-    assert (var.pa.is_true || var.na.is_true);
+    if not var.pa.is_true && not var.na.is_true
+      then raise UndecidedLit
+      else assert (var.level >= 0);
     let truth = var.pa.is_true in
     let value = if negated then not truth else truth in
     value, var.level
