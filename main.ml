@@ -271,8 +271,8 @@ let () =
     print "Internal error : incorrect *sat* model";
     exit 4
   | Out_of_time ->
-    print "Time limit exceeded";
+    print "Timeout";
     exit 2
   | Out_of_space ->
-    print "Size limit exceeded";
+    print "Spaceout";
     exit 3
