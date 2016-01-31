@@ -236,6 +236,7 @@ let main () =
         print "Unsat (%f)" (Sys.time ());
         if !p_check then begin
           let p = Smt.get_proof () in
+          Smt.Proof.check p;
           print_proof p;
           if !p_unsat_core then
             print_unsat_core (Smt.unsat_core p)
@@ -255,6 +256,7 @@ let main () =
         print "Unsat (%f)" (Sys.time ());
         if !p_check then begin
           let p = Mcsat.get_proof () in
+          Mcsat.Proof.check p;
           print_mcproof p;
           if !p_unsat_core then
             print_mc_unsat_core (Mcsat.unsat_core p)

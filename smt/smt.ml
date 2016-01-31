@@ -61,45 +61,14 @@ end
 
 module Make(Dummy:sig end) = struct
 
-  module SmtSolver = Solver.Make(Fsmt)(Tsmt)
-  module Dot = Dot.Make(SmtSolver.Proof)(struct
-      let clause_name c = SmtSolver.St.(c.name)
-      let print_atom = SmtSolver.St.print_atom
+  include Solver.Make(Fsmt)(Tsmt)
+  module Dot = Dot.Make(Proof)(struct
+      let clause_name c = St.(c.name)
+      let print_atom = St.print_atom
       let lemma_info () = "Proof", Some "PURPLE", []
     end)
 
-  type atom = Fsmt.t
-  type clause = SmtSolver.St.clause
-  type proof = SmtSolver.Proof.proof
-
-  type res =
-    | Sat
-    | Unsat
-
-  let solve () =
-    try
-      SmtSolver.solve ();
-      Sat
-    with SmtSolver.Unsat -> Unsat
-
-  let assume l =
-    try
-      SmtSolver.assume l
-    with SmtSolver.Unsat -> ()
-
-  let get_proof () =
-    match SmtSolver.unsat_conflict () with
-    | None -> assert false
-    | Some c ->
-      let p = SmtSolver.Proof.prove_unsat c in
-      SmtSolver.Proof.check p;
-      p
-
-  let eval = SmtSolver.eval
-
-  let unsat_core = SmtSolver.Proof.unsat_core
-
-  let print_atom = Fsmt.print
-  let print_clause = SmtSolver.St.print_clause
+  let print_clause = St.print_clause
   let print_proof = Dot.print
+
 end

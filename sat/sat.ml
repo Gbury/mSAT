@@ -5,7 +5,8 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Fsat = struct
-  exception Dummy of int
+
+  exception Bad_atom
 
   type t = int
   type proof = unit
@@ -19,8 +20,7 @@ module Fsat = struct
       max_index := max !max_index (abs i);
       i
     end else
-      (Format.printf "Warning : %d/%d@." i max_lit;
-       raise (Dummy i))
+      raise Bad_atom
 
   let dummy = 0
 
@@ -40,6 +40,7 @@ module Fsat = struct
   let add_label _ _ = ()
 
   let make i = _make (2 * i)
+
   let fresh, iter =
     let create () =
       incr max_fresh;
@@ -62,77 +63,19 @@ end
 module Tseitin = Tseitin.Make(Fsat)
 
 module Make(Dummy : sig end) = struct
+
   module Tsat = Solver.DummyTheory(Fsat)
-  module SatSolver = Solver.Make(Fsat)(Tsat)
-
-  exception Bad_atom
-  exception UndecidedLit = SatSolver.UndecidedLit
-
-  type atom = Fsat.t
-  type clause = SatSolver.St.clause
-  type proof = SatSolver.Proof.proof
-
-  let tag_clause = SatSolver.tag_clause
-
-  type res =
-    | Sat
-    | Unsat
-
-  let new_atom () =
-    try
-      Fsat.fresh ()
-    with Fsat.Dummy _ ->
-      raise Bad_atom
-
-  let make i =
-    try
-      Fsat.make i
-    with Fsat.Dummy _ ->
-      raise Bad_atom
-
-
-  let abs = Fsat.abs
-  let neg = Fsat.neg
-  let sign = Fsat.sign
-  let apply_sign = Fsat.apply_sign
-  let set_sign = Fsat.set_sign
-
-  let hash = Fsat.hash
-  let equal = Fsat.equal
-  let compare = Fsat.compare
-
-  let iter_atoms = Fsat.iter
-
-  let solve () =
-    try
-      SatSolver.solve ();
-      Sat
-    with SatSolver.Unsat -> Unsat
-
-  let assume ?tag l =
-    try
-      SatSolver.assume ?tag l
-    with SatSolver.Unsat -> ()
-
-  let eval = SatSolver.eval
-  let eval_level = SatSolver.eval_level
-
-  let get_proof () =
-    (* SatSolver.Proof.learn (SatSolver.history ()); *)
-    match SatSolver.unsat_conflict () with
-    | None -> assert false
-    | Some c -> SatSolver.Proof.prove_unsat c
-
-  let unsat_core = SatSolver.Proof.unsat_core
+  include Solver.Make(Fsat)(Tsat)
 
   let print_atom = Fsat.print
-  let print_clause = SatSolver.St.print_clause
+  let print_clause = St.print_clause
   let print_proof out p =
-    let module Dot = Dot.Make(SatSolver.Proof)(struct
-        let clause_name c = SatSolver.St.(c.name)
-        let print_atom = SatSolver.St.print_atom
+    let module Dot = Dot.Make(Proof)(struct
+        let clause_name c = St.(c.name)
+        let print_atom = St.print_atom
         let lemma_info () = "()", None, []
       end)
     in
     Dot.print out p
+
 end

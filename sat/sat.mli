@@ -4,88 +4,55 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Fsat : Formula_intf.S with type t = private int
+module Fsat : sig
+
+  include Formula_intf.S with type t = private int
+
+  exception Bad_atom
+  (** Exception raised when a problem with atomic formula encoding is detected. *)
+
+  val make : int -> t
+  (** Returns the literal corresponding to the integer.
+      @raise Bad_atom if given [0] as argument.*)
+
+  val fresh : unit -> t
+  (** [new_atom ()] returns a fresh literal.
+      @raise Bad_atom if there are no more integer available to represent new atoms. *)
+
+  val neg : t -> t
+  (** [neg a] returns the negation of a literal. Involutive, i.e [neg (neg a) = a]. *)
+
+  val abs : t -> t
+  val sign : t -> bool
+  val apply_sign : bool -> t -> t
+  val set_sign : bool -> t -> t
+  (** Convenienc functions for manipulating literals. *)
+
+  val hash : t -> int
+  val equal : t -> t -> bool
+  val compare : t -> t -> int
+  (** Usual hash and comparison functions. For now, directly uses
+      [Pervasives] and [Hashtbl] builtins. *)
+
+  val iter : (t -> unit) -> unit
+  (** Allows iteration over all atoms created (even if unused). *)
+
+end
 
 module Tseitin : Tseitin.S with type atom = Fsat.t
 
 module Make(Dummy : sig end) : sig
   (** Fonctor to make a pure SAT Solver module with built-in literals. *)
 
-  exception UndecidedLit
-
-  exception Bad_atom
-  (** Exception raised when a problem with atomic formula encoding is detected. *)
-
-  type atom = Fsat.t
-  (** Type for atoms, i.e boolean literals. *)
-
-  type clause
-  (** Abstract type for clauses *)
-
-  type proof
-  (** Abstract type for resolution proofs *)
-
-  type res = Sat | Unsat
-  (** Type of results returned by the solve function. *)
-
-  val new_atom : unit -> atom
-  (** [new_atom ()] returns a fresh literal.
-      @raise Bad_atom if there are no more integer available to represent new atoms. *)
-
-  val make : int -> atom
-  (** Returns the literal corresponding to the integer.
-      @raise Bad_atom if given [0] as argument.*)
-
-  val neg : atom -> atom
-  (** [neg a] returns the negation of a literal. Involutive, i.e [neg (neg a) = a]. *)
-
-  val abs : atom -> atom
-  val sign : atom -> bool
-  val apply_sign : bool -> atom -> atom
-  val set_sign : bool -> atom -> atom
-
-  val hash : atom -> int
-  val equal : atom -> atom -> bool
-  val compare : atom -> atom -> int
-  (** Usual hash and comparison functions. For now, directly uses
-      [Pervasives] and [Hashtbl] builtins. *)
-
-  val iter_atoms : (atom -> unit) -> unit
-  (** Allows iteration over all atoms created (even if unused). *)
-
-  val solve : unit -> res
-  (** Returns the satisfiability status of the current set of assumptions. *)
-
-  val eval : atom -> bool
-  (** Return the current assignement of the literal.
-      @raise UndecidedLit if the literal is not decided *)
-
-  val eval_level : atom -> bool * int
-  (** Return the current assignement of the literals, as well as its
-      decision level. If the level is 0, then it is necessary for
-      the atom to have this value; otherwise it is due to choices
-      that can potentially be backtracked.
-      @raise UndecidedLit if the literal is not decided *)
-
-  val assume : ?tag:int -> atom list list -> unit
-  (** Add a list of clauses to the set of assumptions. *)
-
-  val tag_clause : clause -> int option
-  (** Returns the tag associated with the clause. *)
-
-  val get_proof : unit -> proof
-  (** Returns the resolution proof found, if [solve] returned [Unsat]. *)
-
-  val unsat_core : proof -> clause list
-  (** Returns the unsat-core of the proof. *)
+  include Solver.S with type St.formula = Fsat.t
 
   val print_atom : Format.formatter -> atom -> unit
   (** Print the atom on the given formatter. *)
 
-  val print_clause : Format.formatter -> clause -> unit
+  val print_clause : Format.formatter -> St.clause -> unit
   (** Print the clause on the given formatter. *)
 
-  val print_proof : Format.formatter -> proof -> unit
+  val print_proof : Format.formatter -> Proof.proof -> unit
   (** Print the given proof in dot format. *)
 
 end

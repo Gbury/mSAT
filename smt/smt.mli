@@ -7,40 +7,12 @@ Copyright 2014 Simon Cruanes
 module Make(Dummy: sig end) : sig
   (** Fonctor to make a SMT Solver module with built-in literals. *)
 
-  type atom = Expr.Formula.t
-  (** Type for atoms, i.e boolean literals. *)
+  include Solver.S with type St.formula = Expr.t
 
-  type clause
-  (** Abstract type for clauses *)
-
-  type proof
-  (** Abstract type for resolution proofs *)
-
-  type res = Sat | Unsat
-  (** Type of results returned by the solve function. *)
-
-  val solve : unit -> res
-  (** Returns the satisfiability status of the current set of assumptions. *)
-
-  val assume : atom list list -> unit
-  (** Add a list of clauses to the set of assumptions. *)
-
-  val eval : atom -> bool
-  (** Returns the valuation of the given atom in the current state of the prover *)
-
-  val get_proof : unit -> proof
-  (** Returns the resolution proof found, if [solve] returned [Unsat]. *)
-
-  val unsat_core : proof -> clause list
-  (** Returns the unsat-core of the proof. *)
-
-  val print_atom : Format.formatter -> atom -> unit
-  (** Print the atom on the given formatter. *)
-
-  val print_clause : Format.formatter -> clause -> unit
+  val print_clause : Format.formatter -> St.clause -> unit
   (** Print the clause on the given formatter. *)
 
-  val print_proof : Format.formatter -> proof -> unit
+  val print_proof : Format.formatter -> Proof.proof -> unit
   (** Print the given proof in dot format. *)
 
 end

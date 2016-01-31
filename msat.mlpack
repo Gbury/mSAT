@@ -8,6 +8,7 @@ Plugin_intf
 Expr_intf
 Tseitin_intf
 Res_intf
+Solver_intf
 Solver_types_intf
 
 # Solver Modules
