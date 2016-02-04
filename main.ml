@@ -228,19 +228,21 @@ let main () =
     Gc.delete_alarm al;
     begin match res with
       | Smt.Sat ->
-        print "Sat (%f)" (Sys.time ());
+        let t = Sys.time () in
         if !p_check then
           if not (List.for_all (List.exists Smt.eval) cnf) then
-            raise Incorrect_model
+            raise Incorrect_model;
+        print "Sat (%f/%f)" t (Sys.time () -. t)
       | Smt.Unsat ->
-        print "Unsat (%f)" (Sys.time ());
+        let t = Sys.time () in
         if !p_check then begin
           let p = Smt.get_proof () in
           Smt.Proof.check p;
           print_proof p;
           if !p_unsat_core then
             print_unsat_core (Smt.unsat_core p)
-        end
+        end;
+        print "Unsat (%f/%f)" t (Sys.time () -. t)
     end
   | Mcsat ->
     Mcsat.assume cnf;
@@ -248,19 +250,21 @@ let main () =
     Gc.delete_alarm al;
     begin match res with
       | Mcsat.Sat ->
-        print "Sat (%f)" (Sys.time ());
+        let t = Sys.time () in
         if !p_check then
           if not (List.for_all (List.exists Mcsat.eval) cnf) then
-            raise Incorrect_model
+            raise Incorrect_model;
+        print "Sat (%f/%f)" t (Sys.time () -. t)
       | Mcsat.Unsat ->
-        print "Unsat (%f)" (Sys.time ());
+        let t = Sys.time () in
         if !p_check then begin
           let p = Mcsat.get_proof () in
           Mcsat.Proof.check p;
           print_mcproof p;
           if !p_unsat_core then
             print_mc_unsat_core (Mcsat.unsat_core p)
-        end
+        end;
+        print "Unsat (%f/%f)" t (Sys.time () -. t)
     end
 
 let () =

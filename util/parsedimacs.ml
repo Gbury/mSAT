@@ -21,6 +21,7 @@ let rec _read_word s acc i len =
       let acc = String.sub s i len :: acc in
       _skip_space s acc (i+len+1)
     | _ -> _read_word s acc i (len+1)
+
 and _skip_space s acc i =
   if i=String.length s
   then acc
