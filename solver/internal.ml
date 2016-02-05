@@ -162,10 +162,36 @@ module Make
     | Some _ -> true
     | None -> false
 
+  (* Push/Pop *)
+  let current_level () = Vec.size env.user_levels
+
+  let push () =
+    if is_unsat () then current_level ()
+    else begin
+      let res = current_level () in
+      let ul_elt_lvl, ul_th_lvl =
+        if Vec.is_empty env.elt_levels then
+          env.elt_head, env.th_head
+        else
+          let l = Vec.get env.elt_levels 0 in
+          l, l
+      and ul_th_env =
+        if Vec.is_empty env.th_levels then Th.current_level ()
+        else Vec.get env.th_levels 0
+      in
+      let ul_clauses = Vec.size env.clauses_hyps in
+      let ul_learnt = Vec.size env.clauses_learnt in
+      Vec.push env.user_levels {ul_elt_lvl; ul_th_lvl; ul_th_env; ul_clauses; ul_learnt;};
+      res
+    end
+
   (* Level for push/pop operations *)
   type level = int
-  let base_level = 0
-  let current_level () = Vec.size env.user_levels
+
+  let base_level =
+    let l = push () in
+    assert (l = 0);
+    l
 
   (* Iteration over subterms *)
   module Mi = Map.Make(struct type t = int let compare = Pervasives.compare end)
@@ -993,27 +1019,6 @@ module Make
                  (fun _ -> acc)
              ) [] env.elt_queue
 
-  (* Push/Pop *)
-  let push () =
-    if is_unsat () then current_level ()
-    else begin
-      let res = current_level () in
-      let ul_elt_lvl, ul_th_lvl =
-        if Vec.is_empty env.elt_levels then
-          env.elt_head, env.th_head
-        else
-          let l = Vec.get env.elt_levels 0 in
-          l, l
-      and ul_th_env =
-        if Vec.is_empty env.th_levels then Th.current_level ()
-        else Vec.get env.th_levels 0
-      in
-      let ul_clauses = Vec.size env.clauses_hyps in
-      let ul_learnt = Vec.size env.clauses_learnt in
-      Vec.push env.user_levels {ul_elt_lvl; ul_th_lvl; ul_th_env; ul_clauses; ul_learnt;};
-      res
-    end
-
   (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
   let reset_until push_lvl elt_lvl th_lvl th_env =
     Log.debug 1 "Resetting to decision level 0 (pop/forced)";
@@ -1113,5 +1118,6 @@ module Make
     end
 
   let reset () = pop base_level
+
 end
 
