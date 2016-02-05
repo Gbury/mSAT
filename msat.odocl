@@ -1,6 +1,5 @@
 util/Log
 
-solver/Log_intf
 solver/Formula_intf
 solver/Theory_intf
 solver/Plugin_intf
@@ -8,6 +7,7 @@ solver/Expr_intf
 solver/Tseitin_intf
 solver/Res_intf
 solver/Solver_types_intf
+solver/Solver_intf
 
 solver/Internal
 solver/Solver
