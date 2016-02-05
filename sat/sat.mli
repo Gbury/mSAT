@@ -55,5 +55,8 @@ module Make(Dummy : sig end) : sig
   val print_proof : Format.formatter -> Proof.proof -> unit
   (** Print the given proof in dot format. *)
 
+  val print_dimacs : Format.formatter -> St.clause list -> unit
+  (** Prints a cnf in dimacs format on the given formatter *)
+
 end
 

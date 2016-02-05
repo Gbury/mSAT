@@ -58,6 +58,7 @@ module Fsat = struct
       (if a < 0 then "~" else "")
       (if a mod 2 = 0 then "v" else "f")
       ((abs a) / 2)
+
 end
 
 module Tseitin = Tseitin.Make(Fsat)
@@ -77,5 +78,18 @@ module Make(Dummy : sig end) = struct
       end)
     in
     Dot.print out p
+
+  let print_dimacs_clause fmt l =
+    Format.fprintf fmt "%a0" (fun fmt l ->
+        List.iter (fun i -> Format.fprintf fmt "%d " i) l) l
+
+  let print_dimacs fmt l =
+    let l = List.map (fun c ->
+        List.map (fun a -> a.St.lit) @@ Proof.to_list c) l in
+    let n, m = List.fold_left (fun (n, m) c ->
+        let m' = List.fold_left (fun i j -> max i (abs j)) m c in
+        (n + 1, m')) (0, 0) l in
+    Format.fprintf fmt "p cnf %d %d@\n" n m;
+    List.iter (fun c -> Format.fprintf fmt "%a@\n" print_dimacs_clause c) l
 
 end
