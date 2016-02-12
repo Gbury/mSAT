@@ -184,7 +184,7 @@ let argspec = Arg.align [
     "-o", Arg.String set_output,
     " Sets the output format (default none)";
     "-s", Arg.String set_solver,
-    " Sets the solver to use (default smt)";
+    "{smt,mcsat} Sets the solver to use (default smt)";
     "-size", Arg.String (int_arg size_limit),
     "<s>[kMGT] Sets the size limit for the sat solver";
     "-time", Arg.String (int_arg time_limit),
