@@ -106,7 +106,7 @@ module Make (E : Formula_intf.S)
 
   module St = Solver_types.SatMake(E)
 
-  module S = Internal.Make(St)(P)()
+  module S = Internal.Make(St)(P)(struct end)
 
   module Proof = S.Proof
 

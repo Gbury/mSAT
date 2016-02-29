@@ -19,7 +19,7 @@ depends: [
   "ocamlbuild" {build}
 ]
 available: [
-  ocaml-version >= "4.02.1"
+  ocaml-version >= "4.00.1"
 ]
 tags: [ "sat" "smt" ]
 homepage: "https://github.com/Gbury/mSAT"

@@ -61,7 +61,7 @@ end
 
 module Make(Dummy:sig end) = struct
 
-  include Solver.Make(Fsmt)(Tsmt)()
+  include Solver.Make(Fsmt)(Tsmt)(struct end)
   module Dot = Dot.Make(Proof)(struct
       let clause_name c = St.(c.name)
       let print_atom = St.print_atom

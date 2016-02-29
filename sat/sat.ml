@@ -66,7 +66,7 @@ module Tseitin = Tseitin.Make(Fsat)
 module Make(Dummy : sig end) = struct
 
   module Tsat = Solver.DummyTheory(Fsat)
-  include Solver.Make(Fsat)(Tsat)()
+  include Solver.Make(Fsat)(Tsat)(struct end)
 
   let print_atom = Fsat.print
   let print_clause = St.print_clause
@@ -85,7 +85,7 @@ module Make(Dummy : sig end) = struct
 
   let print_dimacs fmt l =
     let l = List.map (fun c ->
-        List.map (fun a -> a.St.lit) @@ Proof.to_list c) l in
+        List.map (fun a -> a.St.lit) (Proof.to_list c)) l in
     let n, m = List.fold_left (fun (n, m) c ->
         let m' = List.fold_left (fun i j -> max i (abs j)) m c in
         (n + 1, m')) (0, 0) l in

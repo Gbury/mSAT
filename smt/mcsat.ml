@@ -111,7 +111,7 @@ end
 
 module Make(Dummy:sig end) = struct
 
-  module SmtSolver = Mcsolver.Make(Fsmt)(Tsmt)()
+  module SmtSolver = Mcsolver.Make(Fsmt)(Tsmt)(struct end)
 
   module Proof = SmtSolver.Proof
 

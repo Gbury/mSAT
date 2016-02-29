@@ -25,8 +25,8 @@ module type S = sig
   type lit = {
     lid : int;
     term : term;
-    mutable level : int;
-    mutable weight : float;
+    mutable l_level : int;
+    mutable l_weight : float;
     mutable assigned : term option;
   }
 
@@ -35,8 +35,8 @@ module type S = sig
     pa : atom;
     na : atom;
     mutable seen : bool;
-    mutable level : int;
-    mutable weight : float;
+    mutable v_level : int;
+    mutable v_weight : float;
     mutable reason : reason;
   }
 

@@ -238,8 +238,8 @@ module Make
     env.clause_incr <- env.clause_incr *. env.clause_decay
 
   let var_bump_activity_aux v =
-    v.weight <- v.weight +. env.var_incr;
-    if v.weight > 1e100 then begin
+    v.v_weight <- v.v_weight +. env.var_incr;
+    if v.v_weight > 1e100 then begin
       for i = 0 to (St.nb_elt ()) - 1 do
         set_elt_weight (St.get_elt i) ((get_elt_weight (St.get_elt i)) *. 1e-100)
       done;
@@ -248,16 +248,16 @@ module Make
     if Iheap.in_heap env.order v.vid then
       Iheap.decrease f_weight env.order v.vid
 
-  let lit_bump_activity_aux (v : lit) =
-    v.weight <- v.weight +. env.var_incr;
-    if v.weight > 1e100 then begin
+  let lit_bump_activity_aux l =
+    l.l_weight <- l.l_weight +. env.var_incr;
+    if l.l_weight > 1e100 then begin
       for i = 0 to (St.nb_elt ()) - 1 do
         set_elt_weight (St.get_elt i) ((get_elt_weight (St.get_elt i)) *. 1e-100)
       done;
       env.var_incr <- env.var_incr *. 1e-100;
     end;
-    if Iheap.in_heap env.order v.lid then
-      Iheap.decrease f_weight env.order v.lid
+    if Iheap.in_heap env.order l.lid then
+      Iheap.decrease f_weight env.order l.lid
 
   let var_bump_activity v =
     var_bump_activity_aux v;
@@ -308,10 +308,10 @@ module Make
       | [] -> trues @ unassigned @ falses, history, lvl
       | a :: r ->
         if a.is_true then
-          if a.var.level = 0 then raise Trivial
+          if a.var.v_level = 0 then raise Trivial
           else (a::trues) @ unassigned @ falses @ r, history, lvl
         else if a.neg.is_true then
-          if a.var.level = 0 then begin
+          if a.var.v_level = 0 then begin
             match a.var.reason with
             | Bcp (Some cl) ->
               partition_aux trues unassigned falses (cl :: history) (max lvl cl.c_level) r
@@ -383,19 +383,19 @@ module Make
       env.th_head <- env.elt_head;
       for c = env.elt_head to Vec.size env.elt_queue - 1 do
         destruct (Vec.get env.elt_queue c)
-          (fun v ->
-             v.assigned <- None;
-             v.level <- -1;
-             insert_var_order (elt_of_lit v)
+          (fun l ->
+             l.assigned <- None;
+             l.l_level <- -1;
+             insert_var_order (elt_of_lit l)
           )
           (fun a ->
-             if a.var.level <= lvl then begin
+             if a.var.v_level <= lvl then begin
                Vec.set env.elt_queue env.elt_head (of_atom a);
                env.elt_head <- env.elt_head + 1
              end else begin
                a.is_true <- false;
                a.neg.is_true <- false;
-               a.var.level <- -1;
+               a.var.v_level <- -1;
                a.var.reason <- Bcp None;
                insert_var_order (elt_of_var a.var)
              end)
@@ -432,23 +432,23 @@ module Make
       assert false
     end;
     if not a.is_true then begin
-      assert (a.var.level < 0 && a.var.reason = Bcp None && lvl >= 0);
+      assert (a.var.v_level < 0 && a.var.reason = Bcp None && lvl >= 0);
       let reason =
         if lvl > 0 then reason
         else simpl_reason reason
       in
       a.is_true <- true;
-      a.var.level <- lvl;
+      a.var.v_level <- lvl;
       a.var.reason <- reason;
       Vec.push env.elt_queue (of_atom a);
       Log.debugf 20 "Enqueue (%d): %a"
         (fun k->k (Vec.size env.elt_queue) pp_atom a)
     end
 
-  let enqueue_assign v value lvl =
-    v.assigned <- Some value;
-    v.level <- lvl;
-    Vec.push env.elt_queue (of_lit v);
+  let enqueue_assign l value lvl =
+    l.assigned <- Some value;
+    l.l_level <- lvl;
+    Vec.push env.elt_queue (of_lit l);
     ()
 
   let th_eval a =
@@ -463,15 +463,17 @@ module Make
   (* conflict analysis *)
   let max_lvl_atoms l =
     List.fold_left (fun (max_lvl, acc) a ->
-        if a.var.level = max_lvl then (max_lvl, a :: acc)
-        else if a.var.level > max_lvl then (a.var.level, [a])
+        if a.var.v_level = max_lvl then (max_lvl, a :: acc)
+        else if a.var.v_level > max_lvl then (a.var.v_level, [a])
         else (max_lvl, acc)) (0, []) l
 
   let backtrack_lvl is_uip = function
     | [] -> 0
-    | a :: r when not is_uip -> max (a.var.level - 1) 0
+    | a :: r when not is_uip -> max (a.var.v_level - 1) 0
     | a :: [] -> 0
-    | a :: b :: r -> assert(a.var.level <> b.var.level); b.var.level
+    | a :: b :: r ->
+      assert(a.var.v_level <> b.var.v_level);
+      b.var.v_level
 
   let analyze_mcsat c_clause =
     let tr_ind  = ref (Vec.size env.elt_queue) in
@@ -516,7 +518,7 @@ module Make
               )
       done; assert false
     with Exit ->
-      let learnt = List.sort (fun a b -> Pervasives.compare b.var.level a.var.level) !c in
+      let learnt = List.sort (fun a b -> Pervasives.compare b.var.v_level a.var.v_level) !c in
       let blevel = backtrack_lvl !is_uip learnt in
       blevel, learnt, List.rev !history, !is_uip, !c_level
 
@@ -542,8 +544,8 @@ module Make
       (* visit the current predecessors *)
       for j = 0 to Vec.size !c.atoms - 1 do
         let q = Vec.get !c.atoms j in
-        assert (q.is_true || q.neg.is_true && q.var.level >= 0); (* Pas sur *)
-        if q.var.level = 0 then begin
+        assert (q.is_true || q.neg.is_true && q.var.v_level >= 0); (* Pas sur *)
+        if q.var.v_level = 0 then begin
           assert (q.neg.is_true);
           match q.var.reason with
           | Bcp Some cl -> history := cl :: !history
@@ -552,14 +554,14 @@ module Make
         if not q.var.seen then begin
           q.var.seen <- true;
           seen := q :: !seen;
-          if q.var.level > 0 then begin
+          if q.var.v_level > 0 then begin
             var_bump_activity q.var;
-            if q.var.level >= decision_level () then begin
+            if q.var.v_level >= decision_level () then begin
               incr pathC
             end else begin
               learnt := q :: !learnt;
               incr size;
-              blevel := max !blevel q.var.level
+              blevel := max !blevel q.var.v_level
             end
           end
         end
@@ -619,7 +621,7 @@ module Make
   let add_boolean_conflict confl =
     env.next_decision <- None;
     env.conflicts <- env.conflicts + 1;
-    if decision_level() = 0 || Vec.for_all (fun a -> a.var.level = 0) confl.atoms then
+    if decision_level() = 0 || Vec.for_all (fun a -> a.var.v_level = 0) confl.atoms then
       report_unsat confl; (* Top-level conflict *)
     let blevel, learnt, history, is_uip, lvl = analyze confl in
     cancel_until blevel;
@@ -650,11 +652,11 @@ module Make
         attach_clause clause;
         Vec.push vec clause;
         if a.neg.is_true then begin
-          let lvl = List.fold_left (fun m a -> max m a.var.level) 0 atoms in
+          let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
           cancel_until lvl;
           add_boolean_conflict clause
         end else if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
-          let lvl = List.fold_left (fun m a -> max m a.var.level) 0 atoms in
+          let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
           cancel_until lvl;
           enqueue_bool a lvl (Bcp (Some clause))
         end
@@ -730,8 +732,8 @@ module Make
     a
 
   let slice_get i = destruct (Vec.get env.elt_queue i)
-      (function {level; term; assigned = Some v} -> Th.Assign (term, v), level | _ -> assert false)
-      (fun a -> Th.Lit a.lit, a.var.level)
+      (function {l_level; term; assigned = Some v} -> Th.Assign (term, v), l_level | _ -> assert false)
+      (fun a -> Th.Lit a.lit, a.var.v_level)
 
   let slice_push l lemma =
     let atoms = List.rev_map (fun x -> new_atom x) l in
@@ -876,7 +878,7 @@ module Make
   (* Decide on a new litteral *)
   let rec pick_branch_aux atom =
     let v = atom.var in
-    if v.level >= 0 then begin
+    if v.v_level >= 0 then begin
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit ()
     end else match Th.eval atom.lit with
@@ -895,19 +897,19 @@ module Make
       env.next_decision <- None;
       pick_branch_aux atom
     | None ->
-      destruct_elt (
-        St.get_elt @@ Iheap.remove_min f_weight env.order)
-        (fun v ->
-           if v.level >= 0 then
+      destruct_elt (St.get_elt (Iheap.remove_min f_weight env.order))
+        (fun l ->
+           if l.l_level >= 0 then
              pick_branch_lit ()
            else begin
-             let value = Th.assign v.term in
+             let value = Th.assign l.term in
              env.decisions <- env.decisions + 1;
              new_decision_level();
              let current_level = decision_level () in
-             enqueue_assign v value current_level
+             enqueue_assign l value current_level
            end)
         (fun v -> pick_branch_aux v.pa)
+
 
   let search n_of_conflicts n_of_learnts =
     let conflictC = ref 0 in
@@ -1000,10 +1002,10 @@ module Make
     let var, negated = make_boolean_var lit in
     if not var.pa.is_true && not var.na.is_true
       then raise UndecidedLit
-      else assert (var.level >= 0);
+      else assert (var.v_level >= 0);
     let truth = var.pa.is_true in
     let value = if negated then not truth else truth in
-    value, var.level
+    value, var.v_level
 
   let eval lit = fst (eval_level lit)
 
@@ -1027,27 +1029,27 @@ module Make
     env.elt_head <- elt_lvl;
     for c = env.elt_head to Vec.size env.elt_queue - 1 do
       destruct (Vec.get env.elt_queue c)
-        (fun v ->
-           v.assigned <- None;
-           v.level <- -1;
-           insert_var_order (elt_of_lit v)
+        (fun l ->
+           l.assigned <- None;
+           l.l_level <- -1;
+           insert_var_order (elt_of_lit l)
         )
         (fun a ->
            match a.var.reason with
            | Bcp Some { c_level } when c_level > push_lvl ->
              a.is_true <- false;
              a.neg.is_true <- false;
-             a.var.level <- -1;
+             a.var.v_level <- -1;
              a.var.reason <- Bcp None;
              insert_var_order (elt_of_var a.var)
            | _ ->
-             if a.var.level = 0 then begin
+             if a.var.v_level = 0 then begin
                Vec.set env.elt_queue env.elt_head (of_atom a);
                env.elt_head <- env.elt_head + 1
              end else begin
                a.is_true <- false;
                a.neg.is_true <- false;
-               a.var.level <- -1;
+               a.var.v_level <- -1;
                a.var.reason <- Bcp None;
                insert_var_order (elt_of_var a.var)
              end

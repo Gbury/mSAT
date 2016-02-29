@@ -30,8 +30,8 @@ module McMake (E : Expr_intf.S) = struct
   type lit = {
     lid : int;
     term : term;
-    mutable level : int;
-    mutable weight : float;
+    mutable l_level : int;
+    mutable l_weight : float;
     mutable assigned : term option;
   }
 
@@ -40,8 +40,8 @@ module McMake (E : Expr_intf.S) = struct
     pa : atom;
     na : atom;
     mutable seen : bool;
-    mutable level : int;
-    mutable weight : float;
+    mutable v_level : int;
+    mutable v_weight : float;
     mutable reason : reason;
   }
 
@@ -83,8 +83,8 @@ module McMake (E : Expr_intf.S) = struct
       pa = dummy_atom;
       na = dummy_atom;
       seen = false;
-      level = -1;
-      weight = -1.;
+      v_level = -1;
+      v_weight = -1.;
       reason = Bcp None;
     }
   and dummy_atom =
@@ -129,8 +129,8 @@ module McMake (E : Expr_intf.S) = struct
       let res = {
         lid = !cpt_mk_var;
         term = t;
-        weight = 1.;
-        level = -1;
+        l_weight = 1.;
+        l_level = -1;
         assigned = None;
       } in
       incr cpt_mk_var;
@@ -149,8 +149,8 @@ module McMake (E : Expr_intf.S) = struct
             pa = pa;
             na = na;
             seen = false;
-            level = -1;
-            weight = 0.;
+            v_level = -1;
+            v_weight = 0.;
             reason = Bcp None;
           }
         and pa =
@@ -208,14 +208,14 @@ module McMake (E : Expr_intf.S) = struct
   let get_elt_id = function
     | Either.Left l -> l.lid | Either.Right v ->  v.vid
   let get_elt_level = function
-    | Either.Left (l : lit) -> l.level | Either.Right v ->  v.level
+    | Either.Left l -> l.l_level | Either.Right v ->  v.v_level
   let get_elt_weight = function
-    | Either.Left (l : lit) -> l.weight | Either.Right v ->  v.weight
+    | Either.Left l -> l.l_weight | Either.Right v ->  v.v_weight
 
   let set_elt_level e lvl = match e with
-    | Either.Left (l : lit) -> l.level <- lvl | Either.Right v ->  v.level <- lvl
+    | Either.Left l -> l.l_level <- lvl | Either.Right v ->  v.v_level <- lvl
   let set_elt_weight e w = match e with
-    | Either.Left (l : lit) -> l.weight <- w | Either.Right v ->  v.weight <- w
+    | Either.Left l -> l.l_weight <- w | Either.Right v ->  v.v_weight <- w
 
   (* Name generation *)
   let fresh_lname =
@@ -258,7 +258,7 @@ module McMake (E : Expr_intf.S) = struct
   let sign a = if a == a.var.pa then "" else "-"
 
   let level a =
-    match a.var.level, a.var.reason with
+    match a.var.v_level, a.var.reason with
     | n, _ when n < 0 -> assert false
     | 0, Bcp (Some c) -> sprintf "->0/%s" c.name
     | 0, Bcp None   -> "@0"

@@ -10,7 +10,7 @@ module Make (E : Expr_intf.S)
 
   module St = Solver_types.McMake(E)
 
-  module M = Internal.Make(St)(Th)()
+  module M = Internal.Make(St)(Th)(struct end)
 
   include St
 
