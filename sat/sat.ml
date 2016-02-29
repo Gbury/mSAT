@@ -66,7 +66,7 @@ module Tseitin = Tseitin.Make(Fsat)
 module Make(Dummy : sig end) = struct
 
   module Tsat = Solver.DummyTheory(Fsat)
-  include Solver.Make(Fsat)(Tsat)
+  include Solver.Make(Fsat)(Tsat)()
 
   let print_atom = Fsat.print
   let print_clause = St.print_clause

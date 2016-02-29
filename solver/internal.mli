@@ -7,6 +7,7 @@ Copyright 2014 Simon Cruanes
 module Make
   (St : Solver_types.S)
   (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof)
+  (Dummy: sig end)
 : sig
   (** Functor to create a solver parametrised by the atomic formulas and a theory. *)
 

@@ -18,7 +18,8 @@ module DummyTheory(F : Formula_intf.S with type proof = unit) :
   Theory_intf.S with type formula = F.t and type proof = unit
 
 module Make (F : Formula_intf.S)
-    (Th : Theory_intf.S with type formula = F.t and type proof = F.proof) :
+    (Th : Theory_intf.S with type formula = F.t and type proof = F.proof)
+    (Dummy: sig end) :
   S with type St.formula = F.t
      and type St.proof = F.proof
   (** Functor to create a SMT Solver parametrised by the atomic

@@ -99,13 +99,14 @@ end
 
 
 module Make (E : Formula_intf.S)
-    (Th : Theory_intf.S with type formula = E.t and type proof = E.proof) = struct
+    (Th : Theory_intf.S with type formula = E.t and type proof = E.proof)
+    (Dummy: sig end) = struct
 
   module P = Plugin(E)(Th)
 
   module St = Solver_types.SatMake(E)
 
-  module S = Internal.Make(St)(P)
+  module S = Internal.Make(St)(P)()
 
   module Proof = S.Proof
 

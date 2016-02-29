@@ -23,7 +23,7 @@ as shown in the following code :
 ```ocaml
     (* Module initialization *)
     module F = Msat.Sat.Tseitin
-    module Sat = Msat.Sat.Make(Msat.Log)
+    module Sat = Msat.Sat.Make()
 
     (* We create here two distinct atoms *)
     let a = Sat.new_atom () (* A 'new_atom' is always distinct from any other atom *)
