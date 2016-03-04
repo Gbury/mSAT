@@ -170,7 +170,6 @@ module McMake (E : Expr_intf.S) = struct
         MF.add f_map lit var;
         incr cpt_mk_var;
         Vec.push vars (Either.mk_right var);
-        (* Th.iter_assignable (fun t -> ignore (make_semantic_var t)) lit; *)
         var, negated
 
   let add_term t = make_semantic_var t

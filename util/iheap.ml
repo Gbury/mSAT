@@ -138,3 +138,4 @@ let remove_min cmp ({heap=heap; indices=indices} as s) =
   Vec.pop s.heap;
   if Vec.size s.heap > 1 then percolate_down cmp s 0;
   x
+

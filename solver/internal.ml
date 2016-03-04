@@ -898,32 +898,35 @@ module Make
       env.next_decision <- None;
       pick_branch_aux atom
     | None ->
-      begin match St.get_elt (Iheap.remove_min f_weight env.order) with
-        | Either.Left l ->
-          if l.l_level >= 0 then
-            pick_branch_lit ()
-          else begin
-            let value = Th.assign l.term in
-            env.decisions <- env.decisions + 1;
-            new_decision_level();
-            let current_level = decision_level () in
-            enqueue_assign l value current_level
+      begin try
+          begin match St.get_elt (Iheap.remove_min f_weight env.order) with
+            | Either.Left l ->
+              if l.l_level >= 0 then
+                pick_branch_lit ()
+              else begin
+                let value = Th.assign l.term in
+                env.decisions <- env.decisions + 1;
+                new_decision_level();
+                let current_level = decision_level () in
+                enqueue_assign l value current_level
+              end
+            | Either.Right v ->
+              pick_branch_aux v.pa
           end
-        | Either.Right v ->
-          pick_branch_aux v.pa
+        with Not_found -> raise Sat
       end
-
 
   let search n_of_conflicts n_of_learnts =
     let conflictC = ref 0 in
     env.starts <- env.starts + 1;
-    while (true) do
+    while true do
       match propagate () with
       | Some confl -> (* Conflict *)
         incr conflictC;
         add_boolean_conflict confl
 
       | None -> (* No Conflict *)
+        assert (env.elt_head = Vec.size env.elt_queue);
         if Vec.size env.elt_queue = St.nb_elt () (* env.nb_init_vars *) then raise Sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
           env.progress_estimate <- progress_estimate();
@@ -975,11 +978,10 @@ module Make
             n_of_conflicts := !n_of_conflicts *. env.restart_inc;
             n_of_learnts   := !n_of_learnts *. env.learntsize_inc
           | Sat ->
-            let nbc = env.nb_init_clauses in
             Th.if_sat (full_slice ());
             if is_unsat () then raise Unsat
-            else if env.nb_init_clauses = nbc &&
-                    env.elt_head = Vec.size env.elt_queue then
+            else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
+                 && env.elt_head = St.nb_elt () (* this is the important test to know if the search is finished *)  then
               raise Sat
         end
       done
