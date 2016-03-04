@@ -82,7 +82,6 @@ module Make
     mutable progress_estimate : float;
     (* progression estimate, updated by [search ()] *)
 
-
     remove_satisfied : bool;
     (* Wether to remove satisfied learnt clauses when simplifying *)
 
@@ -224,12 +223,11 @@ module Make
     get_elt_level (St.get_elt i) < 0
 
   (* Var/clause activity *)
-  let insert_var_order e = destruct_elt e
-      (fun v -> Iheap.insert f_weight env.order v.lid)
-      (fun v ->
-         Iheap.insert f_weight env.order v.vid;
-         iter_sub (fun t -> Iheap.insert f_weight env.order t.lid) v
-      )
+  let insert_var_order = function
+    | Either.Left l -> Iheap.insert f_weight env.order l.lid
+    | Either.Right v ->
+      Iheap.insert f_weight env.order v.vid;
+      iter_sub (fun t -> Iheap.insert f_weight env.order t.lid) v
 
   let var_decay_activity () =
     env.var_incr <- env.var_incr *. env.var_decay
@@ -382,23 +380,22 @@ module Make
       env.elt_head <- Vec.get env.elt_levels lvl;
       env.th_head <- env.elt_head;
       for c = env.elt_head to Vec.size env.elt_queue - 1 do
-        destruct (Vec.get env.elt_queue c)
-          (fun l ->
-             l.assigned <- None;
-             l.l_level <- -1;
-             insert_var_order (elt_of_lit l)
-          )
-          (fun a ->
-             if a.var.v_level <= lvl then begin
-               Vec.set env.elt_queue env.elt_head (of_atom a);
-               env.elt_head <- env.elt_head + 1
-             end else begin
-               a.is_true <- false;
-               a.neg.is_true <- false;
-               a.var.v_level <- -1;
-               a.var.reason <- Bcp None;
-               insert_var_order (elt_of_var a.var)
-             end)
+        match (Vec.get env.elt_queue c) with
+        | Either.Left l ->
+          l.assigned <- None;
+          l.l_level <- -1;
+          insert_var_order (elt_of_lit l)
+        | Either.Right a ->
+          if a.var.v_level <= lvl then begin
+            Vec.set env.elt_queue env.elt_head (of_atom a);
+            env.elt_head <- env.elt_head + 1
+          end else begin
+            a.is_true <- false;
+            a.neg.is_true <- false;
+            a.var.v_level <- -1;
+            a.var.reason <- Bcp None;
+            insert_var_order (elt_of_var a.var)
+          end
       done;
       Th.backtrack (Vec.get env.th_levels lvl); (* recover the right tenv *)
       Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - env.elt_head);
@@ -498,24 +495,25 @@ module Make
         | _ ->
           decr tr_ind;
           Log.debugf 20 "Looking at trail element %d" (fun k->k !tr_ind);
-          destruct (Vec.get env.elt_queue !tr_ind)
-            (fun _ -> ()) (* TODO remove *)
-            (fun a -> match a.var.reason with
-               | Bcp (Some d) ->
-                 let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
-                 begin match tmp with
-                   | [] -> ()
-                   | [b] when b == a.var.pa ->
-                     c_level := max !c_level d.c_level;
-                     clause_bump_activity d;
-                     var_bump_activity a.var;
-                     history := d :: !history;
-                     c := res
-                   | _ -> assert false
-                 end
-               | Bcp None -> ()
-               | Semantic _ -> ()
-              )
+          match Vec.get env.elt_queue !tr_ind with
+          | Either.Left _ -> ()
+          | Either.Right a ->
+            begin match a.var.reason with
+              | Bcp (Some d) ->
+                let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
+                begin match tmp with
+                  | [] -> ()
+                  | [b] when b == a.var.pa ->
+                    c_level := max !c_level d.c_level;
+                    clause_bump_activity d;
+                    var_bump_activity a.var;
+                    history := d :: !history;
+                    c := res
+                  | _ -> assert false
+                end
+              | Bcp None -> ()
+              | Semantic _ -> ()
+            end
       done; assert false
     with Exit ->
       let learnt = List.sort (fun a b -> Pervasives.compare b.var.v_level a.var.v_level) !c in
@@ -523,8 +521,8 @@ module Make
       blevel, learnt, List.rev !history, !is_uip, !c_level
 
   let get_atom i =
-    destruct (Vec.get env.elt_queue i)
-      (fun _ -> assert false) (fun x -> x)
+    match Vec.get env.elt_queue i with
+    | Either.Left _ -> assert false | Either.Right x -> x
 
   let analyze_sat c_clause =
     let pathC  = ref 0 in
@@ -731,9 +729,11 @@ module Make
     ignore (th_eval a);
     a
 
-  let slice_get i = destruct (Vec.get env.elt_queue i)
-      (function {l_level; term; assigned = Some v} -> Th.Assign (term, v), l_level | _ -> assert false)
-      (fun a -> Th.Lit a.lit, a.var.v_level)
+  let slice_get i =
+    match Vec.get env.elt_queue i with
+    | Either.Right a -> Th.Lit a.lit, a.var.v_level
+    | Either.Left {l_level; term; assigned = Some v} -> Th.Assign (term, v), l_level
+    | Either.Left _ -> assert false
 
   let slice_push l lemma =
     let atoms = List.rev_map (fun x -> new_atom x) l in
@@ -790,12 +790,13 @@ module Make
       let num_props = ref 0 in
       let res = ref None in
       while env.elt_head < Vec.size env.elt_queue do
-        destruct (Vec.get env.elt_queue env.elt_head)
-          (fun a -> ())
-          (fun a ->
+        begin match Vec.get env.elt_queue env.elt_head with
+        | Either.Left _ -> ()
+        | Either.Right a ->
              incr num_props;
-             propagate_atom a res);
-        env.elt_head <- env.elt_head + 1
+             propagate_atom a res
+        end;
+        env.elt_head <- env.elt_head + 1;
       done;
       env.propagations <- env.propagations + !num_props;
       env.simpDB_props <- env.simpDB_props - !num_props;
@@ -897,18 +898,20 @@ module Make
       env.next_decision <- None;
       pick_branch_aux atom
     | None ->
-      destruct_elt (St.get_elt (Iheap.remove_min f_weight env.order))
-        (fun l ->
-           if l.l_level >= 0 then
-             pick_branch_lit ()
-           else begin
-             let value = Th.assign l.term in
-             env.decisions <- env.decisions + 1;
-             new_decision_level();
-             let current_level = decision_level () in
-             enqueue_assign l value current_level
-           end)
-        (fun v -> pick_branch_aux v.pa)
+      begin match St.get_elt (Iheap.remove_min f_weight env.order) with
+        | Either.Left l ->
+          if l.l_level >= 0 then
+            pick_branch_lit ()
+          else begin
+            let value = Th.assign l.term in
+            env.decisions <- env.decisions + 1;
+            new_decision_level();
+            let current_level = decision_level () in
+            enqueue_assign l value current_level
+          end
+        | Either.Right v ->
+          pick_branch_aux v.pa
+      end
 
 
   let search n_of_conflicts n_of_learnts =
@@ -1001,8 +1004,8 @@ module Make
   let eval_level lit =
     let var, negated = make_boolean_var lit in
     if not var.pa.is_true && not var.na.is_true
-      then raise UndecidedLit
-      else assert (var.v_level >= 0);
+    then raise UndecidedLit
+    else assert (var.v_level >= 0);
     let truth = var.pa.is_true in
     let value = if negated then not truth else truth in
     value, var.v_level
@@ -1017,10 +1020,10 @@ module Make
 
   let model () =
     let opt = function Some a -> a | None -> assert false in
-    Vec.fold (fun acc e -> destruct e
-                 (fun v -> (v.term, opt v.assigned)  :: acc)
-                 (fun _ -> acc)
-             ) [] env.elt_queue
+    Vec.fold (fun acc e -> match e with
+        | Either.Left v -> (v.term, opt v.assigned)  :: acc
+        | Either.Right _ -> acc
+      ) [] env.elt_queue
 
   (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
   let reset_until push_lvl elt_lvl th_lvl th_env =
@@ -1028,32 +1031,31 @@ module Make
     env.th_head <- th_lvl;
     env.elt_head <- elt_lvl;
     for c = env.elt_head to Vec.size env.elt_queue - 1 do
-      destruct (Vec.get env.elt_queue c)
-        (fun l ->
-           l.assigned <- None;
-           l.l_level <- -1;
-           insert_var_order (elt_of_lit l)
-        )
-        (fun a ->
-           match a.var.reason with
-           | Bcp Some { c_level } when c_level > push_lvl ->
-             a.is_true <- false;
-             a.neg.is_true <- false;
-             a.var.v_level <- -1;
-             a.var.reason <- Bcp None;
-             insert_var_order (elt_of_var a.var)
-           | _ ->
-             if a.var.v_level = 0 then begin
-               Vec.set env.elt_queue env.elt_head (of_atom a);
-               env.elt_head <- env.elt_head + 1
-             end else begin
-               a.is_true <- false;
-               a.neg.is_true <- false;
-               a.var.v_level <- -1;
-               a.var.reason <- Bcp None;
-               insert_var_order (elt_of_var a.var)
-             end
-        )
+      match Vec.get env.elt_queue c with
+      | Either.Left l ->
+        l.assigned <- None;
+        l.l_level <- -1;
+        insert_var_order (elt_of_lit l)
+      | Either.Right a ->
+        begin match a.var.reason with
+          | Bcp Some { c_level } when c_level > push_lvl ->
+            a.is_true <- false;
+            a.neg.is_true <- false;
+            a.var.v_level <- -1;
+            a.var.reason <- Bcp None;
+            insert_var_order (elt_of_var a.var)
+          | _ ->
+            if a.var.v_level = 0 then begin
+              Vec.set env.elt_queue env.elt_head (of_atom a);
+              env.elt_head <- env.elt_head + 1
+            end else begin
+              a.is_true <- false;
+              a.neg.is_true <- false;
+              a.var.v_level <- -1;
+              a.var.reason <- Bcp None;
+              insert_var_order (elt_of_var a.var)
+            end
+        end
     done;
     Th.backtrack th_env; (* recover the right theory env *)
     Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - env.elt_head);
@@ -1080,17 +1082,19 @@ module Make
       (* Log current assumptions for debugging purposes *)
       Log.debugf 99 "@[<v2>Current trail:@ %a@]"
         (fun k->
-          let pp out () =
-            for i = 0 to Vec.size env.elt_queue - 1 do
-              Format.fprintf out "%s%s%d -- %a@,"
-                (if i = ul.ul_elt_lvl then "*" else " ")
-                (if i = ul.ul_th_lvl then "*" else " ")
-                i (fun fmt e ->
-                  destruct e (St.pp_lit fmt) (St.pp_atom fmt))
-                (Vec.get env.elt_queue i)
-            done
-          in
-          k pp ());
+           let pp out () =
+             for i = 0 to Vec.size env.elt_queue - 1 do
+               Format.fprintf out "%s%s%d -- %a@,"
+                 (if i = ul.ul_elt_lvl then "*" else " ")
+                 (if i = ul.ul_th_lvl then "*" else " ")
+                 i (fun fmt e ->
+                     match e with
+                     | Either.Left l -> St.pp_lit fmt l
+                     | Either.Right a -> St.pp_atom fmt a)
+                 (Vec.get env.elt_queue i)
+             done
+           in
+           k pp ());
 
       (* Clear hypothesis not valid anymore *)
       for i = ul.ul_clauses to Vec.size env.clauses_hyps - 1 do

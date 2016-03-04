@@ -69,17 +69,16 @@ module type S = sig
     | History of clause list
 
   (** {2 Decisions and propagations} *)
-  type t
+  type t = (lit, atom) Either.t
   (** Either a lit of an atom *)
 
   val of_lit : lit -> t
   val of_atom : atom -> t
-  val destruct : t -> (lit -> 'a) -> (atom -> 'a) -> 'a
   (** Constructors and destructors *)
 
   (** {2 Elements} *)
 
-  type elt
+  type elt = (lit, var) Either.t
   (** Either a lit of a var *)
 
   val nb_elt : unit -> int
@@ -89,7 +88,6 @@ module type S = sig
 
   val elt_of_lit : lit -> elt
   val elt_of_var : var -> elt
-  val destruct_elt : elt -> (lit -> 'a) -> (var -> 'a) -> 'a
   (** Constructors & destructor for elements *)
 
   val get_elt_id : elt -> int

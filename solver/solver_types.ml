@@ -203,8 +203,6 @@ module McMake (E : Expr_intf.S) = struct
   let elt_of_lit = Either.mk_left
   let elt_of_var = Either.mk_right
 
-  let destruct_elt = Either.destruct
-
   let get_elt_id = function
     | Either.Left l -> l.lid | Either.Right v ->  v.vid
   let get_elt_level = function
