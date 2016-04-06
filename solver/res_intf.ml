@@ -29,7 +29,8 @@ module type S = sig
     | Hypothesis
     | Lemma of lemma
     | Resolution of proof * proof * atom
-    (** Lazy type for proof trees. Proofs can be extended to proof nodes using functions defined later. *)
+  (** Lazy type for proof trees. Proofs are persistent objects, and can be
+      extended to proof nodes using functions defined later. *)
 
   (** {3 Resolution helpers} *)
   val to_list : clause -> atom list
@@ -46,11 +47,15 @@ module type S = sig
   (** {3 Proof building functions} *)
 
   val prove : clause -> proof
-  (** Same as 'learn', but works on single clauses instead of vectors. *)
+  (** Given a clause, return a proof of that clause.
+      @raise Insuficient_hyps if it does not succeed. *)
 
   val prove_unsat : clause -> proof
   (** Given a conflict clause [c], returns a proof of the empty clause.
       @raise Insuficient_hyps if it does not succeed. *)
+
+  val prove_atom : atom -> proof option
+  (** Given an atom [a], returns a proof of the clause [\[a\]] if [a] is true at level 0 *)
 
   (** {3 Proof Manipulation} *)
 

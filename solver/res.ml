@@ -96,6 +96,16 @@ module Make(St : Solver_types.S) = struct
     St.make_clause (fresh_pcl_name ()) [] 0 true (St.History (c :: l))
       (List.fold_left (fun i c -> max i c.St.c_level) 0 l)
 
+  let prove_atom a =
+    if St.(a.is_true && a.var.v_level = 0) then begin
+      match St.(a.var.reason) with
+      | St.Bcp Some c ->
+        assert (Vec.size St.(c.atoms) = 1 && equal_atoms a (Vec.get St.(c.atoms) 0));
+        Some c
+      | _ -> assert false
+    end else
+      None
+
   (* Interface exposed *)
   type proof = clause
   and proof_node = {
