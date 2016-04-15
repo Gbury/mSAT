@@ -633,8 +633,6 @@ module Make
       | History _ -> assert false
     in
     try
-      (* if not force && Proof.has_been_proved init0 then raise Trivial; *)
-      (* if not (Proof.is_proven init0) then assert false; (* Important side-effect, DO NOT REMOVE *) *)
       let atoms, history, level = partition (Vec.to_list init0.atoms) init0.c_level in
       let size = List.length atoms in
       match atoms with
