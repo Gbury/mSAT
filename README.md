@@ -15,6 +15,15 @@ This program is distributed under the Apache Software License version
 
 ## USAGE
 
+### Generic SAT/SMT Solver
+
+A modular implementation of the SMT algorithm can be found in the `Msat.Solver` module,
+as a functor which takes two modules :
+
+  - A representation of formulas (which implements the `Formula_intf.S` signature)
+
+  - A theory (which implements the `Theory_intf.S` signature) to check consistence of assertions.
+
 ### Sat Solver
 
 A ready-to-use SAT solver is available in the Sat module. It can be used
@@ -44,15 +53,6 @@ as shown in the following code :
     Sat.assume (F.make_cnf s)
     let _ = Sat.solve ()        (* Should return Sat.Unsat *)
 ```
-
-### Generic SAT/SMT Solver
-
-A modular implementation of the SMT algorithm can be found in the `Msat.Solver` module,
-as a functor which takes two modules :
-
-  - A representation of formulas (which implements the `Formula_intf.S` signature)
-
-  - A theory (which implements the `Theory_intf.S` signature) to check consistence of assertions.
 
 ## INSTALLATION
 
