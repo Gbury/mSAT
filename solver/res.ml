@@ -91,7 +91,8 @@ module Make(St : Solver_types.S) = struct
     let l = List.map (fun a ->
         match St.(a.var.reason) with
         | St.Bcp Some d -> d
-        | _ -> assert false) l
+        | St.Bcp None -> assert false
+        | St.Semantic _ -> assert false) l
     in
     St.make_clause (fresh_pcl_name ()) [] 0 true (St.History (c :: l))
       (List.fold_left (fun i c -> max i c.St.c_level) 0 l)

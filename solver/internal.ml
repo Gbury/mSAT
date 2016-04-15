@@ -290,6 +290,7 @@ module Make
         match a.var.reason with
         | Bcp (Some cl) -> atoms, cl :: history, max lvl cl.c_level
         | Semantic 0 -> atoms, history, lvl
+        | Bcp None -> assert false
         | _ ->
           Log.debugf 0 "Unexpected semantic propagation at level 0: %a"
             (fun k->k St.pp_atom a);
