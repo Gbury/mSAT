@@ -858,6 +858,7 @@ module Make
       if satisfied c then remove_clause c
     done
 
+(*
   let simplify () =
     assert (decision_level () = 0);
     if is_unsat () then raise Unsat;
@@ -873,6 +874,7 @@ module Make
       env.simpDB_assigns <- Vec.size env.elt_queue;
       env.simpDB_props <- env.clauses_literals + env.learnts_literals;
     end
+*)
 
   (* Decide on a new litteral *)
   let rec pick_branch_aux atom =
@@ -956,8 +958,11 @@ module Make
     let aux cl =
       let c = make_clause ?tag (fresh_hname ()) cl (List.length cl) false (History []) (current_level ()) in
       add_clause c;
+      (* Clauses can be added after search has begun (and thus we are not at level 0,
+         so better not do anything at this point.
       match propagate () with
       | None -> () | Some confl -> report_unsat confl
+      *)
     in
     List.iter aux cnf
 
