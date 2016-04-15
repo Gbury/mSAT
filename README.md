@@ -24,6 +24,9 @@ as a functor which takes two modules :
 
   - A theory (which implements the `Theory_intf.S` signature) to check consistence of assertions.
 
+  - A dummy empty module to ensure generativity of the solver (solver modules heavily relies on
+  side effects to their internal state)
+
 ### Sat Solver
 
 A ready-to-use SAT solver is available in the Sat module. It can be used
