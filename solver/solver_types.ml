@@ -257,12 +257,11 @@ module McMake (E : Expr_intf.S) = struct
 
   let level a =
     match a.var.v_level, a.var.reason with
-    | n, _ when n < 0 -> assert false
-    | 0, Some (Bcp c) -> sprintf "->0/%s" c.name
-    | 0, None   -> "@0"
-    | n, Some (Bcp c) -> sprintf "->%d/%s" n c.name
-    | n, None   -> sprintf "@@%d" n
-    | n, Some (Semantic lvl) -> sprintf "::%d/%d" n lvl
+    | n, _ when n < 0 -> sprintf "%%"
+    | n, None   -> sprintf "%d" n
+    | n, Some Decision   -> sprintf "@@%d" n
+    | n, Some Bcp c -> sprintf "->%d/%s" n c.name
+    | n, Some Semantic lvl -> sprintf "::%d/%d" n lvl
 
   let value a =
     if a.is_true then sprintf "[T%s]" (level a)
