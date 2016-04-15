@@ -18,7 +18,7 @@ module type S = Solver_types_intf.S
 (* Solver types for McSat Solving *)
 (* ************************************************************************ *)
 
-module McMake (E : Expr_intf.S) = struct
+module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
 
   (* Flag for Mcsat v.s Pure Sat *)
   let mcsat = true
@@ -297,12 +297,12 @@ end
 (* Solver types for pure SAT Solving *)
 (* ************************************************************************ *)
 
-module SatMake (E : Formula_intf.S) = struct
+module SatMake (E : Formula_intf.S)(Dummy : sig end) = struct
   include McMake(struct
       include E
       module Term = E
       module Formula = E
-    end)
+    end)(struct end)
 
   let mcsat = false
 end

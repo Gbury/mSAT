@@ -104,7 +104,7 @@ module Make (E : Formula_intf.S)
 
   module P = Plugin(E)(Th)
 
-  module St = Solver_types.SatMake(E)
+  module St = Solver_types.SatMake(E)(struct end)
 
   module S = Internal.Make(St)(P)(struct end)
 
