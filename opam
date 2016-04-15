@@ -1,5 +1,5 @@
 opam-version: "1.2"
-name:"msat"
+name: "msat"
 license: "Apache"
 version: "dev"
 author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "Guillaume Bury"]

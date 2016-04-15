@@ -37,7 +37,7 @@ module type S = sig
     mutable seen : bool;
     mutable v_level : int;
     mutable v_weight : float;
-    mutable reason : reason;
+    mutable reason : reason option;
   }
 
   and atom = {
@@ -61,8 +61,9 @@ module type S = sig
   }
 
   and reason =
+    | Decision
+    | Bcp of clause
     | Semantic of int
-    | Bcp of clause option
 
   and premise =
     | Lemma of proof

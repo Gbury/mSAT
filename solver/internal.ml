@@ -288,9 +288,10 @@ module Make
       if a.is_true then raise Trivial;
       if a.neg.is_true then begin
         match a.var.reason with
-        | Bcp (Some cl) -> atoms, cl :: history, max lvl cl.c_level
-        | Semantic 0 -> atoms, history, lvl
-        | _ ->
+        | None | Some Decision -> assert false
+        | Some (Bcp cl) -> atoms, cl :: history, max lvl cl.c_level
+        | Some (Semantic 0) -> atoms, history, lvl
+        | Some (Semantic _) ->
           Log.debugf 0 "Unexpected semantic propagation at level 0: %a"
             (fun k->k St.pp_atom a);
           assert false
@@ -311,9 +312,9 @@ module Make
         else if a.neg.is_true then
           if a.var.v_level = 0 then begin
             match a.var.reason with
-            | Bcp (Some cl) ->
+            | Some (Bcp cl) ->
               partition_aux trues unassigned falses (cl :: history) (max lvl cl.c_level) r
-            | Semantic 0 ->
+            | Some (Semantic 0) ->
               partition_aux trues unassigned falses history lvl r
             | _ -> assert false
           end else
@@ -393,7 +394,7 @@ module Make
             a.is_true <- false;
             a.neg.is_true <- false;
             a.var.v_level <- -1;
-            a.var.reason <- Bcp None;
+            a.var.reason <- None;
             insert_var_order (elt_of_var a.var)
           end
       done;
@@ -411,14 +412,14 @@ module Make
     raise Unsat
 
   let simpl_reason = function
-    | (Bcp Some cl) as r ->
+    | (Bcp cl) as r ->
       let l, history, c_lvl = partition (Vec.to_list cl.atoms) 0 in
       begin match l with
         | [ a ] ->
           if history = [] then r
           else
             let tmp_cl = make_clause (fresh_tname ()) l 1 true (History (cl :: history)) c_lvl in
-            Bcp (Some tmp_cl)
+            Bcp tmp_cl
         | _ -> assert false
       end
     | r -> r
@@ -429,14 +430,14 @@ module Make
       assert false
     end;
     if not a.is_true then begin
-      assert (a.var.v_level < 0 && a.var.reason = Bcp None && lvl >= 0);
+      assert (a.var.v_level < 0 && a.var.reason = None && lvl >= 0);
       let reason =
         if lvl > 0 then reason
         else simpl_reason reason
       in
       a.is_true <- true;
       a.var.v_level <- lvl;
-      a.var.reason <- reason;
+      a.var.reason <- Some reason;
       Vec.push env.elt_queue (of_atom a);
       Log.debugf 20 "Enqueue (%d): %a"
         (fun k->k (Vec.size env.elt_queue) pp_atom a)
@@ -480,7 +481,7 @@ module Make
     let c_level = ref 0 in
     clause_bump_activity c_clause;
     let is_semantic a = match a.var.reason with
-      | Semantic _ -> true
+      | Some Semantic _ -> true
       | _ -> false
     in
     try while true do
@@ -499,7 +500,7 @@ module Make
           | Either.Left _ -> ()
           | Either.Right a ->
             begin match a.var.reason with
-              | Bcp (Some d) ->
+              | Some (Bcp d) ->
                 let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
                 begin match tmp with
                   | [] -> ()
@@ -511,8 +512,7 @@ module Make
                     c := res
                   | _ -> assert false
                 end
-              | Bcp None -> ()
-              | Semantic _ -> ()
+              | None | Some Decision | Some Semantic _ -> ()
             end
       done; assert false
     with Exit ->
@@ -546,7 +546,7 @@ module Make
         if q.var.v_level = 0 then begin
           assert (q.neg.is_true);
           match q.var.reason with
-          | Bcp Some cl -> history := cl :: !history
+          | Some Bcp cl -> history := cl :: !history
           | _ -> assert false
         end;
         if not q.var.seen then begin
@@ -574,7 +574,7 @@ module Make
       | 0, _ ->
         cond := false;
         learnt := p.neg :: (List.rev !learnt)
-      | n, Bcp Some cl ->
+      | n, Some Bcp cl ->
         c_level := max !c_level cl.c_level;
         c := cl
       | n, _ -> assert false
@@ -599,7 +599,7 @@ module Make
           let name = fresh_lname () in
           let uclause = make_clause name learnt (List.length learnt) true history lvl in
           Vec.push env.clauses_learnt uclause;
-          enqueue_bool fuip 0 (Bcp (Some uclause))
+          enqueue_bool fuip 0 (Bcp uclause)
         end
       | fuip :: _ ->
         let name = fresh_lname () in
@@ -608,8 +608,8 @@ module Make
         attach_clause lclause;
         clause_bump_activity lclause;
         if is_uip then
-          enqueue_bool fuip blevel (Bcp (Some lclause))
-        else begin
+          enqueue_bool fuip blevel (Bcp lclause)
+      else begin
           env.next_decision <- Some fuip.neg
         end
     end;
@@ -656,12 +656,12 @@ module Make
         end else if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
           let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
           cancel_until lvl;
-          enqueue_bool a lvl (Bcp (Some clause))
+          enqueue_bool a lvl (Bcp clause)
         end
       | [a]   ->
         Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
         cancel_until 0;
-        enqueue_bool a 0 (Bcp (Some init0))
+        enqueue_bool a 0 (Bcp  init0)
     with Trivial ->
       Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init0)
 
@@ -703,7 +703,7 @@ module Make
           (* clause is unit *)
           Vec.set watched !new_sz c;
           incr new_sz;
-          enqueue_bool first (decision_level ()) (Bcp (Some c))
+          enqueue_bool first (decision_level ()) (Bcp c)
         end
       with Exit -> ()
 
@@ -887,7 +887,7 @@ module Make
         env.decisions <- env.decisions + 1;
         new_decision_level();
         let current_level = decision_level () in
-        enqueue_bool atom current_level (Bcp None)
+        enqueue_bool atom current_level Decision
       | Th.Valued (b, lvl) ->
         let a = if b then atom else atom.neg in
         enqueue_bool a lvl (Semantic lvl)
@@ -1040,11 +1040,11 @@ module Make
         insert_var_order (elt_of_lit l)
       | Either.Right a ->
         begin match a.var.reason with
-          | Bcp Some { c_level } when c_level > push_lvl ->
+          | Some Bcp { c_level } when c_level > push_lvl ->
             a.is_true <- false;
             a.neg.is_true <- false;
             a.var.v_level <- -1;
-            a.var.reason <- Bcp None;
+            a.var.reason <- None;
             insert_var_order (elt_of_var a.var)
           | _ ->
             if a.var.v_level = 0 then begin
@@ -1054,7 +1054,7 @@ module Make
               a.is_true <- false;
               a.neg.is_true <- false;
               a.var.v_level <- -1;
-              a.var.reason <- Bcp None;
+              a.var.reason <- None;
               insert_var_order (elt_of_var a.var)
             end
         end

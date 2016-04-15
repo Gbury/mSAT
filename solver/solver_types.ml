@@ -42,7 +42,7 @@ module McMake (E : Expr_intf.S) = struct
     mutable seen : bool;
     mutable v_level : int;
     mutable v_weight : float;
-    mutable reason : reason;
+    mutable reason : reason option;
   }
 
   and atom = {
@@ -66,8 +66,9 @@ module McMake (E : Expr_intf.S) = struct
   }
 
   and reason =
+    | Decision
+    | Bcp of clause
     | Semantic of int
-    | Bcp of clause option
 
   and premise =
     | Lemma of proof
@@ -85,7 +86,7 @@ module McMake (E : Expr_intf.S) = struct
       seen = false;
       v_level = -1;
       v_weight = -1.;
-      reason = Bcp None;
+      reason = None;
     }
   and dummy_atom =
     { var = dummy_var;
@@ -151,7 +152,7 @@ module McMake (E : Expr_intf.S) = struct
             seen = false;
             v_level = -1;
             v_weight = 0.;
-            reason = Bcp None;
+            reason = None;
           }
         and pa =
           { var = var;
@@ -257,11 +258,11 @@ module McMake (E : Expr_intf.S) = struct
   let level a =
     match a.var.v_level, a.var.reason with
     | n, _ when n < 0 -> assert false
-    | 0, Bcp (Some c) -> sprintf "->0/%s" c.name
-    | 0, Bcp None   -> "@0"
-    | n, Bcp (Some c) -> sprintf "->%d/%s" n c.name
-    | n, Bcp None   -> sprintf "@@%d" n
-    | n, Semantic lvl -> sprintf "::%d/%d" n lvl
+    | 0, Some (Bcp c) -> sprintf "->0/%s" c.name
+    | 0, None   -> "@0"
+    | n, Some (Bcp c) -> sprintf "->%d/%s" n c.name
+    | n, None   -> sprintf "@@%d" n
+    | n, Some (Semantic lvl) -> sprintf "::%d/%d" n lvl
 
   let value a =
     if a.is_true then sprintf "[T%s]" (level a)
