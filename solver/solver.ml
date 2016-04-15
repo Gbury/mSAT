@@ -12,12 +12,12 @@
 
 module type S = Solver_intf.S
 
-module DummyTheory(F : Formula_intf.S with type proof = unit) = struct
+module DummyTheory(F : Formula_intf.S) = struct
   (* We don't have anything to do since the SAT Solver already
    * does propagation and conflict detection *)
 
   type formula = F.t
-  type proof = unit
+  type proof = F.proof
   type level = unit
 
   type slice = {
