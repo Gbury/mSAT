@@ -14,12 +14,14 @@
 module type S = Solver_types_intf.S
 
 module McMake :
-  functor (E : Expr_intf.S)(Dummy : sig end) ->
+  functor (E : Expr_intf.S) ->
+    functor (Dummy : sig end) ->
     S with type term = E.Term.t and type formula = E.Formula.t and type proof = E.proof
 (** Functor to instantiate the types of clauses for a solver. *)
 
 module SatMake :
-  functor (E : Formula_intf.S)(Dummy : sig end) ->
+  functor (E : Formula_intf.S) ->
+    functor (Dummy : sig end) ->
     S with type term = E.t and type formula = E.t and type proof = E.proof
 (** Functor to instantiate the types of clauses for a solver. *)
 
