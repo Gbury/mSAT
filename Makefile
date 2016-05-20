@@ -1,10 +1,8 @@
 # copyright (c) 2014, guillaume bury
 
 LOG=build.log
-COMP=ocamlbuild -log $(LOG) -use-ocamlfind -classic-display
-FLAGS=
-#-ocamlc ocamlopt -cflag -O3
-DIRS=-Is solver,sat,smt,backend,util,util/smtlib
+COMP=ocamlbuild -log $(LOG) -use-ocamlfind
+FLAGS=-cflags -color,always
 DOC=msat.docdir/index.html
 BIN=main.native
 NAME=msat
@@ -14,13 +12,13 @@ LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 all: lib test
 
 lib:
-	$(COMP) $(FLAGS) $(DIRS) $(LIB)
+	$(COMP) $(FLAGS) $(LIB)
 
 doc:
-	$(COMP) $(FLAGS) $(DIRS) $(DOC)
+	$(COMP) $(FLAGS) $(DOC)
 
 bin:
-	$(COMP) $(FLAGS) $(DIRS) $(BIN)
+	$(COMP) $(FLAGS) $(BIN)
 	cp $(BIN) $(NAME) && rm $(BIN)
 
 test: bin

@@ -1,16 +1,20 @@
+# optimization options
+true: optimize(3), unbox_closures
+
+# Include paths
+<sat>: include
+<smt>: include
+<solver>: include
+<backend>: include
+<util>: include
+<util/smtlib>: include
+
+# Pack options
 <util/*.cmx>: for-pack(Msat)
-#<util/*.native>: 
 <smt/*.cmx>: for-pack(Msat)
 <sat/*.cmx>: for-pack(Msat)
 <solver/*.cmx>: for-pack(Msat)
 <backend/*.cmx>: for-pack(Msat)
-
-# enable stronger inlining everywhere
-<util/{vec,hashcons,hstring,iheap}.cmx>: inline(100)
-<solver/*.cmx>: inline(50)
-<sat/**/*.cmx>: inline(100)
-<smt/**/*.cmx>: inline(100)
-<util/log.cmx>: inline(30)
 
 # more warnings
 <**/*.ml>: warn_K, warn_Y, warn_X
