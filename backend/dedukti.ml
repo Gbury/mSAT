@@ -16,7 +16,7 @@ module type Arg = sig
   val context : Format.formatter -> proof -> unit
 end
 
-module Make(S : Res.S)(A : Arg with type formula := S.St.formula and type proof := S.proof) = struct
+module Make(S : Res.S)(A : Arg with type formula := S.St.formula and type lemma := S.lemma and type proof := S.proof) = struct
 
   let pp_nl fmt = Format.fprintf fmt "@\n"
   let fprintf fmt format = Format.kfprintf pp_nl fmt format

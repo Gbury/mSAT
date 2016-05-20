@@ -67,8 +67,14 @@ module Make(Dummy:sig end) = struct
       let print_atom = St.print_atom
       let lemma_info () = "Proof", Some "PURPLE", []
     end)
+  module Dedukti = Dedukti.Make(Proof)(struct
+      let print _ _ = ()
+      let prove _ _ = ()
+      let context _ _ = ()
+    end)
 
   let print_clause = St.print_clause
-  let print_proof = Dot.print
+  let print_dot = Dot.print
+  let print_dedulti = Dedukti.print
 
 end

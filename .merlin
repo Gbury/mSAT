@@ -1,12 +1,14 @@
 S sat
 S smt
 S solver
-S util
 S backend
+S util
+S util/smtlib
 
 B _build/
 B _build/sat
 B _build/smt
 B _build/solver
 B _build/util
+B _build/smtlib
 B _build/backend

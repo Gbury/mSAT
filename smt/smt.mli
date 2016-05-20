@@ -12,7 +12,10 @@ module Make(Dummy: sig end) : sig
   val print_clause : Format.formatter -> St.clause -> unit
   (** Print the clause on the given formatter. *)
 
-  val print_proof : Format.formatter -> Proof.proof -> unit
+  val print_dot : Format.formatter -> Proof.proof -> unit
+  (** Print the given proof in dot format. *)
+
+  val print_dedukti : Format.formatter -> Proof.proof -> unit
   (** Print the given proof in dot format. *)
 
 end

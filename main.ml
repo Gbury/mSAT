@@ -22,6 +22,7 @@ type sat_input =
 
 type sat_output =
   | Standard (* Only output problem status *)
+  | Dedukti
   | Dot
 
 type solver =
@@ -39,6 +40,7 @@ let input_list = [
 ]
 let output_list = [
   "dot", Dot;
+  "dk", Dedukti;
 ]
 let solver_list = [
   "smt", Smt;
@@ -96,14 +98,19 @@ let print format = match !output with
   | Dot ->
     Format.fprintf std "/* ";
     Format.kfprintf (fun fmt -> Format.fprintf fmt " */@.") std format
+  | Dedukti ->
+    Format.fprintf std "(; ";
+    Format.kfprintf (fun fmt -> Format.fprintf fmt " ;)@.") std format
 
 let print_proof proof = match !output with
   | Standard -> ()
-  | Dot -> Smt.print_proof std proof
+  | Dot -> Smt.print_dot std proof
+  | Dedulti -> Smt.print_dedukti std proof
 
 let print_mcproof proof = match !output with
   | Standard -> ()
-  | Dot -> Mcsat.print_proof std proof
+  | Dot -> Mcsat.print_dot std proof
+  | Dedulti -> Mcsat.print_dedukti std proof
 
 let rec print_cl fmt = function
   | [] -> Format.fprintf fmt "[]"
@@ -121,15 +128,15 @@ let print_mclause l =
 
 let print_cnf cnf = match !output with
   | Standard -> print_lcl cnf
-  | Dot -> ()
+  | Dot | Dedukti -> ()
 
 let print_unsat_core u = match !output with
   | Standard -> print_lclause u
-  | Dot -> ()
+  | Dot | Dedukti -> ()
 
 let print_mc_unsat_core u = match !output with
   | Standard -> print_mclause u
-  | Dot -> ()
+  | Dot | Dedukti -> ()
 
 (* Arguments parsing *)
 let file = ref ""
