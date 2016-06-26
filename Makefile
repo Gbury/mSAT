@@ -3,7 +3,6 @@
 LOG=build.log
 COMP=ocamlbuild -log $(LOG) -use-ocamlfind
 FLAGS=
-# -cflags -color,always
 DOC=msat.docdir/index.html
 BIN=main.native
 NAME=msat

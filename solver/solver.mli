@@ -1,15 +1,8 @@
-(**************************************************************************)
-(*                                                                        *)
-(*                                  Cubicle                               *)
-(*             Combining model checking algorithms and SMT solvers        *)
-(*                                                                        *)
-(*                  Mohamed Iguernelala                                   *)
-(*                  Universite Paris-Sud 11                               *)
-(*                                                                        *)
-(*  Copyright 2011. This file is distributed under the terms of the       *)
-(*  Apache Software License version 2.0                                   *)
-(*                                                                        *)
-(**************************************************************************)
+(*
+MSAT is free software, using the Apache license, see file LICENSE
+Copyright 2014 Guillaume Bury
+Copyright 2014 Simon Cruanes
+*)
 
 module type S = Solver_intf.S
 

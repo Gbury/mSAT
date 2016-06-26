@@ -1,3 +1,6 @@
+# colors
+true: color(always)
+
 # optimization options
 true: optimize(3), unbox_closures
 

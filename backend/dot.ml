@@ -18,6 +18,15 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
 
   let proof_id p = node_id (S.expand p)
 
+  let print_clause fmt c =
+    let v = c.S.St.atoms in
+    let n = Vec.size v in
+    for i = 0 to n - 1 do
+      Format.fprintf fmt "%a" A.print_atom (Vec.get v i);
+      if i < n - 1 then
+        Format.fprintf fmt ", "
+    done
+
   let print_edge fmt i j =
     Format.fprintf fmt "%s -> %s;@\n" i j
 
@@ -32,7 +41,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
     Format.fprintf fmt "BORDER=\"0\" CELLBORDER=\"1\" CELLSPACING=\"0\" BGCOLOR=\"%s\"" color
 
   let table fmt (c, rule, color, l) =
-    Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR>" S.print_clause c;
+    Format.fprintf fmt "<TR><TD colspan=\"2\">%a</TD></TR>" print_clause c;
     match l with
     | [] ->
       Format.fprintf fmt "<TR><TD BGCOLOR=\"%s\" colspan=\"2\">%s</TD></TR>" color rule
