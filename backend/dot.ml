@@ -20,12 +20,15 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
 
   let print_clause fmt c =
     let v = c.S.St.atoms in
-    let n = Vec.size v in
-    for i = 0 to n - 1 do
-      Format.fprintf fmt "%a" A.print_atom (Vec.get v i);
-      if i < n - 1 then
-        Format.fprintf fmt ", "
-    done
+    if Vec.is_empty v then
+      Format.fprintf fmt "⊥"
+    else
+      let n = Vec.size v in
+      for i = 0 to n - 1 do
+        Format.fprintf fmt "%a" A.print_atom (Vec.get v i);
+        if i < n - 1 then
+          Format.fprintf fmt ", "
+      done
 
   let print_edge fmt i j =
     Format.fprintf fmt "%s -> %s;@\n" i j
@@ -48,7 +51,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
     | f :: r ->
       Format.fprintf fmt "<TR><TD BGCOLOR=\"%s\" rowspan=\"%d\">%s</TD><TD>%a</TD></TR>"
         color (List.length l) rule f ();
-      List.iter (fun f -> Format.fprintf fmt "<TR><TD></TD><TD>%a</TD></TR>" f ()) r
+      List.iter (fun f -> Format.fprintf fmt "<TR><TD>%a</TD></TR>" f ()) r
 
   let print_dot_node fmt id color c rule rule_color l =
     Format.fprintf fmt "%s [shape=plaintext, label=<<TABLE %a>%a</TABLE>>];@\n"
