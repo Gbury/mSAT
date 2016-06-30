@@ -10,6 +10,7 @@ solver/Solver_types_intf
 solver/Solver_intf
 
 solver/Internal
+solver/External
 solver/Solver
 solver/Mcsolver
 solver/Solver_types

@@ -13,6 +13,7 @@ Solver_types_intf
 
 # Solver Modules
 Internal
+External
 Solver
 Mcsolver
 Solver_types

@@ -105,12 +105,12 @@ let print format = match !output with
 let print_proof proof = match !output with
   | Standard -> ()
   | Dot -> Smt.print_dot std proof
-  | Dedulti -> Smt.print_dedukti std proof
+  | Dedukti -> Smt.print_dedukti std proof
 
 let print_mcproof proof = match !output with
   | Standard -> ()
   | Dot -> Mcsat.print_dot std proof
-  | Dedulti -> Mcsat.print_dedukti std proof
+  | Dedukti -> Mcsat.print_dedukti std proof
 
 let rec print_cl fmt = function
   | [] -> Format.fprintf fmt "[]"

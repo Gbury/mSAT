@@ -8,10 +8,12 @@ module type S = Solver_intf.S
 
 (** Simple case where the proof type is [unit] and the theory is empty *)
 module DummyTheory(F : Formula_intf.S) :
-  Theory_intf.S with type formula = F.t and type proof = F.proof
+  Theory_intf.S with type formula = F.t
+                 and type proof = F.proof
 
 module Make (F : Formula_intf.S)
-    (Th : Theory_intf.S with type formula = F.t and type proof = F.proof)
+    (Th : Theory_intf.S with type formula = F.t
+                         and type proof = F.proof)
     (Dummy: sig end) :
   S with type St.formula = F.t
      and type St.proof = F.proof

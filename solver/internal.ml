@@ -219,8 +219,10 @@ module Make
   let f_weight i j =
     get_elt_weight (St.get_elt j) < get_elt_weight (St.get_elt i)
 
+  (*
   let f_filter i =
     get_elt_level (St.get_elt i) < 0
+  *)
 
   (* Var/clause activity *)
   let insert_var_order = function
@@ -275,7 +277,6 @@ module Make
   let decision_level () = Vec.size env.elt_levels
 
   let nb_clauses () = Vec.size env.clauses_hyps
-  let nb_learnts () = Vec.size env.clauses_learnt
   let nb_vars    () = St.nb_elt ()
 
   (* Simplify clauses *)
@@ -851,6 +852,7 @@ module Make
     Vec.shrink env.learnts (lim2 - !j)
     *)
 
+(*
   (* remove from [vec] the clauses that are satisfied in the current trail *)
   let remove_satisfied vec =
     for i = 0 to Vec.size vec - 1 do
@@ -858,7 +860,6 @@ module Make
       if satisfied c then remove_clause c
     done
 
-(*
   let simplify () =
     assert (decision_level () = 0);
     if is_unsat () then raise Unsat;

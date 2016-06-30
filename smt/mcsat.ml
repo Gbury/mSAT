@@ -111,49 +111,19 @@ end
 
 module Make(Dummy:sig end) = struct
 
-  module SmtSolver = Mcsolver.Make(Fsmt)(Tsmt)(struct end)
-
-  module Proof = SmtSolver.Proof
-
-  module Dot = Dot.Make(SmtSolver.Proof)(struct
-      let print_atom = SmtSolver.St.print_atom
+  include Mcsolver.Make(Fsmt)(Tsmt)(struct end)
+  module Dot = Dot.Make(Proof)(struct
+      let print_atom = St.print_atom
       let lemma_info () = "Proof", Some "PURPLE", []
     end)
+  module Dedukti = Dedukti.Make(Proof)(struct
+      let print _ _ = ()
+      let prove _ _ = ()
+      let context _ _ = ()
+    end)
 
+  let print_clause = St.print_clause
+  let print_dot = Dot.print
+  let print_dedukti = Dedukti.print
 
-  type atom = Fsmt.t
-  type clause = SmtSolver.St.clause
-  type proof = SmtSolver.Proof.proof
-
-  type res =
-    | Sat
-    | Unsat
-
-  let solve () =
-    try
-      SmtSolver.solve ();
-      Sat
-    with SmtSolver.Unsat -> Unsat
-
-  let assume l =
-    try
-      SmtSolver.assume l
-    with SmtSolver.Unsat -> ()
-
-  let get_proof () =
-    (* SmtSolver.Proof.learn (SmtSolver.history ()); *)
-    match SmtSolver.unsat_conflict () with
-    | None -> assert false
-    | Some c ->
-      let p = SmtSolver.Proof.prove_unsat c in
-      SmtSolver.Proof.check p;
-      p
-
-  let eval = SmtSolver.eval
-
-  let unsat_core = SmtSolver.Proof.unsat_core
-
-  let print_atom = Fsmt.print
-  let print_clause = SmtSolver.St.print_clause
-  let print_proof = Dot.print
 end

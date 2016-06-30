@@ -100,53 +100,10 @@ end
 
 module Make (E : Formula_intf.S)
     (Th : Theory_intf.S with type formula = E.t and type proof = E.proof)
-    (Dummy: sig end) = struct
+    (Dummy: sig end) =
+  External.Make
+    (Solver_types.SatMake(E)(struct end))
+    (Plugin(E)(Th))
+    (struct end)
 
-  module P = Plugin(E)(Th)
-
-  module St = Solver_types.SatMake(E)(struct end)
-
-  module S = Internal.Make(St)(P)(struct end)
-
-  module Proof = S.Proof
-
-  exception UndecidedLit = S.UndecidedLit
-
-  type atom = E.t
-  type clause = St.clause
-  type proof = Proof.proof
-
-  type res = Sat | Unsat
-
-  let assume ?tag l =
-    try S.assume ?tag l
-    with S.Unsat -> ()
-
-  let solve () =
-    try
-      S.solve ();
-      Sat
-    with S.Unsat -> Unsat
-
-  let eval = S.eval
-  let eval_level = S.eval_level
-
-  let get_proof () =
-    match S.unsat_conflict () with
-    | None -> assert false
-    | Some c -> S.Proof.prove_unsat c
-
-  let unsat_core = S.Proof.unsat_core
-
-  let get_tag cl = St.(cl.tag)
-
-  (* Push/pop operations *)
-  type level = S.level
-  let base_level = S.base_level
-  let current_level = S.current_level
-  let push = S.push
-  let pop = S.pop
-  let reset = S.reset
-
-end
 
