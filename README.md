@@ -38,8 +38,8 @@ as shown in the following code :
     module Sat = Msat.Sat.Make()
 
     (* We create here two distinct atoms *)
-    let a = Sat.new_atom () (* A 'new_atom' is always distinct from any other atom *)
-    let b = Sat.make 1      (* Atoms can be created from integers *)
+    let a = Msat.Sat.Fsat.fresh ()    (* A 'new_atom' is always distinct from any other atom *)
+    let b = Msat.Sat.Fsat.make 1      (* Atoms can be created from integers *)
 
     (* Let's create some formulas *)
     let p = F.make_atom a
