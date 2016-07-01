@@ -1095,7 +1095,10 @@ module Make
     then raise UndecidedLit
     else assert (var.v_level >= 0);
     let truth = var.pa.is_true in
-    let value = if negated then not truth else truth in
+    let value = match negated with
+      | Formula_intf.Negated -> not truth
+      | Formula_intf.Same_sign -> truth
+    in
     value, var.v_level
 
   let eval lit = fst (eval_level lit)

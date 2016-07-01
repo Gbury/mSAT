@@ -4,6 +4,10 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+type negated =
+  | Negated (* changed sign *)
+  | Same_sign (* kept sign *)
+
 module type S = sig
   (** Signature of formulas that parametrises the SAT/SMT Solver Module. *)
 
@@ -22,18 +26,16 @@ module type S = sig
   val neg : t -> t
   (** Formula negation *)
 
-  val norm : t -> t * bool
-  (** Returns a 'normalized' form of the formula, possibly negated (in which case return true).
-      [norm] must be so that [a] and [neg a] normalises to the same formula. *)
+  val norm : t -> t * negated
+  (** Returns a 'normalized' form of the formula, possibly negated
+      (in which case return [Negated]).
+      [norm] must be so that [a] and [neg a] normalise to the same formula,
+      but one returns [Same_sign] and one returns [Negated] *)
 
   val hash : t -> int
   val equal : t -> t -> bool
   val compare : t -> t -> int
   (** Usual hash and comparison functions. Given to Map and Hash functors. *)
-
-  val label : t -> Hstring.t
-  val add_label : Hstring.t -> t -> unit
-  (** Optional. Not yet used in Solver. *)
 
   val print : Format.formatter -> t -> unit
   (** Printing function used for debugging. *)

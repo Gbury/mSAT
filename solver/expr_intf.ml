@@ -37,9 +37,11 @@ module type S = sig
   val neg : Formula.t -> Formula.t
   (** Formula negation *)
 
-  val norm : Formula.t -> Formula.t * bool
-  (** Returns a 'normalized' form of the formula, possibly negated (in which case return true).
-      [norm] must be so that [a] and [neg a] normalises to the same formula. *)
+  val norm : Formula.t -> Formula.t * Formula_intf.negated
+  (** Returns a 'normalized' form of the formula, possibly negated
+      (in which case return [Negated]).
+      [norm] must be so that [a] and [neg a] normalise to the same formula,
+      but one returns [Negated] and the other [Same_sign]. *)
 
 end
 

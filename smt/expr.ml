@@ -4,6 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+module FI = Formula_intf
+
 exception Invalid_var
 
 type var = string
@@ -38,18 +40,14 @@ let neg = function
   | Distinct (a, b) -> Equal (a, b)
 
 let norm = function
-  | Prop i -> Prop (abs i), i < 0
-  | Equal (a, b) -> Equal (a, b), false
-  | Distinct (a, b) -> Equal (a, b), true
+  | Prop i -> Prop (abs i), if i < 0 then FI.Negated else FI.Same_sign
+  | Equal (a, b) -> Equal (a, b), FI.Same_sign
+  | Distinct (a, b) -> Equal (a, b), FI.Negated
 
 (* Only used after normalisation, so usual functions should work *)
 let hash = Hashtbl.hash
 let equal = (=)
 let compare = Pervasives.compare
-
-let s = Hstring.make ""
-let label _ = s
-let add_label _ _ = ()
 
 let print fmt = function
   | Prop i -> Format.fprintf fmt "%s%s%d" (if i < 0 then "¬ " else "") (if i mod 2 = 0 then "v" else "f") ((abs i) / 2)

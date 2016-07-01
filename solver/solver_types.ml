@@ -139,7 +139,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       Vec.push vars (Either.mk_left res);
       res
 
-  let make_boolean_var =
+  let make_boolean_var : formula -> var * Formula_intf.negated =
     fun lit ->
       let lit, negated = E.norm lit in
       try MF.find f_map lit, negated
@@ -177,7 +177,9 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
 
   let add_atom lit =
     let var, negated = make_boolean_var lit in
-    if negated then var.na else var.pa
+    match negated with
+      | Formula_intf.Negated -> var.na
+      | Formula_intf.Same_sign -> var.pa
 
   let make_clause ?tag name ali sz_ali is_learnt premise lvl =
     let atoms = Vec.from_list ali sz_ali dummy_atom in

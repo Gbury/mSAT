@@ -4,6 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+module FI = Formula_intf
+
 module Fsat = struct
 
   exception Bad_atom
@@ -25,7 +27,7 @@ module Fsat = struct
   let dummy = 0
 
   let neg a = - a
-  let norm a = abs a, a < 0
+  let norm a = abs a, if a < 0 then FI.Negated else FI.Same_sign
   let abs = abs
   let sign i = i > 0
   let apply_sign b i = if b then i else neg i
@@ -34,10 +36,6 @@ module Fsat = struct
   let hash (a:int) = a land max_int
   let equal (a:int) b = a=b
   let compare (a:int) b = Pervasives.compare a b
-
-  let _str = Hstring.make ""
-  let label a = _str
-  let add_label _ _ = ()
 
   let make i = _make (2 * i)
 

@@ -13,6 +13,8 @@ type formula = private
 type t = formula
 type proof = unit
 
+include Formula_intf.S with type t := formula and type proof := proof
+
 val dummy : t
 
 val fresh : unit -> t
@@ -20,18 +22,6 @@ val fresh : unit -> t
 val mk_prop : int -> t
 val mk_eq : var -> var -> t
 val mk_neq : var -> var -> t
-
-val neg : t -> t
-val norm : t -> t * bool
-
-val hash : t -> int
-val equal : t -> t -> bool
-val compare : t -> t -> int
-
-val label : t -> Hstring.t
-val add_label : Hstring.t -> t -> unit
-
-val print : Format.formatter -> t -> unit
 
 module Term : sig
   type t = var
