@@ -18,6 +18,9 @@ type ('form, 'proof) slice = {
   get : int -> 'form;
   push : 'form list -> 'proof -> unit;
 }
+(** The type for a slice of literals to assume/propagate in the theory.
+    [get] operations should only be used for integers [ start <= i < start + length].
+    [push clause proof] allows to add a tautological clause to the sat solver. *)
 
 module type S = sig
   (** Signature for theories to be given to the Solver. *)
@@ -27,16 +30,6 @@ module type S = sig
 
   type proof
   (** A custom type for the proofs of lemmas produced by the theory. *)
-
-  type slice = {
-    start : int;
-    length : int;
-    get : int -> formula;
-    push : formula list -> proof -> unit;
-  }
-  (** The type for a slice of literals to assume/propagate in the theory.
-      [get] operations should only be used for integers [ start <= i < start + length].
-      [push clause proof] allows to add a tautological clause to the sat solver. *)
 
   type level
   (** The type for levels to allow backtracking. *)
@@ -56,7 +49,7 @@ module type S = sig
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
 
-  val assume : slice -> res
+  val assume : (formula, proof) slice -> res
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
       and returns the result of the new assumptions. *)
 

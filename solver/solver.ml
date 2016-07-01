@@ -11,6 +11,7 @@
 (**************************************************************************)
 
 module type S = Solver_intf.S
+module ThI = Theory_intf
 
 module DummyTheory(F : Formula_intf.S) = struct
   (* We don't have anything to do since the SAT Solver already
@@ -75,10 +76,11 @@ module Plugin(E : Formula_intf.S)
 
   let assume s =
     match Th.assume {
-        Th.start = s.start;
-        Th.length = s.length;
-        Th.get = assume_get s;
-        Th.push = s.push;
+        ThI.
+        start = s.start;
+        length = s.length;
+        get = assume_get s;
+        push = s.push;
       } with
     | Th.Sat _ -> Sat
     | Th.Unsat (l, p) -> Unsat (l, p)
