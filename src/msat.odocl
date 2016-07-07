@@ -1,0 +1,32 @@
+# Log utilities
+util/Log
+
+# Interfaces
+core/Formula_intf
+core/Theory_intf
+core/Plugin_intf
+core/Expr_intf
+core/Res_intf
+core/Solver_types_intf
+core/Solver_intf
+solver/Tseitin_intf
+
+# Main modules
+core/Res
+core/Internal
+core/External
+core/Solver_types
+
+solver/Solver
+solver/Mcsolver
+solver/Tseitin
+
+# Backends
+backend/Dot
+backend/Dedukti
+backend/Backend_intf
+
+# Examples
+example/Sat
+example/Smt
+

@@ -5,22 +5,23 @@ true: color(always)
 true: optimize(3), unbox_closures, unbox_closures_factor(20)
 
 # Include paths
-<sat>: include
-<smt>: include
-<solver>: include
-<backend>: include
-<util>: include
-<util/smtlib>: include
+<src>: include
+<src/core>: include
+<src/solver>: include
+<src/backend>: include
+<src/example>: include
+<src/util>: include
+<src/util/smtlib>: include
 
 # Pack options
-<util/*.cmx>: for-pack(Msat)
-<smt/*.cmx>: for-pack(Msat)
-<sat/*.cmx>: for-pack(Msat)
-<solver/*.cmx>: for-pack(Msat)
-<backend/*.cmx>: for-pack(Msat)
+<src/core/*.cmx>: for-pack(Msat)
+<src/solver/*.cmx>: for-pack(Msat)
+<src/backend/*.cmx>: for-pack(Msat)
+<src/util/*.cmx>: for-pack(Msat)
+<src/example/*.cmx>: for-pack(Msat)
 
 # more warnings
-<**/*.ml>: warn_K, warn_Y, warn_X
-<**/*.ml>: short_paths, safe_string, strict_sequence
-<**/*.cm*>: debug
+<src/**/*.ml>: warn_K, warn_Y, warn_X
+<src/**/*.ml>: short_paths, safe_string, strict_sequence
+<src/**/*.cm*>: debug
 
