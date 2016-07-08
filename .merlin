@@ -1,14 +1,14 @@
-S sat
-S smt
-S solver
-S backend
-S util
-S util/smtlib
+S src/core
+S src/solver
+S src/example
+S src/backend
+S src/util
+S src/util/smtlib
 
-B _build/
-B _build/sat
-B _build/smt
-B _build/solver
-B _build/util
-B _build/smtlib
-B _build/backend
+B _build/src/
+B _build/src/core
+B _build/src/solver
+B _build/src/example
+B _build/src/util
+B _build/src/util/smtlib
+B _build/src/backend
