@@ -139,10 +139,11 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       Vec.push vars (Either.mk_left res);
       res
 
-  let make_boolean_var : formula -> var * Formula_intf.negated =
-    fun lit ->
-      let lit, negated = E.norm lit in
-      try MF.find f_map lit, negated
+  let make_boolean_var : formula -> var * Expr_intf.negated =
+    fun t ->
+      let lit, negated = E.norm t in
+      try
+        MF.find f_map lit, negated
       with Not_found ->
         let cpt_fois_2 = !cpt_mk_var lsl 1 in
         let rec var  =

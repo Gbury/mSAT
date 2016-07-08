@@ -36,9 +36,12 @@ module Make
   type env = {
 
     clauses_hyps : clause Vec.t;
-    (* all currently active clauses *)
+    (* clauses assumed (subject to user levels) *)
     clauses_learnt : clause Vec.t;
-    (* learnt clauses  *)
+    (* learnt clauses (true at anytime, whatever the user level) *)
+    clauses_pushed : clause Stack.t;
+    (* Clauses pushed, waiting to be added as learnt. *)
+
 
     mutable unsat_conflict : clause option;
     (* conflict clause at decision level 0, if any *)
@@ -116,6 +119,7 @@ module Make
 
     clauses_hyps = Vec.make 0 dummy_clause;
     clauses_learnt = Vec.make 0 dummy_clause;
+    clauses_pushed = Stack.create ();
 
     th_head = 0;
     elt_head = 0;
@@ -249,7 +253,7 @@ module Make
      To be more general, the heap only stores the variable/litteral id (i.e an int).
      When we add a variable (which wraps a formula), we also need to add all
      its subterms.
-     *)
+  *)
   let insert_var_order = function
     | Either.Left l -> Iheap.insert f_weight env.order l.lid
     | Either.Right v ->
@@ -825,7 +829,8 @@ module Make
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     List.iter (fun a -> insert_var_order (elt_of_var a.var)) atoms;
     let c = make_clause (fresh_tname ()) atoms (List.length atoms) true (Lemma lemma) base_level in
-    add_clause c
+    Log.debugf 10 "Pushing clause %a" (fun k->k St.pp_clause c);
+    Stack.push c env.clauses_pushed
 
   let slice_propagate f lvl =
     let a = atom f in
@@ -833,20 +838,20 @@ module Make
     enqueue_bool a lvl (Semantic lvl)
 
   let current_slice () = {
-      Plugin_intf.start = env.th_head;
-      length = (Vec.size env.elt_queue) - env.th_head;
-      get = slice_get;
-      push = slice_push;
-      propagate = slice_propagate;
-    }
+    Plugin_intf.start = env.th_head;
+    length = (Vec.size env.elt_queue) - env.th_head;
+    get = slice_get;
+    push = slice_push;
+    propagate = slice_propagate;
+  }
 
   let full_slice () = {
-      Plugin_intf.start = 0;
-      length = Vec.size env.elt_queue;
-      get = slice_get;
-      push = slice_push;
-      propagate = (fun _ -> assert false);
-    }
+    Plugin_intf.start = 0;
+    length = Vec.size env.elt_queue;
+    get = slice_get;
+    push = slice_push;
+    propagate = (fun _ -> assert false);
+  }
 
   let rec theory_propagate () =
     assert (env.elt_head = Vec.size env.elt_queue);
@@ -867,6 +872,11 @@ module Make
     end
 
   and propagate () =
+    (* First, treat the pushed clause stack *)
+    while not (Stack.is_empty env.clauses_pushed) do
+      add_clause (Stack.pop env.clauses_pushed)
+    done;
+    (* Now, check that the situation is sane *)
     if env.elt_head > Vec.size env.elt_queue then
       assert false
     else if env.elt_head = Vec.size env.elt_queue then
