@@ -4,7 +4,7 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module FI = Formula_intf
+module I = Formula_intf
 
 exception Invalid_var
 
@@ -40,9 +40,9 @@ let neg = function
   | Distinct (a, b) -> Equal (a, b)
 
 let norm = function
-  | Prop i -> Prop (abs i), if i < 0 then FI.Negated else FI.Same_sign
-  | Equal (a, b) -> Equal (a, b), FI.Same_sign
-  | Distinct (a, b) -> Equal (a, b), FI.Negated
+  | Prop i -> Prop (abs i), if i < 0 then I.Negated else I.Same_sign
+  | Equal (a, b) -> Equal (a, b), I.Same_sign
+  | Distinct (a, b) -> Equal (a, b), I.Negated
 
 (* Only used after normalisation, so usual functions should work *)
 let hash = Hashtbl.hash
