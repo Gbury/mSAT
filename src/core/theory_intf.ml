@@ -57,5 +57,9 @@ module type S = sig
   (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
       same state as when it returned the value [l], *)
 
+  val if_sat : (formula, proof) slice -> unit
+  (** Called at the end of the search in case a model has been found. If no new clause is
+      pushed, then 'sat' is returned, else search is resumed. *)
+
 end
 

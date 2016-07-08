@@ -24,6 +24,7 @@ module DummyTheory(F : Formula_intf.S) = struct
   let current_level () = ()
   let assume _ = Theory_intf.Sat
   let backtrack _ = ()
+  let if_sat _ = ()
 end
 
 module Plugin(E : Formula_intf.S)
@@ -43,26 +44,26 @@ module Plugin(E : Formula_intf.S)
     | Plugin_intf.Lit f -> f
     | _ -> assert false
 
-  let assume s =
-    let slice = {
+  let mk_slice s = {
       Theory_intf.start = s.Plugin_intf.start;
       length = s.Plugin_intf.length;
       get = assume_get s;
       push = s.Plugin_intf.push;
-    } in
-    Th.assume slice
+    }
+
+  let assume s = Th.assume (mk_slice s)
 
   let backtrack = Th.backtrack
 
+  let if_sat s = Th.if_sat (mk_slice s)
+
+
+  (* McSat specific functions *)
   let assign _ = assert false
 
   let iter_assignable _ _ = ()
 
   let eval _ = Plugin_intf.Unknown
-
-  let if_sat _ = ()
-
-  let proof_debug _ = assert false
 
 end
 

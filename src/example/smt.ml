@@ -48,6 +48,8 @@ module Tsmt = struct
 
   let backtrack l = env := l
 
+  let if_sat _ = ()
+
 end
 
 module Make(Dummy:sig end) = struct
