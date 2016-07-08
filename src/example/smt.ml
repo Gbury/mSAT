@@ -5,7 +5,6 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Fsmt = Expr
-module ThI = Theory_intf
 
 module Tsmt = struct
 
@@ -14,10 +13,6 @@ module Tsmt = struct
   type formula = Fsmt.t
   type proof = unit
   type level = CC.t
-
-  type res =
-    | Sat of level
-    | Unsat of formula list * proof
 
   let dummy = CC.empty
 
@@ -37,15 +32,16 @@ module Tsmt = struct
     (Fsmt.mk_eq a b) :: (List.rev_map Fsmt.neg (aux [] l))
 
   let assume s =
+    let open Theory_intf in
     try
-      for i = s.ThI.start to s.ThI.start + s.ThI.length - 1 do
-        Log.debugf 10 "Propagating in th :@ @[%a@]" (fun k->k Fsmt.print (s.ThI.get i));
-        match s.ThI.get i with
+      for i = s.start to s.start + s.length - 1 do
+        Log.debugf 10 "Propagating in th :@ @[%a@]" (fun k->k Fsmt.print (s.get i));
+        match s.get i with
         | Fsmt.Prop _ -> ()
         | Fsmt.Equal (i, j) -> env := CC.add_eq !env i j
         | Fsmt.Distinct (i, j) -> env := CC.add_neq !env i j
       done;
-      Sat (current_level ())
+      Sat
     with CC.Unsat x ->
       Log.debug 8 "Making explanation clause...";
       Unsat (to_clause x, ())

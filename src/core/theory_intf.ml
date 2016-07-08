@@ -12,6 +12,14 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type ('formula, 'proof) res = ('formula, 'proof) Plugin_intf.res =
+  | Sat
+  | Unsat of 'formula list * 'proof
+(** Type returned by the theory, either the current set of assumptions is satisfiable,
+    or it is not, in which case a tautological clause (hopefully minimal) is returned.
+    Formulas in the unsat clause must come from the current set of assumptions, i.e
+    must have been encountered in a slice. *)
+
 type ('form, 'proof) slice = {
   start : int;
   length : int;
@@ -34,14 +42,6 @@ module type S = sig
   type level
   (** The type for levels to allow backtracking. *)
 
-  (** Type returned by the theory, either the current set of assumptions is satisfiable,
-      or it is not, in which case a tautological clause (hopefully minimal) is returned.
-      Formulas in the unsat clause must come from the current set of assumptions, i.e
-      must have been encountered in a slice. *)
-  type res =
-    | Sat of level
-    | Unsat of formula list * proof
-
   val dummy : level
   (** A dummy level. *)
 
@@ -49,7 +49,7 @@ module type S = sig
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
 
-  val assume : (formula, proof) slice -> res
+  val assume : (formula, proof) slice -> (formula, proof) res
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
       and returns the result of the new assumptions. *)
 

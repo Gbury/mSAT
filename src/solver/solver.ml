@@ -11,7 +11,6 @@
 (**************************************************************************)
 
 module type S = Solver_intf.S
-module ThI = Theory_intf
 
 module DummyTheory(F : Formula_intf.S) = struct
   (* We don't have anything to do since the SAT Solver already
@@ -21,20 +20,9 @@ module DummyTheory(F : Formula_intf.S) = struct
   type proof = F.proof
   type level = unit
 
-  type slice = {
-    start : int;
-    length : int;
-    get : int -> formula;
-    push : formula list -> proof -> unit;
-  }
-
-  type res =
-    | Sat of level
-    | Unsat of formula list * proof
-
   let dummy = ()
   let current_level () = ()
-  let assume _ = Sat ()
+  let assume _ = Theory_intf.Sat
   let backtrack _ = ()
 end
 
@@ -44,46 +32,25 @@ module Plugin(E : Formula_intf.S)
   type term = E.t
   type formula = E.t
   type proof = Th.proof
-
-  type assumption =
-    | Lit of formula
-    | Assign of term * term
-
-  type slice = {
-    start : int;
-    length : int;
-    get : int -> assumption * int;
-    push : formula list -> proof -> unit;
-    propagate : formula -> int -> unit;
-  }
-
   type level = Th.level
-
-  type res =
-    | Sat
-    | Unsat of formula list * proof
-
-  type eval_res =
-    | Valued of bool * int
-    | Unknown
 
   let dummy = Th.dummy
 
   let current_level = Th.current_level
 
-  let assume_get s i = match s.get i with
-    | Lit f, _ -> f | _ -> assert false
+  let assume_get s i =
+    match s.Plugin_intf.get i with
+    | Plugin_intf.Lit f -> f
+    | _ -> assert false
 
   let assume s =
-    match Th.assume {
-        ThI.
-        start = s.start;
-        length = s.length;
-        get = assume_get s;
-        push = s.push;
-      } with
-    | Th.Sat _ -> Sat
-    | Th.Unsat (l, p) -> Unsat (l, p)
+    let slice = {
+      Theory_intf.start = s.Plugin_intf.start;
+      length = s.Plugin_intf.length;
+      get = assume_get s;
+      push = s.Plugin_intf.push;
+    } in
+    Th.assume slice
 
   let backtrack = Th.backtrack
 
@@ -91,7 +58,7 @@ module Plugin(E : Formula_intf.S)
 
   let iter_assignable _ _ = ()
 
-  let eval _ = Unknown
+  let eval _ = Plugin_intf.Unknown
 
   let if_sat _ = ()
 

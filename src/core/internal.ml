@@ -6,7 +6,9 @@ Copyright 2014 Simon Cruanes
 
 module Make
     (St : Solver_types.S)
-    (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof)
+    (Plugin : Plugin_intf.S with type term = St.term
+                             and type formula = St.formula
+                             and type proof = St.proof)
     (Dummy: sig end)
 = struct
 
@@ -25,7 +27,7 @@ module Make
     (* User levels always refer to decision_level 0 *)
     ul_elt_lvl : int;     (* Number of atoms in trail at decision level 0 *)
     ul_th_lvl : int;      (* Number of atoms known by the theory at decicion level 0 *)
-    ul_th_env : Th.level; (* Theory state at level 0 *)
+    ul_th_env : Plugin.level; (* Theory state at level 0 *)
     ul_clauses : int;     (* number of clauses *)
     ul_learnt : int;      (* number of learnt clauses *)
   }
@@ -48,7 +50,7 @@ module Make
 
     elt_levels : int Vec.t;
     (* decision levels in [trail]  *)
-    th_levels : Th.level Vec.t;
+    th_levels : Plugin.level Vec.t;
     (* theory states corresponding to elt_levels *)
     user_levels : user_level Vec.t;
     (* user-defined levels, for {!push} and {!pop} *)
@@ -120,14 +122,14 @@ module Make
 
     elt_queue = Vec.make 601 (of_atom dummy_atom);
     elt_levels = Vec.make 601 (-1);
-    th_levels = Vec.make 100 Th.dummy;
+    th_levels = Vec.make 100 Plugin.dummy;
 
     user_levels = Vec.make 20 {
         ul_elt_lvl = 0;
         ul_th_lvl = 0;
         ul_learnt = 0;
         ul_clauses = 0;
-        ul_th_env = Th.dummy;
+        ul_th_env = Plugin.dummy;
       };
 
     order = Iheap.init 0;
@@ -199,7 +201,7 @@ module Make
           let l = Vec.get env.elt_levels 0 in
           l, l
       and ul_th_env =
-        if Vec.is_empty env.th_levels then Th.current_level ()
+        if Vec.is_empty env.th_levels then Plugin.current_level ()
         else Vec.get env.th_levels 0
       in
       (* Keep in mind what are the current assumptions. *)
@@ -230,7 +232,7 @@ module Make
       List.iter f (Hashtbl.find iter_map v.vid)
     with Not_found ->
       let l = ref [] in
-      Th.iter_assignable (fun t -> l := add_term t :: !l) v.pa.lit;
+      Plugin.iter_assignable (fun t -> l := add_term t :: !l) v.pa.lit;
       Hashtbl.add iter_map v.vid !l;
       List.iter f !l
 
@@ -397,7 +399,7 @@ module Make
     assert (env.th_head = Vec.size env.elt_queue);
     assert (env.elt_head = Vec.size env.elt_queue);
     Vec.push env.elt_levels (Vec.size env.elt_queue);
-    Vec.push env.th_levels (Th.current_level ()); (* save the current tenv *)
+    Vec.push env.th_levels (Plugin.current_level ()); (* save the current tenv *)
     ()
 
   (* Attach/Detach a clause.
@@ -464,7 +466,7 @@ module Make
           end
       done;
       (* Recover the right theory state. *)
-      Th.backtrack (Vec.get env.th_levels lvl);
+      Plugin.backtrack (Vec.get env.th_levels lvl);
       (* Resize the vectors according to their new size. *)
       Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - env.elt_head);
       Vec.shrink env.elt_levels ((Vec.size env.elt_levels) - lvl);
@@ -534,9 +536,9 @@ module Make
 
   let th_eval a =
     if a.is_true || a.neg.is_true then None
-    else match Th.eval a.lit with
-      | Th.Unknown -> None
-      | Th.Valued (b, lvl) ->
+    else match Plugin.eval a.lit with
+      | Plugin_intf.Unknown -> None
+      | Plugin_intf.Valued (b, lvl) ->
         let atom = if b then a else a.neg in
         enqueue_bool atom lvl (Semantic lvl);
         Some b
@@ -812,8 +814,10 @@ module Make
 
   let slice_get i =
     match Vec.get env.elt_queue i with
-    | Either.Right a -> Th.Lit a.lit, a.var.v_level
-    | Either.Left {l_level; term; assigned = Some v} -> Th.Assign (term, v), l_level
+    | Either.Right a ->
+      Plugin_intf.Lit a.lit
+    | Either.Left {l_level; term; assigned = Some v} ->
+      Plugin_intf.Assign (term, v, l_level)
     | Either.Left _ -> assert false
 
   let slice_push l lemma =
@@ -828,21 +832,21 @@ module Make
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     enqueue_bool a lvl (Semantic lvl)
 
-  let current_slice () = Th.({
-      start = env.th_head;
+  let current_slice () = {
+      Plugin_intf.start = env.th_head;
       length = (Vec.size env.elt_queue) - env.th_head;
       get = slice_get;
       push = slice_push;
       propagate = slice_propagate;
-    })
+    }
 
-  let full_slice () = Th.({
-      start = 0;
+  let full_slice () = {
+      Plugin_intf.start = 0;
       length = Vec.size env.elt_queue;
       get = slice_get;
       push = slice_push;
       propagate = (fun _ -> assert false);
-    })
+    }
 
   let rec theory_propagate () =
     assert (env.elt_head = Vec.size env.elt_queue);
@@ -851,10 +855,10 @@ module Make
     else begin
       let slice = current_slice () in
       env.th_head <- env.elt_head;
-      match Th.assume slice with
-      | Th.Sat ->
+      match Plugin.assume slice with
+      | Plugin_intf.Sat ->
         propagate ()
-      | Th.Unsat (l, p) ->
+      | Plugin_intf.Unsat (l, p) ->
         let l = List.rev_map new_atom l in
         Iheap.grow_to_by_double env.order (St.nb_elt ());
         List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
@@ -965,13 +969,13 @@ module Make
     if v.v_level >= 0 then begin
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit ()
-    end else match Th.eval atom.lit with
-      | Th.Unknown ->
+    end else match Plugin.eval atom.lit with
+      | Plugin_intf.Unknown ->
         env.decisions <- env.decisions + 1;
         new_decision_level();
         let current_level = decision_level () in
         enqueue_bool atom current_level Decision
-      | Th.Valued (b, lvl) ->
+      | Plugin_intf.Valued (b, lvl) ->
         let a = if b then atom else atom.neg in
         enqueue_bool a lvl (Semantic lvl)
 
@@ -987,7 +991,7 @@ module Make
               if l.l_level >= 0 then
                 pick_branch_lit ()
               else begin
-                let value = Th.assign l.term in
+                let value = Plugin.assign l.term in
                 env.decisions <- env.decisions + 1;
                 new_decision_level();
                 let current_level = decision_level () in
@@ -1064,7 +1068,7 @@ module Make
             n_of_conflicts := !n_of_conflicts *. env.restart_inc;
             n_of_learnts   := !n_of_learnts *. env.learntsize_inc
           | Sat ->
-            Th.if_sat (full_slice ());
+            Plugin.if_sat (full_slice ());
             if is_unsat () then raise Unsat
             else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
                  && env.elt_head = St.nb_elt () (* this is the important test to know if the search is finished *)  then
@@ -1148,7 +1152,7 @@ module Make
             end
         end
     done;
-    Th.backtrack th_env; (* recover the right theory env *)
+    Plugin.backtrack th_env; (* recover the right theory env *)
     Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - env.elt_head);
     Vec.clear env.elt_levels;
     Vec.clear env.th_levels;

@@ -12,6 +12,39 @@
 (*                                                                        *)
 (**************************************************************************)
 
+type eval_res =
+  | Valued of bool * int
+  | Unknown
+(** The type of evaluation results, either the given formula cannot be
+    evaluated, or it can thanks to assignment. In that case, the level
+    of the evaluation is the maximum of levels of assignemnts needed
+    to evaluate the given formula. *)
+
+type ('formula, 'proof) res =
+  | Sat
+  | Unsat of 'formula list * 'proof
+(** Type returned by the theory, either the current set of assumptions is satisfiable,
+    or it is not, in which case a tautological clause (hopefully minimal) is returned.
+    Formulas in the unsat clause must come from the current set of assumptions, i.e
+    must have been encountered in a slice. *)
+
+type ('term, 'formula) assumption =
+  | Lit of 'formula
+  | Assign of 'term * 'term * int (* Assign(x, alpha) *)
+(** Asusmptions made by the core SAT solver. Can be either a formula, or an assignment.
+    Assignemnt are given a level. *)
+
+type ('term, 'formula, 'proof) slice = {
+  start : int;
+  length : int;
+  get : int -> ('term, 'formula) assumption;
+  push : 'formula list -> 'proof -> unit;
+  propagate : 'formula -> int -> unit;
+}
+(** The type for a slice of litterals to assume/propagate in the theory.
+    [get] operations should only be used for integers [ start <= i < start + length].
+    [push clause proof] allows to add a tautological clause to the sat solver. *)
+
 module type S = sig
   (** Signature for theories to be given to the Model Constructing Solver. *)
 
@@ -24,35 +57,8 @@ module type S = sig
   type proof
   (** A custom type for the proofs of lemmas produced by the theory. *)
 
-  type assumption =
-    | Lit of formula
-    | Assign of term * term (* Assign(x, alpha) *)
-
-  type slice = {
-    start : int;
-    length : int;
-    get : int -> assumption * int;
-    push : formula list -> proof -> unit;
-    propagate : formula -> int -> unit;
-  }
-  (** The type for a slice of litterals to assume/propagate in the theory.
-      [get] operations should only be used for integers [ start <= i < start + length].
-      [push clause proof] allows to add a tautological clause to the sat solver. *)
-
   type level
   (** The type for levels to allow backtracking. *)
-
-  (** Type returned by the theory, either the current set of assumptions is satisfiable,
-      or it is not, in which case a tautological clause (hopefully minimal) is returned.
-      Formulas in the unsat clause must come from the current set of assumptions, i.e
-      must have been encountered in a slice. *)
-  type res =
-    | Sat
-    | Unsat of formula list * proof
-
-  type eval_res =
-    | Valued of bool * int
-    | Unknown
 
   val dummy : level
   (** A dummy level. *)
@@ -61,7 +67,7 @@ module type S = sig
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
 
-  val assume : slice -> res
+  val assume : (term, formula, proof) slice -> (formula, proof) res
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
       and returns the result of the new assumptions. *)
 
@@ -78,7 +84,7 @@ module type S = sig
   val eval : formula -> eval_res
   (** Returns the evaluation of the formula in the current assignment *)
 
-  val if_sat : slice -> unit
+  val if_sat : (term, formula, proof) slice -> unit
   (** Called at the end of the search in case a model has been found. If no new clause is
       pushed, then 'sat' is returned, else search is resumed. *)
 

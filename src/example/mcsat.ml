@@ -16,30 +16,10 @@ module Tsmt = struct
   type formula = Fsmt.t
   type proof = unit
 
-  type assumption =
-    | Lit of formula
-    | Assign of term * term
-
-  type slice = {
-    start : int;
-    length : int;
-    get : int -> assumption * int;
-    push : formula list -> proof -> unit;
-    propagate : formula -> int -> unit;
-  }
-
   type level = {
     cc : CC.t;
     assign : (term * int) M.t;
   }
-
-  type res =
-    | Sat
-    | Unsat of formula list * proof
-
-  type eval_res =
-    | Valued of bool * int
-    | Unknown
 
   (* Functions *)
   let dummy = { cc = CC.empty; assign = M.empty; }
@@ -60,12 +40,13 @@ module Tsmt = struct
     (Fsmt.mk_eq a b) :: (List.rev_map Fsmt.neg (aux [] l))
 
   let assume s =
+    let open Plugin_intf in
     try
       for i = s.start to s.start + s.length - 1 do
         match s.get i with
-        | (Assign (x, v)), lvl ->
+        | Assign (x, v, lvl) ->
           env := { !env with assign = M.add x (v, lvl) !env.assign }
-        | Lit f, _ ->
+        | Lit f ->
           Log.debugf 10 "Propagating in th :@ @[%a@]" (fun k->k Fsmt.print f);
           match f with
           | Fsmt.Prop _ -> ()
@@ -91,19 +72,23 @@ module Tsmt = struct
   let max (a: int) (b: int) = if a < b then b else a
 
   let eval = function
-    | Fsmt.Prop _ -> Unknown
+    | Fsmt.Prop _ -> Plugin_intf.Unknown
     | Fsmt.Equal (a, b) ->
       begin try
           let a', lvl_a = M.find a !env.assign in
           let b', lvl_b = M.find b !env.assign in
-          Valued (Fsmt.Term.equal a' b', max lvl_a lvl_b)
-        with Not_found -> Unknown end
+          Plugin_intf.Valued (Fsmt.Term.equal a' b', max lvl_a lvl_b)
+        with Not_found ->
+          Plugin_intf.Unknown
+      end
     | Fsmt.Distinct (a, b) ->
       begin try
           let a', lvl_a = M.find a !env.assign in
           let b', lvl_b = M.find b !env.assign in
-          Valued (not (Fsmt.Term.equal a' b'), max lvl_a lvl_b)
-        with Not_found -> Unknown end
+          Plugin_intf.Valued (not (Fsmt.Term.equal a' b'), max lvl_a lvl_b)
+        with Not_found ->
+          Plugin_intf.Unknown
+      end
 
   let if_sat _ = ()
 
