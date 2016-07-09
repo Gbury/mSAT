@@ -315,10 +315,10 @@ module Make
   *)
   exception Trivial
 
-  let simplify_zero atoms level0 =
+  let simplify_zero atoms =
     (* Eliminates dead litterals from clauses when at decision level 0 (see above) *)
     assert (decision_level () = 0);
-    let aux (atoms, history, lvl) a =
+    let aux (atoms, history) a =
       if a.is_true then raise Trivial;
       (* If a variable is true at level 0, then the clause is always satisfied *)
       if a.neg.is_true then begin
@@ -327,10 +327,10 @@ module Make
         | None | Some Decision -> assert false
         (* The var must have a reason, and it cannot be a decision, since we are
            at level 0. *)
-        | Some (Bcp cl) -> atoms, cl :: history, max lvl cl.c_level
+        | Some (Bcp cl) -> atoms, cl :: history
         (* The variable has been set to false because of another clause,
            we then need to keep track of the assumption level used. *)
-        | Some (Semantic 0) -> atoms, history, lvl
+        | Some (Semantic 0) -> atoms, history
         (* Semantic propagations at level 0 are, well not easy to deal with,
            this shouldn't really happen actually (because semantic propagations
            at level 0 currently lack a proof). *)
@@ -339,43 +339,43 @@ module Make
             (fun k->k St.pp_atom a);
           assert false
       end else
-        a::atoms, history, lvl
+        a::atoms, history
         (* General case, we do not know the truth value of a, just let it be. *)
     in
-    let atoms, init, lvl = List.fold_left aux ([], [], level0) atoms in
+    let atoms, init = List.fold_left aux ([], []) atoms in
     (* TODO: Why do we sort the atoms here ? *)
-    List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init, lvl
+    List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
 
-  let partition atoms init0 =
+  let partition atoms =
     (* Parittion litterals for new clauses *)
-    let rec partition_aux trues unassigned falses history lvl = function
-      | [] -> trues @ unassigned @ falses, history, lvl
+    let rec partition_aux trues unassigned falses history = function
+      | [] -> trues @ unassigned @ falses, history
       | a :: r ->
         if a.is_true then
           if a.var.v_level = 0 then raise Trivial
           (* Same as before, a var true at level 0 gives a trivially true clause *)
-          else (a::trues) @ unassigned @ falses @ r, history, lvl
+          else (a::trues) @ unassigned @ falses @ r, history
           (* A var true at level > 0 does not change anything, but is unlikely
              to be watched, so we put prefer to put them at the end. *)
         else if a.neg.is_true then
           if a.var.v_level = 0 then begin
             match a.var.reason with
             | Some (Bcp cl) ->
-              partition_aux trues unassigned falses (cl :: history) (max lvl cl.c_level) r
+              partition_aux trues unassigned falses (cl :: history) r
             (* Same as before, a var false at level 0 can be eliminated from the clause,
                but we need to kepp in mind that we used another clause to simplify it. *)
             | Some (Semantic 0) ->
-              partition_aux trues unassigned falses history lvl r
+              partition_aux trues unassigned falses history r
             | _ -> assert false
           end else
-            partition_aux trues unassigned (a::falses) history lvl r
+            partition_aux trues unassigned (a::falses) history r
         else
-          partition_aux trues (a::unassigned) falses history lvl r
+          partition_aux trues (a::unassigned) falses history r
     in
     if decision_level () = 0 then
-      simplify_zero atoms init0
+      simplify_zero atoms
     else
-      partition_aux [] [] [] [] init0 atoms
+      partition_aux [] [] [] [] atoms
 
   (* Compute a progess estimate.
      TODO: remove it or use it ? *)
@@ -494,7 +494,7 @@ module Make
      be able to build a correct proof at the end of proof search. *)
   let simpl_reason = function
     | (Bcp cl) as r ->
-      let l, history, c_lvl = partition (Vec.to_list cl.atoms) 0 in
+      let l, history = partition (Vec.to_list cl.atoms) in
       begin match l with
         | [ a ] ->
           if history = [] then r
@@ -505,7 +505,7 @@ module Make
                with only one formula (which is [a]). So we explicitly create that clause
                and set it as the cause for the propagation of [a], that way we can
                rebuild the whole resolution tree when we want to prove [a]. *)
-            let tmp_cl = make_clause (fresh_tname ()) l 1 true (History (cl :: history)) c_lvl in
+            let tmp_cl = make_clause (fresh_tname ()) l 1 true (History (cl :: history)) in
             Bcp tmp_cl
         | _ -> assert false
       end
@@ -567,7 +567,6 @@ module Make
     let is_uip  = ref false in
     let c       = ref (Proof.to_list c_clause) in
     let history = ref [c_clause] in
-    let c_level = ref 0 in
     clause_bump_activity c_clause;
     let is_semantic a = match a.var.reason with
       | Some Semantic _ -> true
@@ -594,7 +593,6 @@ module Make
                 begin match tmp with
                   | [] -> ()
                   | [b] when b == a.var.pa ->
-                    c_level := max !c_level d.c_level;
                     clause_bump_activity d;
                     var_bump_activity a.var;
                     history := d :: !history;
@@ -607,7 +605,7 @@ module Make
     with Exit ->
       let learnt = List.sort (fun a b -> Pervasives.compare b.var.v_level a.var.v_level) !c in
       let blevel = backtrack_lvl !is_uip learnt in
-      blevel, learnt, List.rev !history, !is_uip, !c_level
+      blevel, learnt, List.rev !history, !is_uip
 
   let get_atom i =
     match Vec.get env.elt_queue i with
@@ -623,7 +621,6 @@ module Make
     let tr_ind = ref (Vec.size env.elt_queue - 1) in
     let size   = ref 1 in
     let history = ref [] in
-    let c_level = ref 0 in
     assert (decision_level () > 0);
     while !cond do
       if !c.learnt then clause_bump_activity !c;
@@ -664,12 +661,11 @@ module Make
         cond := false;
         learnt := p.neg :: (List.rev !learnt)
       | n, Some Bcp cl ->
-        c_level := max !c_level cl.c_level;
         c := cl
       | n, _ -> assert false
     done;
     List.iter (fun q -> q.var.seen <- false) !seen;
-    !blevel, !learnt, List.rev !history, true, !c_level
+    !blevel, !learnt, List.rev !history, true
 
   let analyze c_clause =
     if St.mcsat then
@@ -677,7 +673,7 @@ module Make
     else
       analyze_sat c_clause
 
-  let record_learnt_clause confl blevel learnt history is_uip lvl =
+  let record_learnt_clause confl blevel learnt history is_uip =
     begin match learnt with
       | [] -> assert false
       | [fuip] ->
@@ -686,13 +682,13 @@ module Make
           report_unsat confl
         else begin
           let name = fresh_lname () in
-          let uclause = make_clause name learnt (List.length learnt) true history lvl in
+          let uclause = make_clause name learnt (List.length learnt) true history in
           Vec.push env.clauses_learnt uclause;
           enqueue_bool fuip 0 (Bcp uclause)
         end
       | fuip :: _ ->
         let name = fresh_lname () in
-        let lclause = make_clause name learnt (List.length learnt) true history lvl in
+        let lclause = make_clause name learnt (List.length learnt) true history in
         Vec.push env.clauses_learnt lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
@@ -710,19 +706,20 @@ module Make
     env.conflicts <- env.conflicts + 1;
     if decision_level() = 0 || Vec.for_all (fun a -> a.var.v_level = 0) confl.atoms then
       report_unsat confl; (* Top-level conflict *)
-    let blevel, learnt, history, is_uip, lvl = analyze confl in
+    let blevel, learnt, history, is_uip = analyze confl in
     cancel_until blevel;
-    record_learnt_clause confl blevel learnt (History history) is_uip lvl
+    record_learnt_clause confl blevel learnt (History history) is_uip
 
   (* Add a new clause *)
   let add_clause ?(force=false) init0 =
+    Log.debugf 90 "Adding clause:@[<hov>%a@]" (fun k -> k St.pp_clause init0);
     let vec = match init0.cpremise with
       | Lemma _ -> env.clauses_learnt
       | History [] -> env.clauses_hyps
       | History _ -> assert false
     in
     try
-      let atoms, history, level = partition (Vec.to_list init0.atoms) init0.c_level in
+      let atoms, history = partition (Vec.to_list init0.atoms) in
       let size = List.length atoms in
       match atoms with
       | [] ->
@@ -731,7 +728,7 @@ module Make
       | a::b::_ ->
         let clause =
           if history = [] then init0
-          else make_clause ?tag:init0.tag (fresh_name ()) atoms size true (History (init0 :: history)) level
+          else make_clause ?tag:init0.tag (fresh_name ()) atoms size true (History (init0 :: history))
         in
         Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
         attach_clause clause;
@@ -828,7 +825,7 @@ module Make
     let atoms = List.rev_map (fun x -> new_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     List.iter (fun a -> insert_var_order (elt_of_var a.var)) atoms;
-    let c = make_clause (fresh_tname ()) atoms (List.length atoms) true (Lemma lemma) base_level in
+    let c = make_clause (fresh_tname ()) atoms (List.length atoms) true (Lemma lemma) in
     Log.debugf 10 "Pushing clause %a" (fun k->k St.pp_clause c);
     Stack.push c env.clauses_pushed
 
@@ -867,7 +864,7 @@ module Make
         let l = List.rev_map new_atom l in
         Iheap.grow_to_by_double env.order (St.nb_elt ());
         List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
-        let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) base_level in
+        let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) in
         Some c
     end
 
@@ -1053,7 +1050,8 @@ module Make
 
   let add_clauses ?tag cnf =
     let aux cl =
-      let c = make_clause ?tag (fresh_hname ()) cl (List.length cl) false (History []) (current_level ()) in
+      let c = make_clause ?tag ~lvl:(current_level ())
+          (fresh_hname ()) cl (List.length cl) false (History []) in
       add_clause c;
       (* Clauses can be added after search has begun (and thus we are not at level 0,
          so better not do anything at this point.

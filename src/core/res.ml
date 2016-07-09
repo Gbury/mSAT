@@ -94,7 +94,6 @@ module Make(St : Solver_types.S) = struct
         | _ -> assert false) l
     in
     St.make_clause (fresh_pcl_name ()) [] 0 true (St.History (c :: l))
-      (List.fold_left (fun i c -> max i c.St.c_level) 0 l)
 
   let prove_atom a =
     if St.(a.is_true && a.var.v_level = 0) then begin
@@ -128,7 +127,7 @@ module Make(St : Solver_types.S) = struct
           | [] -> (l, c, d, a)
           | _ ->
             let new_clause = St.make_clause (fresh_pcl_name ()) l (List.length l) true
-                (St.History [c; d]) (max c.St.c_level d.St.c_level) in
+                (St.History [c; d]) in
             chain_res (new_clause, l) r
         end
       | _ -> assert false
