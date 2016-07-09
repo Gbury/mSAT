@@ -179,18 +179,25 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     let var, negated = make_boolean_var lit in
     if negated then var.na else var.pa
 
-  let make_clause ?tag name ali sz_ali is_learnt premise lvl =
+  let make_clause ?tag ?lvl name ali sz_ali is_learnt premise =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
+    let level =
+      match lvl, premise with
+      | Some lvl, History [] -> lvl
+      | Some _, _ -> assert false
+      | None, History l -> List.fold_left (fun lvl c -> max lvl c.c_level) 0 l
+      | None, Lemma _ -> 0
+    in
     { name  = name;
       tag = tag;
       atoms = atoms;
       removed = false;
       learnt = is_learnt;
-      c_level = lvl;
+      c_level = level;
       activity = 0.;
       cpremise = premise}
 
-  let empty_clause = make_clause "Empty" [] 0 false (History []) 0
+  let empty_clause = make_clause "Empty" [] 0 false (History [])
 
   (* Decisions & propagations *)
   type t = (lit, atom) Either.t
