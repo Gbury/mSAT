@@ -58,6 +58,7 @@ module type S = sig
     mutable cpremise : premise;
     mutable activity : float;
     mutable attached : bool;
+    mutable visited : bool;
   }
 
   and reason =

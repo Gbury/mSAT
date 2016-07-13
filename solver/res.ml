@@ -158,18 +158,27 @@ module Make(St : Solver_types.S) = struct
       { conclusion; step = Resolution (c', d', a); }
 
   (* Compute unsat-core
-     TODO: the uniq sort at the end may be costly, maybe remove it,
-           or compare the clauses faster ? *)
+     TODO: replace visited bool by a int unique to each call
+     of unsat_core, so that the cleanup can be removed ? *)
   let unsat_core proof =
-    let rec aux acc = function
-      | [] -> acc
+    let rec aux res acc = function
+      | [] -> res, acc
       | c :: r ->
-        begin match c.St.cpremise with
-          | St.Hyp _ | St.Lemma _ -> aux (c :: acc) r
-          | St.History l -> aux acc (l @ r)
-        end
+        if not c.St.visited then begin
+          c.St.visited <- true;
+          match c.St.cpremise with
+            | St.Hyp _ | St.Lemma _ -> aux (c :: res) acc r
+            | St.History h ->
+              let l = List.fold_left (fun acc c ->
+                  if not c.St.visited then c :: acc else acc) r h in
+              aux res (c :: acc) l
+        end else
+          aux res acc r
     in
-    sort_uniq cmp (aux [] [proof])
+    let res, tmp = aux [] [] [proof] in
+    List.iter (fun c -> c.St.visited <- false) res;
+    List.iter (fun c -> c.St.visited <- false) tmp;
+    res
 
   (* Iter on proofs *)
   module H = Hashtbl.Make(struct

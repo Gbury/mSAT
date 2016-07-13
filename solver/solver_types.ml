@@ -63,6 +63,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     mutable cpremise : premise;
     mutable activity : float;
     mutable attached : bool;
+    mutable visited : bool;
   }
 
   and reason =
@@ -106,6 +107,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       attached = false;
       c_level = -1;
       learnt = false;
+      visited = false;
       cpremise = History [] }
 
   let () =
@@ -192,6 +194,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       tag = tag;
       atoms = atoms;
       attached = false;
+      visited = false;
       learnt = is_learnt;
       c_level = level;
       activity = 0.;
