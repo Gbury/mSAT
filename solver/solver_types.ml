@@ -263,7 +263,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     Format.fprintf fmt "%s : %a" c.name print_atoms c.atoms
 
   (* Complete debug printing *)
-  let sign a = if a == a.var.pa then "" else "-"
+  let sign a = if a == a.var.pa then "+" else "-"
 
   let level a =
     match a.var.v_level, a.var.reason with
@@ -292,14 +292,14 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       (v.lid+1) E.Term.print v.term pp_assign v.assigned
 
   let pp_atom out a =
-    Format.fprintf out "%s%d%s[atom:%a]"
+    Format.fprintf out "%s%d%s[atom:%a]@ "
       (sign a) (a.var.vid+1) (value a) E.Formula.print a.lit
 
   let pp_atoms_vec out vec =
-    Vec.print ~sep:"@ " pp_atom out vec
+    Vec.print ~sep:"" pp_atom out vec
 
   let pp_clause out {name=name; atoms=arr; cpremise=cp; learnt=learnt} =
-    Format.fprintf out "@[<hov 2>%s%s{@[<hov 2>%a@]}@ cpremise={@[<hov2>%a@]}@]"
+    Format.fprintf out "%s%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"
       name (if learnt then "!" else ":") pp_atoms_vec arr pp_premise cp
 
 end
