@@ -633,8 +633,8 @@ module Make
   let add_clause ?(force=false) init =
     Log.debugf 90 "Adding clause:@[<hov>%a@]" (fun k -> k St.pp_clause init);
     let vec = match init.cpremise with
-      | Lemma _ -> env.clauses_theory
-      | History [] -> env.clauses_hyps
+      | Hyp _ -> env.clauses_hyps
+      | Lemma _ -> env.clauses_learnt
       | History _ -> assert false
     in
     try
@@ -962,8 +962,8 @@ module Make
 
   let add_clauses ?tag cnf =
     let aux cl =
-      let c = make_clause ?tag ~lvl:(current_level ())
-          (fresh_hname ()) cl (List.length cl) false (History []) in
+      let c = make_clause ?tag (fresh_hname ())
+          cl (List.length cl) false (Hyp (current_level ())) in
       add_clause c;
       (* Clauses can be added after search has begun (and thus we are not at level 0,
          so better not do anything at this point.
@@ -1124,6 +1124,7 @@ module Make
         if c.c_level > l then begin
           remove_clause c;
           match c.cpremise with
+          | Lemma _ -> Stack.push c s
           | History ({ cpremise = Lemma _ } as c' :: _ ) -> Stack.push c' s
           | _ -> () (* Only simplified clauses can have a level > 0 *)
         end else begin

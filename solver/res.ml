@@ -139,9 +139,11 @@ module Make(St : Solver_types.S) = struct
     match conclusion.St.cpremise with
     | St.Lemma l ->
       {conclusion; step = Lemma l; }
-    | St.History [] ->
+    | St.Hyp _ ->
       assert (not conclusion.St.learnt);
       { conclusion; step = Hypothesis; }
+    | St.History [] ->
+      assert false
     | St.History [ c ] ->
       assert (cmp c conclusion = 0);
       expand c
@@ -163,7 +165,7 @@ module Make(St : Solver_types.S) = struct
       | [] -> acc
       | c :: r ->
         begin match c.St.cpremise with
-          | St.History [] | St.Lemma _ -> aux (c :: acc) r
+          | St.Hyp _ | St.Lemma _ -> aux (c :: acc) r
           | St.History l -> aux acc (l @ r)
         end
     in

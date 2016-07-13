@@ -71,6 +71,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | Semantic of int
 
   and premise =
+    | Hyp of int
     | Lemma of proof
     | History of clause list
 
@@ -179,14 +180,13 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     let var, negated = make_boolean_var lit in
     if negated then var.na else var.pa
 
-  let make_clause ?tag ?lvl name ali sz_ali is_learnt premise =
+  let make_clause ?tag name ali sz_ali is_learnt premise =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
     let level =
-      match lvl, premise with
-      | Some lvl, History [] -> lvl
-      | Some _, _ -> assert false
-      | None, History l -> List.fold_left (fun lvl c -> max lvl c.c_level) 0 l
-      | None, Lemma _ -> 0
+      match premise with
+      | Hyp lvl -> lvl
+      | Lemma _ -> 0
+      | History l -> List.fold_left (fun lvl c -> max lvl c.c_level) 0 l
     in
     { name  = name;
       tag = tag;
@@ -276,8 +276,9 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     else "[]"
 
   let pp_premise out = function
-    | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@," name) v
+    | Hyp _ -> Format.fprintf out "hyp"
     | Lemma _ -> Format.fprintf out "th_lemma"
+    | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@," name) v
 
   let pp_assign out = function
     | None -> ()

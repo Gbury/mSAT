@@ -66,6 +66,7 @@ module type S = sig
     | Semantic of int
 
   and premise =
+    | Hyp of int
     | Lemma of proof
     | History of clause list
 
@@ -115,7 +116,7 @@ module type S = sig
 
   val empty_clause : clause
   (** The empty clause *)
-  val make_clause : ?tag:int -> ?lvl:int -> string -> atom list -> int -> bool -> premise -> clause
+  val make_clause : ?tag:int -> string -> atom list -> int -> bool -> premise -> clause
   (** [make_clause name atoms size learnt premise] creates a clause with the given attributes. *)
 
   (** {2 Clause names} *)
