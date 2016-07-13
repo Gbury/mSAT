@@ -278,25 +278,25 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let pp_premise out = function
     | Hyp _ -> Format.fprintf out "hyp"
     | Lemma _ -> Format.fprintf out "th_lemma"
-    | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@," name) v
+    | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@ " name) v
 
   let pp_assign out = function
     | None -> ()
-    | Some t -> Format.fprintf out "[assignment: %a]" E.Term.print t
+    | Some t -> Format.fprintf out " ->@ %a" E.Term.print t
 
   let pp_lit out v =
-    Format.fprintf out "%d [lit:%a]%a"
+    Format.fprintf out "%d [lit:%a%a]"
       (v.lid+1) E.Term.print v.term pp_assign v.assigned
 
   let pp_atom out a =
-    Format.fprintf out "%s%d%s[lit:%a]"
+    Format.fprintf out "%s%d%s[atom:%a]"
       (sign a) (a.var.vid+1) (value a) E.Formula.print a.lit
 
   let pp_atoms_vec out vec =
-    Vec.print ~sep:"; " pp_atom out vec
+    Vec.print ~sep:"@ " pp_atom out vec
 
   let pp_clause out {name=name; atoms=arr; cpremise=cp; learnt=learnt} =
-    Format.fprintf out "%s%s{ %a} cpremise={{%a}}"
+    Format.fprintf out "@[<hov 2>%s%s{@[<hov 2>%a@]}@ cpremise={@[<hov2>%a@]}@]"
       name (if learnt then "!" else ":") pp_atoms_vec arr pp_premise cp
 
 end
