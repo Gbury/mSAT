@@ -62,7 +62,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     c_level : int;
     mutable cpremise : premise;
     mutable activity : float;
-    mutable removed : bool;
+    mutable attached : bool;
   }
 
   and reason =
@@ -102,7 +102,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       tag = None;
       atoms = Vec.make_empty dummy_atom;
       activity = -1.;
-      removed = false;
+      attached = false;
       c_level = -1;
       learnt = false;
       cpremise = History [] }
@@ -191,7 +191,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     { name  = name;
       tag = tag;
       atoms = atoms;
-      removed = false;
+      attached = false;
       learnt = is_learnt;
       c_level = level;
       activity = 0.;

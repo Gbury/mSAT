@@ -351,24 +351,29 @@ module Make
 
   (* Adding/removing clauses *)
   let attach_clause c =
-    Vec.push (Vec.get c.atoms 0).neg.watched c;
-    Vec.push (Vec.get c.atoms 1).neg.watched c;
-    if c.learnt then
-      env.learnts_literals <- env.learnts_literals + Vec.size c.atoms
-    else
-      env.clauses_literals <- env.clauses_literals + Vec.size c.atoms
+    if not c.attached then begin
+      c.attached <- true;
+      Vec.push (Vec.get c.atoms 0).neg.watched c;
+      Vec.push (Vec.get c.atoms 1).neg.watched c;
+      if c.learnt then
+        env.learnts_literals <- env.learnts_literals + Vec.size c.atoms
+      else
+        env.clauses_literals <- env.clauses_literals + Vec.size c.atoms
+    end
 
   let detach_clause c =
-    Log.debugf 10 "Removing clause @[%a@]" (fun k->k St.pp_clause c);
-    c.removed <- true;
-    (* Not necessary, cleanup is done during propagation
-       Vec.remove (Vec.get c.atoms 0).neg.watched c;
-       Vec.remove (Vec.get c.atoms 1).neg.watched c;
-    *)
-    if c.learnt then
-      env.learnts_literals <- env.learnts_literals - Vec.size c.atoms
-    else
-      env.clauses_literals <- env.clauses_literals - Vec.size c.atoms
+    if c.attached then begin
+      c.attached <- false;
+      Log.debugf 10 "Removing clause @[%a@]" (fun k->k St.pp_clause c);
+      (* Not necessary, cleanup is done during propagation
+         Vec.remove (Vec.get c.atoms 0).neg.watched c;
+         Vec.remove (Vec.get c.atoms 1).neg.watched c;
+      *)
+      if c.learnt then
+        env.learnts_literals <- env.learnts_literals - Vec.size c.atoms
+      else
+        env.clauses_literals <- env.clauses_literals - Vec.size c.atoms
+    end
 
   let remove_clause c = detach_clause c
 
@@ -413,13 +418,16 @@ module Make
 
   let simpl_reason = function
     | (Bcp cl) as r ->
-      let l, history = partition (Vec.to_list cl.atoms) in
+      Log.debugf 90 "Simplifying reason: %a" (fun k -> k St.pp_clause cl);
+      let atoms = Vec.to_list cl.atoms in
+      let l, history = partition atoms in
       begin match l with
         | [ a ] ->
           if history = [] then r
-          else
+          else begin
             let tmp_cl = make_clause (fresh_tname ()) l 1 true (History (cl :: history)) in
             Bcp tmp_cl
+          end
         | _ -> assert false
       end
     | r -> r
@@ -605,7 +613,7 @@ module Make
         clause_bump_activity lclause;
         if is_uip then
           enqueue_bool fuip blevel (Bcp lclause)
-      else begin
+        else begin
           env.next_decision <- Some fuip.neg
         end
     end;
@@ -622,28 +630,28 @@ module Make
     record_learnt_clause confl blevel learnt (History history) is_uip
 
   (* Add a new clause *)
-  let add_clause ?(force=false) init0 =
-    Log.debugf 90 "Adding clause:@[<hov>%a@]" (fun k -> k St.pp_clause init0);
-    let vec = match init0.cpremise with
-      | Lemma _ -> env.clauses_learnt
+  let add_clause ?(force=false) init =
+    Log.debugf 90 "Adding clause:@[<hov>%a@]" (fun k -> k St.pp_clause init);
+    let vec = match init.cpremise with
+      | Lemma _ -> env.clauses_theory
       | History [] -> env.clauses_hyps
       | History _ -> assert false
     in
     try
-      let atoms, history = partition (Vec.to_list init0.atoms) in
+      let atoms, history = partition (Vec.to_list init.atoms) in
       let size = List.length atoms in
+      let clause =
+        if history = [] then init
+        else make_clause ?tag:init.tag (fresh_name ())
+            atoms size true (History (init :: history))
+      in
+      Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
+      Vec.push vec clause;
       match atoms with
       | [] ->
-        Log.debugf 1 "New clause (unsat) :@ @[%a@]" (fun k->k St.pp_clause init0);
-        report_unsat init0
+        report_unsat clause
       | a::b::_ ->
-        let clause =
-          if history = [] then init0
-          else make_clause ?tag:init0.tag (fresh_name ()) atoms size true (History (init0 :: history))
-        in
-        Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
         attach_clause clause;
-        Vec.push vec clause;
         if a.neg.is_true then begin
           let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
           cancel_until lvl;
@@ -656,9 +664,10 @@ module Make
       | [a]   ->
         Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
         cancel_until 0;
-        enqueue_bool a 0 (Bcp  init0)
+        enqueue_bool a 0 (Bcp clause)
     with Trivial ->
-      Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init0)
+      Vec.push vec init;
+      Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init)
 
   let propagate_in_clause a c i watched new_sz =
     let atoms = c.atoms in
@@ -709,7 +718,7 @@ module Make
       try
         for i = 0 to Vec.size watched - 1 do
           let c = Vec.get watched i in
-          if not c.removed then propagate_in_clause a c i watched new_sz_w
+          if c.attached then propagate_in_clause a c i watched new_sz_w
         done;
       with Conflict c ->
         assert (!res = None);
@@ -786,10 +795,10 @@ module Make
       let res = ref None in
       while env.elt_head < Vec.size env.elt_queue do
         begin match Vec.get env.elt_queue env.elt_head with
-        | Either.Left _ -> ()
-        | Either.Right a ->
-             incr num_props;
-             propagate_atom a res
+          | Either.Left _ -> ()
+          | Either.Right a ->
+            incr num_props;
+            propagate_atom a res
         end;
         env.elt_head <- env.elt_head + 1;
       done;
@@ -958,8 +967,8 @@ module Make
       add_clause c;
       (* Clauses can be added after search has begun (and thus we are not at level 0,
          so better not do anything at this point.
-      match propagate () with
-      | None -> () | Some confl -> report_unsat confl
+         match propagate () with
+         | None -> () | Some confl -> report_unsat confl
       *)
     in
     List.iter aux cnf

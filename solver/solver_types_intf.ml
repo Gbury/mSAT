@@ -57,7 +57,7 @@ module type S = sig
     c_level : int;
     mutable cpremise : premise;
     mutable activity : float;
-    mutable removed : bool;
+    mutable attached : bool;
   }
 
   and reason =
