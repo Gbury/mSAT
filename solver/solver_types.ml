@@ -58,7 +58,6 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     name : string;
     tag : int option;
     atoms : atom Vec.t;
-    learnt : bool;
     c_level : int;
     mutable cpremise : premise;
     mutable activity : float;
@@ -106,7 +105,6 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       activity = -1.;
       attached = false;
       c_level = -1;
-      learnt = false;
       visited = false;
       cpremise = History [] }
 
@@ -182,7 +180,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     let var, negated = make_boolean_var lit in
     if negated then var.na else var.pa
 
-  let make_clause ?tag name ali sz_ali is_learnt premise =
+  let make_clause ?tag name ali sz_ali premise =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
     let level =
       match premise with
@@ -195,12 +193,11 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       atoms = atoms;
       attached = false;
       visited = false;
-      learnt = is_learnt;
       c_level = level;
       activity = 0.;
       cpremise = premise}
 
-  let empty_clause = make_clause "Empty" [] 0 false (History [])
+  let empty_clause = make_clause "Empty" [] 0 (History [])
 
   (* Decisions & propagations *)
   type t = (lit, atom) Either.t
@@ -298,9 +295,9 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let pp_atoms_vec out vec =
     Vec.print ~sep:"" pp_atom out vec
 
-  let pp_clause out {name=name; atoms=arr; cpremise=cp; learnt=learnt} =
-    Format.fprintf out "%s%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"
-      name (if learnt then "!" else ":") pp_atoms_vec arr pp_premise cp
+  let pp_clause out {name=name; atoms=arr; cpremise=cp; } =
+    Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"
+      name pp_atoms_vec arr pp_premise cp
 
 end
 

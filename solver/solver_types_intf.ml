@@ -53,7 +53,6 @@ module type S = sig
     name : string;
     tag : int option;
     atoms : atom Vec.t;
-    learnt : bool;
     c_level : int;
     mutable cpremise : premise;
     mutable activity : float;
@@ -117,7 +116,7 @@ module type S = sig
 
   val empty_clause : clause
   (** The empty clause *)
-  val make_clause : ?tag:int -> string -> atom list -> int -> bool -> premise -> clause
+  val make_clause : ?tag:int -> string -> atom list -> int -> premise -> clause
   (** [make_clause name atoms size learnt premise] creates a clause with the given attributes. *)
 
   (** {2 Clause names} *)

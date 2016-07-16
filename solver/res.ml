@@ -83,7 +83,7 @@ module Make(St : Solver_types.S) = struct
     cmp_cl (to_list c) (to_list d)
 
   let prove conclusion =
-    assert St.(conclusion.learnt || conclusion.cpremise <> History []);
+    assert St.(conclusion.cpremise <> History []);
     conclusion
 
   let prove_unsat c =
@@ -93,7 +93,7 @@ module Make(St : Solver_types.S) = struct
         | Some St.Bcp d -> d
         | _ -> assert false) l
     in
-    St.make_clause (fresh_pcl_name ()) [] 0 true (St.History (c :: l))
+    St.make_clause (fresh_pcl_name ()) [] 0 (St.History (c :: l))
 
   let prove_atom a =
     if St.(a.is_true && a.var.v_level = 0) then begin
@@ -126,8 +126,8 @@ module Make(St : Solver_types.S) = struct
         begin match r with
           | [] -> (l, c, d, a)
           | _ ->
-            let new_clause = St.make_clause (fresh_pcl_name ()) l (List.length l) true
-                (St.History [c; d]) in
+            let new_clause = St.make_clause (fresh_pcl_name ())
+                l (List.length l) (St.History [c; d]) in
             chain_res (new_clause, l) r
         end
       | _ -> assert false
@@ -140,7 +140,6 @@ module Make(St : Solver_types.S) = struct
     | St.Lemma l ->
       {conclusion; step = Lemma l; }
     | St.Hyp _ ->
-      assert (not conclusion.St.learnt);
       { conclusion; step = Hypothesis; }
     | St.History [] ->
       assert false
