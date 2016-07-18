@@ -342,40 +342,50 @@ module Make
         a::atoms, history
         (* General case, we do not know the truth value of a, just let it be. *)
     in
-    let atoms, init = List.fold_left aux ([], []) atoms in
+    let atoms, init = Array.fold_left aux ([], []) atoms in
     (* TODO: Why do we sort the atoms here ? *)
     List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
 
+  let arr_to_list arr i =
+    if i >= Array.length arr then []
+    else Array.to_list (Array.sub arr i (Array.length arr - i))
+
   let partition atoms =
     (* Parittion litterals for new clauses *)
-    let rec partition_aux trues unassigned falses history = function
-      | [] -> trues @ unassigned @ falses, history
-      | a :: r ->
+    let rec partition_aux trues unassigned falses history i =
+      if i >= Array.length atoms then
+        trues @ unassigned @ falses, history
+      else begin
+        let a = atoms.(i) in
         if a.is_true then
-          if a.var.v_level = 0 then raise Trivial
-          (* Same as before, a var true at level 0 gives a trivially true clause *)
-          else (a::trues) @ unassigned @ falses @ r, history
+          if a.var.v_level = 0 then
+            raise Trivial
+            (* A var true at level 0 gives a trivially true clause *)
+          else
+            (a :: trues) @ unassigned @ falses @
+            (arr_to_list atoms (i + 1)), history
           (* A var true at level > 0 does not change anything, but is unlikely
              to be watched, so we put prefer to put them at the end. *)
         else if a.neg.is_true then
           if a.var.v_level = 0 then begin
             match a.var.reason with
             | Some (Bcp cl) ->
-              partition_aux trues unassigned falses (cl :: history) r
+              partition_aux trues unassigned falses (cl :: history) (i + 1)
             (* Same as before, a var false at level 0 can be eliminated from the clause,
                but we need to kepp in mind that we used another clause to simplify it. *)
             | Some (Semantic 0) ->
-              partition_aux trues unassigned falses history r
+              partition_aux trues unassigned falses history (i + 1)
             | _ -> assert false
           end else
-            partition_aux trues unassigned (a::falses) history r
+            partition_aux trues unassigned (a::falses) history (i + 1)
         else
-          partition_aux trues (a::unassigned) falses history r
+          partition_aux trues (a::unassigned) falses history (i + 1)
+      end
     in
     if decision_level () = 0 then
       simplify_zero atoms
     else
-      partition_aux [] [] [] [] atoms
+      partition_aux [] [] [] [] 0
 
   (* Compute a progess estimate.
      TODO: remove it or use it ? *)
@@ -494,8 +504,7 @@ module Make
      be able to build a correct proof at the end of proof search. *)
   let simpl_reason = function
     | (Bcp cl) as r ->
-      let atoms = Array.to_list cl.atoms in
-      let l, history = partition atoms in
+      let l, history = partition cl.atoms in
       begin match l with
         | [ a ] ->
           if history = [] then r
@@ -723,7 +732,7 @@ module Make
       | History _ -> assert false
     in
     try
-      let atoms, history = partition (Array.to_list init.atoms) in
+      let atoms, history = partition init.atoms in
       let clause =
         if history = [] then init
         else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
