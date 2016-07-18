@@ -58,11 +58,11 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     name : string;
     tag : int option;
     atoms : atom Vec.t;
-    learnt : bool;
     c_level : int;
     mutable cpremise : premise;
     mutable activity : float;
-    mutable removed : bool;
+    mutable attached : bool;
+    mutable visited : bool;
   }
 
   and reason =
@@ -71,6 +71,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | Semantic of int
 
   and premise =
+    | Hyp of int
     | Lemma of proof
     | History of clause list
 
@@ -102,9 +103,9 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       tag = None;
       atoms = Vec.make_empty dummy_atom;
       activity = -1.;
-      removed = false;
+      attached = false;
       c_level = -1;
-      learnt = false;
+      visited = false;
       cpremise = History [] }
 
   let () =
@@ -182,25 +183,24 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       | Formula_intf.Negated -> var.na
       | Formula_intf.Same_sign -> var.pa
 
-  let make_clause ?tag ?lvl name ali sz_ali is_learnt premise =
+  let make_clause ?tag name ali sz_ali premise =
     let atoms = Vec.from_list ali sz_ali dummy_atom in
     let level =
-      match lvl, premise with
-      | Some lvl, History [] -> lvl
-      | Some _, _ -> assert false
-      | None, History l -> List.fold_left (fun lvl c -> max lvl c.c_level) 0 l
-      | None, Lemma _ -> 0
+      match premise with
+      | Hyp lvl -> lvl
+      | Lemma _ -> 0
+      | History l -> List.fold_left (fun lvl c -> max lvl c.c_level) 0 l
     in
     { name  = name;
       tag = tag;
       atoms = atoms;
-      removed = false;
-      learnt = is_learnt;
+      attached = false;
+      visited = false;
       c_level = level;
       activity = 0.;
       cpremise = premise}
 
-  let empty_clause = make_clause "Empty" [] 0 false (History [])
+  let empty_clause = make_clause "Empty" [] 0 (History [])
 
   (* Decisions & propagations *)
   type t = (lit, atom) Either.t
@@ -263,7 +263,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     Format.fprintf fmt "%s : %a" c.name print_atoms c.atoms
 
   (* Complete debug printing *)
-  let sign a = if a == a.var.pa then "" else "-"
+  let sign a = if a == a.var.pa then "+" else "-"
 
   let level a =
     match a.var.v_level, a.var.reason with
@@ -279,27 +279,28 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     else "[]"
 
   let pp_premise out = function
-    | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@," name) v
+    | Hyp _ -> Format.fprintf out "hyp"
     | Lemma _ -> Format.fprintf out "th_lemma"
+    | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@ " name) v
 
   let pp_assign out = function
     | None -> ()
-    | Some t -> Format.fprintf out "[assignment: %a]" E.Term.print t
+    | Some t -> Format.fprintf out " ->@ %a" E.Term.print t
 
   let pp_lit out v =
-    Format.fprintf out "%d [lit:%a]%a"
+    Format.fprintf out "%d [lit:%a%a]"
       (v.lid+1) E.Term.print v.term pp_assign v.assigned
 
   let pp_atom out a =
-    Format.fprintf out "%s%d%s[lit:%a]"
+    Format.fprintf out "%s%d%s[atom:%a]@ "
       (sign a) (a.var.vid+1) (value a) E.Formula.print a.lit
 
   let pp_atoms_vec out vec =
-    Vec.print ~sep:"; " pp_atom out vec
+    Vec.print ~sep:"" pp_atom out vec
 
-  let pp_clause out {name=name; atoms=arr; cpremise=cp; learnt=learnt} =
-    Format.fprintf out "%s%s{ %a} cpremise={{%a}}"
-      name (if learnt then "!" else ":") pp_atoms_vec arr pp_premise cp
+  let pp_clause out {name=name; atoms=arr; cpremise=cp; } =
+    Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"
+      name pp_atoms_vec arr pp_premise cp
 
 end
 

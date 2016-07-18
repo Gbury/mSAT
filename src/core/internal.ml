@@ -411,21 +411,20 @@ module Make
      their watchers, while clauses that loose their satisfied status
      have to be reattached, adding watchers. *)
   let attach_clause c =
-    Vec.push (Vec.get c.atoms 0).neg.watched c;
-    Vec.push (Vec.get c.atoms 1).neg.watched c;
-    (* TODO: Learnt litterals are not really used anymre, :p *)
-    if c.learnt then
-      env.learnts_literals <- env.learnts_literals + Vec.size c.atoms
-    else
-      env.clauses_literals <- env.clauses_literals + Vec.size c.atoms
+    if not c.attached then begin
+      Log.debugf 60 "Attaching %a" (fun k -> k St.pp_clause c);
+      c.attached <- true;
+      Vec.push (Vec.get c.atoms 0).neg.watched c;
+      Vec.push (Vec.get c.atoms 1).neg.watched c;
+    end
 
   let detach_clause c =
-    Log.debugf 10 "Removing clause @[%a@]" (fun k->k St.pp_clause c);
-    c.removed <- true;
-    if c.learnt then
-      env.learnts_literals <- env.learnts_literals - Vec.size c.atoms
-    else
-      env.clauses_literals <- env.clauses_literals - Vec.size c.atoms
+    if c.attached then begin
+      c.attached <- false;
+      Log.debugf 10 "Removing clause @[%a@]" (fun k->k St.pp_clause c);
+      Vec.remove (Vec.get c.atoms 0).neg.watched c;
+      Vec.remove (Vec.get c.atoms 1).neg.watched c;
+    end
 
   (* Is a clause satisfied ? *)
   let satisfied c = Vec.exists (fun atom -> atom.is_true) c.atoms
@@ -437,6 +436,7 @@ module Make
   let cancel_until lvl =
     (* Nothing to do if we try to backtrack to a non-existent level. *)
     if decision_level () > lvl then begin
+      Log.debugf 5 "Backtracking to lvl %d" (fun k -> k lvl);
       (* We set the head of the solver and theory queue to what it was. *)
       env.elt_head <- Vec.get env.elt_levels lvl;
       env.th_head <- env.elt_head;
@@ -494,7 +494,8 @@ module Make
      be able to build a correct proof at the end of proof search. *)
   let simpl_reason = function
     | (Bcp cl) as r ->
-      let l, history = partition (Vec.to_list cl.atoms) in
+      let atoms = Vec.to_list cl.atoms in
+      let l, history = partition atoms in
       begin match l with
         | [ a ] ->
           if history = [] then r
@@ -505,8 +506,7 @@ module Make
                with only one formula (which is [a]). So we explicitly create that clause
                and set it as the cause for the propagation of [a], that way we can
                rebuild the whole resolution tree when we want to prove [a]. *)
-            let tmp_cl = make_clause (fresh_tname ()) l 1 true (History (cl :: history)) in
-            Bcp tmp_cl
+            Bcp (make_clause (fresh_tname ()) l 1 (History (cl :: history)))
         | _ -> assert false
       end
     | r -> r
@@ -603,7 +603,8 @@ module Make
             end
       done; assert false
     with Exit ->
-      let learnt = List.sort (fun a b -> Pervasives.compare b.var.v_level a.var.v_level) !c in
+      let learnt = List.fast_sort (
+          fun a b -> Pervasives.compare b.var.v_level a.var.v_level) !c in
       let blevel = backtrack_lvl !is_uip learnt in
       blevel, learnt, List.rev !history, !is_uip
 
@@ -623,7 +624,10 @@ module Make
     let history = ref [] in
     assert (decision_level () > 0);
     while !cond do
-      if !c.learnt then clause_bump_activity !c;
+      begin match !c.cpremise with
+        | History _ -> clause_bump_activity !c
+        | Hyp _ | Lemma _ -> ()
+      end;
       history := !c :: !history;
       (* visit the current predecessors *)
       for j = 0 to Vec.size !c.atoms - 1 do
@@ -682,13 +686,13 @@ module Make
           report_unsat confl
         else begin
           let name = fresh_lname () in
-          let uclause = make_clause name learnt (List.length learnt) true history in
+          let uclause = make_clause name learnt (List.length learnt) history in
           Vec.push env.clauses_learnt uclause;
           enqueue_bool fuip 0 (Bcp uclause)
         end
       | fuip :: _ ->
         let name = fresh_lname () in
-        let lclause = make_clause name learnt (List.length learnt) true history in
+        let lclause = make_clause name learnt (List.length learnt) history in
         Vec.push env.clauses_learnt lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
@@ -711,43 +715,47 @@ module Make
     record_learnt_clause confl blevel learnt (History history) is_uip
 
   (* Add a new clause *)
-  let add_clause ?(force=false) init0 =
-    Log.debugf 90 "Adding clause:@[<hov>%a@]" (fun k -> k St.pp_clause init0);
-    let vec = match init0.cpremise with
+  let add_clause ?(force=false) init =
+    Log.debugf 90 "Adding clause:@[<hov>%a@]" (fun k -> k St.pp_clause init);
+    let vec = match init.cpremise with
+      | Hyp _ -> env.clauses_hyps
       | Lemma _ -> env.clauses_learnt
-      | History [] -> env.clauses_hyps
       | History _ -> assert false
     in
     try
-      let atoms, history = partition (Vec.to_list init0.atoms) in
+      let atoms, history = partition (Vec.to_list init.atoms) in
       let size = List.length atoms in
+      let clause =
+        if history = [] then init
+        else make_clause ?tag:init.tag (fresh_name ())
+          atoms size (History (init :: history))
+      in
+      Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
+      Vec.push vec clause;
       match atoms with
       | [] ->
-        Log.debugf 1 "New clause (unsat) :@ @[%a@]" (fun k->k St.pp_clause init0);
-        report_unsat init0
+        report_unsat clause
       | a::b::_ ->
-        let clause =
-          if history = [] then init0
-          else make_clause ?tag:init0.tag (fresh_name ()) atoms size true (History (init0 :: history))
-        in
-        Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
-        attach_clause clause;
-        Vec.push vec clause;
         if a.neg.is_true then begin
-          let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
-          cancel_until lvl;
-          add_boolean_conflict clause
-        end else if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
-          let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
-          cancel_until lvl;
-          enqueue_bool a lvl (Bcp clause)
+          Vec.sort clause.atoms (fun a b ->
+              compare b.var.v_level a.var.v_level);
+          attach_clause clause;
+          add_boolean_conflict init
+        end else begin
+          attach_clause clause;
+          if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
+            let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
+            cancel_until lvl;
+            enqueue_bool a lvl (Bcp clause)
+          end
         end
       | [a]   ->
         Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
         cancel_until 0;
-        enqueue_bool a 0 (Bcp  init0)
+        enqueue_bool a 0 (Bcp clause)
     with Trivial ->
-      Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init0)
+      Vec.push vec init;
+      Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init)
 
   let propagate_in_clause a c i watched new_sz =
     let atoms = c.atoms in
@@ -761,8 +769,7 @@ module Make
       (* true clause, keep it in watched *)
       Vec.set watched !new_sz c;
       incr new_sz;
-    end
-    else
+    end else
       try (* look for another watch lit *)
         for k = 2 to Vec.size atoms - 1 do
           let ak = Vec.get atoms k in
@@ -798,7 +805,7 @@ module Make
       try
         for i = 0 to Vec.size watched - 1 do
           let c = Vec.get watched i in
-          if not c.removed then propagate_in_clause a c i watched new_sz_w
+          if c.attached then propagate_in_clause a c i watched new_sz_w
         done;
       with Conflict c ->
         assert (!res = None);
@@ -825,7 +832,7 @@ module Make
     let atoms = List.rev_map (fun x -> new_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     List.iter (fun a -> insert_var_order (elt_of_var a.var)) atoms;
-    let c = make_clause (fresh_tname ()) atoms (List.length atoms) true (Lemma lemma) in
+    let c = make_clause (fresh_tname ()) atoms (List.length atoms) (Lemma lemma) in
     Log.debugf 10 "Pushing clause %a" (fun k->k St.pp_clause c);
     Stack.push c env.clauses_pushed
 
@@ -864,7 +871,7 @@ module Make
         let l = List.rev_map new_atom l in
         Iheap.grow_to_by_double env.order (St.nb_elt ());
         List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
-        let c = St.make_clause (St.fresh_tname ()) l (List.length l) true (Lemma p) in
+        let c = St.make_clause (St.fresh_tname ()) l (List.length l) (Lemma p) in
         Some c
     end
 
@@ -1050,8 +1057,8 @@ module Make
 
   let add_clauses ?tag cnf =
     let aux cl =
-      let c = make_clause ?tag ~lvl:(current_level ())
-          (fresh_hname ()) cl (List.length cl) false (History []) in
+      let c = make_clause ?tag (fresh_hname ())
+          cl (List.length cl) (Hyp (current_level ())) in
       add_clause c;
       (* Clauses can be added after search has begun (and thus we are not at level 0,
          so better not do anything at this point.
@@ -1215,6 +1222,7 @@ module Make
         if c.c_level > l then begin
           detach_clause c;
           match c.cpremise with
+          | Lemma _ -> Stack.push c s
           | History ({ cpremise = Lemma _ } as c' :: _ ) -> Stack.push c' s
           | _ -> () (* Only simplified clauses can have a level > 0 *)
         end else begin
