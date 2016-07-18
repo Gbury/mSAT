@@ -57,7 +57,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   and clause = {
     name : string;
     tag : int option;
-    atoms : atom Vec.t;
+    atoms : atom array;
     c_level : int;
     mutable cpremise : premise;
     mutable activity : float;
@@ -101,7 +101,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let dummy_clause =
     { name = "";
       tag = None;
-      atoms = Vec.make_empty dummy_atom;
+      atoms = [| |];
       activity = -1.;
       attached = false;
       c_level = -1;
@@ -183,8 +183,8 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       | Formula_intf.Negated -> var.na
       | Formula_intf.Same_sign -> var.pa
 
-  let make_clause ?tag name ali sz_ali premise =
-    let atoms = Vec.from_list ali sz_ali dummy_atom in
+  let make_clause ?tag name ali premise =
+    let atoms = Array.of_list ali in
     let level =
       match premise with
       | Hyp lvl -> lvl
@@ -200,7 +200,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       activity = 0.;
       cpremise = premise}
 
-  let empty_clause = make_clause "Empty" [] 0 (History [])
+  let empty_clause = make_clause "Empty" [] (History [])
 
   (* Decisions & propagations *)
   type t = (lit, atom) Either.t
@@ -248,13 +248,13 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let print_atom fmt a = E.Formula.print fmt a.lit
 
   let print_atoms fmt v =
-    if Vec.size v = 0 then
+    if Array.length v = 0 then
       Format.fprintf fmt "∅"
     else begin
-      print_atom fmt (Vec.get v 0);
-      if (Vec.size v) > 1 then begin
-        for i = 1 to (Vec.size v) - 1 do
-          Format.fprintf fmt " ∨ %a" print_atom (Vec.get v i)
+      print_atom fmt v.(0);
+      if (Array.length v) > 1 then begin
+        for i = 1 to (Array.length v) - 1 do
+          Format.fprintf fmt " ∨ %a" print_atom v.(i)
         done
       end
     end
@@ -296,7 +296,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       (sign a) (a.var.vid+1) (value a) E.Formula.print a.lit
 
   let pp_atoms_vec out vec =
-    Vec.print ~sep:"" pp_atom out vec
+    Array.iter (fun a -> pp_atom out a) vec
 
   let pp_clause out {name=name; atoms=arr; cpremise=cp; } =
     Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"

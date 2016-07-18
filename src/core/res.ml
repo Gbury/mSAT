@@ -56,11 +56,8 @@ module Make(St : Solver_types.S) = struct
 
   let to_list c =
     let v = St.(c.atoms) in
-    let l = ref [] in
-    for i = 0 to Vec.size v - 1 do
-      l := (Vec.get v i) :: !l
-    done;
-    let res = sort_uniq compare_atoms !l in
+    let l = Array.to_list v in
+    let res = sort_uniq compare_atoms l in
     let l, _ = resolve res in
     if l <> [] then
       Log.debug 3 "Input clause is a tautology";
@@ -87,19 +84,19 @@ module Make(St : Solver_types.S) = struct
     conclusion
 
   let prove_unsat c =
-    let l = Vec.to_list c.St.atoms in
+    let l = Array.to_list c.St.atoms in
     let l = List.map (fun a ->
         match St.(a.var.reason) with
         | Some St.Bcp d -> d
         | _ -> assert false) l
     in
-    St.make_clause (fresh_pcl_name ()) [] 0 (St.History (c :: l))
+    St.make_clause (fresh_pcl_name ()) [] (St.History (c :: l))
 
   let prove_atom a =
     if St.(a.is_true && a.var.v_level = 0) then begin
       match St.(a.var.reason) with
       | Some St.Bcp c ->
-        assert (Vec.size St.(c.atoms) = 1 && equal_atoms a (Vec.get St.(c.atoms) 0));
+        assert (Array.length St.(c.atoms) = 1 && equal_atoms a St.(c.atoms).(0));
         Some c
       | _ -> assert false
     end else
@@ -127,7 +124,7 @@ module Make(St : Solver_types.S) = struct
           | [] -> (l, c, d, a)
           | _ ->
             let new_clause = St.make_clause (fresh_pcl_name ())
-                l (List.length l) (St.History [c; d]) in
+                l (St.History [c; d]) in
             chain_res (new_clause, l) r
         end
       | _ -> assert false
@@ -183,7 +180,7 @@ module Make(St : Solver_types.S) = struct
   module H = Hashtbl.Make(struct
       type t = clause
       let hash cl =
-        Vec.fold (fun i a -> Hashtbl.hash St.(a.aid, i)) 0 cl.St.atoms
+        Array.fold_left (fun i a -> Hashtbl.hash St.(a.aid, i)) 0 cl.St.atoms
       let equal = (==)
     end)
 

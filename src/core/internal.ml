@@ -414,20 +414,20 @@ module Make
     if not c.attached then begin
       Log.debugf 60 "Attaching %a" (fun k -> k St.pp_clause c);
       c.attached <- true;
-      Vec.push (Vec.get c.atoms 0).neg.watched c;
-      Vec.push (Vec.get c.atoms 1).neg.watched c;
+      Vec.push c.atoms.(0).neg.watched c;
+      Vec.push c.atoms.(1).neg.watched c;
     end
 
   let detach_clause c =
     if c.attached then begin
       c.attached <- false;
       Log.debugf 10 "Removing clause @[%a@]" (fun k->k St.pp_clause c);
-      Vec.remove (Vec.get c.atoms 0).neg.watched c;
-      Vec.remove (Vec.get c.atoms 1).neg.watched c;
+      Vec.remove c.atoms.(0).neg.watched c;
+      Vec.remove c.atoms.(1).neg.watched c;
     end
 
   (* Is a clause satisfied ? *)
-  let satisfied c = Vec.exists (fun atom -> atom.is_true) c.atoms
+  let satisfied c = Array.exists (fun atom -> atom.is_true) c.atoms
 
   (* Backtracking.
      Used to backtrack, i.e cancel down to [lvl] excluded,
@@ -494,7 +494,7 @@ module Make
      be able to build a correct proof at the end of proof search. *)
   let simpl_reason = function
     | (Bcp cl) as r ->
-      let atoms = Vec.to_list cl.atoms in
+      let atoms = Array.to_list cl.atoms in
       let l, history = partition atoms in
       begin match l with
         | [ a ] ->
@@ -506,7 +506,7 @@ module Make
                with only one formula (which is [a]). So we explicitly create that clause
                and set it as the cause for the propagation of [a], that way we can
                rebuild the whole resolution tree when we want to prove [a]. *)
-            Bcp (make_clause (fresh_tname ()) l 1 (History (cl :: history)))
+            Bcp (make_clause (fresh_tname ()) l (History (cl :: history)))
         | _ -> assert false
       end
     | r -> r
@@ -630,8 +630,8 @@ module Make
       end;
       history := !c :: !history;
       (* visit the current predecessors *)
-      for j = 0 to Vec.size !c.atoms - 1 do
-        let q = Vec.get !c.atoms j in
+      for j = 0 to Array.length !c.atoms - 1 do
+        let q = !c.atoms.(j) in
         assert (q.is_true || q.neg.is_true && q.var.v_level >= 0); (* Pas sur *)
         if q.var.v_level = 0 then begin
           assert (q.neg.is_true);
@@ -686,13 +686,13 @@ module Make
           report_unsat confl
         else begin
           let name = fresh_lname () in
-          let uclause = make_clause name learnt (List.length learnt) history in
+          let uclause = make_clause name learnt history in
           Vec.push env.clauses_learnt uclause;
           enqueue_bool fuip 0 (Bcp uclause)
         end
       | fuip :: _ ->
         let name = fresh_lname () in
-        let lclause = make_clause name learnt (List.length learnt) history in
+        let lclause = make_clause name learnt history in
         Vec.push env.clauses_learnt lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
@@ -708,7 +708,7 @@ module Make
   let add_boolean_conflict confl =
     env.next_decision <- None;
     env.conflicts <- env.conflicts + 1;
-    if decision_level() = 0 || Vec.for_all (fun a -> a.var.v_level = 0) confl.atoms then
+    if decision_level() = 0 || Array.for_all (fun a -> a.var.v_level = 0) confl.atoms then
       report_unsat confl; (* Top-level conflict *)
     let blevel, learnt, history, is_uip = analyze confl in
     cancel_until blevel;
@@ -723,12 +723,10 @@ module Make
       | History _ -> assert false
     in
     try
-      let atoms, history = partition (Vec.to_list init.atoms) in
-      let size = List.length atoms in
+      let atoms, history = partition (Array.to_list init.atoms) in
       let clause =
         if history = [] then init
-        else make_clause ?tag:init.tag (fresh_name ())
-          atoms size (History (init :: history))
+        else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
       in
       Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
       Vec.push vec clause;
@@ -737,8 +735,8 @@ module Make
         report_unsat clause
       | a::b::_ ->
         if a.neg.is_true then begin
-          Vec.sort clause.atoms (fun a b ->
-              compare b.var.v_level a.var.v_level);
+          Array.sort (fun a b ->
+              compare b.var.v_level a.var.v_level) clause.atoms;
           attach_clause clause;
           add_boolean_conflict init
         end else begin
@@ -759,24 +757,24 @@ module Make
 
   let propagate_in_clause a c i watched new_sz =
     let atoms = c.atoms in
-    let first = Vec.get atoms 0 in
+    let first = atoms.(0) in
     if first == a.neg then begin (* false lit must be at index 1 *)
-      Vec.set atoms 0 (Vec.get atoms 1);
-      Vec.set atoms 1 first
+      atoms.(0) <- atoms.(1);
+      atoms.(1) <- first
     end;
-    let first = Vec.get atoms 0 in
+    let first = atoms.(0) in
     if first.is_true then begin
       (* true clause, keep it in watched *)
       Vec.set watched !new_sz c;
       incr new_sz;
     end else
       try (* look for another watch lit *)
-        for k = 2 to Vec.size atoms - 1 do
-          let ak = Vec.get atoms k in
+        for k = 2 to Array.length atoms - 1 do
+          let ak = atoms.(k) in
           if not (ak.neg.is_true) then begin
             (* watch lit found: update and exit *)
-            Vec.set atoms 1 ak;
-            Vec.set atoms k a.neg;
+            atoms.(1) <- ak;
+            atoms.(k) <- a.neg;
             Vec.push ak.neg.watched c;
             raise Exit
           end
@@ -832,7 +830,7 @@ module Make
     let atoms = List.rev_map (fun x -> new_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     List.iter (fun a -> insert_var_order (elt_of_var a.var)) atoms;
-    let c = make_clause (fresh_tname ()) atoms (List.length atoms) (Lemma lemma) in
+    let c = make_clause (fresh_tname ()) atoms (Lemma lemma) in
     Log.debugf 10 "Pushing clause %a" (fun k->k St.pp_clause c);
     Stack.push c env.clauses_pushed
 
@@ -871,7 +869,7 @@ module Make
         let l = List.rev_map new_atom l in
         Iheap.grow_to_by_double env.order (St.nb_elt ());
         List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
-        let c = St.make_clause (St.fresh_tname ()) l (List.length l) (Lemma p) in
+        let c = St.make_clause (St.fresh_tname ()) l (Lemma p) in
         Some c
     end
 
@@ -1046,9 +1044,8 @@ module Make
   let check_clause c =
     let b = ref false in
     let atoms = c.atoms in
-    for i = 0 to Vec.size atoms - 1 do
-      let a = Vec.get atoms i in
-      b := !b || a.is_true
+    for i = 0 to Array.length atoms - 1 do
+      b := !b || atoms.(i).is_true
     done;
     assert (!b)
 
@@ -1058,7 +1055,7 @@ module Make
   let add_clauses ?tag cnf =
     let aux cl =
       let c = make_clause ?tag (fresh_hname ())
-          cl (List.length cl) (Hyp (current_level ())) in
+          cl (Hyp (current_level ())) in
       add_clause c;
       (* Clauses can be added after search has begun (and thus we are not at level 0,
          so better not do anything at this point.

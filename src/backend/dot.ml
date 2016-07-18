@@ -20,12 +20,12 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
 
   let print_clause fmt c =
     let v = c.S.St.atoms in
-    if Vec.is_empty v then
+    if Array.length v = 0 then
       Format.fprintf fmt "⊥"
     else
-      let n = Vec.size v in
+      let n = Array.length v in
       for i = 0 to n - 1 do
-        Format.fprintf fmt "%a" A.print_atom (Vec.get v i);
+        Format.fprintf fmt "%a" A.print_atom v.(i);
         if i < n - 1 then
           Format.fprintf fmt ", "
       done
