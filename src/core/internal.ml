@@ -843,6 +843,11 @@ module Make
     Log.debugf 10 "Pushing clause %a" (fun k->k St.pp_clause c);
     Stack.push c env.clauses_pushed
 
+  let do_push () =
+    while not (Stack.is_empty env.clauses_pushed) do
+      add_clause (Stack.pop env.clauses_pushed)
+    done
+
   let slice_propagate f lvl =
     let a = atom f in
     Iheap.grow_to_by_double env.order (St.nb_elt ());
@@ -884,9 +889,7 @@ module Make
 
   and propagate () =
     (* First, treat the pushed clause stack *)
-    while not (Stack.is_empty env.clauses_pushed) do
-      add_clause (Stack.pop env.clauses_pushed)
-    done;
+    do_push ();
     (* Now, check that the situation is sane *)
     if env.elt_head > Vec.size env.elt_queue then
       assert false
@@ -1089,7 +1092,9 @@ module Make
             n_of_conflicts := !n_of_conflicts *. env.restart_inc;
             n_of_learnts   := !n_of_learnts *. env.learntsize_inc
           | Sat ->
+            assert (env.elt_head = Vec.size env.elt_queue);
             Plugin.if_sat (full_slice ());
+            do_push ();
             if is_unsat () then raise Unsat
             else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
                  && env.elt_head = St.nb_elt () (* this is the important test to know if the search is finished *)  then
