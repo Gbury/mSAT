@@ -914,14 +914,17 @@ module Make
       Plugin_intf.Assign (term, v, l_level)
     | Lit _ -> assert false
 
-  let slice_push l lemma =
+  let slice_push (l:formula list) (lemma:proof): unit =
     let atoms = List.rev_map (fun x -> new_atom x) l in
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     List.iter (fun a -> insert_var_order (elt_of_var a.var)) atoms;
     let c = make_clause (fresh_tname ()) atoms (Lemma lemma) in
     Log.debugf 10 "Pushing clause %a" (fun k->k St.pp_clause c);
+    (* do not add the clause yet, wait for the theory propagation to
+       be done *)
     Stack.push c env.clauses_pushed
 
+  (* if some clauses are waiting in [env.clause_pushed], add them now *)
   let do_push () =
     while not (Stack.is_empty env.clauses_pushed) do
       add_clause (Stack.pop env.clauses_pushed)
@@ -932,7 +935,7 @@ module Make
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     enqueue_bool a lvl (Semantic lvl)
 
-  let current_slice () = {
+  let current_slice (): (_,_,_) Plugin_intf.slice = {
     Plugin_intf.start = env.th_head;
     length = (Vec.size env.elt_queue) - env.th_head;
     get = slice_get;
@@ -940,7 +943,8 @@ module Make
     propagate = slice_propagate;
   }
 
-  let full_slice () = {
+  (* full slice, for [if_sat] final check *)
+  let full_slice () : (_,_,_) Plugin_intf.slice = {
     Plugin_intf.start = 0;
     length = Vec.size env.elt_queue;
     get = slice_get;
@@ -948,17 +952,22 @@ module Make
     propagate = (fun _ -> assert false);
   }
 
-  let rec theory_propagate () =
+  (* some boolean literals were decided/propagated within Msat. Now we
+     need to inform the theory of those assumptions, so it can do its job.
+     @return the conflict clause, if the theory detects unsatisfiability *)
+  let rec theory_propagate (): clause option =
     assert (env.elt_head = Vec.size env.elt_queue);
-    if env.th_head >= env.elt_head then
-      None
+    assert (env.th_head <= env.elt_head);
+    if env.th_head = env.elt_head then
+      None (* fixpoint/no propagation *)
     else begin
       let slice = current_slice () in
-      env.th_head <- env.elt_head;
+      env.th_head <- env.elt_head; (* catch up *)
       match Plugin.assume slice with
       | Plugin_intf.Sat ->
         propagate ()
       | Plugin_intf.Unsat (l, p) ->
+        (* conflict *)
         let l = List.rev_map new_atom l in
         Iheap.grow_to_by_double env.order (St.nb_elt ());
         List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
@@ -966,13 +975,14 @@ module Make
         Some c
     end
 
-  and propagate () =
-    (* First, treat the pushed clause stack *)
+  (* fixpoint between boolean propagation and theory propagation
+     @return a conflict clause, if any *)
+  and propagate (): clause option =
+    (* First, treat the stack of lemmas added by the theory, if any *)
     do_push ();
     (* Now, check that the situation is sane *)
-    if env.elt_head > Vec.size env.elt_queue then
-      assert false
-    else if env.elt_head = Vec.size env.elt_queue then
+    assert (env.elt_head <= Vec.size env.elt_queue);
+    if env.elt_head = Vec.size env.elt_queue then
       theory_propagate ()
     else begin
       let num_props = ref 0 in
@@ -989,85 +999,17 @@ module Make
       env.propagations <- env.propagations + !num_props;
       env.simpDB_props <- env.simpDB_props - !num_props;
       match !res with
-      | None -> theory_propagate ()
-      | _ -> !res
+        | None -> theory_propagate ()
+        | _ -> !res
     end
 
-  (*
-  (* heuristic comparison between clauses, by their size (unary/binary or not)
-      and activity *)
-  let f_sort_db c1 c2 =
-    let sz1 = Vec.size c1.atoms in
-    let sz2 = Vec.size c2.atoms in
-    let c = compare c1.activity c2.activity in
-    if sz1 = sz2 && c = 0 then 0
-    else
-    if sz1 > 2 && (sz2 = 2 || c < 0) then -1
-    else 1
+  (* remove some learnt clauses
+     NOTE: so far we do not forget learnt clauses. We could, as long as
+     lemmas from the theory itself are kept. *)
+  let reduce_db () = ()
 
-  (* returns true if the clause is used as a reason for a propagation,
-        and therefore can be needed in case of conflict. In this case
-        the clause can't be forgotten *)
-  let locked c = false (*
-    Vec.exists
-      (fun v -> match v.reason with
-         | Some c' -> c ==c'
-         | _ -> false
-      ) env.vars
-      *)
-  *)
-
-  (* remove some learnt clauses *)
-  let reduce_db () = () (*
-    let extra_lim = env.clause_inc /. (to_float (Vec.size env.learnts)) in
-    Vec.sort env.learnts f_sort_db;
-    let lim2 = Vec.size env.learnts in
-    let lim1 = lim2 / 2 in
-    let j = ref 0 in
-    for i = 0 to lim1 - 1 do
-      let c = Vec.get env.learnts i in
-      if Vec.size c.atoms > 2 && not (locked c) then
-        detach_clause c
-      else
-        begin Vec.set env.learnts !j c; incr j end
-    done;
-    for i = lim1 to lim2 - 1 do
-      let c = Vec.get env.learnts i in
-      if Vec.size c.atoms > 2 && not (locked c) && c.activity < extra_lim then
-        detach_clause c
-      else
-        begin Vec.set env.learnts !j c; incr j end
-    done;
-    Vec.shrink env.learnts (lim2 - !j)
-    *)
-
-(*
-  (* remove from [vec] the clauses that are satisfied in the current trail *)
-  let remove_satisfied vec =
-    for i = 0 to Vec.size vec - 1 do
-      let c = Vec.get vec i in
-      if satisfied c then detach_clause c
-    done
-
-  let simplify () =
-    assert (decision_level () = 0);
-    if is_unsat () then raise Unsat;
-    begin
-      match propagate () with
-      | Some confl -> report_unsat confl
-      | None -> ()
-    end;
-    if Vec.size env.elt_queue <> env.simpDB_assigns && env.simpDB_props <= 0 then begin
-      if Vec.size env.clauses_learnt > 0 then remove_satisfied env.clauses_learnt;
-      if env.remove_satisfied then remove_satisfied env.clauses_hyps;
-      (*Iheap.filter env.order f_filter f_weight;*)
-      env.simpDB_assigns <- Vec.size env.elt_queue;
-      env.simpDB_props <- env.clauses_literals + env.learnts_literals;
-    end
-*)
-
-  (* Decide on a new literal *)
-  let rec pick_branch_aux atom =
+  (* Decide on a new literal, and enqueue it into the trail *)
+  let rec pick_branch_aux atom: unit =
     let v = atom.var in
     if v.v_level >= 0 then begin
       assert (v.pa.is_true || v.na.is_true);
@@ -1106,7 +1048,9 @@ module Make
         with Not_found -> raise Sat
       end
 
-  let search n_of_conflicts n_of_learnts =
+  (* do some amount of search, until the number of conflicts or clause learnt
+     reaches the given parameters *)
+  let search n_of_conflicts n_of_learnts: unit =
     let conflictC = ref 0 in
     env.starts <- env.starts + 1;
     while true do
@@ -1117,7 +1061,9 @@ module Make
 
       | None -> (* No Conflict *)
         assert (env.elt_head = Vec.size env.elt_queue);
-        if Vec.size env.elt_queue = St.nb_elt () (* env.nb_init_vars *) then raise Sat;
+        assert (env.elt_head = env.th_head);
+        if Vec.size env.elt_queue = St.nb_elt ()
+        then raise Sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
           cancel_until 0;
           raise Restart
@@ -1125,39 +1071,34 @@ module Make
         (* if decision_level() = 0 then simplify (); *)
 
         if n_of_learnts >= 0 &&
-           Vec.size env.clauses_learnt - Vec.size env.elt_queue >= n_of_learnts then
-          reduce_db();
+           Vec.size env.clauses_learnt - Vec.size env.elt_queue >= n_of_learnts
+        then reduce_db();
 
         pick_branch_lit ()
     done
 
-  let check_clause c =
-    let b = ref false in
-    let atoms = c.atoms in
-    for i = 0 to Array.length atoms - 1 do
-      b := !b || atoms.(i).is_true
-    done;
-    assert (!b)
+  (* check that clause is true *)
+  let check_clause (c:clause): unit =
+    let ok = Array_util.exists (fun a -> a.is_true) c.atoms in
+    assert ok
 
-  let check_vec vec =
-    for i = 0 to Vec.size vec - 1 do check_clause (Vec.get vec i) done
+  let check_vec vec = Vec.iter check_clause vec
 
-  let add_clauses ?tag cnf =
+  let add_clauses ?tag cnf: unit =
     let aux cl =
-      let c = make_clause ?tag (fresh_hname ())
-          cl (Hyp (current_level ())) in
+      let c =
+        make_clause ?tag (fresh_hname ()) cl (Hyp (current_level ()))
+      in
       add_clause c;
       (* Clauses can be added after search has begun (and thus we are not at level 0,
          so better not do anything at this point.
-         match propagate () with
-         | None -> () | Some confl -> report_unsat confl
       *)
     in
     List.iter aux cnf
 
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)
-  let solve () =
+  let solve (): unit =
     if is_unsat () then raise Unsat;
     let n_of_conflicts = ref (to_float env.restart_first) in
     let n_of_learnts = ref ((to_float (nb_clauses())) *. env.learntsize_factor) in
@@ -1175,8 +1116,9 @@ module Make
             do_push ();
             if is_unsat () then raise Unsat
             else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
-                 && env.elt_head = St.nb_elt () (* this is the important test to know if the search is finished *)  then
-              raise Sat
+                 && env.elt_head = St.nb_elt ()
+                 (* this is the important test to know if the search is finished *)
+            then raise Sat
         end
       done
     with
