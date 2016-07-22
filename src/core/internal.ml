@@ -824,11 +824,16 @@ module Make
       Vec.push vec init;
       Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init)
 
+  type watch_res =
+    | Watch_kept
+    | Watch_removed
+
   (* boolean propagation.
      [a] is the false atom, one of [c]'s two watch literals
      [i] is the index of [c] in [a.watched]
+     @return whether [c] was removed from [a.watched]
   *)
-  let propagate_in_clause (a:atom) (c:clause) (i:int) new_sz: unit =
+  let propagate_in_clause (a:atom) (c:clause) (i:int): watch_res =
     let atoms = c.atoms in
     let first = atoms.(0) in
     if first == a.neg then (
@@ -837,11 +842,9 @@ module Make
       atoms.(1) <- first
     ) else assert (a.neg == atoms.(1));
     let first = atoms.(0) in
-    if first.is_true then begin
-      (* true clause, keep it in watched *)
-      Vec.set a.watched !new_sz c;
-      incr new_sz;
-    end else
+    if first.is_true
+    then Watch_kept (* true clause, keep it in watched *)
+    else (
       try (* look for another watch lit *)
         for k = 2 to Array.length atoms - 1 do
           let ak = atoms.(k) in
@@ -849,7 +852,10 @@ module Make
             (* watch lit found: update and exit *)
             atoms.(1) <- ak;
             atoms.(k) <- a.neg;
+            (* remove [c] from [a.watched], add it to [ak.neg.watched] *)
             Vec.push ak.neg.watched c;
+            assert (Vec.get a.watched i == c);
+            Vec.fast_remove a.watched i;
             raise Exit
           end
         done;
@@ -857,37 +863,42 @@ module Make
         if first.neg.is_true || (th_eval first = Some false) then begin
           (* clause is false *)
           env.elt_head <- Vec.size env.elt_queue;
-          (* TODO: here, just swap [i] and last element of [watched];
-             then update the last element's position since it changed *)
-          for k = i to Vec.size a.watched - 1 do
-            Vec.set a.watched !new_sz (Vec.get a.watched k);
-            incr new_sz;
-          done;
           raise (Conflict c)
         end else begin
-          (* clause is unit *)
-          Vec.set a.watched !new_sz c;
-          incr new_sz;
+          (* clause is unit, keep the same watches, but propagate *)
           enqueue_bool first (decision_level ()) (Bcp c)
-        end
-      with Exit -> ()
+        end;
+        Watch_kept
+      with Exit ->
+        Watch_removed
+    )
 
-  let propagate_atom a res : unit =
+  (* propagate atom [a], which was just decided. This checks every
+     clause watching [a] to see if the clause is false, unit, or has
+     other possible watches
+     @param res the optional conflict clause that the propagation might trigger *)
+  let propagate_atom a (res:clause option ref) : unit =
     let watched = a.watched in
-    let new_sz_w = ref 0 in
     begin
       try
-        for i = 0 to Vec.size watched - 1 do
-          let c = Vec.get watched i in
-          assert c.attached;
-          propagate_in_clause a c i new_sz_w
-        done;
+        let rec aux i =
+          if i >= Vec.size watched then ()
+          else (
+            let c = Vec.get watched i in
+            assert c.attached;
+            let j = match propagate_in_clause a c i with
+              | Watch_kept -> i+1
+              | Watch_removed -> i (* clause at this index changed *)
+            in
+            aux j
+          )
+        in
+        aux 0
       with Conflict c ->
         assert (!res = None);
         res := Some c
     end;
-    let dead_part = Vec.size watched - !new_sz_w in
-    Vec.shrink watched dead_part
+    ()
 
   (* Propagation (boolean and theory) *)
   let new_atom f =

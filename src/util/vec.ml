@@ -115,14 +115,10 @@ let remove t e =
   for i = !j to t.sz - 2 do t.data.(i) <- t.data.(i+1) done;
   pop t
 
-
-let fast_remove t e =
-  let j = ref 0 in
-  while (!j < t.sz && not (t.data.(!j) == e)) do incr j done;
-  assert (!j < t.sz);
-  t.data.(!j) <- last t;
-  pop t
-
+let fast_remove t i =
+  assert (i < t.sz);
+  t.data.(i) <- t.data.(t.sz - 1);
+  t.sz <- t.sz - 1
 
 let sort t f =
   let sub_arr = Array.sub t.data 0 t.sz in

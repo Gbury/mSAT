@@ -82,8 +82,9 @@ val move_to : 'a t -> 'a t -> unit
 val remove : 'a t -> 'a -> unit
 (** Uses [(==)] for comparison *)
 
-val fast_remove : 'a t -> 'a -> unit
-(** Remove element without preserving order (swap with last element) *)
+val fast_remove : 'a t -> int -> unit
+(** Remove element at index [i] without preserving order
+    (swap with last element) *)
 
 val sort : 'a t -> ('a -> 'a -> int) -> unit
 (** Sort in place the array *)
