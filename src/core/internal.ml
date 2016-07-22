@@ -437,7 +437,7 @@ module Make
     end
 
   (* Is a clause satisfied ? *)
-  let satisfied c = Array.exists (fun atom -> atom.is_true) c.atoms
+  let satisfied c = Array_util.exists (fun atom -> atom.is_true) c.atoms
 
   (* Backtracking.
      Used to backtrack, i.e cancel down to [lvl] excluded,
@@ -717,7 +717,7 @@ module Make
   let add_boolean_conflict confl =
     env.next_decision <- None;
     env.conflicts <- env.conflicts + 1;
-    if decision_level() = 0 || Array.for_all (fun a -> a.var.v_level = 0) confl.atoms then
+    if decision_level() = 0 || Array_util.for_all (fun a -> a.var.v_level = 0) confl.atoms then
       report_unsat confl; (* Top-level conflict *)
     let blevel, learnt, history, is_uip = analyze confl in
     cancel_until blevel;
