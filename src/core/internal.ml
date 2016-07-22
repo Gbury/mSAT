@@ -35,10 +35,15 @@ module Make
   (* Singleton type containing the current state *)
   type env = {
 
+    (* Clauses are simplified for eficiency purposes. In the following
+       vectors, the comments actually refer to the original non-simplified
+       clause. *)
+
     clauses_hyps : clause Vec.t;
     (* clauses assumed (subject to user levels) *)
     clauses_learnt : clause Vec.t;
     (* learnt clauses (tautologies true at any time, whatever the user level) *)
+
     clauses_pushed : clause Stack.t;
     (* Clauses pushed by the theory, waiting to be added as learnt. *)
 
@@ -182,7 +187,7 @@ module Make
   let f_weight i j =
     get_elt_weight (St.get_elt j) < get_elt_weight (St.get_elt i)
 
-  (* Is the assumptions currently unsat ? *)
+  (* Are the assumptions currently unsat ? *)
   let is_unsat () =
     match env.unsat_conflict with
     | Some _ -> true
@@ -325,6 +330,9 @@ module Make
      - return the list of undecided atoms, and the list of clauses that
        justify why the other atoms are false (and will remain so).
 
+     Motivation: Simplification of clauses greatly reduces the search space
+     for new watched literals during propagation.
+
      Aditionally, since we can do push/pop on the assumptions, we need to
      keep track of what assumptions were used to simplify a given clause.
   *)
@@ -348,7 +356,7 @@ module Make
         | Some (Semantic 0) -> atoms, history
         (* Semantic propagations at level 0 are, well not easy to deal with,
            this shouldn't really happen actually (because semantic propagations
-           at level 0 currently lack a proof). *)
+           at level 0 should come with a proof). *)
         | Some (Semantic _) ->
           Log.debugf 0 "Unexpected semantic propagation at level 0: %a"
             (fun k->k St.pp_atom a);
@@ -370,6 +378,8 @@ module Make
      - true literals (maybe makes the clause trivial if the lit is proved true)
      - false literals (-> removed, also return the list of reasons those are false)
      - unassigned literals, yet to be decided
+
+     Motivation: it is better to watch true literals, and then unassigned literals.
   *)
   let partition atoms : atom list * clause list =
     let rec partition_aux trues unassigned falses history i =
@@ -419,7 +429,7 @@ module Make
     assert (env.th_head = Vec.size env.elt_queue);
     assert (env.elt_head = Vec.size env.elt_queue);
     Vec.push env.elt_levels (Vec.size env.elt_queue);
-    Vec.push env.th_levels (Plugin.current_level ()); (* save the current tenv *)
+    Vec.push env.th_levels (Plugin.current_level ()); (* save the current theory state *)
     ()
 
   (* Attach/Detach a clause.
@@ -552,10 +562,17 @@ module Make
 
   (* MCsat semantic assignment *)
   let enqueue_assign l value lvl =
-    l.assigned <- Some value;
-    l.l_level <- lvl;
-    Vec.push env.elt_queue (of_lit l);
-    ()
+    match l.assigned with
+    | Some _ ->
+      Log.debugf 0 "Trying to assign an already assigned literal: %a"
+        (fun k -> k St.pp_lit l);
+      assert false
+    | None ->
+      assert (l.l_level < 0);
+      l.assigned <- Some value;
+      l.l_level <- lvl;
+      Vec.push env.elt_queue (of_lit l);
+      ()
 
   (* evaluate an atom for MCsat, if it's not assigned
      by boolean propagation/decision *)
@@ -600,8 +617,9 @@ module Make
   (* result of conflict analysis, containing the learnt clause and some
      additional info.
 
-     invariant: cr_history's order matters
-     TODO zozozo explain *)
+     invariant: cr_history's order matters, as its head is later used
+     during pop operations to determine the origin of a clause/conflict
+     (boolean conflict i.e hypothesis, or theory lemma) *)
   type conflict_res = {
     cr_backtrack_lvl : int; (* level to backtrack to *)
     cr_learnt: atom list; (* lemma learnt from conflict *)
@@ -609,7 +627,12 @@ module Make
     cr_is_uip: bool; (* conflict is UIP? *)
   }
 
-  (* conflict analysis for MCsat *)
+  (* conflict analysis for MCsat
+     The idea is to walk the trail/elt_queue starting from the most recent
+     atom, and perform resolution steps with each propagation reason, until
+     the First UIP clause is found, or we get semantic propagations
+     at the highest level (see mcsat paper for more explications).
+  *)
   let analyze_mcsat c_clause : conflict_res =
     let tr_ind  = ref (Vec.size env.elt_queue) in
     let is_uip  = ref false in
@@ -668,7 +691,10 @@ module Make
     match Vec.get env.elt_queue i with
     | Lit _ -> assert false | Atom x -> x
 
-  (* conflict analysis for SAT *)
+  (* conflict analysis for SAT
+     Same idea as the mcsat analyze function (without semantic propagations),
+     except we look the the Last UIP (TODO: check ?), and do it in an imperative
+     and eficient manner. *)
   let analyze_sat c_clause : conflict_res =
     let pathC  = ref 0 in
     let learnt = ref [] in
@@ -803,6 +829,8 @@ module Make
         report_unsat clause
       | a::b::_ ->
         if a.neg.is_true then begin
+          (* Atoms need to be sorted in decreasing order of decision level,
+             or we might watch the wrong literals. *)
           Array.sort
             (fun a b -> compare b.var.v_level a.var.v_level)
             clause.atoms;
