@@ -6,5 +6,5 @@ _build/
 .*.swp
 .session
 *.docdir
-util/log.ml
+src/util/log.ml
 msat
