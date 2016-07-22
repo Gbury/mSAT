@@ -1243,7 +1243,6 @@ module Make
       (* Clear hypothesis not valid anymore *)
       for i = ul.ul_clauses to Vec.size env.clauses_hyps - 1 do
         let c = Vec.get env.clauses_hyps i in
-        assert c.attached;
         assert (c.c_level > l);
         detach_clause c
       done;
