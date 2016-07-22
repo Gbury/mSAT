@@ -1159,18 +1159,19 @@ module Make
 
   let unsat_conflict () = env.unsat_conflict
 
-  let model () =
+  let model () : (term * term) list =
     let opt = function Some a -> a | None -> assert false in
-    Vec.fold (fun acc e -> match e with
+    Vec.fold
+      (fun acc e -> match e with
         | Lit v -> (v.term, opt v.assigned)  :: acc
-        | Atom _ -> acc
-      ) [] env.elt_queue
+        | Atom _ -> acc)
+      [] env.elt_queue
 
   (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
-  let reset_until push_lvl elt_lvl th_lvl th_env =
+  let reset_until push_lvl (ul: user_level) =
     Log.debug 1 "Resetting to decision level 0 (pop/forced)";
-    env.th_head <- th_lvl;
-    env.elt_head <- elt_lvl;
+    env.th_head <- ul.ul_th_lvl ;
+    env.elt_head <- ul.ul_elt_lvl;
     for c = env.elt_head to Vec.size env.elt_queue - 1 do
       match Vec.get env.elt_queue c with
       | Lit l ->
@@ -1187,6 +1188,8 @@ module Make
             insert_var_order (elt_of_var a.var)
           | _ ->
             if a.var.v_level = 0 then begin
+              (* [a] is still true, so we move it to the current top position
+                 of the trail, as if it was propagated again *)
               Vec.set env.elt_queue env.elt_head (of_atom a);
               env.elt_head <- env.elt_head + 1
             end else begin
@@ -1198,7 +1201,7 @@ module Make
             end
         end
     done;
-    Plugin.backtrack th_env; (* recover the right theory env *)
+    Plugin.backtrack ul.ul_th_env; (* recover the right theory env *)
     Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - env.elt_head);
     Vec.clear env.elt_levels;
     Vec.clear env.th_levels;
@@ -1206,7 +1209,7 @@ module Make
     assert (env.elt_head = Vec.size env.elt_queue);
     ()
 
-  let pop l =
+  let pop l: unit =
     (* Check sanity of pop *)
     if l > current_level () then invalid_arg "cannot pop to level, it is too high"
     else if l < current_level () then begin
@@ -1218,7 +1221,7 @@ module Make
       env.unsat_conflict <- None;
 
       (* Backtrack to the level 0 with appropriate settings *)
-      reset_until l ul.ul_elt_lvl ul.ul_th_lvl ul.ul_th_env;
+      reset_until l ul;
 
       (* Log current assumptions for debugging purposes *)
       Log.debugf 99 "@[<v2>Current trail:@ %a@]"
@@ -1240,6 +1243,7 @@ module Make
       (* Clear hypothesis not valid anymore *)
       for i = ul.ul_clauses to Vec.size env.clauses_hyps - 1 do
         let c = Vec.get env.clauses_hyps i in
+        assert c.attached;
         assert (c.c_level > l);
         detach_clause c
       done;
