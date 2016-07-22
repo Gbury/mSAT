@@ -255,8 +255,8 @@ module Make
      its subterms.
   *)
   let insert_var_order = function
-    | Either.Left l -> Iheap.insert f_weight env.order l.lid
-    | Either.Right v ->
+    | E_lit l -> Iheap.insert f_weight env.order l.lid
+    | E_var v ->
       Iheap.insert f_weight env.order v.vid;
       iter_sub (fun t -> Iheap.insert f_weight env.order t.lid) v
 
@@ -456,12 +456,12 @@ module Make
         match (Vec.get env.elt_queue c) with
         (* A literal is unassigned, we nedd to add it back to
            the heap of potentially assignable literals. *)
-        | Either.Left l ->
+        | Lit l ->
           l.assigned <- None;
           l.l_level <- -1;
           insert_var_order (elt_of_lit l)
         (* A variable is not true/false anymore, one of two things can happen: *)
-        | Either.Right a ->
+        | Atom a ->
           if a.var.v_level <= lvl then begin
             (* It is a semantic propagation, which can be late, and has a level
                lower than where we backtrack, so we just move it to the head
@@ -594,8 +594,8 @@ module Make
           decr tr_ind;
           Log.debugf 20 "Looking at trail element %d" (fun k->k !tr_ind);
           match Vec.get env.elt_queue !tr_ind with
-          | Either.Left _ -> ()
-          | Either.Right a ->
+          | Lit _ -> ()
+          | Atom a ->
             begin match a.var.reason with
               | Some (Bcp d) ->
                 let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
@@ -619,7 +619,7 @@ module Make
 
   let get_atom i =
     match Vec.get env.elt_queue i with
-    | Either.Left _ -> assert false | Either.Right x -> x
+    | Lit _ -> assert false | Atom x -> x
 
   let analyze_sat c_clause =
     let pathC  = ref 0 in
@@ -829,11 +829,11 @@ module Make
 
   let slice_get i =
     match Vec.get env.elt_queue i with
-    | Either.Right a ->
+    | Atom a ->
       Plugin_intf.Lit a.lit
-    | Either.Left {l_level; term; assigned = Some v} ->
+    | Lit {l_level; term; assigned = Some v} ->
       Plugin_intf.Assign (term, v, l_level)
-    | Either.Left _ -> assert false
+    | Lit _ -> assert false
 
   let slice_push l lemma =
     let atoms = List.rev_map (fun x -> new_atom x) l in
@@ -900,8 +900,8 @@ module Make
       let res = ref None in
       while env.elt_head < Vec.size env.elt_queue do
         begin match Vec.get env.elt_queue env.elt_head with
-          | Either.Left _ -> ()
-          | Either.Right a ->
+          | Lit _ -> ()
+          | Atom a ->
             incr num_props;
             propagate_atom a res
         end;
@@ -1011,7 +1011,7 @@ module Make
     | None ->
       begin try
           begin match St.get_elt (Iheap.remove_min f_weight env.order) with
-            | Either.Left l ->
+            | E_lit l ->
               if l.l_level >= 0 then
                 pick_branch_lit ()
               else begin
@@ -1021,7 +1021,7 @@ module Make
                 let current_level = decision_level () in
                 enqueue_assign l value current_level
               end
-            | Either.Right v ->
+            | E_var v ->
               pick_branch_aux v.pa
           end
         with Not_found -> raise Sat
@@ -1142,8 +1142,8 @@ module Make
   let model () =
     let opt = function Some a -> a | None -> assert false in
     Vec.fold (fun acc e -> match e with
-        | Either.Left v -> (v.term, opt v.assigned)  :: acc
-        | Either.Right _ -> acc
+        | Lit v -> (v.term, opt v.assigned)  :: acc
+        | Atom _ -> acc
       ) [] env.elt_queue
 
   (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
@@ -1153,11 +1153,11 @@ module Make
     env.elt_head <- elt_lvl;
     for c = env.elt_head to Vec.size env.elt_queue - 1 do
       match Vec.get env.elt_queue c with
-      | Either.Left l ->
+      | Lit l ->
         l.assigned <- None;
         l.l_level <- -1;
         insert_var_order (elt_of_lit l)
-      | Either.Right a ->
+      | Atom a ->
         begin match a.var.reason with
           | Some Bcp { c_level } when c_level > push_lvl ->
             a.is_true <- false;
@@ -1210,8 +1210,8 @@ module Make
                  (if i = ul.ul_th_lvl then "*" else " ")
                  i (fun fmt e ->
                      match e with
-                     | Either.Left l -> St.pp_lit fmt l
-                     | Either.Right a -> St.pp_atom fmt a)
+                     | Lit l -> St.pp_lit fmt l
+                     | Atom a -> St.pp_atom fmt a)
                  (Vec.get env.elt_queue i)
              done
            in

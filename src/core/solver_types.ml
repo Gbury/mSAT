@@ -75,7 +75,9 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | Lemma of proof
     | History of clause list
 
-  type elt = (lit, var) Either.t
+  type elt =
+    | E_lit of lit
+    | E_var of var
 
   (* Dummy values *)
   let dummy_lit = E.dummy
@@ -118,7 +120,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let f_map = MF.create 4096
   let t_map = MT.create 4096
 
-  let vars = Vec.make 107 (Either.mk_right dummy_var)
+  let vars = Vec.make 107 (E_var dummy_var)
   let nb_elt () = Vec.size vars
   let get_elt i = Vec.get vars i
   let iter_elt f = Vec.iter f vars
@@ -137,7 +139,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       } in
       incr cpt_mk_var;
       MT.add t_map t res;
-      Vec.push vars (Either.mk_left res);
+      Vec.push vars (E_lit res);
       res
 
   let make_boolean_var : formula -> var * Expr_intf.negated =
@@ -172,7 +174,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
             aid = cpt_fois_2 + 1 (* aid = vid*2+1 *) } in
         MF.add f_map lit var;
         incr cpt_mk_var;
-        Vec.push vars (Either.mk_right var);
+        Vec.push vars (E_var var);
         var, negated
 
   let add_term t = make_semantic_var t
@@ -203,27 +205,28 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let empty_clause = make_clause "Empty" [] (History [])
 
   (* Decisions & propagations *)
-  type t = (lit, atom) Either.t
+  type t =
+    | Lit of lit
+    | Atom of atom
 
-  let of_lit = Either.mk_left
-  let of_atom = Either.mk_right
-  let destruct = Either.destruct
+  let of_lit l = Lit l
+  let of_atom a = Atom a
 
   (* Elements *)
-  let elt_of_lit = Either.mk_left
-  let elt_of_var = Either.mk_right
+  let elt_of_lit l = E_lit l
+  let elt_of_var v = E_var v
 
   let get_elt_id = function
-    | Either.Left l -> l.lid | Either.Right v ->  v.vid
+    | E_lit l -> l.lid | E_var v ->  v.vid
   let get_elt_level = function
-    | Either.Left l -> l.l_level | Either.Right v ->  v.v_level
+    | E_lit l -> l.l_level | E_var v ->  v.v_level
   let get_elt_weight = function
-    | Either.Left l -> l.l_weight | Either.Right v ->  v.v_weight
+    | E_lit l -> l.l_weight | E_var v ->  v.v_weight
 
   let set_elt_level e lvl = match e with
-    | Either.Left l -> l.l_level <- lvl | Either.Right v ->  v.v_level <- lvl
+    | E_lit l -> l.l_level <- lvl | E_var v ->  v.v_level <- lvl
   let set_elt_weight e w = match e with
-    | Either.Left l -> l.l_weight <- w | Either.Right v ->  v.v_weight <- w
+    | E_lit l -> l.l_weight <- w | E_var v ->  v.v_weight <- w
 
   (* Name generation *)
   let fresh_lname =

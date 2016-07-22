@@ -71,7 +71,9 @@ module type S = sig
     | History of clause list
 
   (** {2 Decisions and propagations} *)
-  type t = (lit, atom) Either.t
+  type t =
+    | Lit of lit
+    | Atom of atom
   (** Either a lit of an atom *)
 
   val of_lit : lit -> t
@@ -80,7 +82,9 @@ module type S = sig
 
   (** {2 Elements} *)
 
-  type elt = (lit, var) Either.t
+  type elt =
+    | E_lit of lit
+    | E_var of var
   (** Either a lit of a var *)
 
   val nb_elt : unit -> int
