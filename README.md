@@ -1,4 +1,4 @@
-# MSAT
+# MSAT  [![Build Status](https://travis-ci.org/Gbury/mSAT.svg?branch=master)](https://travis-ci.org/Gbury/mSAT)
 
 MSAT is an OCaml library that features a modular SAT-solver and some
 extensions (including SMT). This is **work in progress**.
