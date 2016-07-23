@@ -8,7 +8,7 @@ env:
 addons:
   apt:
     sources:
-      - sourceline 'ppa:avsm/ocaml42+opam12'
+      - avsm
     packages:
       - opam
 before_install:
