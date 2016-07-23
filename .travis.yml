@@ -11,6 +11,7 @@ addons:
       - avsm
     packages:
       - opam
+      - time
 before_install:
   - export OPAMYES=1
   - export OPAMVERBOSE=1
