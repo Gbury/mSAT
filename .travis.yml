@@ -6,10 +6,13 @@ env:
   - OCAML_VERSION=4.02.3
   - OCAML_VERSION=4.03.0
   - OCAML_VERSION=4.03.0+flambda
+addons:
+  apt:
+    sources:
+      - sourceline 'ppa:avsm/ocaml42+opam12'
+    packages:
+      - opam
 before_install:
-  - echo "yes" | sudo add-apt-repository ppa:avsm/ocaml42+opam12
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq ocaml ocaml-native-compilers camlp4-extra opam
   - export OPAMYES=1
   - export OPAMVERBOSE=1
   - opam init
