@@ -74,7 +74,7 @@ let grow_to_by_double t new_capa =
   let data = t.data in
   let capa = ref (Array.length data + 1) in
   while !capa < new_capa do
-    capa := min (2 * !capa) Sys.max_array_length;
+    capa := min (2 * !capa + 1) Sys.max_array_length;
   done;
   grow_to t !capa
 
