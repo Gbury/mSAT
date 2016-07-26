@@ -44,8 +44,8 @@ module Make
     clauses_learnt : clause Vec.t;
     (* learnt clauses (tautologies true at any time, whatever the user level) *)
 
-    clauses_pushed : clause Stack.t;
-    (* Clauses pushed by the theory, waiting to be added as learnt. *)
+    clauses_to_add : clause Stack.t;
+    (* Clauses either assumed or pushed by the theory, waiting to be added. *)
 
 
     mutable unsat_conflict : clause option;
@@ -132,7 +132,7 @@ module Make
 
     clauses_hyps = Vec.make 0 dummy_clause;
     clauses_learnt = Vec.make 0 dummy_clause;
-    clauses_pushed = Stack.create ();
+    clauses_to_add = Stack.create ();
 
     th_head = 0;
     elt_head = 0;
@@ -246,19 +246,17 @@ module Make
   let iter_map = Hashtbl.create 1003
 
   let iter_sub f v =
-    try
-      List.iter f (Hashtbl.find iter_map v.vid)
-    with Not_found ->
-      let l = ref [] in
-      Plugin.iter_assignable (fun t -> l := add_term t :: !l) v.pa.lit;
-      Hashtbl.add iter_map v.vid !l;
-      List.iter f !l
+    List.iter f (Hashtbl.find iter_map v.vid)
 
   (* When we have a new literal,
      we need to first create the list of its subterms. *)
   let atom (f:St.formula) : atom =
     let res = add_atom f in
-    iter_sub ignore res.var;
+    if not (Hashtbl.mem iter_map res.var.vid) then begin
+      let l = ref [] in
+      Plugin.iter_assignable (fun t -> l := add_term t :: !l) res.var.pa.lit;
+      Hashtbl.add iter_map res.var.vid !l
+    end;
     res
 
   (* Variable and literal activity.
@@ -268,11 +266,11 @@ module Make
      When we add a variable (which wraps a formula), we also need to add all
      its subterms.
   *)
-  let insert_var_order = function
+  let rec insert_var_order = function
     | E_lit l -> Iheap.insert f_weight env.order l.lid
     | E_var v ->
       Iheap.insert f_weight env.order v.vid;
-      iter_sub (fun t -> Iheap.insert f_weight env.order t.lid) v
+      iter_sub (fun t -> insert_var_order (E_lit t)) v
 
   (* Rather than iterate over all the heap when we want to decrease all the
      variables/literals activity, we instead increase the value by which
@@ -811,6 +809,7 @@ module Make
      the clause is false in the current trail *)
   let add_clause ?(force=false) (init:clause) : unit =
     Log.debugf 90 "Adding clause:@[<hov>%a@]" (fun k -> k St.pp_clause init);
+    assert (init.c_level <= current_level ());
     let vec = match init.cpremise with
       | Hyp _ -> env.clauses_hyps
       | Lemma _ -> env.clauses_learnt
@@ -851,6 +850,22 @@ module Make
     with Trivial ->
       Vec.push vec init;
       Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init)
+
+  let flush_clauses () =
+    if not (Stack.is_empty env.clauses_to_add) then begin
+      let nbv = St.nb_elt () in
+      let nbc = env.nb_init_clauses + Stack.length env.clauses_to_add in
+      Iheap.grow_to_by_double env.order nbv;
+      St.iter_elt insert_var_order;
+      Vec.grow_to_by_double env.clauses_hyps nbc;
+      Vec.grow_to_by_double env.clauses_learnt nbc;
+      env.nb_init_clauses <- nbc;
+      while not (Stack.is_empty env.clauses_to_add) do
+        let c = Stack.pop env.clauses_to_add in
+        if c.c_level <= current_level () then
+          add_clause c
+      done
+    end
 
   type watch_res =
     | Watch_kept
@@ -944,19 +959,11 @@ module Make
 
   let slice_push (l:formula list) (lemma:proof): unit =
     let atoms = List.rev_map (fun x -> new_atom x) l in
-    Iheap.grow_to_by_double env.order (St.nb_elt ());
-    List.iter (fun a -> insert_var_order (elt_of_var a.var)) atoms;
     let c = make_clause (fresh_tname ()) atoms (Lemma lemma) in
     Log.debugf 10 "Pushing clause %a" (fun k->k St.pp_clause c);
     (* do not add the clause yet, wait for the theory propagation to
        be done *)
-    Stack.push c env.clauses_pushed
-
-  (* if some clauses are waiting in [env.clause_pushed], add them now *)
-  let do_push () =
-    while not (Stack.is_empty env.clauses_pushed) do
-      add_clause (Stack.pop env.clauses_pushed)
-    done
+    Stack.push c env.clauses_to_add
 
   let slice_propagate f lvl =
     let a = atom f in
@@ -1007,7 +1014,7 @@ module Make
      @return a conflict clause, if any *)
   and propagate (): clause option =
     (* First, treat the stack of lemmas added by the theory, if any *)
-    do_push ();
+    flush_clauses ();
     (* Now, check that the situation is sane *)
     assert (env.elt_head <= Vec.size env.elt_queue);
     if env.elt_head = Vec.size env.elt_queue then
@@ -1027,8 +1034,8 @@ module Make
       env.propagations <- env.propagations + !num_props;
       env.simpDB_props <- env.simpDB_props - !num_props;
       match !res with
-        | None -> theory_propagate ()
-        | _ -> !res
+      | None -> theory_propagate ()
+      | _ -> !res
     end
 
   (* remove some learnt clauses
@@ -1112,18 +1119,6 @@ module Make
 
   let check_vec vec = Vec.iter check_clause vec
 
-  let add_clauses ?tag cnf: unit =
-    let aux cl =
-      let c =
-        make_clause ?tag (fresh_hname ()) cl (Hyp (current_level ()))
-      in
-      add_clause c;
-      (* Clauses can be added after search has begun (and thus we are not at level 0,
-         so better not do anything at this point.
-      *)
-    in
-    List.iter aux cnf
-
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)
   let solve (): unit =
@@ -1141,7 +1136,7 @@ module Make
           | Sat ->
             assert (env.elt_head = Vec.size env.elt_queue);
             Plugin.if_sat (full_slice ());
-            do_push ();
+            flush_clauses();
             if is_unsat () then raise Unsat
             else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
                  && env.elt_head = St.nb_elt ()
@@ -1152,20 +1147,12 @@ module Make
     with
     | Sat -> ()
 
-  let init_solver ?tag cnf =
-    let nbv = St.nb_elt () in
-    let nbc = env.nb_init_clauses + List.length cnf in
-    Iheap.grow_to_by_double env.order nbv;
-    (* List.iter (List.iter (fun a -> insert_var_order a.var)) cnf; *)
-    St.iter_elt insert_var_order;
-    Vec.grow_to_by_double env.clauses_hyps nbc;
-    Vec.grow_to_by_double env.clauses_learnt nbc;
-    env.nb_init_clauses <- nbc;
-    add_clauses ?tag cnf
-
   let assume ?tag cnf =
-    let cnf = List.rev_map (List.rev_map atom) cnf in
-    init_solver ?tag cnf
+    List.iter (fun l ->
+        let atoms = List.rev_map atom l in
+        let c = make_clause ?tag (fresh_hname ()) atoms (Hyp (current_level ())) in
+        Stack.push c env.clauses_to_add
+      ) cnf
 
   let eval_level lit =
     let var, negated = make_boolean_var lit in
@@ -1191,8 +1178,8 @@ module Make
     let opt = function Some a -> a | None -> assert false in
     Vec.fold
       (fun acc e -> match e with
-        | Lit v -> (v.term, opt v.assigned)  :: acc
-        | Atom _ -> acc)
+         | Lit v -> (v.term, opt v.assigned)  :: acc
+         | Atom _ -> acc)
       [] env.elt_queue
 
   (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
