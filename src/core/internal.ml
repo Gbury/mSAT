@@ -1232,10 +1232,11 @@ module Make
       (* Filter the current buffer of clauses to remove potential assumptions
          with too high a user level,
          or else, with later pushes, these assumptions might be added. *)
-      let cl = Stack.fold (fun acc c ->
-          if c.c_level > l then acc else c :: acc) [] env.clauses_to_add in
+      let cl = ref [] in
+      Stack.iter (fun c ->
+          if c.c_level <= l then cl := c :: !cl) env.clauses_to_add;
       Stack.clear env.clauses_to_add;
-      List.iter (fun c -> Stack.push c env.clauses_to_add) cl;
+      List.iter (fun c -> Stack.push c env.clauses_to_add) !cl;
 
       (* Get back the user level *)
       let ul = Vec.get env.user_levels l in
