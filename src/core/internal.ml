@@ -256,10 +256,9 @@ module Make
   let clause_bump_activity (c:clause) : unit =
     c.activity <- c.activity +. env.clause_incr;
     if c.activity > 1e20 then begin
-      for i = 0 to (Vec.size env.clauses_learnt) - 1 do
-        (Vec.get env.clauses_learnt i).activity <-
-          (Vec.get env.clauses_learnt i).activity *. 1e-20;
-      done;
+      Vec.iter
+        (fun c -> c.activity <- c.activity *. 1e-20)
+        env.clauses_learnt;
       env.clause_incr <- env.clause_incr *. 1e-20
     end
 
@@ -895,12 +894,19 @@ module Make
     Iheap.grow_to_by_double env.order (St.nb_elt ());
     enqueue_bool a lvl (Semantic lvl)
 
+  let slice_bump_lit f n =
+    let a = atom f in
+    for _ = 1 to n do
+      var_bump_activity a.var
+    done
+
   let current_slice (): (_,_,_) Plugin_intf.slice = {
     Plugin_intf.start = env.th_head;
     length = (Vec.size env.elt_queue) - env.th_head;
     get = slice_get;
     push = slice_push;
     propagate = slice_propagate;
+    bump_lit=slice_bump_lit;
   }
 
   (* full slice, for [if_sat] final check *)
@@ -910,6 +916,7 @@ module Make
     get = slice_get;
     push = slice_push;
     propagate = (fun _ -> assert false);
+    bump_lit = (fun _ -> assert false);
   }
 
   (* some boolean literals were decided/propagated within Msat. Now we

@@ -49,6 +49,7 @@ module Plugin(E : Formula_intf.S)
       length = s.Plugin_intf.length;
       get = assume_get s;
       push = s.Plugin_intf.push;
+      bump_lit = s.Plugin_intf.bump_lit;
     }
 
   let assume s = Th.assume (mk_slice s)

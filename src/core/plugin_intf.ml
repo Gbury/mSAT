@@ -40,10 +40,12 @@ type ('term, 'formula, 'proof) slice = {
   get : int -> ('term, 'formula) assumption;
   push : 'formula list -> 'proof -> unit;
   propagate : 'formula -> int -> unit;
+  bump_lit: 'formula -> int -> unit;
 }
 (** The type for a slice of litterals to assume/propagate in the theory.
     [get] operations should only be used for integers [ start <= i < start + length].
-    [push clause proof] allows to add a tautological clause to the sat solver. *)
+    [push clause proof] allows to add a tautological clause to the sat solver.
+    [bump_lit] is useful to heuristically favor this literal for decisions *)
 
 module type S = sig
   (** Signature for theories to be given to the Model Constructing Solver. *)
