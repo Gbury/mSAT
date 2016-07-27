@@ -5,6 +5,7 @@ COMP=ocamlbuild -log $(LOG) -use-ocamlfind
 FLAGS=
 DOC=msat.docdir/index.html
 BIN=main.native
+TEST_BIN=tests/test_api.native
 NAME=msat
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
@@ -21,7 +22,13 @@ bin:
 	$(COMP) $(FLAGS) $(BIN)
 	cp $(BIN) $(NAME) && rm $(BIN)
 
-test: bin
+test_bin:
+	$(COMP) $(FLAGS) $(TEST_BIN)
+
+test: bin test_bin
+	@echo "run API tests…"
+	@./test_api.native
+	@echo "run benchmarks…"
 	@/usr/bin/time -f "%e" ./tests/run smt
 	@/usr/bin/time -f "%e" ./tests/run mcsat
 
