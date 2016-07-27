@@ -1146,6 +1146,7 @@ module Make
     with Sat -> ()
 
   let assume ?tag cnf =
+    if env.base_level > 0 then pop_assumptions ();
     List.iter
       (fun l ->
         let atoms = List.rev_map atom l in
