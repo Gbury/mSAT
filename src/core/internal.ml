@@ -414,11 +414,17 @@ module Make
       for c = env.elt_head to Vec.size env.elt_queue - 1 do
         match (Vec.get env.elt_queue c) with
         (* A literal is unassigned, we nedd to add it back to
-           the heap of potentially assignable literals. *)
+           the heap of potentially assignable literals, unless it has
+           a level lower than [lvl], in which case we just move it back. *)
         | Lit l ->
-          l.assigned <- None;
-          l.l_level <- -1;
-          insert_var_order (elt_of_lit l)
+          if l.l_level <= lvl then begin
+            Vec.set env.elt_queue env.elt_head (of_lit l);
+            env.elt_head <- env.elt_head + 1
+          end else begin
+            l.assigned <- None;
+            l.l_level <- -1;
+            insert_var_order (elt_of_lit l)
+          end
         (* A variable is not true/false anymore, one of two things can happen: *)
         | Atom a ->
           if a.var.v_level <= lvl then begin
@@ -543,8 +549,9 @@ module Make
     | [] -> env.base_level
     | [a] ->
       assert is_uip;
-      env.base_level
+      0
     | a :: b :: r ->
+      assert(a.var.v_level > env.base_level);
       if is_uip then (
         (* backtrack below [a], so we can propagate [not a] *)
         assert(a.var.v_level > b.var.v_level);
