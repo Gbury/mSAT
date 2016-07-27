@@ -22,16 +22,6 @@ module Make
   exception Restart
   exception Conflict of clause
 
-  (* a push/pop state *)
-  type user_level = {
-    (* User levels always refer to decision_level 0 *)
-    ul_elt_lvl : int;     (* Number of atoms in trail at decision level 0 *)
-    ul_th_lvl : int;      (* Number of atoms known by the theory at decision level 0 *)
-    ul_th_env : Plugin.level; (* Theory state at level 0 *)
-    ul_clauses : int;     (* number of clauses *)
-    ul_learnt : int;      (* number of learnt clauses *)
-  }
-
   (* Singleton type containing the current state *)
   type env = {
 
@@ -49,7 +39,7 @@ module Make
 
 
     mutable unsat_conflict : clause option;
-    (* conflict clause at decision level 0, if any *)
+    (* conflict clause at [base_level], if any *)
     mutable next_decision : atom option;
     (* When the last conflict was a semantic one, this stores the next decision to make *)
 
@@ -61,8 +51,6 @@ module Make
     (* decision levels in [trail]  *)
     th_levels : Plugin.level Vec.t;
     (* theory states corresponding to elt_levels *)
-    user_levels : user_level Vec.t;
-    (* user-defined levels, for {!push} and {!pop} *)
 
     mutable th_head : int;
     (* Start offset in the queue {!elt_queue} of
@@ -70,6 +58,10 @@ module Make
     mutable elt_head : int;
     (* Start offset in the queue {!elt_queue} of
        unit facts to propagate, within the trail *)
+
+    mutable base_level: int;
+    (* the decision level under which we cannot backtrack, that is,
+       the one after we pushed local assumptions *)
 
     (* invariant:
        - during propagation, th_head <= elt_head
@@ -140,14 +132,7 @@ module Make
     elt_queue = Vec.make 601 (of_atom dummy_atom);
     elt_levels = Vec.make 601 (-1);
     th_levels = Vec.make 100 Plugin.dummy;
-
-    user_levels = Vec.make 20 {
-        ul_elt_lvl = 0;
-        ul_th_lvl = 0;
-        ul_learnt = 0;
-        ul_clauses = 0;
-        ul_th_env = Plugin.dummy;
-      };
+    base_level = 0;
 
     order = Iheap.init 0;
 
@@ -192,49 +177,6 @@ module Make
     match env.unsat_conflict with
     | Some _ -> true
     | None -> false
-
-  (* Level for push/pop operations *)
-  type level = int
-
-  (* Push/Pop *)
-  let current_level () = Vec.size env.user_levels
-
-  let push () : level =
-    if is_unsat () then
-      (* When unsat, pushing does nothing, since adding more assumptions
-         can not make the proof disappear. *)
-      current_level ()
-    else begin
-      (* The assumptions are sat, or at least not yet detected unsat,
-         we need to save enough to be able to restore the current decision
-         level 0. *)
-      let res = current_level () in
-      (* To restore decision level 0, we need the solver queue, and theory state. *)
-      let ul_elt_lvl, ul_th_lvl =
-        if Vec.is_empty env.elt_levels then
-          env.elt_head, env.th_head
-        else (
-          let l = Vec.get env.elt_levels 0 in
-          l, l
-        )
-      and ul_th_env =
-        if Vec.is_empty env.th_levels
-        then Plugin.current_level ()
-        else Vec.get env.th_levels 0
-      in
-      (* Keep in mind what are the current assumptions. *)
-      let ul_clauses = Vec.size env.clauses_hyps in
-      let ul_learnt = Vec.size env.clauses_learnt in
-      Vec.push env.user_levels {ul_elt_lvl; ul_th_lvl; ul_th_env; ul_clauses; ul_learnt;};
-      res
-    end
-
-  (* To store info for level 0, it is easier to push at module
-     initialisation, when there are no assumptions. *)
-  let base_level =
-    let l = push () in
-    assert (l = 0);
-    l
 
   (* Iteration over subterms.
      When incrementing activity, we want to be able to iterate over
@@ -345,8 +287,8 @@ module Make
       if a.neg.is_true then begin
         (* If a variable is false, we need to see why it is false. *)
         match a.var.reason with
-        | None | Some Decision -> assert false
-        (* The var must have a reason, and it cannot be a decision, since we are
+        | None | Some Decision | Some Assumption -> assert false
+        (* The var must have a reason, and it cannot be a decision/assumption, since we are
            at level 0. *)
         | Some (Bcp cl) -> atoms, cl :: history
         (* The variable has been set to false because of another clause,
@@ -598,10 +540,10 @@ module Make
      a UIP ("Unique Implication Point")
      precond: the atom list is sorted by decreasing decision level *)
   let backtrack_lvl ~is_uip : atom list -> int = function
-    | [] -> 0
+    | [] -> env.base_level
     | [a] ->
       assert is_uip;
-      0
+      env.base_level
     | a :: b :: r ->
       if is_uip then (
         (* backtrack below [a], so we can propagate [not a] *)
@@ -609,7 +551,7 @@ module Make
         b.var.v_level
       ) else (
         assert (a.var.v_level = b.var.v_level);
-        max (a.var.v_level - 1) 0
+        max (a.var.v_level - 1) env.base_level
       )
 
   (* result of conflict analysis, containing the learnt clause and some
@@ -644,7 +586,7 @@ module Make
     try
       while true do
         let lvl, atoms = max_lvl_atoms !c in
-        if lvl = 0 then raise Exit;
+        if lvl = env.base_level then raise Exit;
         match atoms with
         | [] | [_] ->
           is_uip := true;
@@ -670,7 +612,7 @@ module Make
                     c := res
                   | _ -> assert false
                 end
-              | None | Some Decision | Some Semantic _ -> ()
+              | None | Some Decision | Some Assumption | Some Semantic _ -> ()
             end
       done; assert false
     with Exit ->
@@ -692,7 +634,7 @@ module Make
   (* conflict analysis for SAT
      Same idea as the mcsat analyze function (without semantic propagations),
      except we look the the Last UIP (TODO: check ?), and do it in an imperative
-     and eficient manner. *)
+     and efficient manner. *)
   let analyze_sat c_clause : conflict_res =
     let pathC  = ref 0 in
     let learnt = ref [] in
@@ -707,14 +649,14 @@ module Make
     while !cond do
       begin match !c.cpremise with
         | History _ -> clause_bump_activity !c
-        | Hyp _ | Lemma _ -> ()
+        | Hyp | Lemma _ -> ()
       end;
       history := !c :: !history;
       (* visit the current predecessors *)
       for j = 0 to Array.length !c.atoms - 1 do
         let q = !c.atoms.(j) in
-        assert (q.is_true || q.neg.is_true && q.var.v_level >= 0); (* unsure? *)
-        if q.var.v_level = 0 then begin
+        assert (q.is_true || q.neg.is_true && q.var.v_level >= env.base_level); (* unsure? *)
+        if q.var.v_level <= env.base_level then begin
           assert (q.neg.is_true);
           match q.var.reason with
           | Some Bcp cl -> history := cl :: !history
@@ -723,7 +665,7 @@ module Make
         if not q.var.seen then begin
           q.var.seen <- true;
           seen := q :: !seen;
-          if q.var.v_level > 0 then begin
+          if q.var.v_level > env.base_level then begin
             var_bump_activity q.var;
             if q.var.v_level >= decision_level () then begin
               incr pathC
@@ -799,7 +741,8 @@ module Make
   let add_boolean_conflict (confl:clause): unit =
     env.next_decision <- None;
     env.conflicts <- env.conflicts + 1;
-    if decision_level() = 0 || Array_util.for_all (fun a -> a.var.v_level = 0) confl.atoms then
+    if decision_level() = 0
+    || Array_util.for_all (fun a -> a.var.v_level <= env.base_level) confl.atoms then
       report_unsat confl; (* Top-level conflict *)
     let cr = analyze confl in
     cancel_until cr.cr_backtrack_lvl;
@@ -809,9 +752,8 @@ module Make
      the clause is false in the current trail *)
   let add_clause ?(force=false) (init:clause) : unit =
     Log.debugf 90 "Adding clause:@[<hov>%a@]" (fun k -> k St.pp_clause init);
-    assert (init.c_level <= current_level ());
     let vec = match init.cpremise with
-      | Hyp _ -> env.clauses_hyps
+      | Hyp -> env.clauses_hyps
       | Lemma _ -> env.clauses_learnt
       | History _ -> assert false
     in
@@ -862,8 +804,7 @@ module Make
       env.nb_init_clauses <- nbc;
       while not (Stack.is_empty env.clauses_to_add) do
         let c = Stack.pop env.clauses_to_add in
-        if c.c_level <= current_level () then
-          add_clause c
+        add_clause c
       done
     end
 
@@ -1119,41 +1060,6 @@ module Make
 
   let check_vec vec = Vec.iter check_clause vec
 
-  (* fixpoint of propagation and decisions until a model is found, or a
-     conflict is reached *)
-  let solve (): unit =
-    if is_unsat () then raise Unsat;
-    let n_of_conflicts = ref (to_float env.restart_first) in
-    let n_of_learnts = ref ((to_float (nb_clauses())) *. env.learntsize_factor) in
-    try
-      while true do
-        begin try
-            search (to_int !n_of_conflicts) (to_int !n_of_learnts)
-          with
-          | Restart ->
-            n_of_conflicts := !n_of_conflicts *. env.restart_inc;
-            n_of_learnts   := !n_of_learnts *. env.learntsize_inc
-          | Sat ->
-            assert (env.elt_head = Vec.size env.elt_queue);
-            Plugin.if_sat (full_slice ());
-            flush_clauses();
-            if is_unsat () then raise Unsat
-            else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
-                 && env.elt_head = St.nb_elt ()
-                 (* this is the important test to know if the search is finished *)
-            then raise Sat
-        end
-      done
-    with
-    | Sat -> ()
-
-  let assume ?tag cnf =
-    List.iter (fun l ->
-        let atoms = List.rev_map atom l in
-        let c = make_clause ?tag (fresh_hname ()) atoms (Hyp (current_level ())) in
-        Stack.push c env.clauses_to_add
-      ) cnf
-
   let eval_level lit =
     let var, negated = make_boolean_var lit in
     if not var.pa.is_true && not var.na.is_true
@@ -1168,10 +1074,6 @@ module Make
 
   let eval lit = fst (eval_level lit)
 
-  let hyps () = env.clauses_hyps
-
-  let history () = env.clauses_learnt
-
   let unsat_conflict () = env.unsat_conflict
 
   let model () : (term * term) list =
@@ -1182,119 +1084,77 @@ module Make
          | Atom _ -> acc)
       [] env.elt_queue
 
-  (* Backtrack to decision_level 0, with trail_lim && theory env specified *)
-  let reset_until push_lvl (ul: user_level) =
-    Log.debug 1 "Resetting to decision level 0 (pop/forced)";
-    env.th_head <- ul.ul_th_lvl ;
-    env.elt_head <- ul.ul_elt_lvl;
-    for c = env.elt_head to Vec.size env.elt_queue - 1 do
-      match Vec.get env.elt_queue c with
-      | Lit l ->
-        l.assigned <- None;
-        l.l_level <- -1;
-        insert_var_order (elt_of_lit l)
-      | Atom a ->
-        begin match a.var.reason with
-          | Some Bcp { c_level } when c_level > push_lvl ->
-            a.is_true <- false;
-            a.neg.is_true <- false;
-            a.var.v_level <- -1;
-            a.var.reason <- None;
-            insert_var_order (elt_of_var a.var)
-          | _ ->
-            if a.var.v_level = 0 then begin
-              (* [a] is still true, so we move it to the current top position
-                 of the trail, as if it was propagated again *)
-              Vec.set env.elt_queue env.elt_head (of_atom a);
-              env.elt_head <- env.elt_head + 1
-            end else begin
-              a.is_true <- false;
-              a.neg.is_true <- false;
-              a.var.v_level <- -1;
-              a.var.reason <- None;
-              insert_var_order (elt_of_var a.var)
-            end
-        end
-    done;
-    Plugin.backtrack ul.ul_th_env; (* recover the right theory env *)
-    Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - env.elt_head);
-    Vec.clear env.elt_levels;
-    Vec.clear env.th_levels;
-    assert (Vec.size env.elt_levels = Vec.size env.th_levels);
-    assert (env.elt_head = Vec.size env.elt_queue);
+  (* push a series of assumptions to the stack *)
+  let push_assumptions =
+    List.iter
+      (fun lit ->
+         let a = atom lit in
+         if a.is_true then ()
+         else if a.neg.is_true then (
+           (* conflict between assumptions: UNSAT *)
+           let c = make_clause (fresh_hname ()) [a] Hyp in
+           add_boolean_conflict c;
+           assert false (* should raise Unsat *)
+         ) else (
+           (* make a decision, propagate *)
+           new_decision_level();
+           let level = decision_level() in
+           assert (env.base_level = level-1);
+           env.base_level <- level;
+           enqueue_bool a ~level Assumption;
+           match propagate () with
+             | Some confl -> (* Conflict *)
+               add_boolean_conflict confl;
+               assert false (* should raise Unsat *)
+             | None -> ()
+         ))
+
+  (* clear assumptions *)
+  let pop_assumptions (): unit =
+    cancel_until 0;
+    env.base_level <- 0;
     ()
 
-  let pop l: unit =
-    (* Check sanity of pop *)
-    if l > current_level () then invalid_arg "cannot pop to level, it is too high"
-    else if l < current_level () then begin
-
-      (* Filter the current buffer of clauses to remove potential assumptions
-         with too high a user level,
-         or else, with later pushes, these assumptions might be added. *)
-      let cl = ref [] in
-      Stack.iter (fun c ->
-          if c.c_level <= l then cl := c :: !cl) env.clauses_to_add;
-      Stack.clear env.clauses_to_add;
-      List.iter (fun c -> Stack.push c env.clauses_to_add) !cl;
-
-      (* Get back the user level *)
-      let ul = Vec.get env.user_levels l in
-      Vec.shrink env.user_levels (max 0 (Vec.size env.user_levels - l - 1));
-
-      (* It is quite hard to check wether unsat status can be kept, so in doubt, we remove it *)
-      env.unsat_conflict <- None;
-
-      (* Backtrack to the level 0 with appropriate settings *)
-      reset_until l ul;
-
-      (* Log current assumptions for debugging purposes *)
-      Log.debugf 99 "@[<v2>Current trail:@ %a@]"
-        (fun k->
-           let pp out () =
-             for i = 0 to Vec.size env.elt_queue - 1 do
-               Format.fprintf out "%s%s%d -- %a@,"
-                 (if i = ul.ul_elt_lvl then "*" else " ")
-                 (if i = ul.ul_th_lvl then "*" else " ")
-                 i (fun fmt e ->
-                     match e with
-                     | Lit l -> St.pp_lit fmt l
-                     | Atom a -> St.pp_atom fmt a)
-                 (Vec.get env.elt_queue i)
-             done
-           in
-           k pp ());
-
-      (* Clear hypothesis not valid anymore *)
-      for i = ul.ul_clauses to Vec.size env.clauses_hyps - 1 do
-        let c = Vec.get env.clauses_hyps i in
-        assert (c.c_level > l);
-        detach_clause c
-      done;
-      Vec.shrink env.clauses_hyps (Vec.size env.clauses_hyps - ul.ul_clauses);
-
-      (* Refresh the known tautologies simplified because of clauses that have been removed *)
-      let s = Stack.create () in
-      let new_sz = ref ul.ul_learnt in
-      for i = ul.ul_learnt to Vec.size env.clauses_learnt - 1 do
-        let c = Vec.get env.clauses_learnt i in
-        if c.c_level > l then begin
-          detach_clause c;
-          match c.cpremise with
-          | Lemma _ -> Stack.push c s
-          | History ({ cpremise = Lemma _ } as c' :: _ ) -> Stack.push c' s
-          | _ -> () (* Only simplified clauses can have a level > 0 *)
-        end else begin
-          Log.debugf 15 "Keeping intact clause %a" (fun k->k St.pp_clause c);
-          Vec.set env.clauses_learnt !new_sz c;
-          incr new_sz
+  (* fixpoint of propagation and decisions until a model is found, or a
+     conflict is reached *)
+  let solve ?(assumptions=[]) (): unit =
+    if env.base_level > 0 then pop_assumptions();
+    if is_unsat () then raise Unsat;
+    let n_of_conflicts = ref (to_float env.restart_first) in
+    let n_of_learnts = ref ((to_float (nb_clauses())) *. env.learntsize_factor) in
+    push_assumptions assumptions;
+    assert (env.base_level <= List.length assumptions);
+    try
+      while true do
+        begin try
+            search (to_int !n_of_conflicts) (to_int !n_of_learnts)
+          with
+            | Restart ->
+              n_of_conflicts := !n_of_conflicts *. env.restart_inc;
+              n_of_learnts   := !n_of_learnts *. env.learntsize_inc
+            | Sat ->
+              assert (env.elt_head = Vec.size env.elt_queue);
+              Plugin.if_sat (full_slice ());
+              flush_clauses();
+              if is_unsat () then raise Unsat
+              else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
+                   && env.elt_head = St.nb_elt ()
+                   (* this is the important test to know if the search is finished *)
+              then raise Sat
         end
-      done;
-      Vec.shrink env.clauses_learnt (Vec.size env.clauses_learnt - !new_sz);
-      Stack.iter (add_clause ~force:true) s
-    end
+      done
+    with Sat -> ()
 
-  let reset () = pop base_level
+  let assume ?tag cnf =
+    List.iter
+      (fun l ->
+        let atoms = List.rev_map atom l in
+        let c = make_clause ?tag (fresh_hname ()) atoms Hyp in
+        Stack.push c env.clauses_to_add)
+      cnf
 
+  let hyps () = env.clauses_hyps
+
+  let history () = env.clauses_learnt
 end
 

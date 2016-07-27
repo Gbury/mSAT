@@ -234,16 +234,16 @@ let main () =
     let res = Smt.solve () in
     Gc.delete_alarm al;
     begin match res with
-      | Smt.Sat ->
+      | Smt.Sat sat ->
         let t = Sys.time () in
         if !p_check then
-          if not (List.for_all (List.exists Smt.eval) cnf) then
+          if not (List.for_all (List.exists sat.Solver_intf.eval) cnf) then
             raise Incorrect_model;
         print "Sat (%f/%f)" t (Sys.time () -. t)
-      | Smt.Unsat ->
+      | Smt.Unsat us ->
         let t = Sys.time () in
         if !p_check then begin
-          let p = Smt.get_proof () in
+          let p = us.Solver_intf.get_proof () in
           Smt.Proof.check p;
           print_proof p;
           if !p_unsat_core then
@@ -256,16 +256,16 @@ let main () =
     let res = Mcsat.solve () in
     Gc.delete_alarm al;
     begin match res with
-      | Mcsat.Sat ->
+      | Mcsat.Sat sat ->
         let t = Sys.time () in
         if !p_check then
-          if not (List.for_all (List.exists Mcsat.eval) cnf) then
+          if not (List.for_all (List.exists sat.Solver_intf.eval) cnf) then
             raise Incorrect_model;
         print "Sat (%f/%f)" t (Sys.time () -. t)
-      | Mcsat.Unsat ->
+      | Mcsat.Unsat us ->
         let t = Sys.time () in
         if !p_check then begin
-          let p = Mcsat.get_proof () in
+          let p = us.Solver_intf.get_proof () in
           Mcsat.Proof.check p;
           print_mcproof p;
           if !p_unsat_core then

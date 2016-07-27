@@ -58,7 +58,6 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     name : string;
     tag : int option;
     atoms : atom array;
-    c_level : int;
     mutable cpremise : premise;
     mutable activity : float;
     mutable attached : bool;
@@ -69,9 +68,10 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | Decision
     | Bcp of clause
     | Semantic of int
+    | Assumption
 
   and premise =
-    | Hyp of int
+    | Hyp
     | Lemma of proof
     | History of clause list
 
@@ -106,7 +106,6 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       atoms = [| |];
       activity = -1.;
       attached = false;
-      c_level = -1;
       visited = false;
       cpremise = History [] }
 
@@ -187,18 +186,11 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
 
   let make_clause ?tag name ali premise =
     let atoms = Array.of_list ali in
-    let level =
-      match premise with
-      | Hyp lvl -> lvl
-      | Lemma _ -> 0
-      | History l -> List.fold_left (fun lvl c -> max lvl c.c_level) 0 l
-    in
     { name  = name;
       tag = tag;
       atoms = atoms;
       attached = false;
       visited = false;
-      c_level = level;
       activity = 0.;
       cpremise = premise}
 
@@ -275,6 +267,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | n, Some Decision   -> sprintf "@@%d" n
     | n, Some Bcp c -> sprintf "->%d/%s" n c.name
     | n, Some Semantic lvl -> sprintf "::%d/%d" n lvl
+    | n, Some Assumption -> sprintf "!%d" n
 
   let value a =
     if a.is_true then sprintf "[T%s]" (level a)
@@ -282,7 +275,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     else "[]"
 
   let pp_premise out = function
-    | Hyp _ -> Format.fprintf out "hyp"
+    | Hyp -> Format.fprintf out "hyp"
     | Lemma _ -> Format.fprintf out "th_lemma"
     | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@ " name) v
 

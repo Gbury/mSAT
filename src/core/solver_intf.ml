@@ -4,6 +4,28 @@ Copyright 2016 Guillaume Bury
 Copyright 2016 Simon Cruanes
 *)
 
+type ('term, 'form) sat_state = {
+  eval: 'form -> bool;
+  (** Returns the valuation of a formula in the current state
+      of the sat solver.
+      @raise UndecidedLit if the literal is not decided *)
+  eval_level: 'form -> bool * int;
+  (** Return the current assignement of the literals, as well as its
+      decision level. If the level is 0, then it is necessary for
+      the atom to have this value; otherwise it is due to choices
+      that can potentially be backtracked.
+      @raise UndecidedLit if the literal is not decided *)
+  model: unit -> ('term * 'term) list;
+  (** Returns the model found if the formula is satisfiable. *)
+}
+
+type ('clause, 'proof) unsat_state = {
+  unsat_conflict : unit -> 'clause;
+  (** Returns the unsat clause found at the toplevel *)
+  get_proof : unit -> 'proof;
+  (** returns a persistent proof of the empty clause from the Unsat result. *)
+}
+
 module type S = sig
 
   (** {2 Internal modules}
@@ -19,7 +41,9 @@ module type S = sig
   type atom = St.formula
   (** The type of atoms given by the module argument for formulas *)
 
-  type res = Sat | Unsat
+  type res =
+    | Sat of (St.term,St.formula) sat_state
+    | Unsat of (St.clause,Proof.proof) unsat_state
   (** Result type for the solver *)
 
   exception UndecidedLit
@@ -32,53 +56,14 @@ module type S = sig
   (** Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place. *)
 
-  val solve : unit -> res
-  (** Try and solves the current set of assumptions.
-      @return () if the current set of clauses is satisfiable
-      @raise Unsat if a toplevel conflict is found *)
-
-  val eval : atom -> bool
-  (** Returns the valuation of a formula in the current state
-      of the sat solver.
-      @raise UndecidedLit if the literal is not decided *)
-
-  val eval_level : atom -> bool * int
-  (** Return the current assignement of the literals, as well as its
-      decision level. If the level is 0, then it is necessary for
-      the atom to have this value; otherwise it is due to choices
-      that can potentially be backtracked.
-      @raise UndecidedLit if the literal is not decided *)
-
-  val get_proof : unit -> Proof.proof
-  (** If the last call to [solve] returned [Unsat], then returns a persistent
-      proof of the empty clause. *)
+  val solve : ?assumptions:atom list -> unit -> res
+  (** Try and solves the current set of assumptions. *)
 
   val unsat_core : Proof.proof -> St.clause list
   (** Returns the unsat core of a given proof. *)
 
   val get_tag : St.clause -> int option
   (** Recover tag from a clause, if any *)
-
-  (** {2 Push/Pop operations} *)
-
-  type level
-  (** Abstract notion of assumption level. *)
-
-  val base_level : level
-  (** Level with no assumption at all, corresponding to the empty solver *)
-
-  val current_level : unit -> level
-  (** The current level *)
-
-  val push : unit -> level
-  (** Create a new level that extends the previous one. *)
-
-  val pop : level -> unit
-  (** Go back to the given level, forgetting every assumption added since.
-      @raise Invalid_argument if the current level is below the argument *)
-
-  val reset : unit -> unit
-  (** Rest the state of the solver, i.e return to level {!base_level} *)
 
 end
 

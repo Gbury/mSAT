@@ -18,9 +18,14 @@ module Make
 
   module Proof : Res.S with module St = St
 
-  val solve : unit -> unit
+  val solve :
+    ?assumptions:St.formula list ->
+    unit ->
+    unit
   (** Try and solves the current set of assumptions.
       @return () if the current set of clauses is satisfiable
+      @param assumptions list of additional local assumptions to make,
+        removed after the callback returns a value
       @raise Unsat if a toplevel conflict is found *)
 
   val assume : ?tag:int -> St.formula list list -> unit
@@ -53,28 +58,5 @@ module Make
 
   val model : unit -> (St.term * St.term) list
   (** Returns the model found if the formula is satisfiable. *)
-
-
-  (** {2 Backtracking facilities} *)
-
-  type level
-  (** Abstract notion of assumption level. *)
-
-  val base_level : level
-  (** Level with no assumption at all, corresponding to the empty solver *)
-
-  val current_level : unit -> level
-  (** The current level *)
-
-  val push : unit -> level
-  (** Create a new level that extends the previous one. *)
-
-  val pop : level -> unit
-  (** Go back to the given level, forgetting every assumption added since.
-      @raise Invalid_argument if the current level is below the argument *)
-
-  val reset : unit -> unit
-  (** Return to level {!base_level} *)
-
 end
 

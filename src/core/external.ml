@@ -6,6 +6,29 @@ Copyright 2016 Simon Cruanes
 
 module type S = Solver_intf.S
 
+type ('term, 'form) sat_state = ('term, 'form) Solver_intf.sat_state = {
+  eval: 'form -> bool;
+  (** Returns the valuation of a formula in the current state
+      of the sat solver.
+      @raise UndecidedLit if the literal is not decided *)
+  eval_level: 'form -> bool * int;
+  (** Return the current assignement of the literals, as well as its
+      decision level. If the level is 0, then it is necessary for
+      the atom to have this value; otherwise it is due to choices
+      that can potentially be backtracked.
+      @raise UndecidedLit if the literal is not decided *)
+  model: unit -> ('term * 'term) list;
+  (** Returns the model found if the formula is satisfiable. *)
+}
+
+type ('clause, 'proof) unsat_state = ('clause, 'proof) Solver_intf.unsat_state = {
+  unsat_conflict : unit -> 'clause;
+  (** Returns the unsat clause found at the toplevel *)
+  get_proof : unit -> 'proof;
+  (** returns a persistent proof of the empty clause from the Unsat result. *)
+}
+
+
 module Make
     (St : Solver_types.S)
     (Th : Plugin_intf.S with type term = St.term
@@ -25,36 +48,35 @@ module Make
   type clause = St.clause
   type proof = Proof.proof
 
-  type res = Sat | Unsat
+  type res =
+    | Sat of (St.term,St.formula) sat_state
+    | Unsat of (St.clause,Proof.proof) unsat_state
 
-  let assume ?tag l =
-    try S.assume ?tag l
-    with S.Unsat -> ()
+  let assume ?tag l = S.assume ?tag l
 
-  let solve () =
+  let mk_sat () : _ sat_state =
+    { model=S.model; eval=S.eval; eval_level=S.eval_level }
+
+  let mk_unsat () : _ unsat_state =
+    let unsat_conflict () = match S.unsat_conflict () with
+      | None -> assert false
+      | Some c -> c
+    in
+    let get_proof () =
+      let c = unsat_conflict() in
+      S.Proof.prove_unsat c
+    in
+    { unsat_conflict; get_proof; }
+
+  let solve ?assumptions () =
     try
-      S.solve ();
-      Sat
-    with S.Unsat -> Unsat
-
-  let eval = S.eval
-  let eval_level = S.eval_level
-
-  let get_proof () =
-    match S.unsat_conflict () with
-    | None -> assert false
-    | Some c -> S.Proof.prove_unsat c
+      S.solve ?assumptions ();
+      Sat (mk_sat())
+    with S.Unsat ->
+      Unsat (mk_unsat())
 
   let unsat_core = S.Proof.unsat_core
 
   let get_tag cl = St.(cl.tag)
-
-  (* Push/pop operations *)
-  type level = S.level
-  let base_level = S.base_level
-  let current_level = S.current_level
-  let push = S.push
-  let pop = S.pop
-  let reset = S.reset
 
 end

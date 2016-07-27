@@ -53,7 +53,6 @@ module type S = sig
     name : string;
     tag : int option;
     atoms : atom array;
-    c_level : int;
     mutable cpremise : premise;
     mutable activity : float;
     mutable attached : bool;
@@ -64,9 +63,10 @@ module type S = sig
     | Decision
     | Bcp of clause
     | Semantic of int
+    | Assumption
 
   and premise =
-    | Hyp of int
+    | Hyp
     | Lemma of proof
     | History of clause list
 
