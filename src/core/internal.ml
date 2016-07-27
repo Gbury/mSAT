@@ -403,6 +403,7 @@ module Make
      i.e we want to go back to the state the solver was in
          when decision level [lvl] was created. *)
   let cancel_until lvl =
+    assert (lvl >= env.base_level);
     (* Nothing to do if we try to backtrack to a non-existent level. *)
     if decision_level () > lvl then begin
       Log.debugf 5 "Backtracking to lvl %d" (fun k -> k lvl);
@@ -546,7 +547,7 @@ module Make
      a UIP ("Unique Implication Point")
      precond: the atom list is sorted by decreasing decision level *)
   let backtrack_lvl ~is_uip : atom list -> int = function
-    | [] -> env.base_level
+    | [] -> 0
     | [a] ->
       assert is_uip;
       0
@@ -593,7 +594,7 @@ module Make
     try
       while true do
         let lvl, atoms = max_lvl_atoms !c in
-        if lvl = env.base_level then raise Exit;
+        if lvl <= env.base_level then raise Exit;
         match atoms with
         | [] | [_] ->
           is_uip := true;
@@ -748,11 +749,12 @@ module Make
   let add_boolean_conflict (confl:clause): unit =
     env.next_decision <- None;
     env.conflicts <- env.conflicts + 1;
-    if decision_level() = 0
+    assert (decision_level() >= env.base_level);
+    if decision_level() = env.base_level
     || Array_util.for_all (fun a -> a.var.v_level <= env.base_level) confl.atoms then
       report_unsat confl; (* Top-level conflict *)
     let cr = analyze confl in
-    cancel_until cr.cr_backtrack_lvl;
+    cancel_until (max cr.cr_backtrack_lvl env.base_level);
     record_learnt_clause confl cr
 
   (* Add a new clause, simplifying, propagating, and backtracking if
@@ -788,13 +790,13 @@ module Make
           attach_clause clause;
           if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
             let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
-            cancel_until lvl;
+            cancel_until (max lvl env.base_level);
             enqueue_bool a lvl (Bcp clause)
           end
         end
       | [a]   ->
         Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
-        cancel_until 0;
+        cancel_until env.base_level;
         enqueue_bool a 0 (Bcp clause)
     with Trivial ->
       Vec.push vec init;
@@ -1048,7 +1050,7 @@ module Make
         if Vec.size env.elt_queue = St.nb_elt ()
         then raise Sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
-          cancel_until 0;
+          cancel_until env.base_level;
           raise Restart
         end;
         (* if decision_level() = 0 then simplify (); *)
@@ -1096,12 +1098,12 @@ module Make
     List.iter
       (fun lit ->
          let a = atom lit in
+         Log.debugf 10 "push assumption %a" (fun k->k pp_atom a);
          if a.is_true then ()
          else if a.neg.is_true then (
            (* conflict between assumptions: UNSAT *)
            let c = make_clause (fresh_hname ()) [a] Hyp in
-           add_boolean_conflict c;
-           assert false (* should raise Unsat *)
+           report_unsat c;
          ) else (
            (* make a decision, propagate *)
            new_decision_level();
@@ -1111,21 +1113,24 @@ module Make
            enqueue_bool a ~level Assumption;
            match propagate () with
              | Some confl -> (* Conflict *)
-               add_boolean_conflict confl;
-               assert false (* should raise Unsat *)
+               report_unsat confl;
              | None -> ()
          ))
 
   (* clear assumptions *)
   let pop_assumptions (): unit =
+    env.base_level <- 0; (* before the [cancel_until]! *)
     cancel_until 0;
-    env.base_level <- 0;
     ()
 
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)
   let solve ?(assumptions=[]) (): unit =
-    if env.base_level > 0 then pop_assumptions();
+    Log.debug 5 "solve";
+    if env.base_level > 0 then (
+      pop_assumptions();
+      env.unsat_conflict <- None;
+    );
     if is_unsat () then raise Unsat;
     let n_of_conflicts = ref (to_float env.restart_first) in
     let n_of_learnts = ref ((to_float (nb_clauses())) *. env.learntsize_factor) in
@@ -1153,7 +1158,10 @@ module Make
     with Sat -> ()
 
   let assume ?tag cnf =
-    if env.base_level > 0 then pop_assumptions ();
+    if env.base_level > 0 then (
+      pop_assumptions ();
+      env.unsat_conflict <- None;
+    );
     List.iter
       (fun l ->
         let atoms = List.rev_map atom l in
