@@ -9,6 +9,8 @@ Copyright 2014 Simon Cruanes
 module F = Expr
 module T = Cnf.S
 
+let (|>) x f = f x
+
 type solver = Smt | Mcsat
 let solver_list = [
   "smt", Smt;
@@ -64,7 +66,7 @@ let mk_solver (s:solver): (module BASIC_SOLVER) =
           | Sat _ -> R_sat
           | Unsat _ -> R_unsat
       end
-        in (module S)
+      in (module S)
     | Mcsat ->
       let module S = struct
         include Mcsat.Make(struct end)
@@ -72,7 +74,7 @@ let mk_solver (s:solver): (module BASIC_SOLVER) =
           | Sat _ -> R_sat
           | Unsat _ -> R_unsat
       end
-        in (module S)
+      in (module S)
 
 exception Error of string
 
@@ -115,7 +117,7 @@ module Test = struct
               | R_unsat, `Expect_sat ->
                 error "expect sat, got unsat"
               | R_sat, `Expect_unsat ->
-                error "expect sat, got unsat"
+                error "expect unsat, got sat"
         )
         t.actions;
       Pass
@@ -134,7 +136,8 @@ module Test = struct
 
   (* same as test1 but with assumptions *)
   let test2 =
-    [ assume [[-1;2]; [-1;3]];
+    [ solve `Expect_sat;
+      assume [[-1;2]; [-1;3]];
       solve `Expect_sat;
       assume [[-2;4]; [-3;-4]];
       solve `Expect_sat;
@@ -155,12 +158,20 @@ module Test = struct
       solve ~assumptions:[1] `Expect_unsat;
       solve `Expect_sat;
       solve ~assumptions:[2] `Expect_sat;
+      assume [[1]];
+      solve `Expect_unsat;
     ] |> mk_test "test3"
+
+  (* just check that we do create new solvers *)
+  let test_clean =
+    [ solve `Expect_sat
+    ] |> mk_test "test_clean"
 
   let suite =
     [ test1;
       test2;
       test3;
+      test_clean; (* after test3 *)
     ]
 end
 
