@@ -178,6 +178,7 @@ end
 let main () =
   (* Administrative duties *)
   Arg.parse argspec (fun _ -> ()) usage;
+  let failed = ref false in
   List.iter
     (fun solver ->
        List.iter
@@ -185,8 +186,11 @@ let main () =
             Printf.printf "(%-6s) %-10s... %!" (string_of_solver solver) test.Test.name;
             match Test.run solver test with
               | Test.Pass -> Printf.printf "ok\n%!"
-              | Test.Fail msg -> Printf.printf "fail (%s)\n%!" msg)
+              | Test.Fail msg ->
+                failed := true;
+                Printf.printf "fail (%s)\n%!" msg)
          Test.suite)
-    [Smt; Mcsat]
+    [Smt; Mcsat];
+  if !failed then exit 1
 
 let () = main()
