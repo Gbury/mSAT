@@ -1134,6 +1134,8 @@ module Make
     if is_unsat () then raise Unsat;
     let n_of_conflicts = ref (to_float env.restart_first) in
     let n_of_learnts = ref ((to_float (nb_clauses())) *. env.learntsize_factor) in
+    (* return to level 0 before pushing assumptions *)
+    cancel_until 0;
     push_assumptions assumptions;
     assert (env.base_level <= List.length assumptions);
     try
