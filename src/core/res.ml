@@ -136,7 +136,7 @@ module Make(St : Solver_types.S) = struct
     match conclusion.St.cpremise with
     | St.Lemma l ->
       {conclusion; step = Lemma l; }
-    | St.Hyp _ ->
+    | St.Hyp ->
       { conclusion; step = Hypothesis; }
     | St.History [] ->
       assert false
@@ -163,7 +163,7 @@ module Make(St : Solver_types.S) = struct
         if not c.St.visited then begin
           c.St.visited <- true;
           match c.St.cpremise with
-            | St.Hyp _ | St.Lemma _ -> aux (c :: res) acc r
+            | St.Hyp | St.Lemma _ -> aux (c :: res) acc r
             | St.History h ->
               let l = List.fold_left (fun acc c ->
                   if not c.St.visited then c :: acc else acc) r h in

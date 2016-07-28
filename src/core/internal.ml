@@ -287,7 +287,7 @@ module Make
       if a.neg.is_true then begin
         (* If a variable is false, we need to see why it is false. *)
         match a.var.reason with
-        | None | Some Decision | Some Assumption -> assert false
+        | None | Some Decision -> assert false
         (* The var must have a reason, and it cannot be a decision/assumption, since we are
            at level 0. *)
         | Some (Bcp cl) -> atoms, cl :: history
@@ -620,7 +620,7 @@ module Make
                     c := res
                   | _ -> assert false
                 end
-              | None | Some Decision | Some Assumption | Some Semantic _ -> ()
+              | None | Some Decision | Some Semantic _ -> ()
             end
       done; assert false
     with Exit ->
@@ -1110,7 +1110,8 @@ module Make
            let level = decision_level() in
            assert (env.base_level = level-1);
            env.base_level <- level;
-           enqueue_bool a ~level Assumption;
+           let c = make_clause (fresh_hname ()) [a] Hyp in
+           enqueue_bool a ~level (Bcp c);
            match propagate () with
              | Some confl -> (* Conflict *)
                report_unsat confl;

@@ -63,7 +63,6 @@ module type S = sig
     | Decision
     | Bcp of clause
     | Semantic of int
-    | Assumption
 
   and premise =
     | Hyp

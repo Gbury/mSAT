@@ -68,7 +68,6 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | Decision
     | Bcp of clause
     | Semantic of int
-    | Assumption
 
   and premise =
     | Hyp
@@ -267,7 +266,6 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | n, Some Decision   -> sprintf "@@%d" n
     | n, Some Bcp c -> sprintf "->%d/%s" n c.name
     | n, Some Semantic lvl -> sprintf "::%d/%d" n lvl
-    | n, Some Assumption -> sprintf "!%d" n
 
   let value a =
     if a.is_true then sprintf "[T%s]" (level a)
