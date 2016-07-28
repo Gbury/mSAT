@@ -663,7 +663,7 @@ module Make
       (* visit the current predecessors *)
       for j = 0 to Array.length !c.atoms - 1 do
         let q = !c.atoms.(j) in
-        assert (q.is_true || q.neg.is_true && q.var.v_level >= env.base_level); (* unsure? *)
+        assert (q.is_true || q.neg.is_true && q.var.v_level >= 0); (* unsure? *)
         if q.var.v_level <= env.base_level then begin
           assert (q.neg.is_true);
           match q.var.reason with
