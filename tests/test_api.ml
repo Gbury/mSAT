@@ -57,22 +57,32 @@ module type BASIC_SOLVER = sig
   val assume : ?tag:int -> F.t list list -> unit
 end
 
+exception Incorrect_model
+
 let mk_solver (s:solver): (module BASIC_SOLVER) =
   match s with
     | Smt ->
       let module S = struct
         include Smt.Make(struct end)
         let solve ?assumptions ()= match solve ?assumptions() with
-          | Sat _ -> R_sat
-          | Unsat _ -> R_unsat
+          | Sat _ ->
+            R_sat
+          | Unsat us ->
+            let p = us.Solver_intf.get_proof () in
+            Proof.check p;
+            R_unsat
       end
       in (module S)
     | Mcsat ->
       let module S = struct
         include Mcsat.Make(struct end)
         let solve ?assumptions ()= match solve ?assumptions() with
-          | Sat _ -> R_sat
-          | Unsat _ -> R_unsat
+          | Sat _ ->
+            R_sat
+          | Unsat us ->
+            let p = us.Solver_intf.get_proof () in
+            Proof.check p;
+            R_unsat
       end
       in (module S)
 
