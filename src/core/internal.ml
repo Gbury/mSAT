@@ -183,21 +183,23 @@ module Make
      all subterms of a formula. However, the function provided by the theory
      may be costly (if it walks a tree-like structure, and does some processing
      to ignore some subterms for instance), so we want to 'cache' to list
-     of subterms of each formula. To do so we use a hashtable from variable id to
-     list of subterms. *)
-  let iter_map = Hashtbl.create 1003
-
-  let iter_sub f v =
-    List.iter f (Hashtbl.find iter_map v.vid)
+     of subterms of each formula, so we have a field [v_assignable]
+     directly in variables to do so.  *)
+  let iter_sub f v = match v.v_assignable with
+    | None -> assert false
+    | Some [] -> ()
+    | Some l -> List.iter f l
 
   (* When we have a new literal,
      we need to first create the list of its subterms. *)
   let atom (f:St.formula) : atom =
     let res = add_atom f in
-    if not (Hashtbl.mem iter_map res.var.vid) then begin
-      let l = ref [] in
-      Plugin.iter_assignable (fun t -> l := add_term t :: !l) res.var.pa.lit;
-      Hashtbl.add iter_map res.var.vid !l
+    begin match res.var.v_assignable with
+      | Some _ -> ()
+      | None ->
+        let l = ref [] in
+        Plugin.iter_assignable (fun t -> l := add_term t :: !l) res.var.pa.lit;
+        res.var.v_assignable <- Some !l;
     end;
     res
 

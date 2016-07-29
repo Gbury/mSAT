@@ -42,6 +42,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     mutable seen : bool;
     mutable v_level : int;
     mutable v_weight : float;
+    mutable v_assignable: lit list option;
     mutable reason : reason option;
   }
 
@@ -88,6 +89,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       seen = false;
       v_level = -1;
       v_weight = -1.;
+      v_assignable = None;
       reason = None;
     }
   and dummy_atom =
@@ -154,6 +156,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
             seen = false;
             v_level = -1;
             v_weight = 0.;
+            v_assignable = None;
             reason = None;
           }
         and pa =

@@ -37,6 +37,7 @@ module type S = sig
     mutable seen : bool;
     mutable v_level : int;
     mutable v_weight : float;
+    mutable v_assignable: lit list option;
     mutable reason : reason option;
   }
 
