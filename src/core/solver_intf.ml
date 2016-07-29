@@ -29,7 +29,7 @@ type ('clause, 'proof) unsat_state = {
 module type S = sig
 
   (** {2 Internal modules}
-      These are the internal modules used, you should probablynot use them
+      These are the internal modules used, you should probably not use them
       if you're not familiar with the internals of mSAT. *)
 
   module St : Solver_types.S

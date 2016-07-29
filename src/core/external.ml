@@ -48,11 +48,10 @@ module Make
   type clause = St.clause
   type proof = Proof.proof
 
+  (* Result type *)
   type res =
     | Sat of (St.term,St.formula) sat_state
     | Unsat of (St.clause,Proof.proof) unsat_state
-
-  let assume ?tag l = S.assume ?tag l
 
   let mk_sat () : (_,_) sat_state =
     { model=S.model; eval=S.eval; eval_level=S.eval_level }
@@ -68,9 +67,18 @@ module Make
     in
     { unsat_conflict; get_proof; }
 
-  let solve ?assumptions () =
+  (* Wrappers around internal functions*)
+  let assume ?tag l =
     try
-      S.solve ?assumptions ();
+      S.assume ?tag l
+    with S.Unsat -> ()
+
+  let solve ?(assumptions=[]) () =
+    try
+      S.pop ();
+      S.push ();
+      S.local assumptions;
+      S.solve ();
       Sat (mk_sat())
     with S.Unsat ->
       Unsat (mk_unsat())

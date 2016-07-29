@@ -1064,52 +1064,13 @@ module Make
          | Atom _ -> acc)
       [] env.elt_queue
 
-  (* push a series of assumptions to the stack *)
-  let push_assumptions =
-    List.iter
-      (fun lit ->
-         let a = atom lit in
-         Log.debugf 10 "push assumption %a" (fun k->k pp_atom a);
-         if a.is_true then ()
-         else if a.neg.is_true then (
-           (* conflict between assumptions: UNSAT *)
-           let c = make_clause (fresh_hname ()) [a] Hyp in
-           report_unsat c;
-         ) else (
-           (* make a decision, propagate *)
-           new_decision_level();
-           let level = decision_level() in
-           assert (env.base_level = level-1);
-           env.base_level <- level;
-           let c = make_clause (fresh_hname ()) [a] Hyp in
-           enqueue_bool a ~level (Bcp c);
-           match propagate () with
-           | Some confl -> (* Conflict *)
-             report_unsat confl;
-           | None -> ()
-         ))
-
-  (* clear assumptions *)
-  let pop_assumptions (): unit =
-    env.base_level <- 0; (* before the [cancel_until]! *)
-    cancel_until 0;
-    ()
-
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)
-  let solve ?(assumptions=[]) (): unit =
+  let solve (): unit =
     Log.debug 5 "solve";
-    if env.base_level > 0 then (
-      pop_assumptions();
-      env.unsat_conflict <- None;
-    );
     if is_unsat () then raise Unsat;
     let n_of_conflicts = ref (to_float env.restart_first) in
     let n_of_learnts = ref ((to_float (nb_clauses())) *. env.learntsize_factor) in
-    (* return to level 0 before pushing assumptions *)
-    cancel_until 0;
-    push_assumptions assumptions;
-    assert (env.base_level <= List.length assumptions);
     try
       while true do
         begin try
@@ -1132,16 +1093,58 @@ module Make
     with Sat -> ()
 
   let assume ?tag cnf =
-    if env.base_level > 0 then (
-      pop_assumptions ();
-      env.unsat_conflict <- None;
-    );
     List.iter
       (fun l ->
          let atoms = List.rev_map atom l in
          let c = make_clause ?tag (fresh_hname ()) atoms Hyp in
          Stack.push c env.clauses_to_add)
       cnf
+
+  (* create a factice decision level for local assumptions *)
+  let push (): unit =
+    cancel_until env.base_level;
+    begin match propagate () with
+      | Some confl -> report_unsat confl
+      | None ->
+        new_decision_level ();
+        env.base_level <- env.base_level + 1;
+        assert (decision_level () = env.base_level)
+    end
+
+  (* pop the last factice decision level *)
+  let pop (): unit =
+    if env.base_level = 0 then ()
+    else begin
+      assert (env.base_level > 0);
+      env.unsat_conflict <- None;
+      env.base_level <- env.base_level - 1; (* before the [cancel_until]! *)
+      cancel_until env.base_level
+    end
+
+  (* Add local hyps to the current decision level *)
+  let local l =
+    let aux lit =
+      let a = atom lit in
+      Log.debugf 10 "local assumption: @[%a@]" (fun k->k pp_atom a);
+      assert (decision_level () = env.base_level);
+      if a.is_true then ()
+      else if a.neg.is_true then begin
+        (* conflict between assumptions: UNSAT *)
+        let c = make_clause (fresh_hname ()) [a] Hyp in
+        report_unsat c;
+      end else begin
+        (* make a decision, propagate *)
+        let level = decision_level() in
+        let c = make_clause (fresh_hname ()) [a] Hyp in
+        enqueue_bool a ~level (Bcp c);
+      end
+    in
+    assert (env.base_level > 0);
+    match env.unsat_conflict with
+    | None ->
+      cancel_until env.base_level;
+      List.iter aux l
+    | Some _ -> ()
 
   let hyps () = env.clauses_hyps
 

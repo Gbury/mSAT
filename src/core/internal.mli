@@ -18,20 +18,27 @@ module Make
 
   module Proof : Res.S with module St = St
 
-  val solve :
-    ?assumptions:St.formula list ->
-    unit ->
-    unit
+  val solve : unit -> unit
   (** Try and solves the current set of assumptions.
       @return () if the current set of clauses is satisfiable
-      @param assumptions list of additional local assumptions to make,
-        removed after the callback returns a value
       @raise Unsat if a toplevel conflict is found *)
 
   val assume : ?tag:int -> St.formula list list -> unit
   (** Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place.
       @raise Unsat if a conflict is detect when adding the clauses *)
+
+  val push : unit -> unit
+  (** Create a decision level for local assumptions.
+      @raise Unsat if a conflict is detected in the current state. *)
+
+  val pop : unit -> unit
+  (** Pop a decision level for local assumptions. *)
+
+  val local : St.formula list -> unit
+    (** Add local assumptions
+      @param assumptions list of additional local assumptions to make,
+        removed after the callback returns a value *)
 
   val eval : St.formula -> bool
   (** Returns the valuation of a formula in the current state
