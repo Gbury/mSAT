@@ -749,6 +749,13 @@ module Make
       match atoms with
       | [] ->
         report_unsat clause
+      | [a]   ->
+        Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
+        cancel_until env.base_level;
+        if a.neg.is_true then begin
+          report_unsat clause
+        end else
+          enqueue_bool a 0 (Bcp clause)
       | a::b::_ ->
         if a.neg.is_true then begin
           (* Atoms need to be sorted in decreasing order of decision level,
@@ -766,10 +773,6 @@ module Make
             enqueue_bool a lvl (Bcp clause)
           end
         end
-      | [a]   ->
-        Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
-        cancel_until env.base_level;
-        enqueue_bool a 0 (Bcp clause)
     with Trivial ->
       Vec.push vec init;
       Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init)
