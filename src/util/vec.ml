@@ -95,14 +95,14 @@ let last t =
 
 let get t i =
   if i < 0 || i >= t.sz then invalid_arg "vec.get";
-  Array.get t.data i
+  Array.unsafe_get t.data i
 
 let set t i v =
   if i < 0 || i > t.sz then invalid_arg "vec.set";
   if i = t.sz then
     push t v
   else
-    Array.set t.data i v
+    Array.unsafe_set t.data i v
 
 let copy t =
   let data = Array.copy t.data in
