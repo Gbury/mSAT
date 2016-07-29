@@ -296,7 +296,7 @@ module Make
         let a = atoms.(i) in
         if a.is_true then
           let l = a.var.v_level in
-          if 0 <= l && l <= root then
+          if l = 0 then
             raise Trivial (* A var true at level 0 gives a trivially true clause *)
           else
             (a :: trues) @ unassigned @ falses @
@@ -530,6 +530,7 @@ module Make
         b.var.v_level
       ) else (
         assert (a.var.v_level = b.var.v_level);
+        assert (a.var.v_level >= env.base_level);
         max (a.var.v_level - 1) env.base_level
       )
 
@@ -756,7 +757,7 @@ module Make
             (fun a b -> compare b.var.v_level a.var.v_level)
             clause.atoms;
           attach_clause clause;
-          add_boolean_conflict init
+          add_boolean_conflict clause
         end else begin
           attach_clause clause;
           if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
