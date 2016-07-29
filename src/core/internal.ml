@@ -321,14 +321,15 @@ module Make
 
      Motivation: it is better to watch true literals, and then unassigned literals.
   *)
-  let partition atoms : atom list * clause list =
-    let rec partition_aux trues unassigned falses history i =
+  let partition root atoms : atom list * clause list =
+    let rec partition_aux root trues unassigned falses history i =
       if i >= Array.length atoms then
         trues @ unassigned @ falses, history
       else begin
         let a = atoms.(i) in
         if a.is_true then
-          if a.var.v_level = 0 then
+          let l = a.var.v_level in
+          if 0 <= l && l <= root then
             raise Trivial
             (* A var true at level 0 gives a trivially true clause *)
           else
@@ -337,25 +338,28 @@ module Make
           (* A var true at level > 0 does not change anything, but is unlikely
              to be watched, so we put prefer to put them at the end. *)
         else if a.neg.is_true then
-          if a.var.v_level = 0 then begin
+          let l = a.var.v_level in
+          if 0 <= l && l <= root then begin
             match a.var.reason with
             | Some (Bcp cl) ->
-              partition_aux trues unassigned falses (cl :: history) (i + 1)
+              partition_aux root trues unassigned falses (cl :: history) (i + 1)
             (* Same as before, a var false at level 0 can be eliminated from the clause,
                but we need to kepp in mind that we used another clause to simplify it. *)
-            | Some (Semantic 0) ->
-              partition_aux trues unassigned falses history (i + 1)
+            | Some (Semantic n) when 0 <= n && n <= root ->
+              partition_aux root trues unassigned falses history (i + 1)
+              (* TODO: get a proof of the propagation. *)
             | _ -> assert false
           end else
-            partition_aux trues unassigned (a::falses) history (i + 1)
+            partition_aux root trues unassigned (a::falses) history (i + 1)
         else
-          partition_aux trues (a::unassigned) falses history (i + 1)
+          partition_aux root trues (a::unassigned) falses history (i + 1)
       end
     in
+    assert (0 <= root);
     if decision_level () = 0 then
       simplify_zero atoms
     else
-      partition_aux [] [] [] [] 0
+      partition_aux root [] [] [] [] 0
 
 
   (* Making a decision.
@@ -470,7 +474,7 @@ module Make
      be able to build a correct proof at the end of proof search. *)
   let simpl_reason : reason -> reason = function
     | (Bcp cl) as r ->
-      let l, history = partition cl.atoms in
+      let l, history = partition env.base_level cl.atoms in
       begin match l with
         | [ a ] ->
           if history = [] then r
@@ -496,7 +500,7 @@ module Make
     if not a.is_true then begin
       assert (a.var.v_level < 0 && a.var.reason = None && lvl >= 0);
       let reason =
-        if lvl > 0 then reason
+        if lvl > env.base_level then reason
         else simpl_reason reason
       in
       a.is_true <- true;
@@ -767,7 +771,7 @@ module Make
       | History _ -> assert false
     in
     try
-      let atoms, history = partition init.atoms in
+      let atoms, history = partition 0 init.atoms in
       let clause =
         if history = [] then init
         else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
