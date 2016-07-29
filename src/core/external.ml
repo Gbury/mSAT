@@ -54,10 +54,10 @@ module Make
 
   let assume ?tag l = S.assume ?tag l
 
-  let mk_sat () : _ sat_state =
+  let mk_sat () : (_,_) sat_state =
     { model=S.model; eval=S.eval; eval_level=S.eval_level }
 
-  let mk_unsat () : _ unsat_state =
+  let mk_unsat () : (_,_) unsat_state =
     let unsat_conflict () = match S.unsat_conflict () with
       | None -> assert false
       | Some c -> c
