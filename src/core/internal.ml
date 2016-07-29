@@ -636,7 +636,7 @@ module Make
       for j = 0 to Array.length !c.atoms - 1 do
         let q = !c.atoms.(j) in
         assert (q.is_true || q.neg.is_true && q.var.v_level >= 0); (* unsure? *)
-        if q.var.v_level <= env.base_level then begin
+        if q.var.v_level <= 0 then begin
           assert (q.neg.is_true);
           match q.var.reason with
           | Some Bcp cl -> history := cl :: !history
@@ -645,7 +645,7 @@ module Make
         if not q.var.seen then begin
           q.var.seen <- true;
           seen := q :: !seen;
-          if q.var.v_level > env.base_level then begin
+          if q.var.v_level > 0 then begin
             var_bump_activity q.var;
             if q.var.v_level >= decision_level () then begin
               incr pathC
