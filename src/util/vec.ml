@@ -59,9 +59,13 @@ let is_empty t = t.sz = 0
 
 let grow_to t new_capa =
   assert (new_capa >= Array.length t.data);
-  let data = t.data in
-  let capa = Array.length data in
-  t.data <- Array.init new_capa (fun i -> if i < capa then data.(i) else t.dummy)
+  let new_data = Array.make new_capa t.dummy in
+  assert (t.sz <= new_capa);
+  let old = t.data in
+  for i = 0 to t.sz - 1 do
+    Array.unsafe_set new_data i (Array.unsafe_get old i)
+  done;
+  t.data <- new_data
 
 let grow_to_double_size t =
   if Array.length t.data = Sys.max_array_length then _size_too_big();
