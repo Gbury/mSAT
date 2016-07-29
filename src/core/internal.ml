@@ -185,16 +185,18 @@ module Make
      to ignore some subterms for instance), so we want to 'cache' to list
      of subterms of each formula, so we have a field [v_assignable]
      directly in variables to do so.  *)
-  let iter_sub f v = match v.v_assignable with
-    | None -> assert false
-    | Some [] -> ()
-    | Some l -> List.iter f l
+  let iter_sub f v =
+    if St.mcsat then
+      match v.v_assignable with
+      | Some l -> List.iter f l
+      | None -> assert false
 
   (* When we have a new literal,
      we need to first create the list of its subterms. *)
   let atom (f:St.formula) : atom =
     let res = add_atom f in
-    begin match res.var.v_assignable with
+    if St.mcsat then
+      begin match res.var.v_assignable with
       | Some _ -> ()
       | None ->
         let l = ref [] in
