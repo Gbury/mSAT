@@ -2,7 +2,7 @@
 true: bin_annot, color(always)
 
 # optimization options
-true: optimize(3), unbox_closures, unbox_closures_factor(20)
+true: inline(100), optimize(3), unbox_closures, unbox_closures_factor(20)
 
 # Include paths
 <src>: include
