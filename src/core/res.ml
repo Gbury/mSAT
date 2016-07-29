@@ -115,7 +115,7 @@ module Make(St : Solver_types.S) = struct
 
   let rec chain_res (c, cl) = function
     | d :: r ->
-      Log.debugf 7 "@[<v4>  Resolving clauses : %a@,%a@]"
+      Log.debugf 7 "  Resolving clauses : @[%a@\n%a@]"
         (fun k -> k St.pp_clause c St.pp_clause d);
       let dl = to_list d in
       begin match resolve (merge cl dl) with
@@ -132,7 +132,7 @@ module Make(St : Solver_types.S) = struct
     | _ -> assert false
 
   let rec expand conclusion =
-    Log.debugf 5 "@[Expanding : %a@]" (fun k -> k St.pp_clause conclusion);
+    Log.debugf 5 "Expanding : @[%a@]" (fun k -> k St.pp_clause conclusion);
     match conclusion.St.cpremise with
     | St.Lemma l ->
       {conclusion; step = Lemma l; }
