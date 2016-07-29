@@ -85,6 +85,12 @@ module Make
 
   let unsat_core = S.Proof.unsat_core
 
+  let true_at_level0 a =
+    try
+      let b, lev = S.eval_level a in
+      b && lev = 0
+    with S.UndecidedLit -> false
+
   let get_tag cl = St.(cl.tag)
 
 end

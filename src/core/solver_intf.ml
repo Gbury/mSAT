@@ -62,6 +62,10 @@ module type S = sig
   val unsat_core : Proof.proof -> St.clause list
   (** Returns the unsat core of a given proof. *)
 
+  val true_at_level0 : atom -> bool
+  (** [true_at_level0 a] returns [true] if [a] was proved at level0, i.e.
+      it must hold in all models *)
+
   val get_tag : St.clause -> int option
   (** Recover tag from a clause, if any *)
 
