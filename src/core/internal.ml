@@ -264,50 +264,17 @@ module Make
     end
 
   (* Simplification of clauses.
-     When adding new clauses, it is desirable to 'simplify' them, i.e:
-     - remove variables that are false at level 0, since it is a fact
-       that they cannot be true, and therefore can not help to satisfy the clause
-     - return the list of undecided atoms, and the list of clauses that
-       justify why the other atoms are false (and will remain so).
 
-     Motivation: Simplification of clauses greatly reduces the search space
-     for new watched literals during propagation.
-
-     Aditionally, since we can do push/pop on the assumptions, we need to
-     keep track of what assumptions were used to simplify a given clause.
+     When adding new clauses, it is desirable to 'simplify' them, i.e
+     minimize the amount of literals in it, because it greatly reduces
+     the search space for new watched literals during propagation.
+     Additionally, we have to partition the lits, to ensure the watched
+     literals (which are the first two lits of the clause) are appropriate.
+     Indeed, it is better to watch true literals, and then unassigned literals.
+     Watching false literals should be a last resort, and come with constraints
+     (see add_clause).
   *)
   exception Trivial
-
-  let simplify_zero atoms : atom list * clause list=
-    (* Eliminates dead literals from clauses when at decision level 0 (see above) *)
-    assert (decision_level () = 0);
-    let aux (atoms, history) a =
-      if a.is_true then raise Trivial;
-      (* If a variable is true at level 0, then the clause is always satisfied *)
-      if a.neg.is_true then begin
-        (* If a variable is false, we need to see why it is false. *)
-        match a.var.reason with
-        | None | Some Decision -> assert false
-        (* The var must have a reason, and it cannot be a decision/assumption, since we are
-           at level 0. *)
-        | Some (Bcp cl) -> atoms, cl :: history
-        (* The variable has been set to false because of another clause,
-           we then need to keep track of the assumption level used. *)
-        | Some (Semantic 0) -> atoms, history
-        (* Semantic propagations at level 0 are, well not easy to deal with,
-           this shouldn't really happen actually (because semantic propagations
-           at level 0 should come with a proof). *)
-        | Some (Semantic _) ->
-          Log.debugf 0 "Unexpected semantic propagation at level 0: %a"
-            (fun k->k St.pp_atom a);
-          assert false
-      end else
-        a::atoms, history
-        (* General case, we do not know the truth value of a, just let it be. *)
-    in
-    let atoms, init = Array.fold_left aux ([], []) atoms in
-    (* TODO: Why do we sort the atoms here ? *)
-    List.fast_sort (fun a b -> a.var.vid - b.var.vid) atoms, init
 
   (* [arr_to_list a i] converts [a.(i), ... a.(length a-1)] into a list *)
   let arr_to_list arr i : _ list =
@@ -315,11 +282,11 @@ module Make
     else Array.to_list (Array.sub arr i (Array.length arr - i))
 
   (* Partition literals for new clauses, into:
-     - true literals (maybe makes the clause trivial if the lit is proved true)
-     - false literals (-> removed, also return the list of reasons those are false)
+     - true literals (maybe makes the clause trivial if the lit is proved true at level 0)
      - unassigned literals, yet to be decided
+     - false literals (not suitable to watch, those at level 0 can be removed from the clause)
 
-     Motivation: it is better to watch true literals, and then unassigned literals.
+     Clauses that propagated false lits are remembered to reconstruct resolution proofs.
   *)
   let partition root atoms : atom list * clause list =
     let rec partition_aux root trues unassigned falses history i =
@@ -330,24 +297,27 @@ module Make
         if a.is_true then
           let l = a.var.v_level in
           if 0 <= l && l <= root then
-            raise Trivial
-            (* A var true at level 0 gives a trivially true clause *)
+            raise Trivial (* A var true at level 0 gives a trivially true clause *)
           else
             (a :: trues) @ unassigned @ falses @
             (arr_to_list atoms (i + 1)), history
-          (* A var true at level > 0 does not change anything, but is unlikely
-             to be watched, so we put prefer to put them at the end. *)
         else if a.neg.is_true then
           let l = a.var.v_level in
           if 0 <= l && l <= root then begin
             match a.var.reason with
+            | None | Some Decision -> assert false
+            (* The var must have a reason, and it cannot be a decision/assumption,
+               its level is below root level. *)
             | Some (Bcp cl) ->
               partition_aux root trues unassigned falses (cl :: history) (i + 1)
-            (* Same as before, a var false at level 0 can be eliminated from the clause,
+            (* A var false at level 0 can be eliminated from the clause,
                but we need to kepp in mind that we used another clause to simplify it. *)
             | Some (Semantic n) when 0 <= n && n <= root ->
               partition_aux root trues unassigned falses history (i + 1)
-              (* TODO: get a proof of the propagation. *)
+            (* Semantic propagations at level 0 are, well not easy to deal with,
+               this shouldn't really happen actually (because semantic propagations
+               at level 0 should come with a proof). *)
+            (* TODO: get a proof of the propagation. *)
             | _ -> assert false
           end else
             partition_aux root trues unassigned (a::falses) history (i + 1)
@@ -356,10 +326,7 @@ module Make
       end
     in
     assert (0 <= root);
-    if decision_level () = 0 then
-      simplify_zero atoms
-    else
-      partition_aux root [] [] [] [] 0
+    partition_aux root [] [] [] [] 0
 
 
   (* Making a decision.
@@ -541,9 +508,9 @@ module Make
   let max_lvl_atoms (l:atom list) : int * atom list =
     List.fold_left
       (fun (max_lvl, acc) a ->
-        if a.var.v_level = max_lvl then (max_lvl, a :: acc)
-        else if a.var.v_level > max_lvl then (a.var.v_level, [a])
-        else (max_lvl, acc))
+         if a.var.v_level = max_lvl then (max_lvl, a :: acc)
+         else if a.var.v_level > max_lvl then (a.var.v_level, [a])
+         else (max_lvl, acc))
       (0, []) l
 
   (* find which level to backtrack to, given a conflict clause
@@ -1117,9 +1084,9 @@ module Make
            let c = make_clause (fresh_hname ()) [a] Hyp in
            enqueue_bool a ~level (Bcp c);
            match propagate () with
-             | Some confl -> (* Conflict *)
-               report_unsat confl;
-             | None -> ()
+           | Some confl -> (* Conflict *)
+             report_unsat confl;
+           | None -> ()
          ))
 
   (* clear assumptions *)
@@ -1148,18 +1115,18 @@ module Make
         begin try
             search (to_int !n_of_conflicts) (to_int !n_of_learnts)
           with
-            | Restart ->
-              n_of_conflicts := !n_of_conflicts *. env.restart_inc;
-              n_of_learnts   := !n_of_learnts *. env.learntsize_inc
-            | Sat ->
-              assert (env.elt_head = Vec.size env.elt_queue);
-              Plugin.if_sat (full_slice ());
-              flush_clauses();
-              if is_unsat () then raise Unsat
-              else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
-                   && env.elt_head = St.nb_elt ()
-                   (* this is the important test to know if the search is finished *)
-              then raise Sat
+          | Restart ->
+            n_of_conflicts := !n_of_conflicts *. env.restart_inc;
+            n_of_learnts   := !n_of_learnts *. env.learntsize_inc
+          | Sat ->
+            assert (env.elt_head = Vec.size env.elt_queue);
+            Plugin.if_sat (full_slice ());
+            flush_clauses();
+            if is_unsat () then raise Unsat
+            else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
+                 && env.elt_head = St.nb_elt ()
+                 (* this is the important test to know if the search is finished *)
+            then raise Sat
         end
       done
     with Sat -> ()
@@ -1171,9 +1138,9 @@ module Make
     );
     List.iter
       (fun l ->
-        let atoms = List.rev_map atom l in
-        let c = make_clause ?tag (fresh_hname ()) atoms Hyp in
-        Stack.push c env.clauses_to_add)
+         let atoms = List.rev_map atom l in
+         let c = make_clause ?tag (fresh_hname ()) atoms Hyp in
+         Stack.push c env.clauses_to_add)
       cnf
 
   let hyps () = env.clauses_hyps
