@@ -34,8 +34,7 @@ module type S = sig
 
   val hash : t -> int
   val equal : t -> t -> bool
-  val compare : t -> t -> int
-  (** Usual hash and comparison functions. Given to Map and Hash functors. *)
+  (** Usual hash and comparison functions. Given to Hashtbl functors. *)
 
   val print : Format.formatter -> t -> unit
   (** Printing function used for debugging. *)

@@ -16,7 +16,6 @@ module type S = sig
     type t
     val hash : t -> int
     val equal : t -> t -> bool
-    val compare : t -> t -> int
     val print : Format.formatter -> t -> unit
   end
 
@@ -25,7 +24,6 @@ module type S = sig
     type t
     val hash : t -> int
     val equal : t -> t -> bool
-    val compare : t -> t -> int
     val print : Format.formatter -> t -> unit
   end
 
