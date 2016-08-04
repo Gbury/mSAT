@@ -53,6 +53,14 @@ type ('term, 'formula) assumption =
   | Assign of 'term * 'term (** The first term is assigned to the second *)
 (** Asusmptions made by the core SAT solver. *)
 
+type ('term, 'formula, 'proof) reason =
+  | Eval of 'term list
+  | Consequence of 'formula list * 'proof
+(** The type of reasons for propagations of a formula [f].
+    [Semantic lvl] means that [f] is true because of the assignments whose level is [<= lvl].
+    [Consequence (l, p)] means that the formulas in [l] imply [f]. The proof should be a proof
+    of the clause "[l] implies [f]". *)
+
 type ('term, 'formula, 'proof) slice = {
   start : int;                                (** Start of the slice *)
   length : int;                               (** Length of the slice *)
@@ -60,7 +68,8 @@ type ('term, 'formula, 'proof) slice = {
                                                   Should only be called on integers [i] s.t.
                                                   [start <= i < start + length] *)
   push : 'formula list -> 'proof -> unit;     (** Add a clause to the solver. *)
-  propagate : 'formula -> 'term list -> unit; (** Propagate a formula, i.e. the theory can
+  propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
+                                              (** Propagate a formula, i.e. the theory can
                                                   evaluate the formula to be true (see the
                                                   definition of {!type:eval_res} *)
 }

@@ -34,12 +34,17 @@ type ('formula, 'proof) res = ('formula, 'proof) Plugin_intf.res =
     current set of assumptions, i.e must have been encountered in a slice. *)
 
 type ('form, 'proof) slice = {
-  start : int;                        (** Start of the slice *)
-  length : int;                       (** Length of the slice *)
-  get : int -> 'form;                 (** Accesor for the formuals in the slice.
-                                          Should only be called on integers [i] s.t.
-                                          [start <= i < start + length] *)
-  push : 'form list -> 'proof -> unit; (** Allows to add to the solver a clause. *)
+  start : int;                          (** Start of the slice *)
+  length : int;                         (** Length of the slice *)
+  get : int -> 'form;                   (** Accesor for the formuals in the slice.
+                                            Should only be called on integers [i] s.t.
+                                            [start <= i < start + length] *)
+  push : 'form list -> 'proof -> unit;  (** Allows to add to the solver a clause. *)
+  propagate : 'form -> 'form list -> 'proof -> unit;
+  (** [propagate lit causes proof] informs the solver to propagate [lit], with the reason
+    that the clause [causes => lit] is a theory tautology. It is faster than pushing
+    the associated clause but the clause will not be remembered by the sat solver,
+    i.e it will not be used by the solver to do boolean propagation. *)
 }
 (** The type for a slice. Slices are some kind of view of the current
     propagation queue. They allow to look at the propagated literals,

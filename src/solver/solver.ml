@@ -39,16 +39,22 @@ module Plugin(E : Formula_intf.S)
 
   let current_level = Th.current_level
 
-  let assume_get s i =
-    match s.Plugin_intf.get i with
+  let assume_get get =
+    function i ->
+    match get i with
     | Plugin_intf.Lit f -> f
     | _ -> assert false
+
+  let assume_propagate propagate =
+    fun f l proof ->
+      propagate f (Plugin_intf.Consequence (l, proof))
 
   let mk_slice s = {
       Theory_intf.start = s.Plugin_intf.start;
       length = s.Plugin_intf.length;
-      get = assume_get s;
+      get = assume_get s.Plugin_intf.get;
       push = s.Plugin_intf.push;
+      propagate = assume_propagate s.Plugin_intf.propagate;
     }
 
   let assume s = Th.assume (mk_slice s)
