@@ -521,22 +521,19 @@ module Make
      and a boolean stating whether it is
      a UIP ("Unique Implication Point")
      precond: the atom list is sorted by decreasing decision level *)
-  let backtrack_lvl ~is_uip : atom list -> int = function
-    | [] -> 0
-    | [a] ->
-      assert is_uip;
-      0
+  let backtrack_lvl : atom list -> int * bool = function
+    | [] | [_] ->
+      0, true
     | a :: b :: r ->
       assert(a.var.v_level > env.base_level);
-      if is_uip then (
         (* backtrack below [a], so we can propagate [not a] *)
-        assert(a.var.v_level > b.var.v_level);
-        b.var.v_level
-      ) else (
+      if a.var.v_level > b.var.v_level then begin
+        b.var.v_level, true
+      end else begin
         assert (a.var.v_level = b.var.v_level);
         assert (a.var.v_level >= env.base_level);
-        max (a.var.v_level - 1) env.base_level
-      )
+        max (a.var.v_level - 1) env.base_level, false
+      end
 
   (* result of conflict analysis, containing the learnt clause and some
      additional info.
@@ -556,7 +553,7 @@ module Make
      atom, and perform resolution steps with each propagation reason, until
      the First UIP clause is found, or we get semantic propagations
      at the highest level (see mcsat paper for more explications).
-  *)
+  *) (*
   let analyze_mcsat c_clause : conflict_res =
     let tr_ind  = ref (Vec.size env.elt_queue) in
     let is_uip  = ref false in
@@ -610,6 +607,7 @@ module Make
         cr_history = List.rev !history;
         cr_is_uip = !is_uip;
       }
+  *)
 
   let get_atom i =
     match Vec.get env.elt_queue i with
@@ -627,7 +625,6 @@ module Make
     let seen   = ref [] in
     let c      = ref c_clause in
     let tr_ind = ref (Vec.size env.elt_queue - 1) in
-    let size   = ref 1 in
     let history = ref [] in
     assert (decision_level () > 0);
     let conflict_level =
@@ -658,7 +655,6 @@ module Make
               incr pathC;
             end else begin
               learnt := q :: !learnt;
-              incr size;
               blevel := max !blevel q.var.v_level
             end
           end
@@ -680,6 +676,9 @@ module Make
       | 0, _ ->
         cond := false;
         learnt := p.neg :: (List.rev !learnt)
+      | n, Some Semantic _ ->
+        assert (n > 0);
+        learnt := p.neg :: !learnt
       | n, Some Bcp cl ->
         assert (n > 0);
         assert (p.var.v_level >= conflict_level);
@@ -687,16 +686,21 @@ module Make
       | n, _ -> assert false
     done;
     List.iter (fun q -> q.var.seen <- false) !seen;
-    { cr_backtrack_lvl= !blevel;
-      cr_learnt= !learnt;
-      cr_history= List.rev !history;
-      cr_is_uip = true;
+    let l = List.fast_sort (fun p q -> compare q.var.v_level p.var.v_level) !learnt in
+    let level, is_uip = backtrack_lvl l in
+    { cr_backtrack_lvl = level;
+      cr_learnt = l;
+      cr_history = List.rev !history;
+      cr_is_uip = is_uip;
     }
 
   let analyze c_clause : conflict_res =
+    analyze_sat c_clause
+      (*
     if St.mcsat
     then analyze_mcsat c_clause
     else analyze_sat c_clause
+         *)
 
   (* add the learnt clause to the clause database, propagate, etc. *)
   let record_learnt_clause (confl:clause) (cr:conflict_res): unit =
