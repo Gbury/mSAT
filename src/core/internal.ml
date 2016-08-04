@@ -630,6 +630,9 @@ module Make
     let size   = ref 1 in
     let history = ref [] in
     assert (decision_level () > 0);
+    let conflict_level =
+      Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
+    in
     while !cond do
       begin match !c.cpremise with
         | History _ -> clause_bump_activity !c
@@ -651,8 +654,8 @@ module Make
           seen := q :: !seen;
           if q.var.v_level > 0 then begin
             var_bump_activity q.var;
-            if q.var.v_level >= decision_level () then begin
-              incr pathC
+            if q.var.v_level >= conflict_level then begin
+              incr pathC;
             end else begin
               learnt := q :: !learnt;
               incr size;
@@ -663,15 +666,23 @@ module Make
       done;
 
       (* look for the next node to expand *)
-      while not (get_atom !tr_ind).var.seen do decr tr_ind done;
-      decr pathC;
+      while
+        let q = get_atom !tr_ind in
+        (not q.var.seen) ||
+        (q.var.v_level < conflict_level)
+      do
+        decr tr_ind;
+      done;
       let p = get_atom !tr_ind in
+      decr pathC;
       decr tr_ind;
       match !pathC, p.var.reason with
       | 0, _ ->
         cond := false;
         learnt := p.neg :: (List.rev !learnt)
       | n, Some Bcp cl ->
+        assert (n > 0);
+        assert (p.var.v_level >= conflict_level);
         c := cl
       | n, _ -> assert false
     done;
