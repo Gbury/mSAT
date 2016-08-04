@@ -25,10 +25,15 @@ type ('form, 'proof) slice = {
   length : int;
   get : int -> 'form;
   push : 'form list -> 'proof -> unit;
+  propagate : 'form -> 'form list -> 'proof -> unit;
 }
 (** The type for a slice of literals to assume/propagate in the theory.
     [get] operations should only be used for integers [ start <= i < start + length].
-    [push clause proof] allows to add a tautological clause to the sat solver. *)
+    [push clause proof] allows to add a tautological clause to the sat solver.
+    [propagate lit causes proof] informs the solver to propagate [lit], with the reason
+    that the clause [causes => lit] is a theory tautology. It is faster than pushing
+    the associated clause but the clause will not be remembered by the sat solver,
+    i.e it will not be used by the solver to do boolean propagation. *)
 
 module type S = sig
   (** Signature for theories to be given to the Solver. *)

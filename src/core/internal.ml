@@ -905,10 +905,20 @@ module Make
        be done *)
     Stack.push c env.clauses_to_add
 
-  let slice_propagate f lvl =
-    let a = atom f in
-    Iheap.grow_to_by_double env.order (St.nb_elt ());
-    enqueue_bool a lvl (Semantic lvl)
+  let slice_propagate f = function
+    | Plugin_intf.Eval lvl ->
+      let a = atom f in
+      Iheap.grow_to_by_double env.order (St.nb_elt ());
+      enqueue_bool a lvl (Semantic lvl)
+    | Plugin_intf.Consequence (causes, proof) ->
+      let l = List.rev_map atom causes in
+      if List.for_all (fun a -> a.is_true) l then
+        let p = atom f in
+        let c = make_clause (fresh_tname ())
+            (p :: List.map (fun a -> a.neg) l) (Lemma proof) in
+        enqueue_bool p (decision_level ()) (Bcp c)
+      else
+        raise (Invalid_argument "Msat.Internal.slice_propagate")
 
   let current_slice (): (_,_,_) Plugin_intf.slice = {
     Plugin_intf.start = env.th_head;

@@ -34,12 +34,20 @@ type ('term, 'formula) assumption =
 (** Asusmptions made by the core SAT solver. Can be either a formula, or an assignment.
     Assignemnt are given a level. *)
 
+type ('formula, 'proof) reason =
+  | Eval of int
+  | Consequence of 'formula list * 'proof
+(** The type of reasons for propagations of a formula [f].
+    [Semantic lvl] means that [f] is true because of the assignments whose level is [<= lvl].
+    [Consequence (l, p)] means that the formulas in [l] imply [f]. The proof should be a proof
+    of the clause [l] implies [f]. *)
+
 type ('term, 'formula, 'proof) slice = {
   start : int;
   length : int;
   get : int -> ('term, 'formula) assumption;
   push : 'formula list -> 'proof -> unit;
-  propagate : 'formula -> int -> unit;
+  propagate : 'formula -> ('formula, 'proof) reason -> unit;
 }
 (** The type for a slice of litterals to assume/propagate in the theory.
     [get] operations should only be used for integers [ start <= i < start + length].
