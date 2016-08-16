@@ -4,12 +4,19 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+module type OrderedType = sig
+  type t
+  val compare : t -> t -> int
+end
+
 (* Union-find Module *)
-module Make(T : Sig.OrderedType) = struct
+module Make(T : OrderedType) = struct
   exception Unsat of T.t * T.t
 
   type var = T.t
   module M = Map.Make(T)
+
+  (* TODO: better treatment of inequalities *)
 
   type t = {
     rank : int M.t;
@@ -43,7 +50,7 @@ module Make(T : Sig.OrderedType) = struct
     h.parent <- f;
     cx
 
-  (* Highly ineficient treatment of inequalities *)
+  (* Highly inefficient treatment of inequalities *)
   let possible h =
     let aux (a, b) =
       let ca = find h a in

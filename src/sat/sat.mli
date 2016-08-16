@@ -4,6 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+open Msat
+
 module Fsat : sig
 
   include Formula_intf.S with type t = private int

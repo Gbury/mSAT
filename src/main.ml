@@ -5,9 +5,10 @@ Copyright 2014 Simon Cruanes
 *)
 
 module F = Expr
-module T = Cnf.S
-module Smt = Smt.Make(struct end)
-module Mcsat = Mcsat.Make(struct end)
+module T = Msat_smt.Cnf.S
+module Sat = Msat_sat.Sat.Make(struct end)
+module Smt = Msat_smt.Smt.Make(struct end)
+module Mcsat = Msat_smt.Mcsat.Make(struct end)
 
 exception Incorrect_model
 exception Out_of_time
@@ -26,6 +27,7 @@ type sat_output =
   | Dot
 
 type solver =
+  | Sat
   | Smt
   | Mcsat
 
@@ -43,6 +45,7 @@ let output_list = [
   "dk", Dedukti;
 ]
 let solver_list = [
+  "sat", Sat;
   "smt", Smt;
   "mcsat", Mcsat;
 ]

@@ -19,20 +19,11 @@ Mcsolver
 Solver_types
 
 # Backends
+Backend_intf
 Dot
 Dedukti
 
 # Auxiliary modules
 Res
 Tseitin
-
-# Sat/Smt modules
-Expr
-Cnf
-Sat
-Mcsat
-Cc
-Sig
-Smt
-Unionfind
-
+Hashcons

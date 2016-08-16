@@ -4,4 +4,6 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+open Msat
+
 module S : Tseitin.S with type atom = Expr.Formula.t
