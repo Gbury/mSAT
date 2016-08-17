@@ -67,6 +67,7 @@ module type S = sig
 
   and premise =
     | Hyp
+    | Local
     | Lemma of proof
     | History of clause list
 

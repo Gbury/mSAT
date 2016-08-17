@@ -83,23 +83,44 @@ module Make(St : Solver_types.S) = struct
     assert St.(conclusion.cpremise <> History []);
     conclusion
 
-  let prove_unsat c =
-    let l = Array.to_list c.St.atoms in
-    let l = List.map (fun a ->
-        match St.(a.var.reason) with
-        | Some St.Bcp d -> d
-        | _ -> assert false) l
+  let rec set_atom_proof a =
+    let aux acc b =
+      if equal_atoms a.St.neg b then acc
+      else set_atom_proof b :: acc
     in
-    St.make_clause (fresh_pcl_name ()) [] (St.History (c :: l))
+    assert St.(a.var.v_level >= 0);
+    match St.(a.var.reason) with
+    | Some St.Bcp c ->
+      Log.debugf 50 "Analysing: @[%a@ %a@]"
+        (fun k -> k St.pp_atom a St.pp_clause c);
+      if Array.length c.St.atoms = 1 then begin
+        Log.debugf 30 "Old reason: @[%a@]" (fun k -> k St.pp_atom a);
+        c
+      end else begin
+        assert (a.St.neg.St.is_true);
+        let r = St.History (c :: (Array.fold_left aux [] c.St.atoms)) in
+        let c' = St.make_clause (fresh_pcl_name ()) [a.St.neg] r in
+        a.St.var.St.reason <- Some St.(Bcp c');
+        Log.debugf 30 "New reason: @[%a@ %a@]"
+          (fun k -> k St.pp_atom a St.pp_clause c');
+        c'
+      end
+    | _ -> assert false
+
+  let prove_unsat conflict =
+    if Array.length conflict.St.atoms = 0 then conflict
+    else begin
+      Log.debugf 3 "Proving unsat from: @[%a@]" (fun k -> k St.pp_clause conflict);
+      let l = Array.fold_left (fun acc a -> set_atom_proof a :: acc) [] conflict.St.atoms in
+      let res = St.make_clause (fresh_pcl_name ()) [] (St.History (conflict :: l)) in
+      Log.debugf 5 "Proof found: @[%a@]" (fun k -> k St.pp_clause res);
+      res
+    end
 
   let prove_atom a =
-    if St.(a.is_true && a.var.v_level = 0) then begin
-      match St.(a.var.reason) with
-      | Some St.Bcp c ->
-        assert (Array.length St.(c.atoms) = 1 && equal_atoms a St.(c.atoms).(0));
-        Some c
-      | _ -> assert false
-    end else
+    if St.(a.is_true && a.var.v_level = 0) then
+      Some (set_atom_proof a)
+    else
       None
 
   (* Interface exposed *)
@@ -110,6 +131,7 @@ module Make(St : Solver_types.S) = struct
   }
   and step =
     | Hypothesis
+    | Assumption
     | Lemma of lemma
     | Resolution of proof * proof * atom
 
@@ -119,15 +141,15 @@ module Make(St : Solver_types.S) = struct
         (fun k -> k St.pp_clause c St.pp_clause d);
       let dl = to_list d in
       begin match resolve (merge cl dl) with
-      | [ a ], l ->
-        begin match r with
-          | [] -> (l, c, d, a)
-          | _ ->
-            let new_clause = St.make_clause (fresh_pcl_name ())
-                l (St.History [c; d]) in
-            chain_res (new_clause, l) r
-        end
-      | _ -> assert false
+        | [ a ], l ->
+          begin match r with
+            | [] -> (l, c, d, a)
+            | _ ->
+              let new_clause = St.make_clause (fresh_pcl_name ())
+                  l (St.History [c; d]) in
+              chain_res (new_clause, l) r
+          end
+        | _ -> assert false
       end
     | _ -> assert false
 
@@ -138,6 +160,8 @@ module Make(St : Solver_types.S) = struct
       {conclusion; step = Lemma l; }
     | St.Hyp ->
       { conclusion; step = Hypothesis; }
+    | St.Local ->
+      { conclusion; step = Assumption; }
     | St.History [] ->
       assert false
     | St.History [ c ] ->
@@ -163,11 +187,11 @@ module Make(St : Solver_types.S) = struct
         if not c.St.visited then begin
           c.St.visited <- true;
           match c.St.cpremise with
-            | St.Hyp | St.Lemma _ -> aux (c :: res) acc r
-            | St.History h ->
-              let l = List.fold_left (fun acc c ->
-                  if not c.St.visited then c :: acc else acc) r h in
-              aux res (c :: acc) l
+          | St.Hyp | St.Local | St.Lemma _ -> aux (c :: res) acc r
+          | St.History h ->
+            let l = List.fold_left (fun acc c ->
+                if not c.St.visited then c :: acc else acc) r h in
+            aux res (c :: acc) l
         end else
           aux res acc r
     in

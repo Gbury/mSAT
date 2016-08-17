@@ -27,6 +27,7 @@ module type S = sig
   }
   and step =
     | Hypothesis
+    | Assumption
     | Lemma of lemma
     | Resolution of proof * proof * atom
   (** Lazy type for proof trees. Proofs are persistent objects, and can be

@@ -292,8 +292,8 @@ module Make
 
      Clauses that propagated false lits are remembered to reconstruct resolution proofs.
   *)
-  let partition root atoms : atom list * clause list =
-    let rec partition_aux root trues unassigned falses history i =
+  let partition atoms : atom list * clause list =
+    let rec partition_aux trues unassigned falses history i =
       if i >= Array.length atoms then
         trues @ unassigned @ falses, history
       else begin
@@ -307,30 +307,28 @@ module Make
             (arr_to_list atoms (i + 1)), history
         else if a.neg.is_true then
           let l = a.var.v_level in
-          if 0 <= l && l <= root then begin
+          if l = 0 then begin
             match a.var.reason with
-            | None | Some Decision -> assert false
-            (* The var must have a reason, and it cannot be a decision/assumption,
-               its level is below root level. *)
             | Some (Bcp cl) ->
-              partition_aux root trues unassigned falses (cl :: history) (i + 1)
+              partition_aux trues unassigned falses (cl :: history) (i + 1)
             (* A var false at level 0 can be eliminated from the clause,
                but we need to kepp in mind that we used another clause to simplify it. *)
-            | Some (Semantic n) when 0 <= n && n <= root ->
-              partition_aux root trues unassigned falses history (i + 1)
+            | Some (Semantic 0) ->
+              partition_aux trues unassigned falses history (i + 1)
             (* Semantic propagations at level 0 are, well not easy to deal with,
                this shouldn't really happen actually (because semantic propagations
                at level 0 should come with a proof). *)
             (* TODO: get a proof of the propagation. *)
-            | _ -> assert false
+            | None | Some (Decision | Semantic _ ) -> assert false
+            (* The var must have a reason, and it cannot be a decision/assumption,
+               since its level is 0. *)
           end else
-            partition_aux root trues unassigned (a::falses) history (i + 1)
+            partition_aux trues unassigned (a::falses) history (i + 1)
         else
-          partition_aux root trues (a::unassigned) falses history (i + 1)
+          partition_aux trues (a::unassigned) falses history (i + 1)
       end
     in
-    assert (0 <= root);
-    partition_aux root [] [] [] [] 0
+    partition_aux [] [] [] [] 0
 
 
   (* Making a decision.
@@ -445,7 +443,7 @@ module Make
      be able to build a correct proof at the end of proof search. *)
   let simpl_reason : reason -> reason = function
     | (Bcp cl) as r ->
-      let l, history = partition env.base_level cl.atoms in
+      let l, history = partition cl.atoms in
       begin match l with
         | [ a ] ->
           if history = [] then r
@@ -471,7 +469,7 @@ module Make
     if not a.is_true then begin
       assert (a.var.v_level < 0 && a.var.reason = None && lvl >= 0);
       let reason =
-        if lvl > env.base_level then reason
+        if lvl > 0 then reason
         else simpl_reason reason
       in
       a.is_true <- true;
@@ -596,7 +594,7 @@ module Make
                     c := res
                   | _ -> assert false
                 end
-              | None | Some Decision | Some Semantic _ -> ()
+              | None | Some (Decision | Semantic _ ) -> ()
             end
       done; assert false
     with Exit ->
@@ -636,7 +634,7 @@ module Make
     while !cond do
       begin match !c.cpremise with
         | History _ -> clause_bump_activity !c
-        | Hyp | Lemma _ -> ()
+        | Hyp | Local | Lemma _ -> ()
       end;
       history := !c :: !history;
       (* visit the current predecessors *)
@@ -751,10 +749,10 @@ module Make
     let vec = match init.cpremise with
       | Hyp -> env.clauses_hyps
       | Lemma _ -> env.clauses_learnt
-      | History _ -> assert false
+      | Local | History _ -> assert false
     in
     try
-      let atoms, history = partition 0 init.atoms in
+      let atoms, history = partition init.atoms in
       let clause =
         if history = [] then init
         else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
@@ -1147,15 +1145,15 @@ module Make
       Log.debugf 10 "local assumption: @[%a@]" (fun k->k pp_atom a);
       assert (decision_level () = env.base_level);
       if a.is_true then ()
-      else if a.neg.is_true then begin
-        (* conflict between assumptions: UNSAT *)
-        let c = make_clause (fresh_hname ()) [a] Hyp in
-        report_unsat c;
-      end else begin
-        (* make a decision, propagate *)
-        let level = decision_level() in
-        let c = make_clause (fresh_hname ()) [a] Hyp in
-        enqueue_bool a ~level (Bcp c);
+      else
+        let c = make_clause (fresh_hname ()) [a] Local in
+        if a.neg.is_true then begin
+          (* conflict between assumptions: UNSAT *)
+          report_unsat c;
+        end else begin
+          (* make a decision, propagate *)
+          let level = decision_level() in
+          enqueue_bool a ~level (Bcp c);
       end
     in
     assert (env.base_level > 0);
