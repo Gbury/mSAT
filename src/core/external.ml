@@ -68,10 +68,7 @@ module Make
     { unsat_conflict; get_proof; }
 
   (* Wrappers around internal functions*)
-  let assume ?tag l =
-    try
-      S.assume ?tag l
-    with S.Unsat -> ()
+  let assume = S.assume
 
   let solve ?(assumptions=[]) () =
     try

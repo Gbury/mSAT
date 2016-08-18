@@ -25,8 +25,7 @@ module Make
 
   val assume : ?tag:int -> St.formula list list -> unit
   (** Add the list of clauses to the current set of assumptions.
-      Modifies the sat solver state in place.
-      @raise Unsat if a conflict is detect when adding the clauses *)
+      Modifies the sat solver state in place. *)
 
   val push : unit -> unit
   (** Create a decision level for local assumptions.
@@ -36,7 +35,7 @@ module Make
   (** Pop a decision level for local assumptions. *)
 
   val local : St.formula list -> unit
-    (** Add local assumptions
+  (** Add local assumptions
       @param assumptions list of additional local assumptions to make,
         removed after the callback returns a value *)
 
