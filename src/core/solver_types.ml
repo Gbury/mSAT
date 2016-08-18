@@ -301,6 +301,16 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"
       name pp_atoms_vec arr pp_premise cp
 
+  let pp_dimacs fmt { atoms; } =
+    let aux fmt a =
+      Array.iter (fun p ->
+          Format.fprintf fmt "%s%d "
+            (if p == p.var.pa then "-" else "")
+            (p.var.vid+1)
+        ) a
+    in
+    Format.fprintf fmt "%a0" aux atoms
+
 end
 
 

@@ -33,6 +33,9 @@ module Make
     (* clauses assumed (subject to user levels) *)
     clauses_learnt : clause Vec.t;
     (* learnt clauses (tautologies true at any time, whatever the user level) *)
+    clauses_temp : clause Vec.t;
+    (* Temp clauses, corresponding to the local assumptions. This vec is used
+       only to have an efficient way to access the list of local assumptions. *)
 
     clauses_to_add : clause Stack.t;
     (* Clauses either assumed or pushed by the theory, waiting to be added. *)
@@ -124,6 +127,8 @@ module Make
 
     clauses_hyps = Vec.make 0 dummy_clause;
     clauses_learnt = Vec.make 0 dummy_clause;
+    clauses_temp = Vec.make 0 dummy_clause;
+
     clauses_to_add = Stack.create ();
 
     th_head = 0;
@@ -1135,6 +1140,16 @@ module Make
       assert (env.base_level > 0);
       env.unsat_conflict <- None;
       env.base_level <- env.base_level - 1; (* before the [cancel_until]! *)
+      (* remove from env.clauses_temp the now invalid caluses. *)
+      let i = ref (Vec.size env.clauses_temp - 1) in
+      while !i >= 0 &&
+            (Vec.get env.clauses_temp !i).atoms.(0).var.v_level > env.base_level do
+        decr i
+      done;
+      Vec.shrink env.clauses_temp (Vec.size env.clauses_temp - !i - 1);
+      assert (Vec.for_all (fun c ->
+          Array.length c.atoms = 1 &&
+          c.atoms.(0).var.v_level <= env.base_level) env.clauses_temp);
       cancel_until env.base_level
     end
 
@@ -1147,6 +1162,7 @@ module Make
       if a.is_true then ()
       else
         let c = make_clause (fresh_hname ()) [a] Local in
+        Vec.push env.clauses_temp c;
         if a.neg.is_true then begin
           (* conflict between assumptions: UNSAT *)
           report_unsat c;
@@ -1166,5 +1182,8 @@ module Make
   let hyps () = env.clauses_hyps
 
   let history () = env.clauses_learnt
+
+  let temp () = env.clauses_temp
+
 end
 

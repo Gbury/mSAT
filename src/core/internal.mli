@@ -56,6 +56,10 @@ module Make
   (** Returns the vector of assumptions used by the solver. May be slightly different
       from the clauses assumed because of top-level simplification of clauses. *)
 
+  val temp : unit -> St.clause Vec.t
+  (** Returns the clauses coreesponding to the local assumptions.
+      All clauses in this vec are assured to be unit clauses. *)
+
   val history : unit -> St.clause Vec.t
   (** Returns the history of learnt clauses, with no guarantees on order. *)
 
@@ -65,5 +69,6 @@ module Make
 
   val model : unit -> (St.term * St.term) list
   (** Returns the model found if the formula is satisfiable. *)
+
 end
 

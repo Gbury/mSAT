@@ -142,6 +142,7 @@ module type S = sig
   val pp_lit : Format.formatter -> lit -> unit
   val pp_atom : Format.formatter -> atom -> unit
   val pp_clause : Format.formatter -> clause -> unit
+  val pp_dimacs : Format.formatter -> clause -> unit
   (** Debug function for atoms and clauses (very verbose) *)
 
 end

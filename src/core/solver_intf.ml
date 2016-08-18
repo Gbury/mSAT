@@ -69,5 +69,9 @@ module type S = sig
   val get_tag : St.clause -> int option
   (** Recover tag from a clause, if any *)
 
+  val export_dimacs : Format.formatter -> unit -> unit
+  (** Prints the entire set of clauses in the input problem
+      (including hypothesis, lemmas and local assumptions),
+      in the dimacs format. *)
 end
 

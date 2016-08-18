@@ -93,4 +93,28 @@ module Make
 
   let get_tag cl = St.(cl.tag)
 
+  let export_dimacs fmt () =
+    let n = St.nb_elt () in
+    let tmp = S.temp () in
+    let hyps = S.hyps () in
+    let learnt = S.history () in
+    let m = Vec.size hyps + Vec.size learnt in
+    let aux fmt c =
+      let c' = match c.St.cpremise with
+        | St.Hyp | St.Lemma _ -> c
+        | St.History ( { St.cpremise = (St.Hyp | St.Lemma _) } as d :: _) -> d
+        | _ -> assert false
+      in
+      St.pp_dimacs fmt c'
+    in
+    let pp s fmt vec =
+      Format.fprintf fmt "c %s@\n%a" s (Vec.print ~sep:"\n" aux) vec
+    in
+    Format.fprintf fmt
+      "p cnf %d %d@\n%a%a%a"
+      n m
+      (pp "Local assumptions") tmp
+      (pp "Hypotheses") hyps
+      (pp "Learnt") learnt
+
 end
