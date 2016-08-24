@@ -59,6 +59,7 @@ end
 module T = Hashcons.Make(H)
 
 let view t = t
+let head t = t.head
 
 let rec print fmt t = match t.head with
   | Ite (a,b,c) ->

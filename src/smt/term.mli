@@ -26,6 +26,7 @@ and head =
   | Ite of t * t * t
 
 val view : t -> view
+val head : t -> head
 
 val app : Symbols.t -> t list -> Ty.t -> t
 val const : Symbols.t -> Ty.t -> t

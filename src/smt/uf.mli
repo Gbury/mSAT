@@ -18,61 +18,28 @@ type 'a literal =
   | LSem of 'a Literal.view
   | LTerm of Literal.LT.t
 
-module type ELT = sig
-  type r
+type t
 
-  val make : Term.t -> r * Literal.LT.t list
+type r
+(** representative *)
 
-  val type_info : r -> Ty.t
+val empty :  t
+val add : t -> Term.t -> t * Literal.LT.t list
 
-  val compare : r -> r -> int
+val mem : t -> Term.t -> bool
 
-  val equal : r -> r -> bool
+val find : t -> Term.t -> r * Explanation.t
 
-  val hash : r -> int
+val find_r : t -> r -> r * Explanation.t
 
-  val leaves : r -> r list
+val union :
+  t -> r -> r -> Explanation.t ->
+  t * (r * (r * r * Explanation.t) list * r) list
 
-  val subst : r -> r -> r -> r
+val distinct : t -> r list -> Explanation.t -> t
 
-  val solve : r -> r ->  (r * r) list
+val are_equal : t -> Term.t -> Term.t -> Sig.answer
+val are_distinct : t -> Term.t -> Term.t -> Sig.answer
+val already_distinct : t -> r list -> bool
 
-  val term_embed : Term.t -> r
-
-  val term_extract : r -> Term.t option
-
-  val unsolvable   : r -> bool
-
-  val fully_interpreted : Symbols.t -> bool
-
-  val print : Format.formatter -> r -> unit
-end
-
-module type S = sig
-  type t
-
-  module R : ELT
-
-  val empty :  t
-  val add : t -> Term.t -> t * Literal.LT.t list
-
-  val mem : t -> Term.t -> bool
-
-  val find : t -> Term.t -> R.r * Explanation.t
-
-  val find_r : t -> R.r -> R.r * Explanation.t
-
-  val union :
-    t -> R.r -> R.r -> Explanation.t ->
-    t * (R.r * (R.r * R.r * Explanation.t) list * R.r) list
-
-  val distinct : t -> R.r list -> Explanation.t -> t
-
-  val are_equal : t -> Term.t -> Term.t -> Sig.answer
-  val are_distinct : t -> Term.t -> Term.t -> Sig.answer
-  val already_distinct : t -> R.r list -> bool
-
-  val class_of : t -> Term.t -> Term.t list
-end
-
-module Make ( X : ELT ) : S with module R = X
+val class_of : t -> Term.t -> Term.t list
