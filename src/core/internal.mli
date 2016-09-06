@@ -16,8 +16,6 @@ module Make
   exception Unsat
   exception UndecidedLit
 
-  module Proof : Res.S with module St = St
-
   val solve : unit -> unit
   (** Try and solves the current set of assumptions.
       @return () if the current set of clauses is satisfiable
@@ -51,16 +49,10 @@ module Make
       that can potentially be backtracked.
       @raise UndecidedLit if the literal is not decided *)
 
-  val hyps : unit -> St.clause Vec.t
-  (** Returns the vector of assumptions used by the solver. May be slightly different
-      from the clauses assumed because of top-level simplification of clauses. *)
 
-  val temp : unit -> St.clause Vec.t
-  (** Returns the clauses coreesponding to the local assumptions.
-      All clauses in this vec are assured to be unit clauses. *)
+  (** {2 Proofs and Models} *)
 
-  val history : unit -> St.clause Vec.t
-  (** Returns the history of learnt clauses, with no guarantees on order. *)
+  module Proof : Res.S with module St = St
 
   val unsat_conflict : unit -> St.clause option
   (** Returns the unsat clause found at the toplevel, if it exists (i.e if
@@ -68,6 +60,29 @@ module Make
 
   val model : unit -> (St.term * St.term) list
   (** Returns the model found if the formula is satisfiable. *)
+
+
+  (** {2 Internal data}
+      These functions expose some internal data stored by the solver, as such
+      great care should be taken to ensure not to mess with the values returned. *)
+
+  val trail : unit -> St.t Vec.t
+  (** Returns the current trail.
+      *DO NOT MUTATE* *)
+
+  val hyps : unit -> St.clause Vec.t
+  (** Returns the vector of assumptions used by the solver. May be slightly different
+      from the clauses assumed because of top-level simplification of clauses.
+      *DO NOT MUTATE* *)
+
+  val temp : unit -> St.clause Vec.t
+  (** Returns the clauses coreesponding to the local assumptions.
+      All clauses in this vec are assured to be unit clauses.
+      *DO NOT MUTATE* *)
+
+  val history : unit -> St.clause Vec.t
+  (** Returns the history of learnt clauses, with no guarantees on order.
+      *DO NOT MUTATE* *)
 
 end
 

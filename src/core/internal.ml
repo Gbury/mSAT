@@ -1179,11 +1179,16 @@ module Make
       List.iter aux l
     | Some _ -> ()
 
+
+  (* Unsafe access to internal data *)
+
   let hyps () = env.clauses_hyps
 
   let history () = env.clauses_learnt
 
   let temp () = env.clauses_temp
+
+  let trail () = env.elt_queue
 
 end
 

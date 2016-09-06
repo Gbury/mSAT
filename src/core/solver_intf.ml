@@ -15,6 +15,9 @@ type ('term, 'form) sat_state = {
       the atom to have this value; otherwise it is due to choices
       that can potentially be backtracked.
       @raise UndecidedLit if the literal is not decided *)
+  iter_trail : ('form -> unit) -> ('term -> unit) -> unit;
+  (** Iter thorugh the formulas and terms in order of decision/propagation
+      (starting from the first propagation, to the last propagation). *)
   model: unit -> ('term * 'term) list;
   (** Returns the model found if the formula is satisfiable. *)
 }

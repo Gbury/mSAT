@@ -17,6 +17,9 @@ type ('term, 'form) sat_state = ('term, 'form) Solver_intf.sat_state = {
       the atom to have this value; otherwise it is due to choices
       that can potentially be backtracked.
       @raise UndecidedLit if the literal is not decided *)
+  iter_trail : ('form -> unit) -> ('term -> unit) -> unit;
+  (** Iter thorugh the formulas and terms in order of decision/propagation
+      (starting from the first propagation, to the last propagation). *)
   model: unit -> ('term * 'term) list;
   (** Returns the model found if the formula is satisfiable. *)
 }
@@ -54,7 +57,19 @@ module Make
     | Unsat of (St.clause,Proof.proof) unsat_state
 
   let mk_sat () : (_,_) sat_state =
-    { model=S.model; eval=S.eval; eval_level=S.eval_level }
+    let t = S.trail () in
+    let iter f f' =
+      Vec.iter (function
+          | St.Atom a -> f a.St.lit
+          | St.Lit l -> f' l.St.term
+        ) t
+    in
+    {
+      eval = S.eval;
+      eval_level = S.eval_level;
+      iter_trail = iter;
+      model = S.model;
+    }
 
   let mk_unsat () : (_,_) unsat_state =
     let unsat_conflict () = match S.unsat_conflict () with
