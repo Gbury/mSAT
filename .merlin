@@ -4,7 +4,6 @@ S src/sat
 S src/smt
 S src/backend
 S src/util
-S src/util/smtlib
 S tests
 
 B _build/src/
@@ -13,6 +12,7 @@ B _build/src/solver
 B _build/src/sat
 B _build/src/smt
 B _build/src/util
-B _build/src/util/smtlib
 B _build/src/backend
 B _build/tests
+
+PKG dolmen

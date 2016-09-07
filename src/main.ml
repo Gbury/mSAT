@@ -5,45 +5,27 @@ Copyright 2014 Simon Cruanes
 *)
 
 module F = Expr
+  (*
 module T = Msat_smt.Cnf.S
 module Sat = Msat_sat.Sat.Make(struct end)
 module Smt = Msat_smt.Smt.Make(struct end)
 module Mcsat = Msat_smt.Mcsat.Make(struct end)
+    *)
+
+module P =
+  Dolmen.Logic.Make(Dolmen.ParseLocation)
+    (Dolmen.Id)(Dolmen.Term)(Dolmen.Statement)
 
 exception Incorrect_model
 exception Out_of_time
 exception Out_of_space
-
-(* IO wrappers *)
-(* Types for input/output languages *)
-type sat_input =
-  | Auto
-  | Dimacs
-  | Smtlib
-
-type sat_output =
-  | Standard (* Only output problem status *)
-  | Dedukti
-  | Dot
 
 type solver =
   | Sat
   | Smt
   | Mcsat
 
-let input = ref Auto
-let output = ref Standard
 let solver = ref Smt
-
-let input_list = [
-  "auto", Auto;
-  "dimacs", Dimacs;
-  "smtlib", Smtlib;
-]
-let output_list = [
-  "dot", Dot;
-  "dk", Dedukti;
-]
 let solver_list = [
   "sat", Sat;
   "smt", Smt;
@@ -61,85 +43,7 @@ let set_flag opt arg flag l =
   with Not_found ->
     invalid_arg (error_msg opt arg l)
 
-let set_input s = set_flag "Input" s input input_list
-let set_output s = set_flag "Output" s output output_list
 let set_solver s = set_flag "Solver" s solver solver_list
-
-(* Input Parsing *)
-let rec rev_flat_map f acc = function
-  | [] -> acc
-  | a :: r -> rev_flat_map f (List.rev_append (f a) acc) r
-
-let format_of_filename s =
-  let last n =
-    try String.sub s (String.length s - n) n
-    with Invalid_argument _ -> ""
-  in
-  if last 4 = ".cnf" then
-    Dimacs
-  else if last 5 = ".smt2" then
-    Smtlib
-  else (* Default choice *)
-    Dimacs
-
-let parse_with_input file = function
-  | Auto -> assert false
-  | Dimacs -> List.rev_map (List.rev_map F.mk_prop) (Parsedimacs.parse file)
-  | Smtlib -> rev_flat_map T.make_cnf [] (Smtlib.parse file)
-
-let parse_input file =
-  parse_with_input file (match !input with
-      | Auto -> format_of_filename file
-      | f -> f)
-
-(* Printing wrappers *)
-let std = Format.std_formatter
-
-let print format = match !output with
-  | Standard ->
-    Format.kfprintf (fun fmt -> Format.fprintf fmt "@.") std format
-  | Dot ->
-    Format.fprintf std "/* ";
-    Format.kfprintf (fun fmt -> Format.fprintf fmt " */@.") std format
-  | Dedukti ->
-    Format.fprintf std "(; ";
-    Format.kfprintf (fun fmt -> Format.fprintf fmt " ;)@.") std format
-
-let print_proof proof = match !output with
-  | Standard -> ()
-  | Dot -> Smt.print_dot std proof
-  | Dedukti -> Smt.print_dedukti std proof
-
-let print_mcproof proof = match !output with
-  | Standard -> ()
-  | Dot -> Mcsat.print_dot std proof
-  | Dedukti -> Mcsat.print_dedukti std proof
-
-let rec print_cl fmt = function
-  | [] -> Format.fprintf fmt "[]"
-  | [a] -> F.print fmt a
-  | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" F.print a print_cl r
-
-let print_lcl l =
-  List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) l
-
-let print_lclause l =
-  List.iter (fun c -> Format.fprintf std "%a@\n" Smt.print_clause c) l
-
-let print_mclause l =
-  List.iter (fun c -> Format.fprintf std "%a@\n" Mcsat.print_clause c) l
-
-let print_cnf cnf = match !output with
-  | Standard -> print_lcl cnf
-  | Dot | Dedukti -> ()
-
-let print_unsat_core u = match !output with
-  | Standard -> print_lclause u
-  | Dot | Dedukti -> ()
-
-let print_mc_unsat_core u = match !output with
-  | Standard -> print_mclause u
-  | Dot | Dedukti -> ()
 
 (* Arguments parsing *)
 let file = ref ""
@@ -170,7 +74,7 @@ let int_arg r arg =
       | 'd' -> multiplier 86400.
       | '0'..'9' -> r := float_of_string arg
       | _ -> raise (Arg.Bad "bad numeric argument")
-    with Failure "float_of_string" -> raise (Arg.Bad "bad numeric argument")
+    with Failure _ -> raise (Arg.Bad "bad numeric argument")
 
 let setup_gc_stat () =
   at_exit (fun () ->
@@ -189,12 +93,8 @@ let argspec = Arg.align [
     " Build, check and print the proof (if output is set), if unsat";
     "-gc", Arg.Unit setup_gc_stat,
     " Outputs statistics about the GC";
-    "-i", Arg.String set_input,
-    " Sets the input format (default auto)";
-    "-o", Arg.String set_output,
-    " Sets the output format (default none)";
     "-s", Arg.String set_solver,
-    "{smt,mcsat} Sets the solver to use (default smt)";
+    "{sat,smt,mcsat} Sets the solver to use (default smt)";
     "-size", Arg.String (int_arg size_limit),
     "<s>[kMGT] Sets the size limit for the sat solver";
     "-time", Arg.String (int_arg time_limit),
@@ -215,9 +115,6 @@ let check () =
   else if s > !size_limit then
     raise Out_of_space
 
-(* Entry file parsing *)
-let get_cnf () = parse_input !file
-
 let main () =
   (* Administrative duties *)
   Arg.parse argspec input_file usage;
@@ -228,6 +125,12 @@ let main () =
   let al = Gc.create_alarm check in
 
   (* Interesting stuff happening *)
+  let _, _input = P.parse_file !file in
+  Gc.delete_alarm al;
+  ()
+
+  (* Old code ...
+
   let cnf = get_cnf () in
   if !p_cnf then
     print_cnf cnf;
@@ -257,7 +160,6 @@ let main () =
   | Mcsat ->
     Mcsat.assume cnf;
     let res = Mcsat.solve () in
-    Gc.delete_alarm al;
     begin match res with
       | Mcsat.Sat sat ->
         let t = Sys.time () in
@@ -275,18 +177,21 @@ let main () =
             print_mc_unsat_core (Mcsat.unsat_core p)
         end;
         print "Unsat (%f/%f)" t (Sys.time () -. t)
-    end
+     end
+
+*)
 
 let () =
   try
     main ()
   with
   | Incorrect_model ->
-    print "Internal error : incorrect *sat* model";
+    Format.printf "Internal error : incorrect *sat* model@.";
     exit 4
   | Out_of_time ->
-    print "Timeout";
+    Format.printf "Timeout@.";
     exit 2
   | Out_of_space ->
-    print "Spaceout";
+    Format.printf "Spaceout@.";
     exit 3
+
