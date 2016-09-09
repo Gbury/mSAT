@@ -115,6 +115,29 @@ let check () =
   else if s > !size_limit then
     raise Out_of_space
 
+let do_task
+    (module S : Msat.External.S
+     with type St.formula = Expr.atom) s =
+  match s.Dolmen.Statement.descr with
+  | Dolmen.Statement.Def (id, t) -> Type.new_def id t
+  | Dolmen.Statement.Decl (id, t) -> Type.new_decl id t
+  | Dolmen.Statement.Consequent t ->
+    let f = Type.new_formula t in
+    let cnf = Expr.Formula.make_cnf f in
+    S.assume cnf
+  | Dolmen.Statement.Antecedent t ->
+    let f = Expr.Formula.make_not @@ Type.new_formula t in
+    let cnf = Expr.Formula.make_cnf f in
+    S.assume cnf
+  | Dolmen.Statement.Prove ->
+    begin match S.solve () with
+      | S.Sat _ -> ()
+      | S.Unsat _ -> ()
+    end
+  | _ ->
+    Format.printf "Command not supported:@\n%a@."
+      Dolmen.Statement.print s
+
 let main () =
   (* Administrative duties *)
   Arg.parse argspec input_file usage;

@@ -103,7 +103,7 @@ let def_term id ty_args args body =
 (* ************************************************************************ *)
 
 (* Make a new empty environment *)
-let empty_env ?(expect=Nothing) = {
+let empty_env ?(expect=Nothing) () = {
   type_vars = M.empty;
   term_vars = M.empty;
   term_lets = M.empty;
@@ -595,7 +595,8 @@ let rec parse_fun ty_args t_args env = function
 (* High-level parsing functions *)
 (* ************************************************************************ *)
 
-let new_decl env t id =
+let new_decl id t =
+  let env = empty_env () in
   Log.debugf 5 "Typing declaration: %s : %a"
     (fun k -> k id.Id.name Ast.print t);
   begin match parse_sig env t with
@@ -604,7 +605,8 @@ let new_decl env t id =
       decl_term id (Expr.Id.term_fun id.Id.name vars args ret)
   end
 
-let new_def env t id =
+let new_def id t =
+  let env = empty_env () in
   Log.debugf 5 "Typing definition: %s = %a"
     (fun k -> k id.Id.name Ast.print t);
   begin match parse_fun [] [] env t with
@@ -612,7 +614,8 @@ let new_def env t id =
     | `Term (ty_args, t_args, body) -> def_term id ty_args t_args body
   end
 
-let new_formula env t =
+let new_formula t =
+  let env = empty_env () in
   Log.debugf 5 "Typing top-level formula: %a" (fun k -> k Ast.print t);
   let res = parse_formula env t in
   res
