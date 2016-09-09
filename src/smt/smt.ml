@@ -4,8 +4,6 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Fsmt = Expr
-
 module Tsmt = struct
 
   module CC = Cc.Make(String)

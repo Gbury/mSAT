@@ -11,6 +11,7 @@ true: inline(100), optimize(3), unbox_closures, unbox_closures_factor(20)
 <src/backend>: include
 <src/sat>: include
 <src/smt>: include
+<src/mcsat>: include
 <src/util>: include
 
 # Pack options
@@ -18,10 +19,12 @@ true: inline(100), optimize(3), unbox_closures, unbox_closures_factor(20)
 <src/solver/*.cmx>: for-pack(Msat)
 <src/backend/*.cmx>: for-pack(Msat)
 <src/util/*.cmx>: for-pack(Msat)
+
 <src/sat/*.cmx>: for-pack(Msat_sat)
 <src/smt/*.cmx>: for-pack(Msat_smt)
+<src/mcsat/*.cmx>: for-pack(Msat_mcsat)
 
-# Bin options
+# Testing dependencies
 <src/main.*>: package(dolmen)
 <src/util/type.*>: package(dolmen)
 

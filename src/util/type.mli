@@ -11,5 +11,5 @@ val new_decl : Dolmen.Id.t -> Dolmen.Term.t -> unit
 
 val new_def  : Dolmen.Id.t -> Dolmen.Term.t -> unit
 
-val new_formula : Dolmen.Term.t -> Expr.Formula.t
+val new_formula : Dolmen.Term.t -> Msat.Expr.Formula.t
 

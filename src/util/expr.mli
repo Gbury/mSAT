@@ -290,6 +290,7 @@ end
 
 module Atom : sig
   type t = atom
+  type proof = unit
   (** Type alias *)
 
   val hash : t -> int
@@ -299,6 +300,12 @@ module Atom : sig
 
   val print : Format.formatter -> t -> unit
   (** Printing functions *)
+
+  val dummy : atom
+  (** A dummy atom, different from any other atom. *)
+
+  val fresh : unit -> atom
+  (** Create a fresh propositional atom. *)
 
   val eq : term -> term -> atom
   (** Create an equality over two terms. The two given terms
@@ -310,10 +317,10 @@ module Atom : sig
   val neg : atom -> atom
   (** Returns the negation of the given atom *)
 
-  val norm : atom -> atom * Msat.Formula_intf.negated
+  val norm : atom -> atom * Formula_intf.negated
   (** Normalization functions as required by msat. *)
 
 end
 
-module Formula : Msat.Tseitin.S with type atom = atom
+module Formula : Tseitin.S with type atom = atom
 

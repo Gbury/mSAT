@@ -4,10 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module F = Expr
-  (*
-module T = Msat_smt.Cnf.S
 module Sat = Msat_sat.Sat.Make(struct end)
+  (*
 module Smt = Msat_smt.Smt.Make(struct end)
 module Mcsat = Msat_smt.Mcsat.Make(struct end)
     *)
@@ -101,7 +99,7 @@ let argspec = Arg.align [
     "<t>[smhd] Sets the time limit for the sat solver";
     "-u", Arg.Set p_unsat_core,
     " Prints the unsat-core explanation of the unsat proof (if used with -check)";
-    "-v", Arg.Int (fun i -> Log.set_debug i),
+    "-v", Arg.Int (fun i -> Msat.Log.set_debug i),
     "<lvl> Sets the debug verbose level";
   ]
 
@@ -117,17 +115,17 @@ let check () =
 
 let do_task
     (module S : Msat.External.S
-     with type St.formula = Expr.atom) s =
+     with type St.formula = Msat.Expr.atom) s =
   match s.Dolmen.Statement.descr with
   | Dolmen.Statement.Def (id, t) -> Type.new_def id t
   | Dolmen.Statement.Decl (id, t) -> Type.new_decl id t
   | Dolmen.Statement.Consequent t ->
     let f = Type.new_formula t in
-    let cnf = Expr.Formula.make_cnf f in
+    let cnf = Msat.Expr.Formula.make_cnf f in
     S.assume cnf
   | Dolmen.Statement.Antecedent t ->
-    let f = Expr.Formula.make_not @@ Type.new_formula t in
-    let cnf = Expr.Formula.make_cnf f in
+    let f = Msat.Expr.Formula.make_not @@ Type.new_formula t in
+    let cnf = Msat.Expr.Formula.make_cnf f in
     S.assume cnf
   | Dolmen.Statement.Prove ->
     begin match S.solve () with

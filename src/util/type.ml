@@ -14,32 +14,30 @@ module H = Hashtbl.Make(Id)
 type expect =
   | Nothing
   | Type
-  | Typed of Expr.ty
+  | Typed of Msat.Expr.ty
 
 (* The type returned after parsing an expression. *)
 type res =
   | Ttype
-  | Ty of Expr.ty
-  | Term of Expr.term
-  | Formula of Expr.Formula.t
+  | Ty of Msat.Expr.ty
+  | Term of Msat.Expr.term
+  | Formula of Msat.Expr.Formula.t
 
 
 (* The local environments used for type-checking. *)
 type env = {
 
   (* local variables (mostly quantified variables) *)
-  type_vars : (Expr.ttype Expr.id)  M.t;
-  term_vars : (Expr.ty Expr.id)     M.t;
+  type_vars : (Msat.Expr.ttype Msat.Expr.id)  M.t;
+  term_vars : (Msat.Expr.ty Msat.Expr.id)     M.t;
 
   (* Bound variables (through let constructions) *)
-  term_lets : Expr.term     M.t;
-  prop_lets : Expr.Formula.t M.t;
+  term_lets : Msat.Expr.term     M.t;
+  prop_lets : Msat.Expr.Formula.t M.t;
 
   (* Typing options *)
   expect   : expect;
 }
-
-type 'a typer = env -> Dolmen.Term.t -> 'a
 
 (* Exceptions *)
 (* ************************************************************************ *)
@@ -57,7 +55,7 @@ let _bad_arity s n t = raise (Typing_error (
     Format.asprintf "Bad arity for operator '%s' (expected %d arguments)" s n, t))
 let _type_mismatch t ty ty' ast = raise (Typing_error (
     Format.asprintf "Type Mismatch: '%a' has type %a, but an expression of type %a was expected"
-      Expr.Print.term t Expr.Print.ty ty Expr.Print.ty ty', ast))
+      Msat.Expr.Print.term t Msat.Expr.Print.ty ty Msat.Expr.Print.ty ty', ast))
 let _fo_term s t = raise (Typing_error (
     Format.asprintf "Let-bound variable '%a' is applied to terms" Id.print s, t))
 
@@ -74,28 +72,28 @@ let find_global name =
 (* Symbol declarations *)
 let decl_ty_cstr id c =
   if H.mem global_env id then
-    Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
+    Msat.Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
       (fun k -> k Id.print id);
   H.add global_env id (`Ty c);
-  Log.debugf 1 "New type constructor : %a" (fun k -> k Expr.Print.const_ttype c)
+  Msat.Log.debugf 1 "New type constructor : %a" (fun k -> k Msat.Expr.Print.const_ttype c)
 
 let decl_term id c =
   if H.mem global_env id then
-    Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
+    Msat.Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
       (fun k -> k Id.print id);
   H.add global_env id (`Term c);
-  Log.debugf 1 "New constant : %a" (fun k -> k Expr.Print.const_ty c)
+  Msat.Log.debugf 1 "New constant : %a" (fun k -> k Msat.Expr.Print.const_ty c)
 
 (* Symbol definitions *)
 let def_ty id args body =
   if H.mem global_env id then
-    Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
+    Msat.Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
       (fun k -> k Id.print id);
   H.add global_env id (`Ty_alias (args, body))
 
 let def_term id ty_args args body =
   if H.mem global_env id then
-    Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
+    Msat.Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
       (fun k -> k Id.print id);
   H.add global_env id (`Term_alias (ty_args, args, body))
 
@@ -111,8 +109,6 @@ let empty_env ?(expect=Nothing) () = {
   expect;
 }
 
-let expect env expect = { env with expect = expect }
-
 (* Generate new fresh names for shadowed variables *)
 let new_name pre =
   let i = ref 0 in
@@ -125,12 +121,12 @@ let new_term_name = new_name "term#"
 let add_type_var env id v =
   let v' =
     if M.mem id env.type_vars then
-      Expr.Id.ttype (new_ty_name ())
+      Msat.Expr.Id.ttype (new_ty_name ())
     else
       v
   in
-  Log.debugf 1 "New binding : %a -> %a"
-    (fun k -> k Id.print id Expr.Print.id_ttype v');
+  Msat.Log.debugf 1 "New binding : %a -> %a"
+    (fun k -> k Id.print id Msat.Expr.Print.id_ttype v');
   v', { env with type_vars = M.add id v' env.type_vars }
 
 let add_type_vars env l =
@@ -142,12 +138,12 @@ let add_type_vars env l =
 let add_term_var env id v =
   let v' =
     if M.mem id env.type_vars then
-      Expr.Id.ty (new_term_name ()) Expr.(v.id_type)
+      Msat.Expr.Id.ty (new_term_name ()) Msat.Expr.(v.id_type)
     else
       v
   in
-  Log.debugf 1 "New binding : %a -> %a"
-    (fun k -> k Id.print id Expr.Print.id_ty v');
+  Msat.Log.debugf 1 "New binding : %a -> %a"
+    (fun k -> k Id.print id Msat.Expr.Print.id_ty v');
   v', { env with term_vars = M.add id v' env.term_vars }
 
 let find_var env name =
@@ -162,13 +158,13 @@ let find_var env name =
 
 (* Add local bound variables to env *)
 let add_let_term env id t =
-  Log.debugf 1 "New let-binding : %s -> %a"
-    (fun k -> k id.Id.name Expr.Print.term t);
+  Msat.Log.debugf 1 "New let-binding : %s -> %a"
+    (fun k -> k id.Id.name Msat.Expr.Print.term t);
   { env with term_lets = M.add id t env.term_lets }
 
 let add_let_prop env id t =
-  Log.debugf 1 "New let-binding : %s -> %a"
-    (fun k -> k id.Id.name Expr.Formula.print t);
+  Msat.Log.debugf 1 "New let-binding : %s -> %a"
+    (fun k -> k id.Id.name Msat.Expr.Formula.print t);
   { env with prop_lets = M.add id t env.prop_lets }
 
 let find_let env name =
@@ -184,19 +180,11 @@ let find_let env name =
 let pp_expect fmt = function
   | Nothing -> Format.fprintf fmt "<>"
   | Type -> Format.fprintf fmt "<tType>"
-  | Typed ty -> Expr.Print.ty fmt ty
+  | Typed ty -> Msat.Expr.Print.ty fmt ty
 
 let pp_map pp fmt map =
   M.iter (fun k v ->
       Format.fprintf fmt "%s->%a;" k.Id.name pp v) map
-
-let pp_env fmt env =
- Format.fprintf fmt "(%a) %a%a%a%a"
-    pp_expect env.expect
-    (pp_map Expr.Print.id_ttype) env.type_vars
-    (pp_map Expr.Print.id_ty) env.term_vars
-    (pp_map Expr.Print.term) env.term_lets
-    (pp_map Expr.Formula.print) env.prop_lets
 
 (* Some helper functions *)
 (* ************************************************************************ *)
@@ -224,41 +212,41 @@ let diagonal l =
 (* ************************************************************************ *)
 
 let arity f =
-  List.length Expr.(f.id_type.fun_vars) +
-  List.length Expr.(f.id_type.fun_args)
+  List.length Msat.Expr.(f.id_type.fun_vars) +
+  List.length Msat.Expr.(f.id_type.fun_args)
 
 let ty_apply env ast f args =
   try
-    Expr.Ty.apply f args
-  with Expr.Bad_ty_arity _ ->
-    _bad_arity Expr.(f.id_name) (arity f) ast
+    Msat.Expr.Ty.apply f args
+  with Msat.Expr.Bad_ty_arity _ ->
+    _bad_arity Msat.Expr.(f.id_name) (arity f) ast
 
 let term_apply env ast f ty_args t_args =
   try
-    Expr.Term.apply f ty_args t_args
+    Msat.Expr.Term.apply f ty_args t_args
   with
-  | Expr.Bad_arity _ ->
-    _bad_arity Expr.(f.id_name) (arity f) ast
-  | Expr.Type_mismatch (t, ty, ty') ->
+  | Msat.Expr.Bad_arity _ ->
+    _bad_arity Msat.Expr.(f.id_name) (arity f) ast
+  | Msat.Expr.Type_mismatch (t, ty, ty') ->
     _type_mismatch t ty ty' ast
 
 let ty_subst ast_term id args f_args body =
-  let aux s v ty = Expr.Subst.Id.bind v ty s in
-  match List.fold_left2 aux Expr.Subst.empty f_args args with
+  let aux s v ty = Msat.Expr.Subst.Id.bind v ty s in
+  match List.fold_left2 aux Msat.Expr.Subst.empty f_args args with
   | subst ->
-    Expr.Ty.subst subst body
+    Msat.Expr.Ty.subst subst body
   | exception Invalid_argument _ ->
     _bad_arity id.Id.name (List.length f_args) ast_term
 
 let term_subst ast_term id ty_args t_args f_ty_args f_t_args body =
-  let aux s v ty = Expr.Subst.Id.bind v ty s in
-  match List.fold_left2 aux Expr.Subst.empty f_ty_args ty_args with
+  let aux s v ty = Msat.Expr.Subst.Id.bind v ty s in
+  match List.fold_left2 aux Msat.Expr.Subst.empty f_ty_args ty_args with
   | ty_subst ->
     begin
-      let aux s v t = Expr.Subst.Id.bind v t s in
-      match List.fold_left2 aux Expr.Subst.empty f_t_args t_args with
+      let aux s v t = Msat.Expr.Subst.Id.bind v t s in
+      match List.fold_left2 aux Msat.Expr.Subst.empty f_t_args t_args with
       | t_subst ->
-        Expr.Term.subst ty_subst t_subst body
+        Msat.Expr.Term.subst ty_subst t_subst body
       | exception Invalid_argument _ ->
         _bad_arity id.Id.name (List.length f_ty_args + List.length f_t_args) ast_term
     end
@@ -267,14 +255,14 @@ let term_subst ast_term id ty_args t_args f_ty_args f_t_args body =
 
 let make_eq ast_term a b =
   try
-    Expr.Formula.make_atom @@ Expr.Atom.eq a b
-  with Expr.Type_mismatch (t, ty, ty') ->
+    Msat.Expr.Formula.make_atom @@ Msat.Expr.Atom.eq a b
+  with Msat.Expr.Type_mismatch (t, ty, ty') ->
     _type_mismatch t ty ty' ast_term
 
 let make_pred ast_term p =
   try
-    Expr.Formula.make_atom @@ Expr.Atom.pred p
-  with Expr.Type_mismatch (t, ty, ty') ->
+    Msat.Expr.Formula.make_atom @@ Msat.Expr.Atom.pred p
+  with Msat.Expr.Type_mismatch (t, ty, ty') ->
     _type_mismatch t ty ty' ast_term
 
 let infer env s args =
@@ -282,19 +270,19 @@ let infer env s args =
   | Nothing -> `Nothing
   | Type ->
     let n = List.length args in
-    let res = Expr.Id.ty_fun s.Id.name n in
+    let res = Msat.Expr.Id.ty_fun s.Id.name n in
     decl_ty_cstr s res;
     `Ty res
   | Typed ty ->
     let n = List.length args in
     let rec replicate acc n =
-      if n <= 0 then acc else replicate (Expr.Ty.base :: acc) (n - 1)
+      if n <= 0 then acc else replicate (Msat.Expr.Ty.base :: acc) (n - 1)
     in
-    let res = Expr.Id.term_fun s.Id.name [] (replicate [] n) ty in
+    let res = Msat.Expr.Id.term_fun s.Id.name [] (replicate [] n) ty in
     decl_term s res;
     `Term res
 
-(* Expression parsing *)
+(* Msat.Expression parsing *)
 (* ************************************************************************ *)
 
 let rec parse_expr (env : env) t =
@@ -303,24 +291,24 @@ let rec parse_expr (env : env) t =
   (* Basic formulas *)
   | { Ast.term = Ast.App ({ Ast.term = Ast.Builtin Ast.True }, []) }
   | { Ast.term = Ast.Builtin Ast.True } ->
-    Formula Expr.Formula.f_true
+    Formula Msat.Expr.Formula.f_true
 
   | { Ast.term = Ast.App ({ Ast.term = Ast.Builtin Ast.False }, []) }
   | { Ast.term = Ast.Builtin Ast.False } ->
-    Formula Expr.Formula.f_false
+    Formula Msat.Expr.Formula.f_false
 
   | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.And}, l) } ->
-    Formula (Expr.Formula.make_and (List.map (parse_formula env) l))
+    Formula (Msat.Expr.Formula.make_and (List.map (parse_formula env) l))
 
   | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Or}, l) } ->
-    Formula (Expr.Formula.make_or (List.map (parse_formula env) l))
+    Formula (Msat.Expr.Formula.make_or (List.map (parse_formula env) l))
 
   | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Xor}, l) } as t ->
     begin match l with
       | [p; q] ->
         let f = parse_formula env p in
         let g = parse_formula env q in
-        Formula (Expr.Formula.make_not (Expr.Formula.make_equiv f g))
+        Formula (Msat.Expr.Formula.make_not (Msat.Expr.Formula.make_equiv f g))
       | _ -> _bad_arity "xor" 2 t
     end
 
@@ -329,7 +317,7 @@ let rec parse_expr (env : env) t =
       | [p; q] ->
         let f = parse_formula env p in
         let g = parse_formula env q in
-        Formula (Expr.Formula.make_imply f g)
+        Formula (Msat.Expr.Formula.make_imply f g)
       | _ -> _bad_arity "=>" 2 t
     end
 
@@ -338,14 +326,14 @@ let rec parse_expr (env : env) t =
       | [p; q] ->
         let f = parse_formula env p in
         let g = parse_formula env q in
-        Formula (Expr.Formula.make_equiv f g)
+        Formula (Msat.Expr.Formula.make_equiv f g)
       | _ -> _bad_arity "<=>" 2 t
     end
 
   | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Not}, l) } as t ->
     begin match l with
       | [p] ->
-        Formula (Expr.Formula.make_not (parse_formula env p))
+        Formula (Msat.Expr.Formula.make_not (parse_formula env p))
       | _ -> _bad_arity "not" 1 t
     end
 
@@ -365,9 +353,9 @@ let rec parse_expr (env : env) t =
     let l' = List.map (parse_term env) args in
     let l'' = diagonal l' in
     Formula (
-      Expr.Formula.make_and
+      Msat.Expr.Formula.make_and
         (List.map (fun (a, b) ->
-             Expr.Formula.make_not
+             Msat.Expr.Formula.make_not
                (make_eq t a b)) l'')
     )
 
@@ -387,15 +375,15 @@ let rec parse_expr (env : env) t =
 and parse_var env = function
   | { Ast.term = Ast.Colon ({ Ast.term = Ast.Symbol s }, e) } ->
     begin match parse_expr env e with
-      | Ttype -> `Ty (s, Expr.Id.ttype s.Id.name)
-      | Ty ty -> `Term (s, Expr.Id.ty s.Id.name ty)
+      | Ttype -> `Ty (s, Msat.Expr.Id.ttype s.Id.name)
+      | Ty ty -> `Term (s, Msat.Expr.Id.ty s.Id.name ty)
       | _ -> _expected "type (or Ttype)" e
     end
   | { Ast.term = Ast.Symbol s } ->
     begin match env.expect with
       | Nothing -> assert false
-      | Type -> `Ty (s, Expr.Id.ttype s.Id.name)
-      | Typed ty -> `Term (s, Expr.Id.ty s.Id.name ty)
+      | Type -> `Ty (s, Msat.Expr.Id.ttype s.Id.name)
+      | Typed ty -> `Term (s, Msat.Expr.Id.ty s.Id.name ty)
     end
   | t -> _expected "(typed) variable" t
 
@@ -450,10 +438,10 @@ and parse_app env ast s args =
   | `Not_found ->
     begin match find_var env s with
       | `Ty f ->
-        if args = [] then Ty (Expr.Ty.of_id f)
+        if args = [] then Ty (Msat.Expr.Ty.of_id f)
         else _fo_term s ast
       | `Term f ->
-        if args = [] then Term (Expr.Term.of_id f)
+        if args = [] then Term (Msat.Expr.Term.of_id f)
         else _fo_term s ast
       | `Not_found ->
         begin match find_global s with
@@ -481,7 +469,7 @@ and parse_app_ty env ast f args =
   Ty (ty_apply env ast f l)
 
 and parse_app_term env ast f args =
-  let n = List.length Expr.(f.id_type.fun_vars) in
+  let n = List.length Msat.Expr.(f.id_type.fun_vars) in
   let ty_l, t_l = take_drop n args in
   let ty_args = List.map (parse_ty env) ty_l in
   let t_args = List.map (parse_term env) t_l in
@@ -504,13 +492,13 @@ and parse_ty env ast =
   | _ -> _expected "type" ast
 
 and parse_term env ast =
-  match parse_expr { env with expect = Typed Expr.Ty.base } ast with
+  match parse_expr { env with expect = Typed Msat.Expr.Ty.base } ast with
   | Term t -> t
   | _ -> _expected "term" ast
 
 and parse_formula env ast =
-  match parse_expr { env with expect = Typed Expr.Ty.prop } ast with
-  | Term t when Expr.(Ty.equal Ty.prop t.t_type) ->
+  match parse_expr { env with expect = Typed Msat.Expr.Ty.prop } ast with
+  | Term t when Msat.Expr.(Ty.equal Ty.prop t.t_type) ->
     make_pred ast t
   | Formula p -> p
   | _ -> _expected "formula" ast
@@ -597,17 +585,17 @@ let rec parse_fun ty_args t_args env = function
 
 let new_decl id t =
   let env = empty_env () in
-  Log.debugf 5 "Typing declaration: %s : %a"
+  Msat.Log.debugf 5 "Typing declaration: %s : %a"
     (fun k -> k id.Id.name Ast.print t);
   begin match parse_sig env t with
-    | `Ty_cstr n -> decl_ty_cstr id (Expr.Id.ty_fun id.Id.name n)
+    | `Ty_cstr n -> decl_ty_cstr id (Msat.Expr.Id.ty_fun id.Id.name n)
     | `Fun_ty (vars, args, ret) ->
-      decl_term id (Expr.Id.term_fun id.Id.name vars args ret)
+      decl_term id (Msat.Expr.Id.term_fun id.Id.name vars args ret)
   end
 
 let new_def id t =
   let env = empty_env () in
-  Log.debugf 5 "Typing definition: %s = %a"
+  Msat.Log.debugf 5 "Typing definition: %s = %a"
     (fun k -> k id.Id.name Ast.print t);
   begin match parse_fun [] [] env t with
     | `Ty (ty_args, body) -> def_ty id ty_args body
@@ -616,7 +604,7 @@ let new_def id t =
 
 let new_formula t =
   let env = empty_env () in
-  Log.debugf 5 "Typing top-level formula: %a" (fun k -> k Ast.print t);
+  Msat.Log.debugf 5 "Typing top-level formula: %a" (fun k -> k Ast.print t);
   let res = parse_formula env t in
   res
 

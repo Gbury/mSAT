@@ -18,12 +18,12 @@ Solver
 Mcsolver
 Solver_types
 
-# Backends
+# Proofs & Backends
+Res
 Backend_intf
 Dot
 Dedukti
 
 # Auxiliary modules
-Res
+Expr
 Tseitin
-Hashcons

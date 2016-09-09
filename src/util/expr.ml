@@ -513,10 +513,10 @@ module Atom = struct
 
   let norm f =
     { f with sign = true },
-    if f.sign then Msat.Formula_intf.Same_sign
-    else Msat.Formula_intf.Negated
+    if f.sign then Formula_intf.Same_sign
+    else Formula_intf.Negated
 
 end
 
-module Formula = Msat.Tseitin.Make(Atom)
+module Formula = Tseitin.Make(Atom)
 
