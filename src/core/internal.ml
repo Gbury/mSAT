@@ -76,12 +76,6 @@ module Make
       *)
 
 
-    mutable simpDB_props : int;
-    (* remaining number of propagations before the next call to [simplify ()] *)
-    mutable simpDB_assigns : int;
-    (* number of toplevel assignments since last call to [simplify ()] *)
-
-
     order : Iheap.t;
     (* Heap ordered by variable activity *)
 
@@ -145,9 +139,6 @@ module Make
     clause_incr = 1.;
     var_decay = 1. /. 0.95;
     clause_decay = 1. /. 0.999;
-
-    simpDB_assigns = -1;
-    simpDB_props = 0;
 
     remove_satisfied = false;
 
@@ -290,51 +281,6 @@ module Make
     if i >= Array.length arr then []
     else Array.to_list (Array.sub arr i (Array.length arr - i))
 
-  (* Partition literals for new clauses, into:
-     - true literals (maybe makes the clause trivial if the lit is proved true at level 0)
-     - unassigned literals, yet to be decided
-     - false literals (not suitable to watch, those at level 0 can be removed from the clause)
-
-     Clauses that propagated false lits are remembered to reconstruct resolution proofs.
-  *)
-  let partition atoms : atom list * clause list =
-    let rec partition_aux trues unassigned falses history i =
-      if i >= Array.length atoms then
-        trues @ unassigned @ falses, history
-      else begin
-        let a = atoms.(i) in
-        if a.is_true then
-          let l = a.var.v_level in
-          if l = 0 then
-            raise Trivial (* A var true at level 0 gives a trivially true clause *)
-          else
-            (a :: trues) @ unassigned @ falses @
-            (arr_to_list atoms (i + 1)), history
-        else if a.neg.is_true then
-          let l = a.var.v_level in
-          if l = 0 then begin
-            match a.var.reason with
-            | Some (Bcp cl) ->
-              partition_aux trues unassigned falses (cl :: history) (i + 1)
-            (* A var false at level 0 can be eliminated from the clause,
-               but we need to kepp in mind that we used another clause to simplify it. *)
-            | Some (Semantic 0) ->
-              partition_aux trues unassigned falses history (i + 1)
-            (* Semantic propagations at level 0 are, well not easy to deal with,
-               this shouldn't really happen actually (because semantic propagations
-               at level 0 should come with a proof). *)
-            (* TODO: get a proof of the propagation. *)
-            | None | Some (Decision | Semantic _ ) -> assert false
-            (* The var must have a reason, and it cannot be a decision/assumption,
-               since its level is 0. *)
-          end else
-            partition_aux trues unassigned (a::falses) history (i + 1)
-        else
-          partition_aux trues (a::unassigned) falses history (i + 1)
-      end
-    in
-    partition_aux [] [] [] [] 0
-
 
   (* Making a decision.
      Before actually creatig a new decision level, we check that
@@ -440,30 +386,6 @@ module Make
     env.unsat_conflict <- Some confl;
     raise Unsat
 
-  (* Simplification of boolean propagation reasons.
-     When doing boolean propagation *at level 0*, it can happen
-     that the clause cl, which propagates a formula, also contains
-     other formulas, but has been simplified. in which case, we
-     need to rebuild a clause with correct history, in order to
-     be able to build a correct proof at the end of proof search. *)
-  let simpl_reason : reason -> reason = function
-    | (Bcp cl) as r ->
-      let l, history = partition cl.atoms in
-      begin match l with
-        | [ a ] ->
-          if history = [] then r
-          (* no simplification has been done, so [cl] is actually a clause with only
-             [a], so it is a valid reason for propagating [a]. *)
-          else
-            (* Clauses in [history] have been used to simplify [cl] into a clause [tmp_cl]
-               with only one formula (which is [a]). So we explicitly create that clause
-               and set it as the cause for the propagation of [a], that way we can
-               rebuild the whole resolution tree when we want to prove [a]. *)
-            Bcp (make_clause (fresh_tname ()) l (History (cl :: history)))
-        | _ -> assert false
-      end
-    | r -> r
-
   (* Boolean propagation.
      Wrapper function for adding a new propagated formula. *)
   let enqueue_bool a ~level:lvl reason : unit =
@@ -473,10 +395,6 @@ module Make
     end;
     if not a.is_true then begin
       assert (a.var.v_level < 0 && a.var.reason = None && lvl >= 0);
-      let reason =
-        if lvl > 0 then reason
-        else simpl_reason reason
-      in
       a.is_true <- true;
       a.var.v_level <- lvl;
       a.var.reason <- Some reason;
@@ -757,11 +675,8 @@ module Make
       | Local | History _ -> assert false
     in
     try
-      let atoms, history = partition init.atoms in
-      let clause =
-        if history = [] then init
-        else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
-      in
+      let atoms = Array.to_list init.atoms in
+      let clause = init in
       Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
       Vec.push vec clause;
       match atoms with
@@ -975,7 +890,6 @@ module Make
         env.elt_head <- env.elt_head + 1;
       done;
       env.propagations <- env.propagations + !num_props;
-      env.simpDB_props <- env.simpDB_props - !num_props;
       match !res with
       | None -> theory_propagate ()
       | _ -> !res
