@@ -414,6 +414,66 @@ module Make
     env.unsat_conflict <- Some confl;
     raise Unsat
 
+  (* Simplification of boolean propagation reasons.
+     When doing boolean propagation *at level 0*, it can happen
+     that the clause cl, which propagates a formula, also contains
+     other formulas, but has been simplified. in which case, we
+     need to rebuild a clause with correct history, in order to
+     be able to build a correct proof at the end of proof search. *)
+  let simpl_reason : reason -> reason = function
+    | (Bcp cl) as r ->
+      let atoms = cl.atoms in
+      let rec partition_aux trues unassigned falses history i =
+        if i >= Array.length atoms then
+          trues @ unassigned @ falses, history
+        else begin
+          let a = atoms.(i) in
+          if a.is_true then
+            let l = a.var.v_level in
+            if l = 0 then
+              raise Trivial (* A var true at level 0 gives a trivially true clause *)
+            else
+              (a :: trues) @ unassigned @ falses @
+                (arr_to_list atoms (i + 1)), history
+          else if a.neg.is_true then
+            let l = a.var.v_level in
+            if l = 0 then begin
+              match a.var.reason with
+                | Some (Bcp cl) ->
+                  partition_aux trues unassigned falses (cl :: history) (i + 1)
+                (* A var false at level 0 can be eliminated from the clause,
+                   but we need to kepp in mind that we used another clause to simplify it. *)
+                | Some (Semantic 0) ->
+                  partition_aux trues unassigned falses history (i + 1)
+                (* Semantic propagations at level 0 are, well not easy to deal with,
+                   this shouldn't really happen actually (because semantic propagations
+                   at level 0 should come with a proof). *)
+                (* TODO: get a proof of the propagation. *)
+                | None | Some (Decision | Semantic _ ) -> assert false
+                (* The var must have a reason, and it cannot be a decision/assumption,
+                   since its level is 0. *)
+            end else
+              partition_aux trues unassigned (a::falses) history (i + 1)
+          else
+            partition_aux trues (a::unassigned) falses history (i + 1)
+        end
+      in
+      let l, history = partition_aux [] [] [] [] 0 in
+      begin match l with
+        | [ a ] ->
+          if history = [] then r
+          (* no simplification has been done, so [cl] is actually a clause with only
+             [a], so it is a valid reason for propagating [a]. *)
+          else
+            (* Clauses in [history] have been used to simplify [cl] into a clause [tmp_cl]
+               with only one formula (which is [a]). So we explicitly create that clause
+               and set it as the cause for the propagation of [a], that way we can
+               rebuild the whole resolution tree when we want to prove [a]. *)
+            Bcp (make_clause (fresh_tname ()) l (History (cl :: history)))
+        | _ -> assert false
+      end
+    | r -> r
+
   (* Boolean propagation.
      Wrapper function for adding a new propagated formula. *)
   let enqueue_bool a ~level:lvl reason : unit =
@@ -423,6 +483,10 @@ module Make
     end;
     if not a.is_true then begin
       assert (a.var.v_level < 0 && a.var.reason = None && lvl >= 0);
+      let reason =
+        if lvl > 0 then reason
+        else simpl_reason reason
+      in
       a.is_true <- true;
       a.var.v_level <- lvl;
       a.var.reason <- Some reason;
