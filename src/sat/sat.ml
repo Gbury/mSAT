@@ -5,9 +5,5 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make(Dummy : sig end) =
-  Msat.Solver.Make
-    (Msat.Expr.Atom)
-    (Msat.Solver.DummyTheory
-       (Msat.Expr.Atom))
-    (struct end)
+  Solver.Make(Expr.Atom)(Solver.DummyTheory(Expr.Atom))(struct end)
 

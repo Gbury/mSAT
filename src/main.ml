@@ -4,10 +4,11 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Sat = Msat_sat.Sat.Make(struct end)
+module Sat = Sat.Make(struct end)
+module Dummy = Sat
   (*
-module Smt = Msat_smt.Smt.Make(struct end)
-module Mcsat = Msat_smt.Mcsat.Make(struct end)
+module Smt = Smt.Make(struct end)
+module Mcsat = Mcsat.Make(struct end)
     *)
 
 module P =
@@ -99,7 +100,7 @@ let argspec = Arg.align [
     "<t>[smhd] Sets the time limit for the sat solver";
     "-u", Arg.Set p_unsat_core,
     " Prints the unsat-core explanation of the unsat proof (if used with -check)";
-    "-v", Arg.Int (fun i -> Msat.Log.set_debug i),
+    "-v", Arg.Int (fun i -> Log.set_debug i),
     "<lvl> Sets the debug verbose level";
   ]
 
@@ -113,28 +114,30 @@ let check () =
   else if s > !size_limit then
     raise Out_of_space
 
-let do_task
-    (module S : Msat.External.S
-     with type St.formula = Msat.Expr.atom) s =
-  match s.Dolmen.Statement.descr with
-  | Dolmen.Statement.Def (id, t) -> Type.new_def id t
-  | Dolmen.Statement.Decl (id, t) -> Type.new_decl id t
-  | Dolmen.Statement.Consequent t ->
-    let f = Type.new_formula t in
-    let cnf = Msat.Expr.Formula.make_cnf f in
-    S.assume cnf
-  | Dolmen.Statement.Antecedent t ->
-    let f = Msat.Expr.Formula.make_not @@ Type.new_formula t in
-    let cnf = Msat.Expr.Formula.make_cnf f in
-    S.assume cnf
-  | Dolmen.Statement.Prove ->
-    begin match S.solve () with
-      | S.Sat _ -> ()
-      | S.Unsat _ -> ()
-    end
-  | _ ->
-    Format.printf "Command not supported:@\n%a@."
-      Dolmen.Statement.print s
+module Make
+    (T : Type.S)
+    (S : External.S with type St.formula = T.atom) = struct
+
+  let do_task s =
+    match s.Dolmen.Statement.descr with
+    | Dolmen.Statement.Def (id, t) -> T.def id t
+    | Dolmen.Statement.Decl (id, t) -> T.decl id t
+    | Dolmen.Statement.Consequent t ->
+      let cnf = T.consequent t in
+      S.assume cnf
+    | Dolmen.Statement.Antecedent t ->
+      let cnf = T.antecedent t in
+      S.assume cnf
+    | Dolmen.Statement.Prove ->
+      begin match S.solve () with
+        | S.Sat _ -> ()
+        | S.Unsat _ -> ()
+      end
+    | _ ->
+      Format.printf "Command not supported:@\n%a@."
+        Dolmen.Statement.print s
+end
+
 
 let main () =
   (* Administrative duties *)
@@ -150,55 +153,55 @@ let main () =
   Gc.delete_alarm al;
   ()
 
-  (* Old code ...
+(* Old code ...
 
-  let cnf = get_cnf () in
-  if !p_cnf then
-    print_cnf cnf;
-  match !solver with
-  | Smt ->
-    Smt.assume cnf;
-    let res = Smt.solve () in
-    Gc.delete_alarm al;
-    begin match res with
-      | Smt.Sat sat ->
-        let t = Sys.time () in
-        if !p_check then
-          if not (List.for_all (List.exists sat.Solver_intf.eval) cnf) then
-            raise Incorrect_model;
-        print "Sat (%f/%f)" t (Sys.time () -. t)
-      | Smt.Unsat us ->
-        let t = Sys.time () in
-        if !p_check then begin
-          let p = us.Solver_intf.get_proof () in
-          Smt.Proof.check p;
-          print_proof p;
-          if !p_unsat_core then
-            print_unsat_core (Smt.unsat_core p)
-        end;
-        print "Unsat (%f/%f)" t (Sys.time () -. t)
-    end
-  | Mcsat ->
-    Mcsat.assume cnf;
-    let res = Mcsat.solve () in
-    begin match res with
-      | Mcsat.Sat sat ->
-        let t = Sys.time () in
-        if !p_check then
-          if not (List.for_all (List.exists sat.Solver_intf.eval) cnf) then
-            raise Incorrect_model;
-        print "Sat (%f/%f)" t (Sys.time () -. t)
-      | Mcsat.Unsat us ->
-        let t = Sys.time () in
-        if !p_check then begin
-          let p = us.Solver_intf.get_proof () in
-          Mcsat.Proof.check p;
-          print_mcproof p;
-          if !p_unsat_core then
-            print_mc_unsat_core (Mcsat.unsat_core p)
-        end;
-        print "Unsat (%f/%f)" t (Sys.time () -. t)
-     end
+   let cnf = get_cnf () in
+   if !p_cnf then
+   print_cnf cnf;
+   match !solver with
+   | Smt ->
+   Smt.assume cnf;
+   let res = Smt.solve () in
+   Gc.delete_alarm al;
+   begin match res with
+    | Smt.Sat sat ->
+      let t = Sys.time () in
+      if !p_check then
+        if not (List.for_all (List.exists sat.Solver_intf.eval) cnf) then
+          raise Incorrect_model;
+      print "Sat (%f/%f)" t (Sys.time () -. t)
+    | Smt.Unsat us ->
+      let t = Sys.time () in
+      if !p_check then begin
+        let p = us.Solver_intf.get_proof () in
+        Smt.Proof.check p;
+        print_proof p;
+        if !p_unsat_core then
+          print_unsat_core (Smt.unsat_core p)
+      end;
+      print "Unsat (%f/%f)" t (Sys.time () -. t)
+   end
+   | Mcsat ->
+   Mcsat.assume cnf;
+   let res = Mcsat.solve () in
+   begin match res with
+    | Mcsat.Sat sat ->
+      let t = Sys.time () in
+      if !p_check then
+        if not (List.for_all (List.exists sat.Solver_intf.eval) cnf) then
+          raise Incorrect_model;
+      print "Sat (%f/%f)" t (Sys.time () -. t)
+    | Mcsat.Unsat us ->
+      let t = Sys.time () in
+      if !p_check then begin
+        let p = us.Solver_intf.get_proof () in
+        Mcsat.Proof.check p;
+        print_mcproof p;
+        if !p_unsat_core then
+          print_mc_unsat_core (Mcsat.unsat_core p)
+      end;
+      print "Unsat (%f/%f)" t (Sys.time () -. t)
+   end
 
 *)
 

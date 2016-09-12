@@ -4,8 +4,6 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-open Msat
-
 module Fsmt = Expr
 
 module Tsmt = struct

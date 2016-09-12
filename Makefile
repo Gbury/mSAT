@@ -10,15 +10,15 @@ TEST_BIN=tests/test_api.native
 NAME_OCAMLFIND=msat
 NAME_BIN=msat
 NAME_CORE=msat
-NAME_SAT=msat_sat
-NAME_SMT=msat_smt
-NAME_MCSAT=msat_mcsat
+#NAME_SAT=msat_sat
+#NAME_SMT=msat_smt
+#NAME_MCSAT=msat_mcsat
 
 LIB_CORE=$(addprefix $(NAME_CORE), .cma .cmxa .cmxs)
-LIB_SAT=$(addprefix $(NAME_SAT), .cma .cmxa .cmxs)
-LIB_SMT=$(addprefix $(NAME_SMT), .cma .cmxa .cmxs)
-LIB_MCSAT=$(addprefix $(NAME_MCSAT), .cma .cmxa .cmxs)
-LIB=$(LIB_CORE) $(LIB_SAT) # $(LIB_SMT) $(LIB_MCSAT)
+#LIB_SAT=$(addprefix $(NAME_SAT), .cma .cmxa .cmxs)
+#LIB_SMT=$(addprefix $(NAME_SMT), .cma .cmxa .cmxs)
+#LIB_MCSAT=$(addprefix $(NAME_MCSAT), .cma .cmxa .cmxs)
+LIB=$(LIB_CORE) # $(LIB_SAT) $(LIB_SMT) $(LIB_MCSAT)
 
 all: lib test
 
@@ -28,7 +28,7 @@ lib:
 doc:
 	$(COMP) $(FLAGS) $(DOC)
 
-bin: lib
+bin:
 	$(COMP) $(FLAGS) $(BIN)
 	cp $(BIN) $(NAME_BIN) && rm $(BIN)
 
