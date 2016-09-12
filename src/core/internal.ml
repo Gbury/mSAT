@@ -756,7 +756,12 @@ module Make
     try
       let atoms, history = partition 0 init.atoms in
       let clause =
-        if history = [] then init
+        if history = []
+        then (
+          (* update order of atoms *)
+          List.iteri (fun i a -> init.atoms.(i) <- a) atoms;
+          init
+        )
         else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
       in
       Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
