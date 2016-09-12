@@ -4,8 +4,9 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Tsmt = struct
+module Th = Solver.DummyTheory(Expr_smt.Atom)
 
+  (* struct
   module CC = Cc.Make(String)
 
   type formula = Fsmt.t
@@ -49,22 +50,7 @@ module Tsmt = struct
   let if_sat _ = ()
 
 end
+  *)
 
-module Make(Dummy:sig end) = struct
-
-  include Solver.Make(Fsmt)(Tsmt)(struct end)
-  module Dot = Dot.Make(Proof)(struct
-      let print_atom = St.print_atom
-      let lemma_info () = "Proof", Some "PURPLE", []
-    end)
-  module Dedukti = Dedukti.Make(Proof)(struct
-      let print _ _ = ()
-      let prove _ _ = ()
-      let context _ _ = ()
-    end)
-
-  let print_clause = St.print_clause
-  let print_dot = Dot.print
-  let print_dedukti = Dedukti.print
-
-end
+module Make(Dummy:sig end) =
+  Solver.Make(Expr_smt.Atom)(Th)(struct end)

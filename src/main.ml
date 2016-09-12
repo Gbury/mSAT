@@ -6,8 +6,8 @@ Copyright 2014 Simon Cruanes
 
 module Sat = Sat.Make(struct end)
 module Dummy = Sat
-  (*
 module Smt = Smt.Make(struct end)
+  (*
 module Mcsat = Mcsat.Make(struct end)
     *)
 
