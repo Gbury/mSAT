@@ -281,6 +281,34 @@ module Make
     if i >= Array.length arr then []
     else Array.to_list (Array.sub arr i (Array.length arr - i))
 
+  (* Partition literals for new clauses, into:
+     - true literals (maybe makes the clause trivial if the lit is proved true at level 0)
+     - unassigned literals, yet to be decided
+     - false literals (not suitable to watch, those at level 0 can be removed from the clause)
+
+     Clauses that propagated false lits are remembered to reconstruct resolution proofs.
+  *)
+  let partition atoms : atom list =
+    let rec partition_aux trues unassigned falses i =
+      if i >= Array.length atoms then
+        trues @ unassigned @ falses
+      else begin
+        let a = atoms.(i) in
+        if a.is_true then
+          let l = a.var.v_level in
+          if l = 0 then
+            raise Trivial (* A var true at level 0 gives a trivially true clause *)
+          else
+            (a :: trues) @ unassigned @ falses @
+            (arr_to_list atoms (i + 1))
+        else if a.neg.is_true then
+          partition_aux trues unassigned (a::falses) (i + 1)
+        else
+          partition_aux trues (a::unassigned) falses (i + 1)
+      end
+    in
+    partition_aux [] [] [] 0
+
 
   (* Making a decision.
      Before actually creatig a new decision level, we check that
@@ -675,8 +703,10 @@ module Make
       | Local | History _ -> assert false
     in
     try
-      let atoms = Array.to_list init.atoms in
-      let clause = init in
+      let atoms = partition init.atoms in
+      let clause =
+        make_clause ?tag:init.tag (fresh_name()) atoms init.cpremise
+      in
       Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
       Vec.push vec clause;
       match atoms with
