@@ -4,6 +4,6 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Make(Dummy : sig end) : Solver.S with type St.formula = Expr.Atom.t
+module Make(Dummy : sig end) : Solver.S with type St.formula = Expr_sat.t
 
 

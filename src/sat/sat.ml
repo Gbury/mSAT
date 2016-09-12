@@ -5,5 +5,5 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make(Dummy : sig end) =
-  Solver.Make(Expr.Atom)(Solver.DummyTheory(Expr.Atom))(struct end)
+  Solver.Make(Expr_sat)(Solver.DummyTheory(Expr_sat))(struct end)
 
