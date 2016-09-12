@@ -19,7 +19,7 @@ before_install:
   - opam switch ${OCAML_VERSION}
   - eval `opam config env`
 install:
-  - opam install ocamlfind ocamlbuild
+  - opam install dolmen ocamlfind ocamlbuild
   - make bin lib
 script:
   - make test
