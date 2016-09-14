@@ -53,8 +53,9 @@ log:
 
 clean:
 	$(COMP) -clean
+	rm -rf $(NAME_BIN)
 
-ALL_NAMES = $(NAME_CORE) $(NAME_SAT) $(NAME_SMT)
+ALL_NAMES = $(NAME_CORE) # $(NAME_SAT) $(NAME_SMT) $(NAME_MCAT)
 TO_INSTALL_LIB=$(addsuffix .a, $(ALL_NAMES)) \
 	       $(addsuffix .cmi, $(ALL_NAMES))
 TO_INSTALL=META $(addprefix _build/src/,$(LIB) $(TO_INSTALL_LIB))
