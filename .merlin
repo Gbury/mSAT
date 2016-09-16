@@ -2,6 +2,7 @@ S src/core
 S src/solver
 S src/sat
 S src/smt
+S src/mcsat
 S src/backend
 S src/util
 S tests
@@ -11,6 +12,7 @@ B _build/src/core
 B _build/src/solver
 B _build/src/sat
 B _build/src/smt
+B _build/src/mcsat
 B _build/src/util
 B _build/src/backend
 B _build/tests

@@ -6,18 +6,11 @@ Copyright 2014 Simon Cruanes
 
 (* Tests that require the API *)
 
-module F = Expr
-module T = Cnf.S
+module F = Expr_sat
+module T = Tseitin.Make(F)
 
 let (|>) x f = f x
 
-type solver = Smt | Mcsat
-let solver_list = [
-  "smt", Smt;
-  "mcsat", Mcsat;
-]
-
-let solver = ref Smt
 let p_check = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
@@ -32,59 +25,38 @@ let set_flag opt arg flag l =
     flag := List.assoc arg l
   with Not_found ->
     invalid_arg (error_msg opt arg l)
-let set_solver s = set_flag "Solver" s solver solver_list
 
 let usage = "Usage : test_api [options]"
 let argspec = Arg.align [
     "-check", Arg.Set p_check,
     " Build, check and print the proof (if output is set), if unsat";
-    "-s", Arg.String set_solver,
-    "{smt,mcsat} Sets the solver to use (default smt)";
     "-v", Arg.Int (fun i -> Log.set_debug i),
     "<lvl> Sets the debug verbose level";
   ]
 
-let string_of_solver = function
-  | Mcsat -> "mcsat"
-  | Smt -> "smt"
-
 type solver_res =
   | R_sat
   | R_unsat
+
+exception Incorrect_model
 
 module type BASIC_SOLVER = sig
   val solve : ?assumptions:F.t list -> unit -> solver_res
   val assume : ?tag:int -> F.t list list -> unit
 end
 
-exception Incorrect_model
-
-let mk_solver (s:solver): (module BASIC_SOLVER) =
-  match s with
-    | Smt ->
-      let module S = struct
-        include Smt.Make(struct end)
-        let solve ?assumptions ()= match solve ?assumptions() with
-          | Sat _ ->
-            R_sat
-          | Unsat us ->
-            let p = us.Solver_intf.get_proof () in
-            Proof.check p;
-            R_unsat
-      end
-      in (module S)
-    | Mcsat ->
-      let module S = struct
-        include Mcsat.Make(struct end)
-        let solve ?assumptions ()= match solve ?assumptions() with
-          | Sat _ ->
-            R_sat
-          | Unsat us ->
-            let p = us.Solver_intf.get_proof () in
-            Proof.check p;
-            R_unsat
-      end
-      in (module S)
+let mk_solver (): (module BASIC_SOLVER) =
+  let module S = struct
+    include Sat.Make(struct end)
+    let solve ?assumptions ()= match solve ?assumptions() with
+      | Sat _ ->
+        R_sat
+      | Unsat us ->
+        let p = us.Solver_intf.get_proof () in
+        Proof.check p;
+        R_unsat
+  end
+  in (module S)
 
 exception Error of string
 
@@ -102,19 +74,19 @@ module Test = struct
   }
 
   let mk_test name l = {name; actions=l}
-  let assume l = A_assume (List.map (List.map F.mk_prop) l)
+  let assume l = A_assume (List.map (List.map F.make) l)
   let assume1 c = assume [c]
   let solve ?(assumptions=[]) e =
-    let assumptions = List.map F.mk_prop assumptions in
+    let assumptions = List.map F.make assumptions in
     A_solve (assumptions, e)
 
   type result =
     | Pass
     | Fail of string
 
-  let run (solver:solver) (t:t): result =
+  let run (t:t): result =
   (* Interesting stuff happening *)
-    let (module S: BASIC_SOLVER) = mk_solver solver in
+    let (module S: BASIC_SOLVER) = mk_solver () in
     try
       List.iter
         (function
@@ -190,17 +162,14 @@ let main () =
   Arg.parse argspec (fun _ -> ()) usage;
   let failed = ref false in
   List.iter
-    (fun solver ->
-       List.iter
-         (fun test ->
-            Printf.printf "(%-6s) %-10s... %!" (string_of_solver solver) test.Test.name;
-            match Test.run solver test with
-              | Test.Pass -> Printf.printf "ok\n%!"
-              | Test.Fail msg ->
-                failed := true;
-                Printf.printf "fail (%s)\n%!" msg)
-         Test.suite)
-    [Smt; Mcsat];
+    (fun test ->
+       Printf.printf "%-10s... %!" test.Test.name;
+       match Test.run test with
+       | Test.Pass -> Printf.printf "ok\n%!"
+       | Test.Fail msg ->
+         failed := true;
+         Printf.printf "fail (%s)\n%!" msg)
+    Test.suite;
   if !failed then exit 1
 
 let () = main()

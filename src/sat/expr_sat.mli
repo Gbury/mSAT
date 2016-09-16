@@ -6,3 +6,6 @@ Copyright 2016 Simon Cruanes
 
 include Formula_intf.S
 
+val make : int -> t
+(** Make a proposition from an integer. *)
+

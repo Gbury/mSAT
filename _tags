@@ -23,6 +23,8 @@ true: inline(100), optimize(3), unbox_closures, unbox_closures_factor(20)
 # Testing dependencies
 <src/main.*>: package(dolmen)
 <src/util/type.*>: package(dolmen)
+<src/sat/type_sat.*>: package(dolmen)
+<src/smt/type_smt.*>: package(dolmen)
 
 # more warnings
 <src/**/*.ml>: warn_K, warn_Y, warn_X

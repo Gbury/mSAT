@@ -6,6 +6,7 @@ module Ast = Dolmen.Term
 module Id = Dolmen.Id
 module M = Map.Make(Id)
 module H = Hashtbl.Make(Id)
+module Expr = Expr_smt
 
 (* Types *)
 (* ************************************************************************ *)
@@ -287,6 +288,9 @@ let infer env s args =
 
 let rec parse_expr (env : env) t =
   match t with
+  (* Base Type *)
+  | { Ast.term = Ast.Symbol { Id.name = "Bool" } } ->
+    Ty (Expr_smt.Ty.prop)
 
   (* Basic formulas *)
   | { Ast.term = Ast.App ({ Ast.term = Ast.Builtin Ast.True }, []) }
@@ -297,10 +301,12 @@ let rec parse_expr (env : env) t =
   | { Ast.term = Ast.Builtin Ast.False } ->
     Formula Expr.Formula.f_false
 
-  | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.And}, l) } ->
+  | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.And}, l) }
+  | { Ast.term = Ast.App ({Ast.term = Ast.Symbol { Id.name = "and" }}, l) } ->
     Formula (Expr.Formula.make_and (List.map (parse_formula env) l))
 
-  | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Or}, l) } ->
+  | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Or}, l) }
+  | { Ast.term = Ast.App ({Ast.term = Ast.Symbol { Id.name = "or" }}, l) } ->
     Formula (Expr.Formula.make_or (List.map (parse_formula env) l))
 
   | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Xor}, l) } as t ->
@@ -330,7 +336,8 @@ let rec parse_expr (env : env) t =
       | _ -> _bad_arity "<=>" 2 t
     end
 
-  | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Not}, l) } as t ->
+  | ({ Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Not}, l) } as t)
+  | ({ Ast.term = Ast.App ({Ast.term = Ast.Symbol { Id.name = "not" }}, l) } as t) ->
     begin match l with
       | [p] ->
         Formula (Expr.Formula.make_not (parse_formula env p))
@@ -338,7 +345,8 @@ let rec parse_expr (env : env) t =
     end
 
   (* (Dis)Equality *)
-  | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Eq}, l) } as t ->
+  | ({ Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Eq}, l) } as t)
+  | ({ Ast.term = Ast.App ({Ast.term = Ast.Symbol { Id.name = "=" }}, l) } as t) ->
     begin match l with
       | [a; b] ->
         Formula (
@@ -607,9 +615,9 @@ let formula t =
   Log.debugf 5 "Typing top-level formula: %a" (fun k -> k Ast.print t);
   parse_formula env t
 
-let consequent t =
+let antecedent t =
   Expr.Formula.make_cnf (formula t)
 
-let antecedent t =
+let consequent t =
   Expr.Formula.make_cnf (Expr.Formula.make_not (formula t))
 

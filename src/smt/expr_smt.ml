@@ -133,8 +133,11 @@ module Print = struct
 
   let atom_aux fmt f =
     match f.atom with
-    | Equal (a, b) -> Format.fprintf fmt "%a = %a" term a term b
-    | Pred t -> Format.fprintf fmt "%a" term t
+    | Equal (a, b) ->
+      Format.fprintf fmt "%a %s %a"
+        term a (if f.sign then "=" else "<>") term b
+    | Pred t ->
+      Format.fprintf fmt "%s%a" (if f.sign then "" else "¬ ") term t
 
   let atom fmt f = Format.fprintf fmt "⟦%a⟧" atom_aux f
 
