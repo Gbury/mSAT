@@ -4,8 +4,10 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Th = Solver.DummyTheory(Expr_smt.Atom)
-
 module Make(Dummy:sig end) =
-  Solver.Make(Expr_smt.Atom)(Th)(struct end)
+  Mcsolver.Make(struct
+    type proof = unit
+    module Term = Expr_smt.Term
+    module Formula = Expr_smt.Atom
+  end)(Theory_mcsat)(struct end)
 

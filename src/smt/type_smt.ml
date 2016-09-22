@@ -318,7 +318,8 @@ let rec parse_expr (env : env) t =
       | _ -> _bad_arity "xor" 2 t
     end
 
-  | { Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Imply}, l) } as t ->
+  | ({ Ast.term = Ast.App ({Ast.term = Ast.Builtin Ast.Imply}, l) } as t)
+  | ({ Ast.term = Ast.App ({Ast.term = Ast.Symbol { Id.name = "=>" }}, l) } as t) ->
     begin match l with
       | [p; q] ->
         let f = parse_formula env p in

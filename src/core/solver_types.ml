@@ -80,7 +80,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | E_var of var
 
   (* Dummy values *)
-  let dummy_lit = E.dummy
+  let dummy_lit = E.Formula.dummy
 
   let rec dummy_var =
     { vid = -101;
@@ -144,7 +144,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
 
   let make_boolean_var : formula -> var * Expr_intf.negated =
     fun t ->
-      let lit, negated = E.norm t in
+      let lit, negated = E.Formula.norm t in
       try
         MF.find f_map lit, negated
       with Not_found ->
@@ -168,7 +168,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
             aid = cpt_fois_2 (* aid = vid*2 *) }
         and na =
           { var = var;
-            lit = E.neg lit;
+            lit = E.Formula.neg lit;
             watched = Vec.make 10 dummy_clause;
             neg = pa;
             is_true = false;

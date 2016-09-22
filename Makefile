@@ -39,7 +39,7 @@ test: bin test_bin
 	@echo "run API tests…"
 	@./test_api.native
 	@echo "run benchmarks…"
-	@/usr/bin/time -f "%e" ./tests/run smt
+	# @/usr/bin/time -f "%e" ./tests/run smt
 	@/usr/bin/time -f "%e" ./tests/run mcsat
 
 enable_log:

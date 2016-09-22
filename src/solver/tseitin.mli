@@ -6,4 +6,5 @@ Copyright 2014 Simon Cruanes
 
 module type S = Tseitin_intf.S
 
-module Make : functor (F : Formula_intf.S) -> S with type atom = F.t
+module Make : functor
+  (F : Tseitin_intf.Arg) -> S with type atom = F.t

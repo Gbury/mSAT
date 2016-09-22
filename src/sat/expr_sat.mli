@@ -9,3 +9,6 @@ include Formula_intf.S
 val make : int -> t
 (** Make a proposition from an integer. *)
 
+val fresh : unit -> t
+(** Make a fresh atom *)
+
