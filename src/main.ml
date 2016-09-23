@@ -189,9 +189,12 @@ let () =
     exit 4
   | Type_sat.Typing_error (msg, t)
   | Type_smt.Typing_error (msg, t) ->
+    let b = Printexc.get_backtrace () in
     let loc = match t.Dolmen.Term.loc with
       | Some l -> l | None -> Dolmen.ParseLocation.mk "<>" 0 0 0 0
     in
     Format.fprintf Format.std_formatter "While typing:@\n%a@\n%a: typing error\n%s@."
-      Dolmen.Term.print t Dolmen.ParseLocation.fmt loc msg
+      Dolmen.Term.print t Dolmen.ParseLocation.fmt loc msg;
+    if Printexc.backtrace_status () then
+      Format.fprintf Format.std_formatter "%s@." b
 

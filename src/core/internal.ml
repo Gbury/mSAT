@@ -494,7 +494,8 @@ module Make
       l.assigned <- Some value;
       l.l_level <- lvl;
       Vec.push env.elt_queue (of_lit l);
-      ()
+      Log.debugf 20 "Enqueue (%d): %a"
+        (fun k -> k (Vec.size env.elt_queue) pp_lit l)
 
   (* evaluate an atom for MCsat, if it's not assigned
      by boolean propagation/decision *)

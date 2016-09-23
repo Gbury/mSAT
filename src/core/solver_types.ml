@@ -282,14 +282,14 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
 
   let pp_assign out = function
     | None -> ()
-    | Some t -> Format.fprintf out " ->@ %a" E.Term.print t
+    | Some t -> Format.fprintf out " ->@ @[<hov>%a@]" E.Term.print t
 
   let pp_lit out v =
-    Format.fprintf out "%d [lit:%a%a]"
+    Format.fprintf out "%d [lit:@[<hov>%a%a@]]"
       (v.lid+1) E.Term.print v.term pp_assign v.assigned
 
   let pp_atom out a =
-    Format.fprintf out "%s%d%s[atom:%a]@ "
+    Format.fprintf out "%s%d%s[atom:@[<hov>%a@]]@ "
       (sign a) (a.var.vid+1) (value a) E.Formula.print a.lit
 
   let pp_atoms_vec out vec =
