@@ -18,8 +18,9 @@ before_install:
   - opam init
   - opam switch ${OCAML_VERSION}
   - eval `opam config env`
+  - opam install ocamlfind ocamlbuild
+  - opam pin add dolmen https://github.com/Gbury/dolmen.git
 install:
-  - opam install dolmen ocamlfind ocamlbuild
   - make bin lib
 script:
   - make test
