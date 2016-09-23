@@ -194,7 +194,7 @@ let flat_map f l = List.flatten (List.map f l)
 
 let take_drop n l =
   let rec aux acc = function
-    | 0, _ | _, [] -> List.rev acc, []
+    | 0, res | _, ([] as res) -> List.rev acc, res
     | m, x :: r -> aux (x :: acc) (m - 1, r)
   in
   aux [] (n, l)
