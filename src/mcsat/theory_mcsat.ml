@@ -52,8 +52,9 @@ let rec iter_aux f = function
     f t
 
 let iter_assignable f = function
-  | { Expr_smt.atom = Expr_smt.Pred p } ->
-    iter_aux f p;
+  | { Expr_smt.atom = Expr_smt.Pred { Expr_smt.term = Expr_smt.Var _ } } -> ()
+  | { Expr_smt.atom = Expr_smt.Pred { Expr_smt.term = Expr_smt.App (_, _, l) } } ->
+    List.iter (iter_aux f) l;
   | { Expr_smt.atom = Expr_smt.Equal (a, b) } ->
     iter_aux f a; iter_aux f b
 
