@@ -7,6 +7,11 @@
 \usepackage{amsmath,amssymb}
 \usepackage{tabularx}
 \usepackage{pgf, tikz}
+\usepackage[margin=4cm]{geometry}
+
+\usepackage{float}
+\floatstyle{boxed}
+\restylefloat{figure}
 
 \usepackage{listings}
 \lstset{language=[Objective]caml}
@@ -32,50 +37,236 @@ provide a \sat{}, \smt{} or \mcsat{} solver.
 Given the current state of the art of \smt{} solvers, where most \sat{} solvers
 are written in C and heavily optimised\footnote{Some solvers now have instructions
 to manage a processor's cache}, the \msat{} library does not aim to provide solvers
-competitive with the existing implementations, but rather a 
+competitive with the existing implementations, but rather an easy way to create
+reasonably eficient solvers.
 
-\section{McSat: An extension of SMT Solvers}
+\msat{} currently uses the following techniques:
+\begin{itemize}
+  \item 2-watch literals scheme
+  \item Activity based decisions
+  \item Restarts
+\end{itemize}
 
-\subsection{Introduction}
+Additionally, \msat{} has the following features:
+\begin{itemize}
+  \item Local assumptions
+  \item Proof/Model output
+  \item Adding clauses during proof search
+\end{itemize}
+
+\clearpage
+
+\tableofcontents{}
+
+\clearpage
+
+\section{\sat{} Solvers: principles and formalization}
+
+\subsection{Idea}
+
+\subsection{Inference rules}
+
+The SAT algorithm can be formalized as follows. During the search, the solver keeps
+a set of clauses, containing the problem hypotheses and the learnt clauses, and
+a trail, which is the current ordered list of assumptions and/or decisions made by
+the solver.
+
+Each element in the trail (decision or propagation) has a level, which is the number of decision
+appearing in the trail up to (and including) it. So for instance, propagations made before any
+decisions have level $0$, and the first decision has level $1$. Propagations are written
+$a \leadsto_C \top$, with $C$ the clause that caused the propagation, and decisions
+$a \mapsto_n \top$, with $n$ the level of the decision. Trails are read
+chronologically from left to right.
+
+In the following, given a trail $t$ and an atomic formula $a$, we will use the following notation:
+$a \in t$ if $a \mapsto_n \top$ or $a \leadsto_C \top$ is in $t$, i.e $a \in t$ is $a$ is true
+in the trail $t$. In this context, the negation $\neg$ is supposed to be involutive (i.e $\neg \neg a = a$),
+so that, if $a \in t$ then $\neg \neg a = a \in t$.
+
+The SAT algorithm has two states: first, it starts in the $\text{Solve}$ state, where propagations
+and decisions are made, until a conflict is detected, at which point it enters in the $\text{Analyse}$
+state, where it analyzes the conflict, backtracks, and re-enter the $\text{Solve}$ state.
+The $\text{Solve}$ state take as argument the set of hypotheses and the trail, while
+the $\text{Analyze}$ state also take as argument the current conflict clause.
+
+We can now formalize the \sat{} algorithm using the inference rules
+in Figure~\ref{fig:rules}. In order to completely recover the \sat{} algorithm,
+one must apply the rules with the following precedence and termination conditions,
+depending on the current state:
+\begin{itemize}
+  \item If the empty clause is in $\mathbb{S}$, then the problem is unsat.
+    If there is no more rule to apply, the problem is sat.
+  \item If we are in $\text{Solve}$ mode:
+    \begin{enumerate}
+      \item First is the rule \irule{Conflict};
+      \item Then the try and use \irule{Propagate};
+      \item Finally, is there is nothing left to be propagated, the \irule{Decide}
+        rule is used.
+    \end{enumerate}
+  \item If we are in $\text{Analyze}$ mode, we have a choice concerning
+    the order of application. First we can observe that the rules
+    \irule{Analyze-Propagate}, \irule{Analyze-Decision} and \irule{Analyze-Resolution}
+    can not apply simultaneously, and we will thus group them in a super-rule
+    \irule{Analyze}. We now have the choice of when to apply the \irule{Backjump} rule
+    compared to the \irule{Analyze} rule:
+    using \irule{Backjump} eagerly will result in the first UIP strategy, while delaying it
+    until later will yield the last UIP strategy, both of which are valid.
+\end{itemize}
+
+\begin{figure}
+  \center{\underline{\sat{}}}
+  \begin{center}
+    \begin{tabular}{c@{\hspace{1cm}}l}
+      % Propagation (boolean)
+      \AXC{$\text{Solve}(\mathbb{S}, t)$}
+      \LLc{Propagate}
+      \UIC{$\text{Sove}(\mathbb{S}, t :: a \leadsto_C \top)$}
+      \DP{} &
+      \begin{tabular}{l}
+        $a \in C, C \in \mathbb{S}, \neg a \notin t$ \\
+        $\forall b \in C. b \neq a \rightarrow \neg b \in t$ \\
+      \end{tabular}
+      \\ \\
+      % Decide (boolean)
+      \AXC{$\text{Solve}(\mathbb{S}, t)$}
+      \LLc{Decide}
+      \UIC{$\text{Solve}(\mathbb{S}, t :: a \mapsto_n \top)$}
+      \DP{} &
+      \begin{tabular}{l}
+        $a \notin t, \neg a \notin t, a \in \mathbb{S}$ \\
+        $n = \text{max\_level}(t) + 1$ \\
+      \end{tabular}
+      \\ \\
+      % Conflict (boolean)
+      \AXC{$\text{Solve}(\mathbb{S}, t)$}
+      \LLc{Conflict}
+      \UIC{$\text{Analyze}(\mathbb{S}, t, C)$}
+      \DP{} &
+      $C \in \mathbb{S}, \forall a \in C. \neg a \in t$
+      \\ \\
+    \end{tabular}
+  \end{center}
+  \begin{center}
+    \begin{tabular}{c@{\hspace{1cm}}l}
+      % Analyze (propagation)
+      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \leadsto_C \top, D)$}
+      \LLc{Analyze-propagation}
+      \UIC{$\text{Analyze}(\mathbb{S}, t, D)$}
+      \DP{} &
+      $\neg a \notin D$
+      \\ \\
+      % Analyze (decision)
+      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \mapsto_n \top, D)$}
+      \LLc{Analyze-decision}
+      \UIC{$\text{Analyze}(\mathbb{S}, t, D)$}
+      \DP{} &
+      $\neg a \notin D$
+      \\ \\
+      % Resolution
+      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \leadsto_C \top, D)$}
+      \LLc{Analyze-Resolution}
+      \UIC{$\text{Analyze}(\mathbb{S}, t, (C - \{a\}) \cup (D - \{ \neg a\}))$}
+      \DP{} &
+      $\neg a \in D$
+      \\ \\
+      % BackJump
+      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \mapsto_d \top :: t', C)$}
+      \LLc{Backjump}
+      \UIC{$\text{Solve}(\mathbb{S} \cup \{ C \}, t)$}
+      \DP{} &
+      \begin{tabular}{l}
+        $\text{is\_uip}(C)$ \\
+        $d = \text{uip\_level}(C)$ \\
+      \end{tabular}
+      \\ \\
+    \end{tabular}
+  \end{center}
+
+  \center{\underline{\smt{}}}
+  \begin{center}
+    \begin{tabular}{c@{\hspace{1cm}}l}
+      % Conflict (theory)
+      \AXC{$\text{Solve}(\mathbb{S}, t)$}
+      \LLc{Conflict-Theory}
+      \UIC{$\text{Analyze}(\mathbb{S}, t, C)$}
+      \DP{} &
+      \begin{tabular}{l}
+        $\mathcal{T} \vdash C$ \\
+        $\forall a \in C, \neg a \in t$ \\
+      \end{tabular}
+      \\ \\
+    \end{tabular}
+  \end{center}
+
+  \center{\underline{\mcsat{}}}
+  \begin{center}
+    \begin{tabular}{c@{\hspace{1cm}}l}
+      % Decide (assignment)
+      \AXC{$\text{Solve}(\mathbb{S}, t)$}
+      \UIC{$\text{Solve}(\mathbb{S}, t :: a \mapsto_n v)$}
+      \DP{} &
+      $a \notin t, a \in \mathbb{S}, n = \text{max\_level}(t) + 1$
+      \\ \\
+      % Propagation (semantic)
+      \AXC{$\text{Solve}(\mathbb{S}, t)$}
+      \UIC{$\text{Solve}(\mathbb{S}, t :: a \leadsto_n \top)$}
+      \DP{} &
+      $ $
+      \\ \\
+    \end{tabular}
+  \end{center}
+  \caption{Inference rules}\label{fig:rules}
+\end{figure}
+
+\subsection{Invariants, correctness and completeness}
+
+The following invariants are maintained by the inference rules in Figure~\ref{fig:rules}:
+\begin{description}
+  \item[Trail Soundness] In $\text{Solve}(\mathbb{S}, t)$, if $a \in t$ then $\neg a \notin t$
+  \item[Conflict Analysis] In $\text{Analyze}(\mathbb{S}, t, C)$, $C$ is a clause implied by the
+    clauses in $\mathbb{S}$, and $\forall a \in C, \neg a \in t$ (i.e $C$ is entailed, yet false
+    in the partial model formed by the trail $t$).
+  \item[Equivalence] In any rule \AXC{$s_1$}\UIC{$s_2$}\DP{}, the set of hypotheses
+    (usually written $\mathbb{S}$) in $s_1$ is equivalent to that of $s_2$.
+\end{description}
+
+These invariants are relatively easy to prove, and provide an easy proof of correctness for
+the \sat{} algorithm. Termination can be proved by observing that the same trail appears
+at most twice during proof search (once during propagation, and eventually a second time
+right after backjumping\footnote{This could be avoided by making the \irule{Backjump} rule
+directly propagate the relevant litteral of the conflict clause, but it needlessly
+complicates the rule.}). Correctness and termination implies completeness of the \sat{}
+algorithm.
 
 
-Mcsat is an extension of usual SMT solvers, introduced in~\cite{VMCAI13} and~\cite{FMCAD13}.
-In usual SMT Solvers, interaction between the core SAT Solver and the Theory is pretty limited~:
-the SAT Solver make boolean decision, and sends them to the theory, whose role is in return to
-stop the SAT Solver as soon as the current set of assumptions is incoherent. This means
-that the information that theories can give the SAT Solver is pretty limited, and furthermore
-it limits the ability of theories to guide the proof search.
+\section{\smt{} solver architecture}
 
-While it appears to leave a reasonably simple job to the theory, since it completely
-hides the propositional structure of the problem, this simple interaction between the
-SAT Solver and the theory makes it harder to combine multiple theories into one. Usual
-techniques for combining theories in SMT solvers typically require to keep track of
-equality congruence classes and require of theories to propagate any equality they discover.
-
-McSat extends the SAT paradigm by allowing more exchange of information between the theory
-and the SAT Solver. This is achieved by allowing the solver to not only decide on the truth value
-of atomic propositions, but also to decide assignments for terms that appear in the problem.
-For instance, if the SAT Solver assumes a formula $x = 0$,
-an arithmetic theory could propagate to the SAT Solver that the formula $x < 1$ must also hold,
-instead of waiting for the SAT Solver to guess the truth value of $x < 1$ and then
-inform the SAT Solver that the conjunction~: $x = 0 \land \neg x < 1$ is incoherent.
-
-This exchange of information between the SAT Solver and the theories results in
-the construction of a model throughout the proof search (which explains the name
-Model Constructing SAT).
-
-\subsection{SMT Solver architecture}
+\subsection{Idea}
 
 We can represent a simplified version of the information flow (not taking into
 account backtracking) of usual SMT Solvers, using the graph in fig~\ref{fig:smt_flow}.
-In a pure Sat solver, the solver starts by doing
-boolean propagation until no more literal can be propagated, at which point it
-makes a decision and assign a truth value to a literal not yet assigned. It then
-loops to its starting point and does boolean propagation. In an SMT solver,
-after each propagation and decision, the solver sends the newly assigned literals
-to the theory. The theory then has the possibility to declare the current set of
-literals incoherent, and give the solver a tautology in which all literals are currently
-assigned to $\bot$, thus prompting the solver to backtrack.
+In a \smt{} solver, after each propagation and decision, the solver sends the newly
+assigned literals to the theory. The theory then has the possibility to declare the
+current set of literals incoherent, and give the solver a tautology in which all
+literals are currently assigned to $\bot$\footnote{or rather for each literal, its negation
+is assigned to $\top$}, thus prompting the solver to backtrack.
+
+\subsection{Formalization and Theory requirements}
+
+An \smt{} solver is the combinaison of a \sat{} solver, and a theory $\mathcal{T}$.
+The role of the theory $\mathcal{T}$ is to stop the proof search as soon as the trail
+of the \sat{} solver is inconsistent. Thus, we can add the \irule{Conflict-Theory} rule
+to the \sat{} ifnerence rules in order to get a \smt{} solver. We give a slightly lower
+precedence than the \irule{Conflict} rule for performance reason (detecting boolean
+conflict is faster than theory specifi conflicts).
+
+So, what is the minimum that a theory must implement to be used in a \smt{} solver~?
+Given its precedence, all a theory has to do in a \smt{} sovler, is to ensure that
+the current trail is consistent (when seens as a conjunction of literals). This
+reflects the fact that the \sat{} core takes care of the purely propositional content
+of the input problem, and leaves the theory specific reasoning to the theory, which
+then does not have to deal with propositional content such as disjunction. The theory,
+however, must have a global reasoning to ensure that the whole trail is consistent.
 
 \begin{figure}
   \begin{center}
@@ -108,6 +299,38 @@ assigned to $\bot$, thus prompting the solver to backtrack.
   \caption{Simplified SMT Solver architecture}\label{fig:smt_flow}
 \end{figure}
 
+
+
+\section{McSat: An extension of SMT Solvers}
+
+\subsection{Introduction}
+
+
+Mcsat is an extension of usual SMT solvers, introduced in~\cite{VMCAI13} and~\cite{FMCAD13}.
+In usual SMT Solvers, interaction between the core SAT Solver and the Theory is pretty limited~:
+the SAT Solver make boolean decision, and sends them to the theory, whose role is in return to
+stop the SAT Solver as soon as the current set of assumptions is incoherent. This means
+that the information that theories can give the SAT Solver is pretty limited, and furthermore
+it limits the ability of theories to guide the proof search.
+
+While it appears to leave a reasonably simple job to the theory, since it completely
+hides the propositional structure of the problem, this simple interaction between the
+SAT Solver and the theory makes it harder to combine multiple theories into one. Usual
+techniques for combining theories in SMT solvers typically require to keep track of
+equality congruence classes and require of theories to propagate any equality they discover.
+
+McSat extends the SAT paradigm by allowing more exchange of information between the theory
+and the SAT Solver. This is achieved by allowing the solver to not only decide on the truth value
+of atomic propositions, but also to decide assignments for terms that appear in the problem.
+For instance, if the SAT Solver assumes a formula $x = 0$,
+an arithmetic theory could propagate to the SAT Solver that the formula $x < 1$ must also hold,
+instead of waiting for the SAT Solver to guess the truth value of $x < 1$ and then
+inform the SAT Solver that the conjunction~: $x = 0 \land \neg x < 1$ is incoherent.
+
+This exchange of information between the SAT Solver and the theories results in
+the construction of a model throughout the proof search (which explains the name
+Model Constructing SAT).
+
 The main addition of McSat is that when the solver makes a decision, instead of
 being restricted to making boolean assignment of formulas, the solver now can
 decide to assign a value to a term belonging to one of the literals. In order to do so,
@@ -117,9 +340,9 @@ only exchange information with one theory, but, as we will see, combination
 of theories into one becomes easier in this framework.
 
 Using the assignments on terms, the theory can very easily do efficient
-propagation of formulas implied by the current assignments.
+propagation of formulas implied by the current assignments: is suffices to
+evaluate formulas using the current partial assignment.
 The information flow then looks like fig~\ref{fig:mcsat_flow}.
-For a more detailed presentation, see~\cite{FMCAD13} and~\cite{VMCAI13}.
 
 \begin{figure}
   \begin{center}
@@ -164,50 +387,13 @@ used in traditional SMT Solvers. In the case of McSat (or at least the version p
 semantic propagations strictly correspond to the evaluation of formulas in the
 current assignment. Moreover, in order to be able to correctly handle these semantic
 propagations during backtrack, they are assigned a level: each decision is given a level
-(typically, it is the number of previous decisions in in the scope when a decision is made),
-and a formula is propagated at the maximum level of decision used to evaluate it.
+(using the same process as in a \sat{} solvers: a decision level is the number of decision
+previous to it, plus one), and a formula is propagated at the maximum level of the decisions
+used to evaluate it.
 
 For instance, if the current trail is $\{x \mapsto_1 0, x + y + z = 0 \mapsto_2 \top, y\mapsto_3 0\}$,
 then $x + y = 0$ can be propagated at level $3$, but $z = 0$ can not be propagated (at least not
 given to the sat solver, however nothing prevents the theory from propagating and using it internally).
-
-\subsection{Algorithm formalization}
-
-\subsubsection{SAT}
-
-The SAT algorithm can be formalized as follows. During the search, the solver keeps
-a set of clauses, containing the problem hypotheses and the learnt clauses, and
-a trail, which is the current ordered list of assumptions and/or decisions made by
-the solver.
-
-Each element in the trail (decision or propagation) has a level, which is the number of decision
-appearing in the trail up to (and including) it. So for instance, propagations made before any
-decisions have level $0$, and the first decision has level $1$. Propagations are written
-$a \leadsto_C \top$, with $C$ the clause that caused the propagation, and decisions
-$a \mapsto_n \top$, with $n$ the level of the decision. Trails are read
-chronologically from left to right.
-
-In the following, given a trail $t$ and an atomic formula $a$, we will use the following notation:
-$a \in t$ if $a \mapsto_n \top$ or $a \leadsto_C \top$ is in $t$, i.e $a\ in t$ is $a$ is true
-in the trail $t$. In this context, the negation $\neg$ is supposed to be involutive (i.e $\neg \neg a = a$),
-so that, if $a \in t$ then $\neg \neg a = a \in t$.
-
-The SAT algorithm has two states: first, it starts in the $\text{Solve}$ state, where propagations
-and decisions are made, until a conflict is detected, at which point it enters in the $\text{Analyse}$
-state, where it analyzes the conflict, backtracks, and re-enter the $\text{Solve}$ state.
-The $\text{Solve}$ state take as argument the set of hypotheses and the trail, while
-the $\text{Analyze}$ state also take as argument the current conflict clause.
-
-The following invariants are maintained by the transition system:
-\begin{description}
-  \item[Equivalence] During transitions between states $s_1$ and $s_2$, the set of hypotheses
-    (usually written $\mathbb{S}$) in $s_1$ is equivalent to that of $s_2$.
-  \item[Trail Soundness] In $\text{Solve}(\mathbb{S}, t)$, if $a \in t$ then $\neg a \notin t$
-  \item[Conflict Analysis] In $\text{Analyze}(\mathbb{S}, t, C)$, $C$ is a clause implied by the
-    clauses in $\mathbb{S}$, and $\forall a \in C, \neg a \in t$ (i.e $C$ is entailed, yet false
-    in the partial model formed by the trail $t$).
-\end{description}
-
 \subsection{First order terms}
 
 In the following, we use the following notations:
@@ -284,94 +470,6 @@ following mapping:
   \right.
 \]
 
-\begin{figure}
-
-  Sat Solving
-  \begin{center}
-    \begin{tabular}{c@{\hspace{1cm}}l}
-      % Propagation (boolean)
-      \AXC{$\text{Solve}(\mathbb{S}, t)$}
-      \UIC{$\text{Sove}(\mathbb{S}, t :: a \leadsto_C \top)$}
-      \DP{} &
-      $a \in C, C \in \mathbb{S}, \neg a \notin t, \forall b \neq a \in C. \neg b \in t $
-      \\ \\
-      % Decide (boolean)
-      \AXC{$\text{Solve}(\mathbb{S}, t)$}
-      \UIC{$\text{Solve}(\mathbb{S}, t :: a \mapsto_n \top)$}
-      \DP{} &
-      $a \notin t, \neg a \notin t, a \in \mathbb{S}, n = \text{max\_level}(t) + 1$
-      \\ \\
-      % Conflict (boolean)
-      \AXC{$\text{Solve}(\mathbb{S}, t)$}
-      \UIC{$\text{Analyze}(\mathbb{S}, t, C)$}
-      \DP{} &
-      $C \in \mathbb{S}, \forall a \in C. \neg a \in t$
-      \\ \\
-    \end{tabular}
-  \end{center}
-
-  Conflict Analysis
-  \begin{center}
-    \begin{tabular}{c@{\hspace{1cm}}l}
-      % Analyze (propagation)
-      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \leadsto_C \top, D)$}
-      \UIC{$\text{Analyze}(\mathbb{S}, t, D)$}
-      \DP{} &
-      $\neg a \notin D$
-      \\ \\
-      % Analyze (decision)
-      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \mapsto_n \top, D)$}
-      \UIC{$\text{Analyze}(\mathbb{S}, t, D)$}
-      \DP{} &
-      $\neg a \notin D$
-      \\ \\
-      % Resolution
-      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \leadsto_C \top, D)$}
-      \UIC{$\text{Analyze}(\mathbb{S}, t, (C - \{a\}) \cup (D - \{ \neg a\}))$}
-      \DP{} &
-      $\neg a \in D$
-      \\ \\
-      % BackJump
-      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \mapsto_d \top :: t', C)$}
-      \UIC{$\text{Solve}(\mathbb{S} \cup \{ C \}, t)$}
-      \DP{} &
-      $\text{is\_uip}(C), d = \text{uip\_level}(C)$
-      \\ \\
-    \end{tabular}
-  \end{center}
-
-  SMT Solving
-  \begin{center}
-    \begin{tabular}{c@{\hspace{1cm}}l}
-      % Conflict (theory)
-      \AXC{$\text{Solve}(\mathbb{S}, t)$}
-      \UIC{$\text{Analyze}(\mathbb{S}, t, C)$}
-      \DP{} &
-      $\mathcal{T} \vdash C, \forall a \in C, \neg a \in t$
-      \\ \\
-    \end{tabular}
-  \end{center}
-
-  McSat Solving
-  \begin{center}
-    \begin{tabular}{c@{\hspace{1cm}}l}
-      % Decide (assignment)
-      \AXC{$\text{Solve}(\mathbb{S}, t)$}
-      \UIC{$\text{Solve}(\mathbb{S}, t :: a \mapsto_n v)$}
-      \DP{} &
-      $a \notin t, a \in \mathbb{S}, n = \text{max\_level}(t) + 1$
-      \\ \\
-      % Propagation (semantic)
-      \AXC{$\text{Solve}(\mathbb{S}, t)$}
-      \UIC{$\text{Solve}(\mathbb{S}, t :: a \leadsto_n \top)$}
-      \DP{} &
-      $ $
-      \\ \\
-    \end{tabular}
-  \end{center}
-
-  \caption{SAT, SMT and McSat inference rules}\label{fig:transitions}
-\end{figure}
 
 \subsection{Expected theory invariants}
 
