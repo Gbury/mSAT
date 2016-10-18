@@ -7,7 +7,7 @@
 \usepackage{amsmath,amssymb}
 \usepackage{tabularx}
 \usepackage{pgf, tikz}
-\usepackage[margin=4cm]{geometry}
+% \usepackage[margin=4cm]{geometry}
 
 \usepackage{float}
 \floatstyle{boxed}
@@ -22,15 +22,15 @@
 
 \begin{document}
 
-\title{\msat{}: a SAT/SMT/McSAT library}
+\title{\msat{}: a \sat{}/\smt{}/\mcsat{} library}
 \author{Guillaume~Bury}
 
 \maketitle
 
 \section{Introduction}
 
-The goal if the \msat{} library is to provide a way to easily
-create atomated theorem provers based on a \sat{} solver. More precisely,
+The goal of the \msat{} library is to provide a way to easily
+create automated theorem provers based on a \sat{} solver. More precisely,
 the library, written in \ocaml{}, provides functors which, once instantiated,
 provide a \sat{}, \smt{} or \mcsat{} solver.
 
@@ -38,7 +38,7 @@ Given the current state of the art of \smt{} solvers, where most \sat{} solvers
 are written in C and heavily optimised\footnote{Some solvers now have instructions
 to manage a processor's cache}, the \msat{} library does not aim to provide solvers
 competitive with the existing implementations, but rather an easy way to create
-reasonably eficient solvers.
+reasonably efficient solvers.
 
 \msat{} currently uses the following techniques:
 \begin{itemize}
@@ -60,11 +60,11 @@ Additionally, \msat{} has the following features:
 
 \clearpage
 
-\section{\sat{} Solvers: principles and formalization}
+\section{\sat{} Solvers: principles and formalization}\label{sec:sat}
 
 \subsection{Idea}
 
-\subsection{Inference rules}
+\subsection{Inference rules}\label{sec:trail}
 
 The SAT algorithm can be formalized as follows. During the search, the solver keeps
 a set of clauses, containing the problem hypotheses and the learnt clauses, and
@@ -79,17 +79,23 @@ $a \mapsto_n \top$, with $n$ the level of the decision. Trails are read
 chronologically from left to right.
 
 In the following, given a trail $t$ and an atomic formula $a$, we will use the following notation:
-$a \in t$ if $a \mapsto_n \top$ or $a \leadsto_C \top$ is in $t$, i.e $a \in t$ is $a$ is true
-in the trail $t$. In this context, the negation $\neg$ is supposed to be involutive (i.e $\neg \neg a = a$),
-so that, if $a \in t$ then $\neg \neg a = a \in t$.
+$a \in t$ if $a \mapsto_n \top$ or $a \leadsto_C \top$ is in $t$, i.e.~$a \in t$ is $a$ is true
+in the trail $t$. In this context, the negation $\neg$ is supposed to be involutive
+(i.e.~$\neg \neg a = a$), so that, if $a \in t$ then $\neg \neg a = a \in t$.
 
-The SAT algorithm has two states: first, it starts in the $\text{Solve}$ state, where propagations
-and decisions are made, until a conflict is detected, at which point it enters in the $\text{Analyse}$
-state, where it analyzes the conflict, backtracks, and re-enter the $\text{Solve}$ state.
+There exists two main \sat{} algorithms: \dpll{} and \cdcl{}. In both, there exists
+two states: first, the starting state $\text{Solve}$, where propagations
+and decisions are made, until a conflict is detected, at which point the algorithm
+enters in the $\text{Analyse}$ state, where it analyzes the conflict, backtracks,
+and re-enter the $\text{Solve}$ state. The difference between \dpll{} and \cdcl{}
+is the treatment of conflicts during the $\text{Analyze}$ phase: \dpll{} will use
+the conflict only to known where to backtrack/backjump, while in \cdcl{} the result
+of the conflict analysis will be added to the set of hypotheses, so that the same
+conflict does not occur again.
 The $\text{Solve}$ state take as argument the set of hypotheses and the trail, while
 the $\text{Analyze}$ state also take as argument the current conflict clause.
 
-We can now formalize the \sat{} algorithm using the inference rules
+We can now formalize the \cdcl{} algorithm using the inference rules
 in Figure~\ref{fig:rules}. In order to completely recover the \sat{} algorithm,
 one must apply the rules with the following precedence and termination conditions,
 depending on the current state:
@@ -110,7 +116,7 @@ depending on the current state:
     \irule{Analyze}. We now have the choice of when to apply the \irule{Backjump} rule
     compared to the \irule{Analyze} rule:
     using \irule{Backjump} eagerly will result in the first UIP strategy, while delaying it
-    until later will yield the last UIP strategy, both of which are valid.
+    until later will yield other strategies, both of which are valid.
 \end{itemize}
 
 \begin{figure}
@@ -169,6 +175,10 @@ depending on the current state:
       \DP{} &
       $\neg a \in D$
       \\ \\
+    \end{tabular}
+  \end{center}
+  \begin{center}
+    \begin{tabular}{c@{\hspace{1cm}}l}
       % BackJump
       \AXC{$\text{Analyze}(\mathbb{S}, t :: a \mapsto_d \top :: t', C)$}
       \LLc{Backjump}
@@ -176,7 +186,7 @@ depending on the current state:
       \DP{} &
       \begin{tabular}{l}
         $\text{is\_uip}(C)$ \\
-        $d = \text{uip\_level}(C)$ \\
+        $d \leq \text{uip\_level}(C)$ \\
       \end{tabular}
       \\ \\
     \end{tabular}
@@ -192,7 +202,7 @@ depending on the current state:
       \DP{} &
       \begin{tabular}{l}
         $\mathcal{T} \vdash C$ \\
-        $\forall a \in C, \neg a \in t$ \\
+        $\forall a \in C. \neg a \in t$ \\
       \end{tabular}
       \\ \\
     \end{tabular}
@@ -224,49 +234,61 @@ The following invariants are maintained by the inference rules in Figure~\ref{fi
 \begin{description}
   \item[Trail Soundness] In $\text{Solve}(\mathbb{S}, t)$, if $a \in t$ then $\neg a \notin t$
   \item[Conflict Analysis] In $\text{Analyze}(\mathbb{S}, t, C)$, $C$ is a clause implied by the
-    clauses in $\mathbb{S}$, and $\forall a \in C, \neg a \in t$ (i.e $C$ is entailed, yet false
-    in the partial model formed by the trail $t$).
+    clauses in $\mathbb{S}$, and $\forall a \in C. \neg a \in t$ (i.e.~$C$ is entailed by the
+    hypotheses, yet false in the partial model formed by the trail $t$).
   \item[Equivalence] In any rule \AXC{$s_1$}\UIC{$s_2$}\DP{}, the set of hypotheses
     (usually written $\mathbb{S}$) in $s_1$ is equivalent to that of $s_2$.
 \end{description}
 
 These invariants are relatively easy to prove, and provide an easy proof of correctness for
-the \sat{} algorithm. Termination can be proved by observing that the same trail appears
+the \cdcl{} algorithm. Termination can be proved by observing that the same trail appears
 at most twice during proof search (once during propagation, and eventually a second time
 right after backjumping\footnote{This could be avoided by making the \irule{Backjump} rule
-directly propagate the relevant litteral of the conflict clause, but it needlessly
+directly propagate the relevant literal of the conflict clause, but it needlessly
 complicates the rule.}). Correctness and termination implies completeness of the \sat{}
 algorithm.
 
 
-\section{\smt{} solver architecture}
+\section{\smt{} solver architecture}\label{sec:smt}
 
-\subsection{Idea}
+\subsection{Idea}\label{sec:smt_flow}
 
-We can represent a simplified version of the information flow (not taking into
-account backtracking) of usual SMT Solvers, using the graph in fig~\ref{fig:smt_flow}.
 In a \smt{} solver, after each propagation and decision, the solver sends the newly
 assigned literals to the theory. The theory then has the possibility to declare the
 current set of literals incoherent, and give the solver a tautology in which all
 literals are currently assigned to $\bot$\footnote{or rather for each literal, its negation
 is assigned to $\top$}, thus prompting the solver to backtrack.
+We can represent a simplified version of the information flow (not taking into
+account backtracking) of usual \smt{} Solvers, using the graph in fig~\ref{fig:smt_flow}.
+
+Contrary to what the Figure~\ref{fig:smt_flow} could suggest, it is not impossible
+for the theory to propagate information back to the \sat{} solver. Indeed,
+some \smt{} solvers already allow the theory to propagate entailed literals back to the
+\sat{} solver. However, these propagations are in practice limited by the complexity
+of deciding entailment. Moreover, procedures in a \smt{} solver should be incremental
+in order to get decent performances, and deciding entailment in an incremental manner
+is not easy (TODO~: ref nécessaire). Doing efficient, incremental entailment is exactly
+what \mcsat{} allows (see Section~\ref{sec:mcsat}).
 
 \subsection{Formalization and Theory requirements}
 
-An \smt{} solver is the combinaison of a \sat{} solver, and a theory $\mathcal{T}$.
+An \smt{} solver is the combination of a \sat{} solver, and a theory $\mathcal{T}$.
 The role of the theory $\mathcal{T}$ is to stop the proof search as soon as the trail
-of the \sat{} solver is inconsistent. Thus, we can add the \irule{Conflict-Theory} rule
-to the \sat{} ifnerence rules in order to get a \smt{} solver. We give a slightly lower
-precedence than the \irule{Conflict} rule for performance reason (detecting boolean
-conflict is faster than theory specifi conflicts).
+of the \sat{} solver is inconsistent. A trail is inconsistent iff there exists a clause
+$C$, which is a tautology of $\mathcal{T}$ (thus $\mathcal{T} \vdash C$), but is not
+satisfied in the current trail (each of its literals has either been decided or
+propagated to false). Thus, we can add the \irule{Conflict-Theory} rule (see
+Figure~\ref{fig:rules}) to the \cdcl{} inference rules in order to get a \smt{} solver.
+We give the \irule{Conflict-Theory} rule a slightly lower precedence than the
+\irule{Conflict} rule for performance reason (detecting boolean conflict is
+faster than theory specific conflicts).
 
-So, what is the minimum that a theory must implement to be used in a \smt{} solver~?
-Given its precedence, all a theory has to do in a \smt{} sovler, is to ensure that
-the current trail is consistent (when seens as a conjunction of literals). This
-reflects the fact that the \sat{} core takes care of the purely propositional content
-of the input problem, and leaves the theory specific reasoning to the theory, which
-then does not have to deal with propositional content such as disjunction. The theory,
-however, must have a global reasoning to ensure that the whole trail is consistent.
+So, what is the minimum that a theory must implement in practice to be used in a
+\smt{} solver~? The theory has to ensure that the current trail is consistent
+(when seen as a conjunction of literals), that is to say, given a trail $t$,
+it must ensure that there exists a model $\mathcal{M}$ of $\mathcal{T} $so that
+$\forall a \in t. \mathcal{M} \vDash a$, or if it is impossible (i.e.~the trail
+is inconsistent) produce a conflict.
 
 \begin{figure}
   \begin{center}
@@ -296,33 +318,33 @@ however, must have a global reasoning to ensure that the whole trail is consiste
 
     \end{tikzpicture}
   \end{center}
-  \caption{Simplified SMT Solver architecture}\label{fig:smt_flow}
+  \caption{Simplified \smt{} Solver architecture}\label{fig:smt_flow}
 \end{figure}
 
+\section{\mcsat{}: An extension of \smt{} Solvers}\label{sec:mcsat}
 
+\subsection{Motivation and idea}
 
-\section{McSat: An extension of SMT Solvers}
-
-\subsection{Introduction}
-
-
-Mcsat is an extension of usual SMT solvers, introduced in~\cite{VMCAI13} and~\cite{FMCAD13}.
-In usual SMT Solvers, interaction between the core SAT Solver and the Theory is pretty limited~:
-the SAT Solver make boolean decision, and sends them to the theory, whose role is in return to
-stop the SAT Solver as soon as the current set of assumptions is incoherent. This means
-that the information that theories can give the SAT Solver is pretty limited, and furthermore
-it limits the ability of theories to guide the proof search.
+\mcsat{} is an extension of usual \smt{} solvers, introduced in~\cite{VMCAI13} and~\cite{FMCAD13}.
+In usual \smt{} Solvers, interaction between the core SAT Solver and the Theory is pretty limited~:
+the SAT Solver make boolean decisions and propagations, and sends them to the theory,
+whose role is in return to stop the SAT Solver as soon as the current set of assumptions
+is incoherent. This means that the information that theories can give the SAT Solver is
+pretty limited, and furthermore it heavily restricts the ability of theories to guide
+the proof search (see Section~\ref{sec:smt_flow}).
 
 While it appears to leave a reasonably simple job to the theory, since it completely
 hides the propositional structure of the problem, this simple interaction between the
 SAT Solver and the theory makes it harder to combine multiple theories into one. Usual
-techniques for combining theories in SMT solvers typically require to keep track of
-equality congruence classes and require of theories to propagate any equality they discover.
+techniques for combining theories in \smt{} solvers typically require to keep track of
+equivalence classes (with respect to the congruence closure) and for instance
+in the Nelson-Oppen method for combining theories (TODO~: ref nécessaire) require of
+theories to propagate any equality implied by the current assertions.
 
-McSat extends the SAT paradigm by allowing more exchange of information between the theory
+\mcsat{} extends the SAT paradigm by allowing more exchange of information between the theory
 and the SAT Solver. This is achieved by allowing the solver to not only decide on the truth value
 of atomic propositions, but also to decide assignments for terms that appear in the problem.
-For instance, if the SAT Solver assumes a formula $x = 0$,
+For instance, if the SAT Solver assigns a variable $x$ to $0$,
 an arithmetic theory could propagate to the SAT Solver that the formula $x < 1$ must also hold,
 instead of waiting for the SAT Solver to guess the truth value of $x < 1$ and then
 inform the SAT Solver that the conjunction~: $x = 0 \land \neg x < 1$ is incoherent.
@@ -331,16 +353,17 @@ This exchange of information between the SAT Solver and the theories results in
 the construction of a model throughout the proof search (which explains the name
 Model Constructing SAT).
 
-The main addition of McSat is that when the solver makes a decision, instead of
+The main addition of \mcsat{} is that when the solver makes a decision, instead of
 being restricted to making boolean assignment of formulas, the solver now can
 decide to assign a value to a term belonging to one of the literals. In order to do so,
 the solver first chooses a term that has not yet been assigned, and then asks
-the theory for a possible assignment. Like in usual SMT Solvers, a McSat solver
+the theory for a possible assignment. Like in usual SMT Solvers, a \mcsat{} solver
 only exchange information with one theory, but, as we will see, combination
-of theories into one becomes easier in this framework.
+of theories into one becomes easier in this framework, because assignments are
+actually a very good way to exchange information.
 
-Using the assignments on terms, the theory can very easily do efficient
-propagation of formulas implied by the current assignments: is suffices to
+Using the assignments on terms, the theory can then very easily do efficient
+propagation of formulas implied by the current assignments: it is enough to
 evaluate formulas using the current partial assignment.
 The information flow then looks like fig~\ref{fig:mcsat_flow}.
 
@@ -377,13 +400,13 @@ The information flow then looks like fig~\ref{fig:mcsat_flow}.
 
     \end{tikzpicture}
   \end{center}
-  \caption{Simplified McSat Solver architecture}\label{fig:mcsat_flow}
+  \caption{Simplified \mcsat{} Solver architecture}\label{fig:mcsat_flow}
 \end{figure}
 
 \subsection{Decisions and propagations}
 
-In this document, semantic propagations are a bit different from the propagations
-used in traditional SMT Solvers. In the case of McSat (or at least the version presented here),
+In \mcsat{}, semantic propagations are a bit different from the propagations
+used in traditional \smt{} Solvers. In the case of \mcsat{} (or at least the version presented here),
 semantic propagations strictly correspond to the evaluation of formulas in the
 current assignment. Moreover, in order to be able to correctly handle these semantic
 propagations during backtrack, they are assigned a level: each decision is given a level
@@ -391,74 +414,82 @@ propagations during backtrack, they are assigned a level: each decision is given
 previous to it, plus one), and a formula is propagated at the maximum level of the decisions
 used to evaluate it.
 
+We can thus extend the notations introduced in Section~\ref{sec:trail}: $t \mapsto_n v$ is
+a semantic decision which assign $t$ to a concrete value $v$, $a \leadsto_n \top$ is a
+semantic propagation at level $n$.
+
 For instance, if the current trail is $\{x \mapsto_1 0, x + y + z = 0 \mapsto_2 \top, y\mapsto_3 0\}$,
-then $x + y = 0$ can be propagated at level $3$, but $z = 0$ can not be propagated (at least not
-given to the sat solver, however nothing prevents the theory from propagating and using it internally).
-\subsection{First order terms}
+then $x + y = 0$ can be propagated at level $3$, but $z = 0$ can not be propagated, because
+$z$ is not assigned yet, even if there is only one remaining valid value for $z$.
+The problem with assignments as propagations is that it is not clear what to do with
+them during the $\text{Analyze}$ phase of the solver, see later.
+
+\subsection{First order terms \& Models}
+
+A model traditionally is a triplet which comprises a domain, a signature and an interpretation
+function. Since most problems define their signature using type definitions at the beginning, and
+built-in theories such as arithmetic usually have canonic domain and signature,
+we will consider in the following that the domain $\mathbb{D}$ and signature are given (and constant).
+Additionally, we consider a fixed interpretation of the theory-defined symbols (which
+usually does along with the domain).
 
 In the following, we use the following notations:
 \begin{itemize}
-  \item $\mathbb{V}$ is an infinite set of variables
-  \item $\mathbb{C}$ is a possibly infinite set of constants defined
-    by a problem's logic\footnote{For instance, the theory of arithmetic
-    defines the usual operators $+, -, *, /$ as well as the constants
-    $0, -5, \frac{1}{2}, -2.3, \ldots$}
-  \item $\mathbb{S}$ is a finite set of constants defined by a problem's type definitions
-  \item $\mathbb{T}(\mathbb{X})$ for the (infinite) set of first-order terms over $\mathbb{X}$
-    (for instance $a, f(0), x + y, \ldots$)
-  \item $\mathbb{F}(\mathbb{T})$ for the (infinite) set of first order quantified formulas
-    over the terms in $\mathbb{T}$
+  \item $\mathbb{V}$ is an infinite set of variables;
+  \item $\mathbb{C}$ is the possibly infinite set of constants defined
+    by the input problem's theories\footnote{For instance, the theory of arithmetic
+    defines the usual operators $+, -, *, /$ as well as $0, -5, \frac{1}{2}, -2.3, \ldots$};
+  \item $\mathbb{S}$ is the finite set of constants defined by the input problem's type
+    definitions;
+  \item $\mathbb{T}$ is the (infinite) set of first-order terms over $\mathbb{V}$, $\mathbb{C}$
+    and $\mathbb{S}$ (for instance $a, f(0), x + y, \ldots$);
+  \item $\mathbb{F}$ is the (infinite) set of first order quantified formulas
+    over the terms in $\mathbb{T}$.
 \end{itemize}
 
-\subsection{Models}
-
-A model traditionally is a triplet which comprises a domain, a signature and an interpretation function.
-Most problems define their signature using type definitions, and builtin theories such as arithmetic
-usually have canonic models, so in the following we consider the domain and siganture constant, and
-talk about the interpretation, more specifically, about the interpretation of symbols not defined
-by the theory\footnote{Since theory-defined symbols, such as addition, already have an intepretation
-in the canonical domain.}, i.e non-interpreted functions. An intepretation $\mathcal{I}$ can easily
-be extended to a function from ground terms to model value by recursively applying it:
+We are therefore interested in finding an interpretation of a problem, and more
+specifically an interpretation of the symbols in $\mathbb{S}$ not defined by
+the theory, i.e.~non-interpreted functions. An interpretation
+$\mathcal{I}$ can easily be extended to a function from ground terms and formulas
+to model value by recursively applying it:
 \[
-  \mathcal{I}( f ( {(e_i)}_{1\leq i \leq n})) = \mathcal{I}_f ( {( \mathcal{I}(e_i) )}_{1 \leq i \leq n} )
+  \mathcal{I}( f ( e_1, \ldots, e_n ) ) =
+  \mathcal{I}_f ( \mathcal{I}(e_1), \ldots, \mathcal{I}(e_n) )
 \]
 
-Before formalizing the SAT, SMT and McSat algorithms as inference rules, we need to formalize the notion
-of partial interpretation. Indeed, during the proof search, the McSat algorithm maintains a partial mapping from
-expressions to model values. The intention of this mapping is to represent a partial interpretation of the input
-problem, so that if the mapping is complete (i.e all variables are assigned), then it directly gives an interpretation
-of the input problem (quantified formula notwithstanding).
+\paragraph{Partial Interpretation}
+The goal of \mcsat{} is to construct a first-order model of the input formulas. To do so,
+it has to build what we will call partial interpretations: intuitively, a partial
+interpretation is a partial function from the constants symbols to the model values.
+It is, however, not so simple: during proof search, the \mcsat{} algorithm maintains
+a partial mapping from expressions to model values (and not from constant symbols
+to model values). The intention of this mapping is to represent a set of constraints
+on the partial interpretation that the algorithm is building.
+For instance, given a function symbol $f$ of type $(\text{int} \rightarrow \text{int})$ and an
+integer constant $a$, one such constraint that we would like to be able to express in
+our mapping is the following: $f(a) \mapsto 0$, regardless of the values that $f$ takes on
+other argument, and also regardless of the value mapped to $a$. To that end we introduce
+the notion of abstract partial interpretation.
 
-More than simply an incomplete interpretation, we also want to be able to give partial function (instead of complete functions) as interpretation of
-constants with positive arity. And even further, we'd like to specify these partial interpretations in a somewhat
-abstract way, using mappings from expressions to model values instead of a function from model values to model
-values. For instance, given a function symbol $f$ of type $\text{int} \rightarrow \text{int}$ and an integer constant $a$, we'd like to specify that in our mapping,
-$f(a) \mapsto 0$, regardless of the values that $f$ takes on other argument, and also regardless
-of the value mapped to $a$. To that end we introduce a notion of abstract partial interpretation.
-
-An abstract partial interpretation $\sigma$ is a mapping from ground expressions to model values. To each abstract partial
-interpretation correspond a set of complete models that realize it. More precisely, any mapping $\sigma$ can be completed
-in various ways, leading to a set of potential interpretations:
+An abstract partial interpretation $\sigma$ is a mapping from ground expressions to model values.
+To each abstract partial interpretation correspond a set of complete models that realize it.
+More precisely, any mapping $\sigma$ can be completed in various ways, leading to a set of
+potential interpretations:
 \[
   \text{Complete}(\sigma) =
     \left\{
       \mathcal{I}
       \; | \;
-      \forall f( {(e_i)}_{1 \leq i \leq n} ) \mapsto v \in \sigma ,
-        \mathcal{I}_f ( {( \mathcal{I}(e_i) )}_{1 \leq i \leq n} ) = v
+      \forall t \mapsto v \in \sigma , \mathcal{I} ( t ) = v
     \right\}
 \]
 
-We can then consider that the natural interpretation corresponding to a given mapping is the
-partial interpretation on which all completion of the mapping agrees, i.e the intersection of
-all potential candidates:
-\[
-  \sigma_\mathcal{I} = \bigcap_{ \mathcal{I} \in \text{Complete}(\sigma) } \mathcal{I}
-\]
-
-Of course, it might happen that a mapping does not admit any potential interpretation,
-and thus has no natural interpretation, for instance there is no possible completion of the
-following mapping:
+\paragraph{Coherence}
+An abstract partial interpretation $\sigma$ is said to be coherent iff
+there exists at least one model that completes it,
+i.e.~$\text{Complete}(\sigma) \neq \emptyset$. One example
+of incoherent abstract partial interpretation is the following
+mapping:
 \[
   \sigma = \left\{
     \begin{matrix}
@@ -470,39 +501,49 @@ following mapping:
   \right.
 \]
 
+\paragraph{Compatibility}
+In order to do semantic propagations, we want to have some kind of notion
+of evaluation for abstract partial interpretations, and we thus define the
+partial interpretation function in the following way:
+\[
+  \forall t \in \mathbb{T} \cup \mathbb{F}. \forall v \in \mathbb{D}.
+  \left(
+    \forall \mathcal{I} \in \text{Complete}(\sigma).
+    \mathcal{I}(t) = v
+  \right) \rightarrow
+    \sigma(t) = v
+\]
 
-\subsection{Expected theory invariants}
+The partial interpretation function is the intersection of the interpretation
+functions of all the completions of $\sigma$, i.e.~it is the interpretation
+where all completions agree. We can now say that a mapping $\sigma$ is compatible
+with a trail $t$ iff $\sigma$ is coherent, and
+$\forall a \in t. \not (\sigma(a) = \bot)$, or in other words, for every literal $a$
+true in the trail, there exists at least one model that completes $\sigma$ and where
+$a$ is satisfied.
 
-TODO: rewrite this section.
+\paragraph{Completeness}
+We need one last property on abstract partial interpretations, which is to
+specify the relation between the terms in a mapping, and the terms it can evaluate,
+according to its partial interpretation function defined above. Indeed, at the end
+of proof search, we want all terms (and sub-terms) of the initial problem to be
+evaluated using the final mapping returned by the algorithm when it finds that the
+problem is satisfiable: that is what we will call completeness of a mapping.
+To that end we will here enumerate some sufficient conditions on the mapping domain
+$\text{Dom}(\sigma)$ compared to the finite set of terms (and sub-terms) $T$ that
+appear in the problem.
 
-During proof search are maintained a set of assertions $\mathcal{S}$
-and a partial assignment $\sigma$ as a partial function from $\mathbb{T}(\mathbb{V, C, S})$
-to $\mathbb{T}(\mathbb{C})$. $\sigma$ is easily extended to a complete substitution function of
-$\mathbb{T}(\mathbb{V, C, S})$.
+A first way, is to have $\text{Dom}(\sigma) = T$, i.e.~all terms (and sub-terms) of the
+initial problem are present in the mapping. While this is the simplest way to ensure that
+the mapping is complete, it might be a bit heavy: for instance, we might have to assign
+both $x$ and $2x$, which is redundant. The problem in that case is that we try and assign
+a term for which we could actually compute the value from its arguments: indeed,
+since the multiplication is interpreted, we do not need to interpret it in our mapping.
+This leads to another way to have a complete mapping: if $\text{Dom}(\sigma)$ is the
+set of terms of $T$ whose head symbol is uninterpreted (i.e.~not defined by the theory),
+it is enough to ensure that the mapping is complete, because the theory will automatically
+constrain the value of terms whose head symbol is interpreted.
 
-We say that $\sigma$ is compatible with $\mathcal{S}$ iff for every $\varphi \in \mathcal{S}$,
-$\varphi\sigma$ is satisfiable (independently from the rest of the formulas in $\mathcal{S}$).
-Intuitively, this represents the fact that the substitution $\sigma$ does not imply any
-ground contradictions.
-
-A theory then has to ensure that for every expression $e \in \mathbb{T}(\mathbb{V,C,S})$
-there exists $v \in \mathbb{T}(\mathbb{C})$ such that $\sigma' = \sigma \cup \{ e \rightarrow v \}$
-is coherent, and compatible with $\mathcal{S}$\footnote{Note that in particular, this implies
-that $\sigma$ is coherent with $\mathcal{S}$}. As soon as the current assignment is not coherent,
-compatible with the current assertions, or that there is a term $e$ with no viable assignment, the theory
-should inform the SAT Solver to backtrack, since the current branch is clearly not satisfiable.
-If we reach the point where all expressions of the problem have been assigned, then we
-have a ground model for the current set of assertions, which is then also a model
-of the input problem.
-
-Of interest if the fact that theories that respect this invariant can easily be combined
-to create a theory that also respect this invariant, as long as for any expression $e$,
-there is exactly one theory responsible for finding an assignment for $e$\footnote{this
-is similar to the usual criterion for combining SMT theories which is that they do not
-share symbols other than equality.}.
-
-
-\clearpage
 
 \bibliographystyle{plain}
 \bibliography{biblio}
