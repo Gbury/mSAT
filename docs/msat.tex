@@ -96,7 +96,7 @@ The $\text{Solve}$ state take as argument the set of hypotheses and the trail, w
 the $\text{Analyze}$ state also take as argument the current conflict clause.
 
 We can now formalize the \cdcl{} algorithm using the inference rules
-in Figure~\ref{fig:rules}. In order to completely recover the \sat{} algorithm,
+in Figure~\ref{fig:smt_rules}. In order to completely recover the \sat{} algorithm,
 one must apply the rules with the following precedence and termination conditions,
 depending on the current state:
 \begin{itemize}
@@ -153,7 +153,7 @@ depending on the current state:
     \end{tabular}
   \end{center}
   \begin{center}
-    \begin{tabular}{c@{\hspace{1cm}}l}
+    \begin{tabular}{c@{\hspace{.5cm}}l}
       % Analyze (propagation)
       \AXC{$\text{Analyze}(\mathbb{S}, t :: a \leadsto_C \top, D)$}
       \LLc{Analyze-propagation}
@@ -197,7 +197,7 @@ depending on the current state:
     \begin{tabular}{c@{\hspace{1cm}}l}
       % Conflict (theory)
       \AXC{$\text{Solve}(\mathbb{S}, t)$}
-      \LLc{Conflict-Theory}
+      \LLc{Conflict-Smt}
       \UIC{$\text{Analyze}(\mathbb{S}, t, C)$}
       \DP{} &
       \begin{tabular}{l}
@@ -207,30 +207,79 @@ depending on the current state:
       \\ \\
     \end{tabular}
   \end{center}
+  \caption{Inference rules for \sat{} and \smt{}}\label{fig:smt_rules}
+\end{figure}
 
+\begin{figure}
   \center{\underline{\mcsat{}}}
   \begin{center}
-    \begin{tabular}{c@{\hspace{1cm}}l}
+    \begin{tabular}{c@{\hspace{.2cm}}l}
       % Decide (assignment)
       \AXC{$\text{Solve}(\mathbb{S}, t)$}
+      \LLc{Theory-Decide}
       \UIC{$\text{Solve}(\mathbb{S}, t :: a \mapsto_n v)$}
       \DP{} &
-      $a \notin t, a \in \mathbb{S}, n = \text{max\_level}(t) + 1$
+      \begin{tabular}{l}
+        $a \mapsto_k \_ \notin t$ \\
+        $n = \text{max\_level}(t) + 1$ \\
+        $\sigma_{t :: a \mapsto_n v} \text{ compatible with } t$
+      \end{tabular}
       \\ \\
       % Propagation (semantic)
       \AXC{$\text{Solve}(\mathbb{S}, t)$}
+      \LLc{Propagate-Theory}
       \UIC{$\text{Solve}(\mathbb{S}, t :: a \leadsto_n \top)$}
       \DP{} &
-      $ $
+      $\sigma_t(a) = \top$
+      \\ \\
+      % Conflict (semantic)
+      \AXC{$\text{Solve}(\mathbb{S}, t)$}
+      \LLc{Conflict-Mcsat}
+      \UIC{$\text{Analyze}(\mathbb{S}, t, C)$}
+      \DP{} &
+      \begin{tabular}{l}
+        $\mathcal{T} \vdash C$ \\
+        $\forall a \in C, \neg a \in t \lor \sigma_t(a) = \bot$
+      \end{tabular}
       \\ \\
     \end{tabular}
   \end{center}
-  \caption{Inference rules}\label{fig:rules}
+  \begin{center}
+    \begin{tabular}{c@{\hspace{.2cm}}l}
+      % Analyze (assign)
+      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \mapsto_n v, C)$}
+      \LLc{Analyze-Assign}
+      \UIC{$\text{Analyze}(\mathbb{S}, t, C)$}
+      \DP{} &
+      \\ \\
+      % Analyze (semantic)
+      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \leadsto_n \top, C)$}
+      \LLc{Analyze-Semantic}
+      \UIC{$\text{Analyze}(\mathbb{S}, t, C)$}
+      \DP{} &
+      \\ \\
+    \end{tabular}
+  \end{center}
+  \begin{center}
+    \begin{tabular}{c@{\hspace{.2cm}}l}
+      % Backjump (semantic)
+      \AXC{$\text{Analyze}(\mathbb{S}, t :: a \mapsto_n \_ :: \_, C)$}
+      \LLc{Backjump-Semantic}
+      \UIC{$\text{Solve}(\mathbb{S}, t)$}
+      \DP{} &
+      \begin{tabular}{l}
+        $\text{is\_semantic}(C)$ \\
+        $n = \text{slevel}(C)$ \\
+      \end{tabular}
+      \\ \\
+    \end{tabular}
+  \end{center}
+  \caption{\mcsat{} specific inference rules}\label{fig:mcsat_rules}
 \end{figure}
 
 \subsection{Invariants, correctness and completeness}
 
-The following invariants are maintained by the inference rules in Figure~\ref{fig:rules}:
+The following invariants are maintained by the inference rules in Figure~\ref{fig:smt_rules}:
 \begin{description}
   \item[Trail Soundness] In $\text{Solve}(\mathbb{S}, t)$, if $a \in t$ then $\neg a \notin t$
   \item[Conflict Analysis] In $\text{Analyze}(\mathbb{S}, t, C)$, $C$ is a clause implied by the
@@ -277,9 +326,9 @@ The role of the theory $\mathcal{T}$ is to stop the proof search as soon as the 
 of the \sat{} solver is inconsistent. A trail is inconsistent iff there exists a clause
 $C$, which is a tautology of $\mathcal{T}$ (thus $\mathcal{T} \vdash C$), but is not
 satisfied in the current trail (each of its literals has either been decided or
-propagated to false). Thus, we can add the \irule{Conflict-Theory} rule (see
-Figure~\ref{fig:rules}) to the \cdcl{} inference rules in order to get a \smt{} solver.
-We give the \irule{Conflict-Theory} rule a slightly lower precedence than the
+propagated to false). Thus, we can add the \irule{Conflict-Smt} rule (see
+Figure~\ref{fig:smt_rules}) to the \cdcl{} inference rules in order to get a \smt{} solver.
+We give the \irule{Conflict-Smt} rule a slightly lower precedence than the
 \irule{Conflict} rule for performance reason (detecting boolean conflict is
 faster than theory specific conflicts).
 
@@ -543,6 +592,13 @@ This leads to another way to have a complete mapping: if $\text{Dom}(\sigma)$ is
 set of terms of $T$ whose head symbol is uninterpreted (i.e.~not defined by the theory),
 it is enough to ensure that the mapping is complete, because the theory will automatically
 constrain the value of terms whose head symbol is interpreted.
+
+\subsection{Inference rules}
+
+In \mcsat{}, a trail $t$ contains boolean decision and propagations as well as semantic
+decisions (assignments) and propagations. We can thus define $\sigma_t$ as the mapping
+formed by all assignments in $t$. This lets us define the last rules in Figure~\ref{fig:mcsat_rules},
+that, together with the other rules, define the \mcsat{} algorithm.
 
 
 \bibliographystyle{plain}
