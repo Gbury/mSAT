@@ -55,16 +55,15 @@ module Make
     th_levels : Plugin.level Vec.t;
     (* theory states corresponding to elt_levels *)
 
+    user_levels : int Vec.t;
+    (* user levels in [clauses_temp] *)
+
     mutable th_head : int;
     (* Start offset in the queue {!elt_queue} of
        unit facts not yet seen by the theory. *)
     mutable elt_head : int;
     (* Start offset in the queue {!elt_queue} of
        unit facts to propagate, within the trail *)
-
-    mutable base_level: int;
-    (* the decision level under which we cannot backtrack, that is,
-       the one after we pushed local assumptions *)
 
     (* invariant:
        - during propagation, th_head <= elt_head
@@ -137,7 +136,7 @@ module Make
     elt_queue = Vec.make 601 (of_atom dummy_atom);
     elt_levels = Vec.make 601 (-1);
     th_levels = Vec.make 100 Plugin.dummy;
-    base_level = 0;
+    user_levels = Vec.make 10 (-1);
 
     order = Iheap.init 0;
 
@@ -173,6 +172,7 @@ module Make
   let nb_clauses () = Vec.size env.clauses_hyps
   let nb_vars    () = St.nb_elt ()
   let decision_level () = Vec.size env.elt_levels
+  let base_level () = Vec.size env.user_levels
 
   let f_weight i j =
     get_elt_weight (St.get_elt j) < get_elt_weight (St.get_elt i)
@@ -381,7 +381,7 @@ module Make
      i.e we want to go back to the state the solver was in
          when decision level [lvl] was created. *)
   let cancel_until lvl =
-    assert (lvl >= env.base_level);
+    assert (lvl >= base_level ());
     (* Nothing to do if we try to backtrack to a non-existent level. *)
     if decision_level () > lvl then begin
       Log.debugf 5 "Backtracking to lvl %d" (fun k -> k lvl);
@@ -530,15 +530,15 @@ module Make
       assert is_uip;
       0
     | a :: b :: r ->
-      assert(a.var.v_level > env.base_level);
+      assert(a.var.v_level > base_level ());
       if is_uip then (
         (* backtrack below [a], so we can propagate [not a] *)
         assert(a.var.v_level > b.var.v_level);
         b.var.v_level
       ) else (
         assert (a.var.v_level = b.var.v_level);
-        assert (a.var.v_level >= env.base_level);
-        max (a.var.v_level - 1) env.base_level
+        assert (a.var.v_level >= base_level ());
+        max (a.var.v_level - 1) (base_level ())
       )
 
   (* result of conflict analysis, containing the learnt clause and some
@@ -573,7 +573,7 @@ module Make
     try
       while true do
         let lvl, atoms = max_lvl_atoms !c in
-        if lvl <= env.base_level then raise Exit;
+        if lvl <= base_level () then raise Exit;
         match atoms with
         | [] | [_] ->
           is_uip := true;
@@ -739,12 +739,12 @@ module Make
   let add_boolean_conflict (confl:clause): unit =
     env.next_decision <- None;
     env.conflicts <- env.conflicts + 1;
-    assert (decision_level() >= env.base_level);
-    if decision_level() = env.base_level
-    || Array_util.for_all (fun a -> a.var.v_level <= env.base_level) confl.atoms then
+    assert (decision_level() >= base_level ());
+    if decision_level() = base_level ()
+    || Array_util.for_all (fun a -> a.var.v_level <= base_level ()) confl.atoms then
       report_unsat confl; (* Top-level conflict *)
     let cr = analyze confl in
-    cancel_until (max cr.cr_backtrack_lvl env.base_level);
+    cancel_until (max cr.cr_backtrack_lvl (base_level ()));
     record_learnt_clause confl cr
 
   (* Add a new clause, simplifying, propagating, and backtracking if
@@ -774,7 +774,7 @@ module Make
         report_unsat clause
       | [a]   ->
         Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
-        cancel_until env.base_level;
+        cancel_until (base_level ());
         if a.neg.is_true then begin
           report_unsat clause
         end else
@@ -792,7 +792,7 @@ module Make
           attach_clause clause;
           if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
             let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
-            cancel_until (max lvl env.base_level);
+            cancel_until (max lvl (base_level ()));
             enqueue_bool a lvl (Bcp clause)
           end
         end
@@ -1048,7 +1048,7 @@ module Make
         if Vec.size env.elt_queue = St.nb_elt ()
         then raise Sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
-          cancel_until env.base_level;
+          cancel_until (base_level ());
           raise Restart
         end;
         (* if decision_level() = 0 then simplify (); *)
@@ -1129,33 +1129,31 @@ module Make
 
   (* create a factice decision level for local assumptions *)
   let push (): unit =
-    cancel_until env.base_level;
+    cancel_until (base_level ());
     begin match propagate () with
       | Some confl -> report_unsat confl
       | None ->
         new_decision_level ();
-        env.base_level <- env.base_level + 1;
-        assert (decision_level () = env.base_level)
+        Vec.push env.user_levels (Vec.size env.clauses_temp);
+        assert (decision_level () = base_level ())
     end
 
   (* pop the last factice decision level *)
   let pop (): unit =
-    if env.base_level = 0 then ()
+    if base_level () = 0 then ()
     else begin
-      assert (env.base_level > 0);
+      assert (base_level () > 0);
       env.unsat_conflict <- None;
-      env.base_level <- env.base_level - 1; (* before the [cancel_until]! *)
+      let n = Vec.last env.user_levels in
+      Vec.pop env.user_levels; (* before the [cancel_until]! *)
       (* remove from env.clauses_temp the now invalid caluses. *)
-      let i = ref (Vec.size env.clauses_temp - 1) in
-      while !i >= 0 &&
-            (Vec.get env.clauses_temp !i).atoms.(0).var.v_level > env.base_level do
-        decr i
-      done;
-      Vec.shrink env.clauses_temp (Vec.size env.clauses_temp - !i - 1);
-      assert (Vec.for_all (fun c ->
-          Array.length c.atoms = 1 &&
-          c.atoms.(0).var.v_level <= env.base_level) env.clauses_temp);
-      cancel_until env.base_level
+      Log.debugf 5 "Popping; temp clauses:" (fun k -> k);
+      Vec.iter (fun c ->
+          Log.debugf 5 "  %a" (fun k -> k St.pp_clause c)) env.clauses_temp;
+      Vec.shrink env.clauses_temp (Vec.size env.clauses_temp - n);
+      assert (Vec.for_all (fun c -> Array.length c.atoms = 1) env.clauses_temp);
+      assert (Vec.for_all (fun c -> c.atoms.(0).var.v_level <= base_level ()) env.clauses_temp);
+      cancel_until (base_level ())
     end
 
   (* Add local hyps to the current decision level *)
@@ -1163,7 +1161,7 @@ module Make
     let aux lit =
       let a = atom lit in
       Log.debugf 10 "local assumption: @[%a@]" (fun k->k pp_atom a);
-      assert (decision_level () = env.base_level);
+      assert (decision_level () = base_level ());
       if a.is_true then ()
       else
         let c = make_clause (fresh_hname ()) [a] Local in
@@ -1180,10 +1178,10 @@ module Make
           enqueue_bool a ~level (Bcp c);
       end
     in
-    assert (env.base_level > 0);
+    assert (base_level () > 0);
     match env.unsat_conflict with
     | None ->
-      cancel_until env.base_level;
+      cancel_until (base_level ());
       List.iter aux l
     | Some _ -> ()
 
