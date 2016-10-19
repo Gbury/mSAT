@@ -1172,6 +1172,9 @@ module Make
           (* conflict between assumptions: UNSAT *)
           report_unsat c;
         end else begin
+          (* Grow the heap, because when the lit is backtracked,
+             it will be added to the heap. *)
+          Iheap.grow_to_by_double env.order (St.nb_elt ());
           (* make a decision, propagate *)
           let level = decision_level() in
           enqueue_bool a ~level (Bcp c);
