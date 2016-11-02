@@ -115,7 +115,7 @@ module Make
       let c' = match c.St.cpremise with
         | St.Hyp | St.Lemma _ -> c
         | St.History ( { St.cpremise = (St.Hyp | St.Lemma _) } as d :: _) -> d
-        | _ -> assert false
+        | _ -> c (* FIXME *)
       in
       St.pp_dimacs fmt c'
     in
