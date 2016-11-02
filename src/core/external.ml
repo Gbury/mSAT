@@ -120,10 +120,10 @@ module Make
       St.pp_dimacs fmt c'
     in
     let pp s fmt vec =
-      Format.fprintf fmt "c %s@\n%a" s (Vec.print ~sep:"\n" aux) vec
+      Format.fprintf fmt "c %s@,%a" s (Vec.print ~sep:"" aux) vec
     in
     Format.fprintf fmt
-      "p cnf %d %d@\n%a%a%a"
+      "@[<v>p cnf %d %d@,%a%a%a@]@."
       n m
       (pp "Local assumptions") tmp
       (pp "Hypotheses") hyps
