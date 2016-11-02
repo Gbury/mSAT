@@ -120,7 +120,7 @@ module Make
       St.pp_dimacs fmt c'
     in
     let pp s fmt vec =
-      Format.fprintf fmt "c %s@,%a" s (Vec.print ~sep:"" aux) vec
+      Format.fprintf fmt "c %s@,%a@," s (Vec.print ~sep:"" aux) vec
     in
     Format.fprintf fmt
       "@[<v>p cnf %d %d@,%a%a%a@]@."
