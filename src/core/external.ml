@@ -106,27 +106,47 @@ module Make
   let get_tag cl = St.(cl.tag)
 
   let export_dimacs fmt () =
-    let n = St.nb_elt () in
+    (* Local assertions *)
     let tmp = S.temp () in
+    assert (Vec.for_all (function
+        | { St.cpremise = St.Local; _} -> true | _ -> false
+      ) tmp);
+    (* Problem hypothses *)
     let hyps = S.hyps () in
+    assert (Vec.for_all (function
+        | { St.cpremise = St.Hyp; _} -> true | _ -> false
+      ) hyps);
+    (* Learnt clauses, then filtered to only keep only
+       the theory lemmas; all other learnt clauses should be logical
+       consequences of the rest. *)
     let learnt = S.history () in
-    let m = Vec.size hyps + Vec.size learnt in
-    let aux fmt c =
-      let c' = match c.St.cpremise with
-        | St.Hyp | St.Lemma _ -> c
-        | St.History ( { St.cpremise = (St.Hyp | St.Lemma _) } as d :: _) -> d
-        | _ -> c (* FIXME *)
-      in
-      St.pp_dimacs fmt c'
-    in
+    let lemmas = Vec.make (Vec.size learnt) St.dummy_clause in
+    Vec.iter (fun c ->
+        match c.St.cpremise with
+        | St.Hyp | St.Local -> assert false
+        | St.Lemma _ -> Vec.push lemmas c
+        | St.History l ->
+          begin match l with
+            | [] -> assert false
+            | d :: _ ->
+              begin match d.St.cpremise with
+                | St.Lemma _ -> Vec.push lemmas d
+                | St.Hyp | St.Local | St.History _ -> ()
+              end
+          end
+      ) learnt;
+    (* Number of atoms and clauses *)
+    let n = St.nb_elt () in
+    let m = Vec.size tmp + Vec.size hyps + Vec.size lemmas in
+    (* Actual printing *)
     let pp s fmt vec =
-      Format.fprintf fmt "c %s@,%a@," s (Vec.print ~sep:"" aux) vec
+      Format.fprintf fmt "c %s@,%a@," s (Vec.print ~sep:"" St.pp_dimacs) vec
     in
     Format.fprintf fmt
       "@[<v>p cnf %d %d@,%a%a%a@]@."
       n m
       (pp "Local assumptions") tmp
       (pp "Hypotheses") hyps
-      (pp "Learnt") learnt
+      (pp "Lemmas") lemmas
 
 end
