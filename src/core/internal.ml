@@ -753,8 +753,8 @@ module Make
     Log.debugf 90 "Adding clause:@[<hov>%a@]" (fun k -> k St.pp_clause init);
     let vec = match init.cpremise with
       | Hyp -> env.clauses_hyps
-      | Lemma _ -> env.clauses_learnt
-      | Local | History _ -> assert false
+      | Local -> env.clauses_temp
+      | History _ | Lemma _ -> env.clauses_learnt
     in
     try
       let atoms, history = partition init.atoms in
@@ -776,6 +776,13 @@ module Make
         Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
         cancel_until (base_level ());
         if a.neg.is_true then begin
+          (* Since we cannot propagate the atom [a], in order to not lose
+             the information that [a] must be true, we add clause to the list
+             of clauses to add, so that it will be e-examined later.
+             Also, in order to avoid it being twice in a clause vector, we pop
+             the vector where it was added. *)
+          Stack.push clause env.clauses_to_add;
+          Vec.pop vec;
           report_unsat clause
         end else
           enqueue_bool a 0 (Bcp clause)
