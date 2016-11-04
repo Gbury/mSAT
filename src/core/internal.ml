@@ -383,7 +383,9 @@ module Make
   let cancel_until lvl =
     assert (lvl >= base_level ());
     (* Nothing to do if we try to backtrack to a non-existent level. *)
-    if decision_level () > lvl then begin
+    if decision_level () <= lvl then
+      Log.debugf 5 "Already at level <= %d" (fun k -> k lvl)
+    else begin
       Log.debugf 5 "Backtracking to lvl %d" (fun k -> k lvl);
       (* We set the head of the solver and theory queue to what it was. *)
       env.elt_head <- Vec.get env.elt_levels lvl;
@@ -1167,11 +1169,12 @@ module Make
   let local l =
     let aux lit =
       let a = atom lit in
-      Log.debugf 10 "local assumption: @[%a@]" (fun k->k pp_atom a);
+      Log.debugf 10 "Local assumption: @[%a@]" (fun k-> k pp_atom a);
       assert (decision_level () = base_level ());
       if a.is_true then ()
       else
         let c = make_clause (fresh_hname ()) [a] Local in
+        Log.debugf 10 "Temp clause: @[%a@]" (fun k -> k pp_clause c);
         Vec.push env.clauses_temp c;
         if a.neg.is_true then begin
           (* conflict between assumptions: UNSAT *)

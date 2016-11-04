@@ -139,6 +139,7 @@ module type S = sig
   val print_clause : Format.formatter -> clause -> unit
   (** Pretty printing functions for atoms and clauses *)
 
+  val pp : Format.formatter -> t -> unit
   val pp_lit : Format.formatter -> lit -> unit
   val pp_atom : Format.formatter -> atom -> unit
   val pp_clause : Format.formatter -> clause -> unit

@@ -311,6 +311,10 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     in
     Format.fprintf fmt "%a0" aux atoms
 
+  let pp fmt = function
+    | Lit l -> pp_lit fmt l
+    | Atom a -> pp_atom fmt a
+
 end
 
 
