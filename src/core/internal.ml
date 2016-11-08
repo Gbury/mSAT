@@ -473,19 +473,30 @@ module Make
       Log.debugf 0 "Trying to enqueue a false literal: %a" (fun k->k St.pp_atom a);
       assert false
     end;
-    if not a.is_true then begin
-      assert (a.var.v_level < 0 && a.var.reason = None && lvl >= 0);
-      let reason =
-        if lvl > 0 then reason
-        else simpl_reason reason
-      in
-      a.is_true <- true;
-      a.var.v_level <- lvl;
-      a.var.reason <- Some reason;
-      Vec.push env.elt_queue (of_atom a);
-      Log.debugf 20 "Enqueue (%d): %a"
-        (fun k->k (Vec.size env.elt_queue) pp_atom a)
-    end
+    assert (not a.is_true && a.var.v_level < 0 &&
+            a.var.reason = None && lvl >= 0);
+    let reason =
+      if lvl > 0 then reason
+      else simpl_reason reason
+    in
+    a.is_true <- true;
+    a.var.v_level <- lvl;
+    a.var.reason <- Some reason;
+    Vec.push env.elt_queue (of_atom a);
+    Log.debugf 20 "Enqueue (%d): %a"
+      (fun k->k (Vec.size env.elt_queue) pp_atom a)
+
+  (* Special case for atoms enqueued at level 0
+     Indeed atoms true at level 0 are supposed to never disappear, because
+     we cannot watch a clause with only one atom. This causes a problem when
+     the atom [a] is already propagated at a level 0 < l <= base_level
+     In that case, we simply change the level and reason of the propagation. *)
+  let enqueue_root a clause : unit =
+    if a.is_true then begin
+      a.var.v_level <- 0;
+      a.var.reason <- Some (Bcp clause)
+    end else
+      enqueue_bool a ~level:0 (Bcp clause)
 
   (* MCsat semantic assignment *)
   let enqueue_assign l value lvl =
@@ -787,7 +798,7 @@ module Make
           Vec.pop vec;
           report_unsat clause
         end else
-          enqueue_bool a 0 (Bcp clause)
+          enqueue_root a clause
       | a::b::_ ->
         if a.neg.is_true then begin
           (* Atoms need to be sorted in decreasing order of decision level,
