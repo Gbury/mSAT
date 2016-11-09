@@ -30,13 +30,15 @@ module Make
        clause. *)
 
     clauses_hyps : clause Vec.t;
-    (* clauses assumed (subject to user levels) *)
+    (* clauses added by the user *)
     clauses_learnt : clause Vec.t;
     (* learnt clauses (tautologies true at any time, whatever the user level) *)
     clauses_temp : clause Vec.t;
     (* Temp clauses, corresponding to the local assumptions. This vec is used
        only to have an efficient way to access the list of local assumptions. *)
 
+    clauses_root : clause Stack.t;
+    (* Clauses that should propagate at level 0, but couldn't *)
     clauses_to_add : clause Stack.t;
     (* Clauses either assumed or pushed by the theory, waiting to be added. *)
 
@@ -128,6 +130,7 @@ module Make
     clauses_learnt = Vec.make 0 dummy_clause;
     clauses_temp = Vec.make 0 dummy_clause;
 
+    clauses_root = Stack.create ();
     clauses_to_add = Stack.create ();
 
     th_head = 0;
@@ -486,18 +489,6 @@ module Make
     Log.debugf 20 "Enqueue (%d): %a"
       (fun k->k (Vec.size env.elt_queue) pp_atom a)
 
-  (* Special case for atoms enqueued at level 0
-     Indeed atoms true at level 0 are supposed to never disappear, because
-     we cannot watch a clause with only one atom. This causes a problem when
-     the atom [a] is already propagated at a level 0 < l <= base_level
-     In that case, we simply change the level and reason of the propagation. *)
-  let enqueue_root a clause : unit =
-    if a.is_true then begin
-      a.var.v_level <- 0;
-      a.var.reason <- Some (Bcp clause)
-    end else
-      enqueue_bool a ~level:0 (Bcp clause)
-
   (* MCsat semantic assignment *)
   let enqueue_assign l value lvl =
     match l.assigned with
@@ -797,8 +788,17 @@ module Make
           Stack.push clause env.clauses_to_add;
           Vec.pop vec;
           report_unsat clause
+        end else if a.is_true then begin
+          (* If the atom is already true, then it should be because of a local hyp.
+             However it means we can't propagate it at level 0. In order to not lose
+             that information, we store the clause in a stack of clauses that we will
+             add to the solver at the next pop. *)
+          assert (0 < a.var.v_level && a.var.v_level <= base_level ());
+          Stack.push clause env.clauses_root;
+          Vec.pop vec;
+          ()
         end else
-          enqueue_root a clause
+          enqueue_bool a ~level:0 (Bcp clause)
       | a::b::_ ->
         if a.neg.is_true then begin
           (* Atoms need to be sorted in decreasing order of decision level,
@@ -1166,10 +1166,10 @@ module Make
       env.unsat_conflict <- None;
       let n = Vec.last env.user_levels in
       Vec.pop env.user_levels; (* before the [cancel_until]! *)
+      (* Add the root clauses to the clauses to add *)
+      Stack.iter (fun c -> Stack.push c env.clauses_to_add) env.clauses_root;
+      Stack.clear env.clauses_root;
       (* remove from env.clauses_temp the now invalid caluses. *)
-      Log.debugf 5 "Popping; temp clauses:" (fun k -> k);
-      Vec.iter (fun c ->
-          Log.debugf 5 "  %a" (fun k -> k St.pp_clause c)) env.clauses_temp;
       Vec.shrink env.clauses_temp (Vec.size env.clauses_temp - n);
       assert (Vec.for_all (fun c -> Array.length c.atoms = 1) env.clauses_temp);
       assert (Vec.for_all (fun c -> c.atoms.(0).var.v_level <= base_level ()) env.clauses_temp);
