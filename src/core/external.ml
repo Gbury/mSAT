@@ -84,12 +84,13 @@ module Make
 
   let mk_unsat () : (_,_) unsat_state =
     pp_all 99;
-    let unsat_conflict () = match S.unsat_conflict () with
+    let unsat_conflict () =
+      match S.unsat_conflict () with
       | None -> assert false
       | Some c -> c
     in
     let get_proof () =
-      let c = unsat_conflict() in
+      let c = unsat_conflict () in
       S.Proof.prove_unsat c
     in
     { unsat_conflict; get_proof; }

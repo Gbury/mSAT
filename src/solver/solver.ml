@@ -24,7 +24,7 @@ module DummyTheory(F : Formula_intf.S) = struct
   let current_level () = ()
   let assume _ = Theory_intf.Sat
   let backtrack _ = ()
-  let if_sat _ = ()
+  let if_sat _ = Theory_intf.Sat
 end
 
 module Plugin(E : Formula_intf.S)

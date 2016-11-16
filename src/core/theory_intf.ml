@@ -53,13 +53,13 @@ module type S = sig
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
       and returns the result of the new assumptions. *)
 
+  val if_sat : (formula, proof) slice -> (formula, proof) res
+  (** Called at the end of the search in case a model has been found. If no new clause is
+      pushed, then 'sat' is returned, else search is resumed. *)
+
   val backtrack : level -> unit
   (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
       same state as when it returned the value [l], *)
-
-  val if_sat : (formula, proof) slice -> unit
-  (** Called at the end of the search in case a model has been found. If no new clause is
-      pushed, then 'sat' is returned, else search is resumed. *)
 
 end
 

@@ -61,6 +61,9 @@ module Make
   val model : unit -> (St.term * St.term) list
   (** Returns the model found if the formula is satisfiable. *)
 
+  val check : unit -> bool
+  (** Check the satisfiability of the current model. Only has meaning
+      if the solver finished proof search and has returned [Sat]. *)
 
   (** {2 Internal data}
       These functions expose some internal data stored by the solver, as such

@@ -46,9 +46,9 @@ module Tsmt = struct
       Log.debug 8 "Making explanation clause...";
       Unsat (to_clause x, ())
 
-  let backtrack l = env := l
+  let if_sat _ = Theory_intf.Sat
 
-  let if_sat _ = ()
+  let backtrack l = env := l
 
 end
 

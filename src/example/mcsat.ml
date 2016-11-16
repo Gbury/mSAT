@@ -90,7 +90,8 @@ module Tsmt = struct
           Plugin_intf.Unknown
       end
 
-  let if_sat _ = ()
+  let if_sat _ =
+    Plugin_intf.Sat
 
 end
 

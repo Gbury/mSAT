@@ -224,7 +224,7 @@ module Make
     | E_lit l -> Iheap.insert f_weight env.order l.lid
     | E_var v ->
       Iheap.insert f_weight env.order v.vid;
-      iter_sub (fun t -> insert_var_order (E_lit t)) v
+      iter_sub (fun t -> insert_var_order (elt_of_lit t)) v
 
   (* Rather than iterate over all the heap when we want to decrease all the
      variables/literals activity, we instead increase the value by which
@@ -358,23 +358,15 @@ module Make
      A clause is attached (to its watching lits) when it is first added,
      either because it is assumed or learnt.
 
-     A clause is detached once it dies (because of pop())
   *)
   let attach_clause c =
-    if not c.attached then begin
-      Log.debugf 60 "Attaching %a" (fun k -> k St.pp_clause c);
-      c.attached <- true;
-      Vec.push c.atoms.(0).neg.watched c;
-      Vec.push c.atoms.(1).neg.watched c;
-    end
-
-  let detach_clause c =
-    if c.attached then begin
-      c.attached <- false;
-      Log.debugf 10 "Removing clause @[%a@]" (fun k->k St.pp_clause c);
-      Vec.remove c.atoms.(0).neg.watched c;
-      Vec.remove c.atoms.(1).neg.watched c;
-    end
+    assert (not c.attached);
+    Log.debugf 60 "Attaching %a" (fun k -> k St.pp_clause c);
+    Array.iter (fun x -> insert_var_order (elt_of_var x.var)) c.atoms;
+    Vec.push c.atoms.(0).neg.watched c;
+    Vec.push c.atoms.(1).neg.watched c;
+    c.attached <- true;
+    ()
 
   (* Is a clause satisfied ? *)
   let satisfied c = Array_util.exists (fun atom -> atom.is_true) c.atoms
@@ -825,7 +817,6 @@ module Make
       let nbv = St.nb_elt () in
       let nbc = env.nb_init_clauses + Stack.length env.clauses_to_add in
       Iheap.grow_to_by_double env.order nbv;
-      St.iter_elt insert_var_order;
       Vec.grow_to_by_double env.clauses_hyps nbc;
       Vec.grow_to_by_double env.clauses_learnt nbc;
       env.nb_init_clauses <- nbc;
@@ -1128,13 +1119,14 @@ module Make
             n_of_learnts   := !n_of_learnts *. env.learntsize_inc
           | Sat ->
             assert (env.elt_head = Vec.size env.elt_queue);
-            Plugin.if_sat (full_slice ());
-            flush_clauses();
-            if is_unsat () then raise Unsat
-            else if env.elt_head = Vec.size env.elt_queue (* sanity check *)
-                 && env.elt_head = St.nb_elt ()
-                 (* this is the important test to know if the search is finished *)
-            then raise Sat
+            begin match Plugin.if_sat (full_slice ()) with
+              | Plugin_intf.Sat -> ()
+              | Plugin_intf.Unsat (l, p) ->
+                let atoms = List.rev_map new_atom l in
+                let c = make_clause (fresh_tname ()) atoms (Lemma p) in
+                Stack.push c env.clauses_to_add
+            end;
+            if Stack.is_empty env.clauses_to_add then raise Sat
         end
       done
     with Sat -> ()
@@ -1206,6 +1198,26 @@ module Make
       List.iter aux l
     | Some _ -> ()
 
+  (* Check satisfiability *)
+  let check_clause c =
+    Array_util.exists (fun a -> a.is_true) c.atoms
+
+  let check_vec v =
+    Vec.for_all check_clause v
+
+  let check_stack s =
+    try
+      Stack.iter (fun c -> if not (check_clause c) then raise Exit) s;
+      true
+    with Exit ->
+      false
+
+  let check () =
+    Stack.is_empty env.clauses_to_add &&
+    check_stack env.clauses_root &&
+    check_vec env.clauses_hyps &&
+    check_vec env.clauses_learnt &&
+    check_vec env.clauses_temp
 
   (* Unsafe access to internal data *)
 
