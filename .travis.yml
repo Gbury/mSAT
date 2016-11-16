@@ -23,6 +23,7 @@ before_install:
   - opam install ocamlfind ocamlbuild
   - if ${RUN_TEST}; then opam pin add dolmen https://github.com/Gbury/dolmen.git; fi
 install:
-  - make bin lib
+  - make lib
+  - if ${RUN_TEST}; then make bin; fi
 script:
   - if ${RUN_TEST}; then make test; fi
