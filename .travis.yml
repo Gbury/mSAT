@@ -1,10 +1,10 @@
 language: c
 env:
-  - OCAML_VERSION=4.00.1
-  - OCAML_VERSION=4.01.0
   - OCAML_VERSION=4.02.3
   - OCAML_VERSION=4.03.0
   - OCAML_VERSION=4.03.0+flambda
+  - OCAML_VERSION=4.04.0
+  - OCAML_VERSION=4.04.0+flambda
 addons:
   apt:
     sources:
