@@ -548,67 +548,6 @@ module Make
     cr_is_uip: bool; (* conflict is UIP? *)
   }
 
-  (* conflict analysis for MCsat
-     The idea is to walk the trail/elt_queue starting from the most recent
-     atom, and perform resolution steps with each propagation reason, until
-     the First UIP clause is found, or we get semantic propagations
-     at the highest level (see mcsat paper for more explications).
-  *) (*
-  let analyze_mcsat c_clause : conflict_res =
-    let tr_ind  = ref (Vec.size env.elt_queue) in
-    let is_uip  = ref false in
-    let c       = ref (Proof.to_list c_clause) in
-    let history = ref [c_clause] in
-    clause_bump_activity c_clause;
-    let is_semantic a = match a.var.reason with
-      | Some Semantic _ -> true
-      | _ -> false
-    in
-    try
-      while true do
-        let lvl, atoms = max_lvl_atoms !c in
-        if lvl <= base_level () then raise Exit;
-        match atoms with
-        | [] | [_] ->
-          is_uip := true;
-          raise Exit
-        | _ when List.for_all is_semantic atoms ->
-          raise Exit
-        | _ ->
-          decr tr_ind;
-          Log.debugf 20 "Looking at trail element %d" (fun k->k !tr_ind);
-          match Vec.get env.elt_queue !tr_ind with
-          | Lit _ -> ()
-          | Atom a ->
-            begin match a.var.reason with
-              | Some (Bcp d) ->
-                (* resolution step *)
-                let tmp, res = Proof.resolve (Proof.merge !c (Proof.to_list d)) in
-                begin match tmp with
-                  | [] -> ()
-                  | [b] when b == a.var.pa ->
-                    clause_bump_activity d;
-                    var_bump_activity a.var;
-                    history := d :: !history;
-                    c := res
-                  | _ -> assert false
-                end
-              | None | Some (Decision | Semantic _ ) -> ()
-            end
-      done; assert false
-    with Exit ->
-      let learnt =
-        List.fast_sort
-          (fun a b -> Pervasives.compare b.var.v_level a.var.v_level) !c
-      in
-      let blevel = backtrack_lvl !is_uip learnt in
-      { cr_backtrack_lvl = blevel;
-        cr_learnt= learnt;
-        cr_history = List.rev !history;
-        cr_is_uip = !is_uip;
-      }
-  *)
-
   let get_atom i =
     match Vec.get env.elt_queue i with
     | Lit _ -> assert false | Atom x -> x
