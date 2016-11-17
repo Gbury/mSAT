@@ -150,7 +150,7 @@ let eval = function
   | { Expr_smt.atom = Expr_smt.Equal (a, b); sign } ->
     begin try
         let v_a, a_lvl = H.find map a in
-        let v_b, b_lvl = H.find map a in
+        let v_b, b_lvl = H.find map b in
         if Expr_smt.Term.equal v_a v_b then
           Plugin_intf.Valued(sign, max a_lvl b_lvl)
         else

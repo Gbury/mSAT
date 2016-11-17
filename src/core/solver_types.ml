@@ -280,11 +280,11 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
 
   let pp_value fmt a =
     if a.is_true then
-      Format.fprintf fmt "[T%a]" pp_level a
+      Format.fprintf fmt "T%a" pp_level a
     else if a.neg.is_true then
-      Format.fprintf fmt "[F%a]" pp_level a
+      Format.fprintf fmt "F%a" pp_level a
     else
-      Format.fprintf fmt "[]"
+      Format.fprintf fmt ""
 
   let pp_premise out = function
     | Hyp -> Format.fprintf out "hyp"
@@ -292,16 +292,19 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | Lemma _ -> Format.fprintf out "th_lemma"
     | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@ " name) v
 
-  let pp_assign out = function
-    | None -> ()
-    | Some t -> Format.fprintf out " ->@ @[<hov>%a@]" E.Term.print t
+  let pp_assign fmt v =
+    match v.assigned with
+    | None ->
+      Format.fprintf fmt ""
+    | Some t ->
+      Format.fprintf fmt "@[<hov>@@%d->@ %a@]" v.l_level E.Term.print t
 
   let pp_lit out v =
-    Format.fprintf out "%d [lit:@[<hov>%a%a@]]"
-      (v.lid+1) E.Term.print v.term pp_assign v.assigned
+    Format.fprintf out "%d[%a][lit:@[<hov>%a@]]"
+      (v.lid+1) pp_assign v E.Term.print v.term
 
   let pp_atom out a =
-    Format.fprintf out "%s%d%a[atom:@[<hov>%a@]]@ "
+    Format.fprintf out "%s%d[%a][atom:@[<hov>%a@]]@ "
       (sign a) (a.var.vid+1) pp_value a E.Formula.print a.lit
 
   let pp_atoms_vec out vec =
