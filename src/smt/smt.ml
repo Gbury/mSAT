@@ -4,7 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module type S = Tseitin_intf.S
+module Th = Solver.DummyTheory(Expr_smt.Atom)
 
-module Make : functor
-  (F : Tseitin_intf.Arg) -> S with type atom = F.t
+module Make(Dummy:sig end) =
+  Solver.Make(Expr_smt.Atom)(Th)(struct end)
+

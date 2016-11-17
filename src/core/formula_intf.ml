@@ -17,11 +17,13 @@ module type S = sig
   type proof
   (** An abstract type for proofs *)
 
+  val hash : t -> int
+  val equal : t -> t -> bool
+  val print : Format.formatter -> t -> unit
+  (** Common functions *)
+
   val dummy : t
   (** Formula constants. A valid formula should never be physically equal to [dummy] *)
-
-  val fresh : unit -> t
-  (** Returns a fresh literal, distinct from any other literal (used in cnf conversion) *)
 
   val neg : t -> t
   (** Formula negation *)
@@ -32,11 +34,5 @@ module type S = sig
       [norm] must be so that [a] and [neg a] normalise to the same formula,
       but one returns [Same_sign] and one returns [Negated] *)
 
-  val hash : t -> int
-  val equal : t -> t -> bool
-  (** Usual hash and comparison functions. Given to Hashtbl functors. *)
-
-  val print : Format.formatter -> t -> unit
-  (** Printing function used for debugging. *)
 end
 

@@ -221,7 +221,8 @@ module Make
      its subterms.
   *)
   let rec insert_var_order = function
-    | E_lit l -> Iheap.insert f_weight env.order l.lid
+    | E_lit l ->
+      Iheap.insert f_weight env.order l.lid
     | E_var v ->
       Iheap.insert f_weight env.order v.vid;
       iter_sub (fun t -> insert_var_order (elt_of_lit t)) v
@@ -362,7 +363,6 @@ module Make
   let attach_clause c =
     assert (not c.attached);
     Log.debugf 60 "Attaching %a" (fun k -> k St.pp_clause c);
-    Array.iter (fun x -> insert_var_order (elt_of_var x.var)) c.atoms;
     Vec.push c.atoms.(0).neg.watched c;
     Vec.push c.atoms.(1).neg.watched c;
     c.attached <- true;
@@ -464,6 +464,8 @@ module Make
   (* Boolean propagation.
      Wrapper function for adding a new propagated formula. *)
   let enqueue_bool a ~level:lvl reason : unit =
+    Log.debugf 99 "Trying to enqueue: @[<hov>%a@\n%a@]"
+      (fun k -> k St.pp_atom a St.pp_reason (lvl, Some reason));
     if a.neg.is_true then begin
       Log.debugf 0 "Trying to enqueue a false literal: %a" (fun k->k St.pp_atom a);
       assert false
@@ -493,7 +495,8 @@ module Make
       l.assigned <- Some value;
       l.l_level <- lvl;
       Vec.push env.elt_queue (of_lit l);
-      ()
+      Log.debugf 20 "Enqueue (%d): %a"
+        (fun k -> k (Vec.size env.elt_queue) pp_lit l)
 
   (* evaluate an atom for MCsat, if it's not assigned
      by boolean propagation/decision *)
@@ -764,6 +767,7 @@ module Make
         else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
       in
       Log.debugf 4 "New clause:@ @[%a@]" (fun k->k St.pp_clause clause);
+      Array.iter (fun x -> insert_var_order (elt_of_var x.var)) clause.atoms;
       Vec.push vec clause;
       match atoms with
       | [] ->
@@ -862,13 +866,18 @@ module Make
           end
         done;
         (* no watch lit found *)
-        if first.neg.is_true || (th_eval first = Some false) then begin
+        if first.neg.is_true then begin
           (* clause is false *)
           env.elt_head <- Vec.size env.elt_queue;
           raise (Conflict c)
         end else begin
-          (* clause is unit, keep the same watches, but propagate *)
-          enqueue_bool first (decision_level ()) (Bcp c)
+          match th_eval first with
+          | None -> (* clause is unit, keep the same watches, but propagate *)
+            enqueue_bool first (decision_level ()) (Bcp c)
+          | Some true -> ()
+          | Some false ->
+            env.elt_head <- Vec.size env.elt_queue;
+            raise (Conflict c)
         end;
         Watch_kept
       with Exit ->

@@ -11,39 +11,44 @@ type negated = Formula_intf.negated =
 module type S = sig
   (** Signature of formulas that parametrises the Mcsat Solver Module. *)
 
-  module Term : sig
-    (** The type of terms *)
-    type t
-    val hash : t -> int
-    val equal : t -> t -> bool
-    val print : Format.formatter -> t -> unit
-  end
-
-  module Formula : sig
-    (** The type of atomic formulas over terms. *)
-    type t
-    val hash : t -> int
-    val equal : t -> t -> bool
-    val print : Format.formatter -> t -> unit
-  end
-
   type proof
   (** An abstract type for proofs *)
 
-  val dummy : Formula.t
-  (** Formula constants. A valid formula should never be physically equal to [dummy] *)
+  module Term : sig
 
-  val fresh : unit -> Formula.t
-  (** Returns a fresh litteral, distinct from any other literal (used in cnf conversion) *)
+    type t
+    (** The type of terms *)
 
-  val neg : Formula.t -> Formula.t
-  (** Formula negation *)
+    val hash : t -> int
+    val equal : t -> t -> bool
+    val print : Format.formatter -> t -> unit
+    (** Common functions *)
 
-  val norm : Formula.t -> Formula.t * negated
-  (** Returns a 'normalized' form of the formula, possibly negated
-      (in which case return [Negated]).
-      [norm] must be so that [a] and [neg a] normalise to the same formula,
-      but one returns [Negated] and the other [Same_sign]. *)
+  end
+
+  module Formula : sig
+
+    type t
+    (** The type of atomic formulas over terms. *)
+
+    val hash : t -> int
+    val equal : t -> t -> bool
+    val print : Format.formatter -> t -> unit
+    (** Common functions *)
+
+    val dummy : t
+    (** Formula constants. A valid formula should never be physically equal to [dummy] *)
+
+    val neg : t -> t
+    (** Formula negation *)
+
+    val norm : t -> t * negated
+    (** Returns a 'normalized' form of the formula, possibly negated
+        (in which case return [Negated]).
+        [norm] must be so that [a] and [neg a] normalise to the same formula,
+        but one returns [Negated] and the other [Same_sign]. *)
+  end
+
 
 end
 

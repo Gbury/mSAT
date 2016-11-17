@@ -10,6 +10,22 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module type Arg = sig
+
+  type t
+  (** Type of atomic formulas *)
+
+  val neg : t -> t
+  (** Negation of atomic formulas *)
+
+  val fresh : unit -> t
+  (** Generate fresh formulas *)
+
+  val print : Format.formatter -> t -> unit
+  (** Print the given formula *)
+
+end
+
 module type S = sig
 
   (** The type of ground formulas *)

@@ -13,6 +13,7 @@ solver/Tseitin_intf
 
 # Main modules
 core/Res
+core/Res_intf
 core/Internal
 core/External
 core/Solver_types
@@ -20,13 +21,12 @@ core/Solver_types
 solver/Solver
 solver/Mcsolver
 solver/Tseitin
+solver/Tseitin_intf
 
 # Backends
 backend/Dot
 backend/Dedukti
 backend/Backend_intf
 
-# Examples
-example/Sat
-example/Smt
-
+# Auxiliary
+util/Hashcons

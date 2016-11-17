@@ -4,47 +4,77 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module F = Expr
-module T = Cnf.S
-module Smt = Smt.Make(struct end)
-module Mcsat = Mcsat.Make(struct end)
-
 exception Incorrect_model
 exception Out_of_time
 exception Out_of_space
 
-(* IO wrappers *)
-(* Types for input/output languages *)
-type sat_input =
-  | Auto
-  | Dimacs
-  | Smtlib
+let file = ref ""
+let p_cnf = ref false
+let p_check = ref false
+let p_proof_print = ref false
+let p_unsat_core = ref false
+let time_limit = ref 300.
+let size_limit = ref 1000_000_000.
 
-type sat_output =
-  | Standard (* Only output problem status *)
-  | Dedukti
-  | Dot
+module P =
+  Dolmen.Logic.Make(Dolmen.ParseLocation)
+    (Dolmen.Id)(Dolmen.Term)(Dolmen.Statement)
 
-type solver =
-  | Smt
-  | Mcsat
+module type S = sig
+  val do_task : Dolmen.Statement.t -> unit
+end
 
-let input = ref Auto
-let output = ref Standard
-let solver = ref Smt
+module Make
+    (S : External.S)
+    (T : Type.S with type atom := S.atom)
+= struct
 
-let input_list = [
-  "auto", Auto;
-  "dimacs", Dimacs;
-  "smtlib", Smtlib;
-]
-let output_list = [
-  "dot", Dot;
-  "dk", Dedukti;
-]
+  let hyps = ref []
+
+  let do_task s =
+    match s.Dolmen.Statement.descr with
+    | Dolmen.Statement.Def (id, t) -> T.def id t
+    | Dolmen.Statement.Decl (id, t) -> T.decl id t
+    | Dolmen.Statement.Consequent t ->
+      let cnf = T.consequent t in
+      hyps := cnf @ !hyps;
+      S.assume cnf
+    | Dolmen.Statement.Antecedent t ->
+      let cnf = T.antecedent t in
+      hyps := cnf @ !hyps;
+      S.assume cnf
+    | Dolmen.Statement.Prove ->
+      let res = S.solve () in
+      let t = Sys.time () in
+      begin match res with
+        | S.Sat state ->
+          if !p_check then
+            if not (List.for_all (List.exists state.Solver_intf.eval) !hyps) then
+              raise Incorrect_model;
+          let t' = Sys.time () -. t in
+          Format.printf "Sat (%f/%f)@." t t'
+        | S.Unsat state ->
+          if !p_check then begin
+            let p = state.Solver_intf.get_proof () in
+            S.Proof.check p;
+          end;
+          let t' = Sys.time () -. t in
+          Format.printf "Unsat (%f/%f)@." t t'
+      end
+    | _ ->
+      Format.printf "Command not supported:@\n%a@."
+        Dolmen.Statement.print s
+end
+
+module Sat = Make(Sat.Make(struct end))(Type_sat)
+module Smt = Make(Smt.Make(struct end))(Type_smt)
+module Mcsat = Make(Mcsat.Make(struct end))(Type_smt)
+
+let solver = ref (module Sat : S)
 let solver_list = [
-  "smt", Smt;
-  "mcsat", Mcsat;
+  "sat", (module Sat : S);
+  "smt", (module Smt : S);
+  "mcsat", (module Mcsat : S);
 ]
 
 let error_msg opt arg l =
@@ -58,95 +88,9 @@ let set_flag opt arg flag l =
   with Not_found ->
     invalid_arg (error_msg opt arg l)
 
-let set_input s = set_flag "Input" s input input_list
-let set_output s = set_flag "Output" s output output_list
 let set_solver s = set_flag "Solver" s solver solver_list
 
-(* Input Parsing *)
-let rec rev_flat_map f acc = function
-  | [] -> acc
-  | a :: r -> rev_flat_map f (List.rev_append (f a) acc) r
-
-let format_of_filename s =
-  let last n =
-    try String.sub s (String.length s - n) n
-    with Invalid_argument _ -> ""
-  in
-  if last 4 = ".cnf" then
-    Dimacs
-  else if last 5 = ".smt2" then
-    Smtlib
-  else (* Default choice *)
-    Dimacs
-
-let parse_with_input file = function
-  | Auto -> assert false
-  | Dimacs -> List.rev_map (List.rev_map F.mk_prop) (Parsedimacs.parse file)
-  | Smtlib -> rev_flat_map T.make_cnf [] (Smtlib.parse file)
-
-let parse_input file =
-  parse_with_input file (match !input with
-      | Auto -> format_of_filename file
-      | f -> f)
-
-(* Printing wrappers *)
-let std = Format.std_formatter
-
-let print format = match !output with
-  | Standard ->
-    Format.kfprintf (fun fmt -> Format.fprintf fmt "@.") std format
-  | Dot ->
-    Format.fprintf std "/* ";
-    Format.kfprintf (fun fmt -> Format.fprintf fmt " */@.") std format
-  | Dedukti ->
-    Format.fprintf std "(; ";
-    Format.kfprintf (fun fmt -> Format.fprintf fmt " ;)@.") std format
-
-let print_proof proof = match !output with
-  | Standard -> ()
-  | Dot -> Smt.print_dot std proof
-  | Dedukti -> Smt.print_dedukti std proof
-
-let print_mcproof proof = match !output with
-  | Standard -> ()
-  | Dot -> Mcsat.print_dot std proof
-  | Dedukti -> Mcsat.print_dedukti std proof
-
-let rec print_cl fmt = function
-  | [] -> Format.fprintf fmt "[]"
-  | [a] -> F.print fmt a
-  | a :: ((_ :: _) as r) -> Format.fprintf fmt "%a ∨ %a" F.print a print_cl r
-
-let print_lcl l =
-  List.iter (fun c -> Format.fprintf std "%a@\n" print_cl c) l
-
-let print_lclause l =
-  List.iter (fun c -> Format.fprintf std "%a@\n" Smt.print_clause c) l
-
-let print_mclause l =
-  List.iter (fun c -> Format.fprintf std "%a@\n" Mcsat.print_clause c) l
-
-let print_cnf cnf = match !output with
-  | Standard -> print_lcl cnf
-  | Dot | Dedukti -> ()
-
-let print_unsat_core u = match !output with
-  | Standard -> print_lclause u
-  | Dot | Dedukti -> ()
-
-let print_mc_unsat_core u = match !output with
-  | Standard -> print_mclause u
-  | Dot | Dedukti -> ()
-
 (* Arguments parsing *)
-let file = ref ""
-let p_cnf = ref false
-let p_check = ref false
-let p_proof_print = ref false
-let p_unsat_core = ref false
-let time_limit = ref 300.
-let size_limit = ref 1000_000_000.
-
 let int_arg r arg =
   let l = String.length arg in
   let multiplier m =
@@ -167,7 +111,7 @@ let int_arg r arg =
       | 'd' -> multiplier 86400.
       | '0'..'9' -> r := float_of_string arg
       | _ -> raise (Arg.Bad "bad numeric argument")
-    with Failure "float_of_string" -> raise (Arg.Bad "bad numeric argument")
+    with Failure _ -> raise (Arg.Bad "bad numeric argument")
 
 let setup_gc_stat () =
   at_exit (fun () ->
@@ -186,12 +130,8 @@ let argspec = Arg.align [
     " Build, check and print the proof (if output is set), if unsat";
     "-gc", Arg.Unit setup_gc_stat,
     " Outputs statistics about the GC";
-    "-i", Arg.String set_input,
-    " Sets the input format (default auto)";
-    "-o", Arg.String set_output,
-    " Sets the output format (default none)";
     "-s", Arg.String set_solver,
-    "{smt,mcsat} Sets the solver to use (default smt)";
+    "{sat,smt,mcsat} Sets the solver to use (default smt)";
     "-size", Arg.String (int_arg size_limit),
     "<s>[kMGT] Sets the size limit for the sat solver";
     "-time", Arg.String (int_arg time_limit),
@@ -212,8 +152,6 @@ let check () =
   else if s > !size_limit then
     raise Out_of_space
 
-(* Entry file parsing *)
-let get_cnf () = parse_input !file
 
 let main () =
   (* Administrative duties *)
@@ -225,66 +163,38 @@ let main () =
   let al = Gc.create_alarm check in
 
   (* Interesting stuff happening *)
-  let cnf = get_cnf () in
-  if !p_cnf then
-    print_cnf cnf;
-  match !solver with
-  | Smt ->
-    Smt.assume cnf;
-    let res = Smt.solve () in
-    Gc.delete_alarm al;
-    begin match res with
-      | Smt.Sat sat ->
-        let t = Sys.time () in
-        if !p_check then
-          if not (List.for_all (List.exists sat.Solver_intf.eval) cnf) then
-            raise Incorrect_model;
-        print "Sat (%f/%f)" t (Sys.time () -. t)
-      | Smt.Unsat us ->
-        let t = Sys.time () in
-        if !p_check then begin
-          let p = us.Solver_intf.get_proof () in
-          Smt.Proof.check p;
-          print_proof p;
-          if !p_unsat_core then
-            print_unsat_core (Smt.unsat_core p)
-        end;
-        print "Unsat (%f/%f)" t (Sys.time () -. t)
-    end
-  | Mcsat ->
-    Mcsat.assume cnf;
-    let res = Mcsat.solve () in
-    Gc.delete_alarm al;
-    begin match res with
-      | Mcsat.Sat sat ->
-        let t = Sys.time () in
-        if !p_check then
-          if not (List.for_all (List.exists sat.Solver_intf.eval) cnf) then
-            raise Incorrect_model;
-        print "Sat (%f/%f)" t (Sys.time () -. t)
-      | Mcsat.Unsat us ->
-        let t = Sys.time () in
-        if !p_check then begin
-          let p = us.Solver_intf.get_proof () in
-          Mcsat.Proof.check p;
-          print_mcproof p;
-          if !p_unsat_core then
-            print_mc_unsat_core (Mcsat.unsat_core p)
-        end;
-        print "Unsat (%f/%f)" t (Sys.time () -. t)
-    end
+  let lang, input = P.parse_file !file in
+  let module S = (val !solver : S) in
+  List.iter S.do_task input;
+  (* Small hack for dimacs, which do not output a "Prove" statement *)
+  begin match lang with
+    | P.Dimacs -> S.do_task @@ Dolmen.Statement.check_sat ()
+    | _ -> ()
+  end;
+  Gc.delete_alarm al;
+  ()
 
 let () =
   try
     main ()
   with
-  | Incorrect_model ->
-    print "Internal error : incorrect *sat* model";
-    exit 4
   | Out_of_time ->
-    print "Timeout";
+    Format.printf "Timeout@.";
     exit 2
   | Out_of_space ->
-    print "Spaceout";
+    Format.printf "Spaceout@.";
     exit 3
+  | Incorrect_model ->
+    Format.printf "Internal error : incorrect *sat* model@.";
+    exit 4
+  | Type_sat.Typing_error (msg, t)
+  | Type_smt.Typing_error (msg, t) ->
+    let b = Printexc.get_backtrace () in
+    let loc = match t.Dolmen.Term.loc with
+      | Some l -> l | None -> Dolmen.ParseLocation.mk "<>" 0 0 0 0
+    in
+    Format.fprintf Format.std_formatter "While typing:@\n%a@\n%a: typing error\n%s@."
+      Dolmen.Term.print t Dolmen.ParseLocation.fmt loc msg;
+    if Printexc.backtrace_status () then
+      Format.fprintf Format.std_formatter "%s@." b
 

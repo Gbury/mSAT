@@ -12,7 +12,7 @@
 
 module type S = Tseitin_intf.S
 
-module Make (F : Formula_intf.S) = struct
+module Make (F : Tseitin_intf.Arg) = struct
 
   exception Empty_Or
   type combinator = And | Or | Imp | Not

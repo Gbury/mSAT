@@ -1,10 +1,12 @@
 language: c
 env:
-  - OCAML_VERSION=4.00.1
-  - OCAML_VERSION=4.01.0
-  - OCAML_VERSION=4.02.3
-  - OCAML_VERSION=4.03.0
-  - OCAML_VERSION=4.03.0+flambda
+  - RUN_TEST=false OCAML_VERSION=4.00.1
+  - RUN_TEST=false OCAML_VERSION=4.01.0
+  - RUN_TEST=true OCAML_VERSION=4.02.3
+  - RUN_TEST=true OCAML_VERSION=4.03.0
+  - RUN_TEST=true OCAML_VERSION=4.03.0+flambda
+  - RUN_TEST=true OCAML_VERSION=4.04.0
+  - RUN_TEST=true OCAML_VERSION=4.04.0+flambda
 addons:
   apt:
     sources:
@@ -18,8 +20,10 @@ before_install:
   - opam init
   - opam switch ${OCAML_VERSION}
   - eval `opam config env`
-install:
   - opam install ocamlfind ocamlbuild
-  - make bin lib
+  - if ${RUN_TEST}; then opam pin add dolmen https://github.com/Gbury/dolmen.git; fi
+install:
+  - make lib
+  - if ${RUN_TEST}; then make bin; fi
 script:
-  - make test
+  - if ${RUN_TEST}; then make test; fi

@@ -81,7 +81,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | E_var of var
 
   (* Dummy values *)
-  let dummy_lit = E.dummy
+  let dummy_lit = E.Formula.dummy
 
   let rec dummy_var =
     { vid = -101;
@@ -145,7 +145,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
 
   let make_boolean_var : formula -> var * Expr_intf.negated =
     fun t ->
-      let lit, negated = E.norm t in
+      let lit, negated = E.Formula.norm t in
       try
         MF.find f_map lit, negated
       with Not_found ->
@@ -169,7 +169,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
             aid = cpt_fois_2 (* aid = vid*2 *) }
         and na =
           { var = var;
-            lit = E.neg lit;
+            lit = E.Formula.neg lit;
             watched = Vec.make 10 dummy_clause;
             neg = pa;
             is_true = false;
@@ -263,18 +263,28 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   (* Complete debug printing *)
   let sign a = if a == a.var.pa then "+" else "-"
 
-  let level a =
-    match a.var.v_level, a.var.reason with
-    | n, _ when n < 0 -> sprintf "%%"
-    | n, None   -> sprintf "%d" n
-    | n, Some Decision   -> sprintf "@@%d" n
-    | n, Some Bcp c -> sprintf "->%d/%s" n c.name
-    | n, Some Semantic lvl -> sprintf "::%d/%d" n lvl
+  let pp_reason fmt = function
+    | n, _ when n < 0 ->
+      Format.fprintf fmt "%%"
+    | n, None ->
+      Format.fprintf fmt "%d" n
+    | n, Some Decision ->
+      Format.fprintf fmt "@@%d" n
+    | n, Some Bcp c ->
+      Format.fprintf fmt "->%d/%s" n c.name
+    | n, Some Semantic lvl ->
+      Format.fprintf fmt "::%d/%d" n lvl
 
-  let value a =
-    if a.is_true then sprintf "[T%s]" (level a)
-    else if a.neg.is_true then sprintf "[F%s]" (level a)
-    else "[]"
+  let pp_level fmt a =
+    pp_reason fmt (a.var.v_level, a.var.reason)
+
+  let pp_value fmt a =
+    if a.is_true then
+      Format.fprintf fmt "[T%a]" pp_level a
+    else if a.neg.is_true then
+      Format.fprintf fmt "[F%a]" pp_level a
+    else
+      Format.fprintf fmt "[]"
 
   let pp_premise out = function
     | Hyp -> Format.fprintf out "hyp"
@@ -284,15 +294,15 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
 
   let pp_assign out = function
     | None -> ()
-    | Some t -> Format.fprintf out " ->@ %a" E.Term.print t
+    | Some t -> Format.fprintf out " ->@ @[<hov>%a@]" E.Term.print t
 
   let pp_lit out v =
-    Format.fprintf out "%d [lit:%a%a]"
+    Format.fprintf out "%d [lit:@[<hov>%a%a@]]"
       (v.lid+1) E.Term.print v.term pp_assign v.assigned
 
   let pp_atom out a =
-    Format.fprintf out "%s%d%s[atom:%a]@ "
-      (sign a) (a.var.vid+1) (value a) E.Formula.print a.lit
+    Format.fprintf out "%s%d%a[atom:@[<hov>%a@]]@ "
+      (sign a) (a.var.vid+1) pp_value a E.Formula.print a.lit
 
   let pp_atoms_vec out vec =
     Array.iter (fun a -> pp_atom out a) vec

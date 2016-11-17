@@ -3,12 +3,22 @@
 LOG=build.log
 COMP=ocamlbuild -log $(LOG) -use-ocamlfind
 FLAGS=
-DOC=msat.docdir/index.html
+DOC=msat.docdir/index.html msat_sat.docdir/index.html msat_smt.docdir/index.html
 BIN=main.native
 TEST_BIN=tests/test_api.native
-NAME=msat
 
-LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
+NAME_OCAMLFIND=msat
+NAME_BIN=msat
+NAME_CORE=msat
+#NAME_SAT=msat_sat
+#NAME_SMT=msat_smt
+#NAME_MCSAT=msat_mcsat
+
+LIB_CORE=$(addprefix $(NAME_CORE), .cma .cmxa .cmxs)
+#LIB_SAT=$(addprefix $(NAME_SAT), .cma .cmxa .cmxs)
+#LIB_SMT=$(addprefix $(NAME_SMT), .cma .cmxa .cmxs)
+#LIB_MCSAT=$(addprefix $(NAME_MCSAT), .cma .cmxa .cmxs)
+LIB=$(LIB_CORE) # $(LIB_SAT) $(LIB_SMT) $(LIB_MCSAT)
 
 all: lib test
 
@@ -20,7 +30,7 @@ doc:
 
 bin:
 	$(COMP) $(FLAGS) $(BIN)
-	cp $(BIN) $(NAME) && rm $(BIN)
+	cp $(BIN) $(NAME_BIN) && rm $(BIN)
 
 test_bin:
 	$(COMP) $(FLAGS) $(TEST_BIN)
@@ -29,7 +39,7 @@ test: bin test_bin
 	@echo "run API tests…"
 	@./test_api.native
 	@echo "run benchmarks…"
-	@/usr/bin/time -f "%e" ./tests/run smt
+	# @/usr/bin/time -f "%e" ./tests/run smt
 	@/usr/bin/time -f "%e" ./tests/run mcsat
 
 enable_log:
@@ -43,17 +53,28 @@ log:
 
 clean:
 	$(COMP) -clean
+	rm -rf $(NAME_BIN)
 
-TO_INSTALL=META $(addprefix _build/src/,$(LIB) $(NAME).a $(NAME).cmi)
+ALL_NAMES = $(NAME_CORE) # $(NAME_SAT) $(NAME_SMT) $(NAME_MCAT)
+TO_INSTALL_LIB=$(addsuffix .a, $(ALL_NAMES)) \
+	       $(addsuffix .cmi, $(ALL_NAMES))
+TO_INSTALL=META $(addprefix _build/src/,$(LIB) $(TO_INSTALL_LIB))
 
 install: lib
-	ocamlfind install msat $(TO_INSTALL)
+	ocamlfind install $(NAME_OCAMLFIND) $(TO_INSTALL)
 
 uninstall:
-	ocamlfind remove msat
+	ocamlfind remove $(NAME_OCAMLFIND)
 
 reinstall: all
-	ocamlfind remove msat || true
-	ocamlfind install msat $(TO_INSTALL)
+	ocamlfind remove $(NAME_OCAMLFIND) || true
+	ocamlfind install $(NAME_OCAMLFIND) $(TO_INSTALL)
+
+watch:
+	while find src/ -print0 | xargs -0 inotifywait -e delete_self -e modify ; do \
+		echo "============ at `date` ==========" ; \
+		sleep 0.1; \
+		make all; \
+	done
 
 .PHONY: clean doc all bench install uninstall reinstall enable_log disable_log bin test
