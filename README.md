@@ -12,6 +12,9 @@ It derives from [Alt-Ergo Zero](http://cubicle.lri.fr/alt-ergo-zero).
 This program is distributed under the Apache Software License version
 2.0. See the enclosed file `LICENSE`.
 
+## Documentation
+
+See https://gbury.github.io/msat/
 
 ## USAGE
 
