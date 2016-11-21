@@ -13,7 +13,6 @@ solver/Tseitin_intf
 
 # Main modules
 core/Res
-core/Res_intf
 core/Internal
 core/External
 core/Solver_types
@@ -21,7 +20,6 @@ core/Solver_types
 solver/Solver
 solver/Mcsolver
 solver/Tseitin
-solver/Tseitin_intf
 
 # Backends
 backend/Dot
@@ -30,3 +28,20 @@ backend/Backend_intf
 
 # Auxiliary
 util/Hashcons
+
+
+# SAT solver frontend
+sat/Expr_sat
+sat/Sat
+sat/Type_sat
+
+# SMT solver frontend
+smt/Expr_smt
+smt/Smt
+smt/Type_smt
+smt/Unionfind
+
+# MCsat
+mcsat/Eclosure
+mcsat/Mcsat
+mcsat/Plugin_mcsat

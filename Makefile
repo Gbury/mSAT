@@ -3,7 +3,7 @@
 LOG=build.log
 COMP=ocamlbuild -log $(LOG) -use-ocamlfind
 FLAGS=
-DOC=msat.docdir/index.html msat_sat.docdir/index.html msat_smt.docdir/index.html
+DOC=src/msat.docdir/index.html
 BIN=main.native
 TEST_BIN=tests/test_api.native
 
