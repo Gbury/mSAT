@@ -140,7 +140,7 @@ module type S = sig
   val add_atom : formula -> atom
   (** Returns the atom associated with the given formula *)
   val make_boolean_var : formula -> var * Formula_intf.negated
-  (** Returns the variable linked with the given formula, and wether the atom associated with the formula
+  (** Returns the variable linked with the given formula, and whether the atom associated with the formula
       is [var.pa] or [var.na] *)
 
   val empty_clause : clause
