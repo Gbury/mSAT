@@ -144,6 +144,18 @@ module Test = struct
       solve `Expect_unsat;
     ] |> mk_test "test3"
 
+  (* Conflict at level 0 *)
+  let test4 =
+    [ assume [[-1; -2]];
+      solve `Expect_sat;
+      assume [[1]];
+      solve `Expect_sat;
+      assume [[2]];
+      solve ~assumptions:[3] `Expect_unsat;
+      solve ~assumptions:[] `Expect_unsat;
+      solve ~assumptions:[] `Expect_unsat;
+    ] |> mk_test "conflict0"
+
   (* just check that we do create new solvers *)
   let test_clean =
     [ solve `Expect_sat
@@ -153,6 +165,7 @@ module Test = struct
     [ test1;
       test2;
       test3;
+      test4;
       test_clean; (* after test3 *)
     ]
 end
