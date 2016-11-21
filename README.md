@@ -14,7 +14,7 @@ This program is distributed under the Apache Software License version
 
 ## Documentation
 
-See https://gbury.github.io/msat/
+See https://gbury.github.io/mSAT/
 
 ## USAGE
 
