@@ -21,55 +21,79 @@ module type S = sig
   type term
   type formula
   type proof
+  (** The types of terms, formulas and proofs. All of these are user-provided. *)
 
   type lit = {
-    lid : int;
-    term : term;
-    mutable l_level : int;
-    mutable l_weight : float;
-    mutable assigned : term option;
+    lid : int;                      (** Unique identifier *)
+    term : term;                    (** Wrapped term *)
+    mutable l_level : int;          (** Decision level of the assignment *)
+    mutable l_weight : float;       (** Weight (for the heap) *)
+    mutable assigned : term option; (** Assignement *)
   }
+  (** Wrapper type for litterals, i.e theory terms (for mcsat only). *)
 
   type var = {
-    vid : int;
-    pa : atom;
-    na : atom;
-    mutable seen : bool;
-    mutable v_level : int;
-    mutable v_weight : float;
+    vid : int;  (** Unique identifier *)
+    pa : atom;  (** Link for the positive atom *)
+    na : atom;  (** Link for the negative atom *)
+    mutable seen : bool;        (** Boolean used during propagation *)
+    mutable v_level : int;      (** Level of decision/propagation *)
+    mutable v_weight : float;   (** Variable weight (for the heap) *)
     mutable v_assignable: lit list option;
+    (** In mcsat, the list of lits that wraps subterms of the formula wrapped. *)
     mutable reason : reason option;
+    (** The reason for propagation/decision of the litteral *)
   }
 
   and atom = {
-    aid : int;
-    var : var;
-    neg : atom;
-    lit : formula;
-    mutable is_true : bool;
-    mutable watched : clause Vec.t;
+    aid : int;                      (** Unique identifier *)
+    var : var;                      (** Link for the parent variable *)
+    neg : atom;                     (** Link for the negation of the atom *)
+    lit : formula;                  (** Wrapped formula *)
+    mutable is_true : bool;         (** Is the atom true ? Conversely, the atom
+                                        is false iff a.neg.is_true *)
+    mutable watched : clause Vec.t; (** The vector of clauses that watch this atom *)
   }
+  (** Atoms and variables wrap theory formulas. They exist in the form of
+      triplet: a variable and two atoms. For a formula [f] in normal form,
+      the variable v points to the positive atom [a] which wraps [f], while
+      [a.neg] wraps the theory negation of [f]. *)
 
   and clause = {
-    name : string;
-    tag : int option;
-    atoms : atom array;
-    mutable cpremise : premise;
-    mutable activity : float;
-    mutable attached : bool;
-    mutable visited : bool;
+    name : string;              (** Clause name, mainly for printing, unique. *)
+    tag : int option;           (** User-provided tag for clauses. *)
+    atoms : atom array;         (** The atoms that constitute the clause.*)
+    mutable cpremise : premise; (** The premise of the clause, i.e. the justification
+                                    of why the clause must be satisfied. *)
+    mutable activity : float;   (** Clause activity, used for the heap heuristics. *)
+    mutable attached : bool;    (** Is the clause attached, i.e. does it watsh literals. *)
+    mutable visited : bool;     (** Boolean used during propagation and proof generation. *)
   }
+  (** The type of clauses. Each clause generated should be true, i.e enforced
+      by the current problem (for more information, see the cpremise field). *)
 
   and reason =
-    | Decision
-    | Bcp of clause
-    | Semantic of int
+    | Decision        (** The atom has been decided by the sat solver *)
+    | Bcp of clause   (** The atom has been propagated by the given clause *)
+    | Semantic of int (** The atom has been propagated by the theory at the given level.
+                          TODO: remove the int argument, as we should use the atom's level*)
+  (** Reasons of propagation/decision of atoms. *)
 
   and premise =
-    | Hyp
-    | Local
-    | Lemma of proof
-    | History of clause list
+    | Hyp                     (** The clause is a hypothesis, provided by the user. *)
+    | Local                   (** The clause is a 1-atom clause,
+                                  where the atom is a local assumption*)
+    | Lemma of proof          (** The clause is a theory-provided tautology, with
+                                  the given proof. *)
+    | History of clause list  (** The clause can be obtained by resolution of the clauses
+                                  in the list. For a premise [History [a_1 :: ... :: a_n]]
+                                  the claus eis obtained by performing resolution of
+                                  [a_1] with [a_2], and then performin a resolution step between
+                                  the result and [a_3], etc...
+                                  Of course, each of the clause [a_i] also has its own premise. *)
+  (** Premises for clauses. Indeed each clause generated during a run of the solver
+      should be satisfied, the premise is the justification of why it should be
+      satisfied by the solver. *)
 
   (** {2 Decisions and propagations} *)
   type t =
