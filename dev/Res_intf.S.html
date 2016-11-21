@@ -1,0 +1,196 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="Up" href="Res_intf.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Hashcons" rel="Chapter" href="Hashcons.html">
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
+<link title="Sat" rel="Chapter" href="Sat.html">
+<link title="Type_sat" rel="Chapter" href="Type_sat.html">
+<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
+<link title="Smt" rel="Chapter" href="Smt.html">
+<link title="Type_smt" rel="Chapter" href="Type_smt.html">
+<link title="Unionfind" rel="Chapter" href="Unionfind.html">
+<link title="Eclosure" rel="Chapter" href="Eclosure.html">
+<link title="Mcsat" rel="Chapter" href="Mcsat.html">
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><link title="Type declarations" rel="Section" href="#3_Typedeclarations">
+<link title="Proof building functions" rel="Section" href="#3_Proofbuildingfunctions">
+<link title="Proof Manipulation" rel="Section" href="#3_ProofManipulation">
+<link title="Misc" rel="Section" href="#3_Misc">
+<title>Res_intf.S</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Res_intf.html" title="Res_intf">Up</a>
+&nbsp;</div>
+<h1>Module type <a href="type_Res_intf.S.html">Res_intf.S</a></h1>
+
+<pre><span class="keyword">module type</span> S = <code class="code">sig</code> <a href="Res_intf.S.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+Signature for a module handling proof by resolution from sat solving traces<br>
+
+<pre><span class="keyword">module</span> <a href="Res_intf.S.St.html">St</a>: <code class="type"><a href="Solver_types.S.html">Solver_types.S</a></code><code class="type"> </code></pre><div class="info">
+Module defining atom and clauses
+</div>
+<br>
+<h3 id="3_Typedeclarations">Type declarations</h3><br>
+
+<pre><span id="EXCEPTIONInsuficient_hyps"><span class="keyword">exception</span> Insuficient_hyps</span></pre>
+<div class="info ">
+Raised when a complete resolution derivation cannot be found using the current hypotheses.<br>
+</div>
+
+<pre><span id="TYPEatom"><span class="keyword">type</span> <code class="type"></code>atom</span> = <code class="type">St.atom</code> </pre>
+
+
+<pre><span id="TYPEclause"><span class="keyword">type</span> <code class="type"></code>clause</span> = <code class="type">St.clause</code> </pre>
+
+
+<pre><span id="TYPElemma"><span class="keyword">type</span> <code class="type"></code>lemma</span> = <code class="type">St.proof</code> </pre>
+<div class="info ">
+Abstract types for atoms, clauses and theory-specific lemmas<br>
+</div>
+
+
+<pre><span id="TYPEproof"><span class="keyword">type</span> <code class="type"></code>proof</span> </pre>
+
+
+<pre><code><span id="TYPEproof_node"><span class="keyword">type</span> <code class="type"></code>proof_node</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTproof_node.conclusion">conclusion</span>&nbsp;: <code class="type"><a href="Res_intf.S.html#TYPEclause">clause</a></code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTproof_node.step">step</span>&nbsp;: <code class="type"><a href="Res_intf.S.html#TYPEstep">step</a></code>;</code></td>
+
+</tr></table>
+}
+
+
+
+<pre><code><span id="TYPEstep"><span class="keyword">type</span> <code class="type"></code>step</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTstep.Hypothesis"><span class="constructor">Hypothesis</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTstep.Assumption"><span class="constructor">Assumption</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTstep.Lemma"><span class="constructor">Lemma</span></span> <span class="keyword">of</span> <code class="type"><a href="Res_intf.S.html#TYPElemma">lemma</a></code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTstep.Resolution"><span class="constructor">Resolution</span></span> <span class="keyword">of</span> <code class="type"><a href="Res_intf.S.html#TYPEproof">proof</a> * <a href="Res_intf.S.html#TYPEproof">proof</a> * <a href="Res_intf.S.html#TYPEatom">atom</a></code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Lazy type for proof trees. Proofs are persistent objects, and can be
+      extended to proof nodes using functions defined later.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><span id="VALto_list"><span class="keyword">val</span> to_list</span> : <code class="type"><a href="Res_intf.S.html#TYPEclause">clause</a> -> <a href="Res_intf.S.html#TYPEatom">atom</a> list</code></pre><div class="info ">
+<h3 id="3_Resolutionhelpers">Resolution helpers</h3>
+<p>
+Returns the sorted list of atoms of a clause.<br>
+</div>
+
+<pre><span id="VALmerge"><span class="keyword">val</span> merge</span> : <code class="type"><a href="Res_intf.S.html#TYPEatom">atom</a> list -> <a href="Res_intf.S.html#TYPEatom">atom</a> list -> <a href="Res_intf.S.html#TYPEatom">atom</a> list</code></pre><div class="info ">
+Merge two sorted atom list using a suitable comparison function.<br>
+</div>
+
+<pre><span id="VALresolve"><span class="keyword">val</span> resolve</span> : <code class="type"><a href="Res_intf.S.html#TYPEatom">atom</a> list -> <a href="Res_intf.S.html#TYPEatom">atom</a> list * <a href="Res_intf.S.html#TYPEatom">atom</a> list</code></pre><div class="info ">
+Performs a "resolution step" on a sorted list of atoms.
+      <code class="code">resolve (List.merge l1 l2)</code> where <code class="code">l1</code> and <code class="code">l2</code> are sorted atom lists should return the pair
+      <code class="code">[a], l'</code>, where <code class="code">l'</code> is the result of the resolution of <code class="code">l1</code> and <code class="code">l2</code> over <code class="code">a</code>.<br>
+</div>
+<br>
+<h3 id="3_Proofbuildingfunctions">Proof building functions</h3><br>
+
+<pre><span id="VALprove"><span class="keyword">val</span> prove</span> : <code class="type"><a href="Res_intf.S.html#TYPEclause">clause</a> -> <a href="Res_intf.S.html#TYPEproof">proof</a></code></pre><div class="info ">
+Given a clause, return a proof of that clause.<br>
+<b>Raises</b> <code>Insuficient_hyps</code> if it does not succeed.<br>
+</div>
+
+<pre><span id="VALprove_unsat"><span class="keyword">val</span> prove_unsat</span> : <code class="type"><a href="Res_intf.S.html#TYPEclause">clause</a> -> <a href="Res_intf.S.html#TYPEproof">proof</a></code></pre><div class="info ">
+Given a conflict clause <code class="code">c</code>, returns a proof of the empty clause.<br>
+<b>Raises</b> <code>Insuficient_hyps</code> if it does not succeed.<br>
+</div>
+
+<pre><span id="VALprove_atom"><span class="keyword">val</span> prove_atom</span> : <code class="type"><a href="Res_intf.S.html#TYPEatom">atom</a> -> <a href="Res_intf.S.html#TYPEproof">proof</a> option</code></pre><div class="info ">
+Given an atom <code class="code">a</code>, returns a proof of the clause <code class="code">[a]</code> if <code class="code">a</code> is true at level 0<br>
+</div>
+<br>
+<h3 id="3_ProofManipulation">Proof Manipulation</h3><br>
+
+<pre><span id="VALexpand"><span class="keyword">val</span> expand</span> : <code class="type"><a href="Res_intf.S.html#TYPEproof">proof</a> -> <a href="Res_intf.S.html#TYPEproof_node">proof_node</a></code></pre><div class="info ">
+Return the proof step at the root of a given proof.<br>
+</div>
+
+<pre><span id="VALfold"><span class="keyword">val</span> fold</span> : <code class="type">('a -> <a href="Res_intf.S.html#TYPEproof_node">proof_node</a> -> 'a) -> 'a -> <a href="Res_intf.S.html#TYPEproof">proof</a> -> 'a</code></pre><div class="info ">
+<code class="code">fold f acc p</code>, fold <code class="code">f</code> over the proof <code class="code">p</code> and all its node. It is guaranteed that
+      <code class="code">f</code> is executed exactly once on each proof ndoe in the tree, and that the execution of
+      <code class="code">f</code> on a proof node happens after the execution on the children of the nodes.<br>
+</div>
+
+<pre><span id="VALunsat_core"><span class="keyword">val</span> unsat_core</span> : <code class="type"><a href="Res_intf.S.html#TYPEproof">proof</a> -> <a href="Res_intf.S.html#TYPEclause">clause</a> list</code></pre><div class="info ">
+Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof.
+      More efficient than using the <code class="code">fold</code> function since it has access to the internal representation of proofs<br>
+</div>
+<br>
+<h3 id="3_Misc">Misc</h3><br>
+
+<pre><span id="VALcheck"><span class="keyword">val</span> check</span> : <code class="type"><a href="Res_intf.S.html#TYPEproof">proof</a> -> unit</code></pre><div class="info ">
+Check the contents of a proof. Mainly for internal use<br>
+</div>
+
+<pre><span id="VALprint_clause"><span class="keyword">val</span> print_clause</span> : <code class="type">Format.formatter -> <a href="Res_intf.S.html#TYPEclause">clause</a> -> unit</code></pre><div class="info ">
+A nice looking printer for clauses, which sort the atoms before printing.<br>
+</div>
+</body></html>

@@ -1,0 +1,361 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Type_sat.html">
+<link rel="next" href="Smt.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Hashcons" rel="Chapter" href="Hashcons.html">
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
+<link title="Sat" rel="Chapter" href="Sat.html">
+<link title="Type_sat" rel="Chapter" href="Type_sat.html">
+<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
+<link title="Smt" rel="Chapter" href="Smt.html">
+<link title="Type_smt" rel="Chapter" href="Type_smt.html">
+<link title="Unionfind" rel="Chapter" href="Unionfind.html">
+<link title="Eclosure" rel="Chapter" href="Eclosure.html">
+<link title="Mcsat" rel="Chapter" href="Mcsat.html">
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><link title="Type definitions" rel="Section" href="#2_Typedefinitions">
+<link title="Printing" rel="Section" href="#2_Printing">
+<link title="Identifiers & Metas" rel="Section" href="#2_IdentifiersMetas">
+<link title="Substitutions" rel="Section" href="#2_Substitutions">
+<link title="Types" rel="Section" href="#2_Types">
+<link title="Terms" rel="Section" href="#2_Terms">
+<link title="Formulas" rel="Section" href="#2_Formulas">
+<link title="Identifiers" rel="Subsection" href="#3_Identifiers">
+<link title="Types" rel="Subsection" href="#3_Types">
+<link title="Terms" rel="Subsection" href="#3_Terms">
+<link title="Formulas" rel="Subsection" href="#3_Formulas">
+<link title="Exceptions" rel="Subsection" href="#3_Exceptions">
+<title>Expr_smt</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Type_sat.html" title="Type_sat">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Smt.html" title="Smt">Next</a>
+</div>
+<h1>Module <a href="type_Expr_smt.html">Expr_smt</a></h1>
+
+<pre><span class="keyword">module</span> Expr_smt: <code class="code">sig</code> <a href="Expr_smt.html">..</a> <code class="code">end</code></pre><div class="info module top">
+Expressions for TabSat<br>
+</div>
+<hr width="100%">
+<br>
+<h2 id="2_Typedefinitions">Type definitions</h2><br>
+<br>
+These are custom types used in functions later.<br>
+<br>
+<h3 id="3_Identifiers">Identifiers</h3><br>
+<br>
+Identifiers are the basic building blocks used to build types terms and expressions.<br>
+
+<pre><span id="TYPEhash"><span class="keyword">type</span> <code class="type"></code>hash</span> </pre>
+
+
+<pre><span id="TYPEindex"><span class="keyword">type</span> <code class="type"></code>index</span> = private <code class="type">int</code> </pre>
+
+<br>
+Private aliases to provide access. You should not have any need
+    to use these, instead use the functions provided by this module.<br>
+
+<pre><code><span id="TYPEid"><span class="keyword">type</span> <code class="type">'ty</code> id</span> = private {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTid.id_type">id_type</span>&nbsp;: <code class="type">'ty</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTid.id_name">id_name</span>&nbsp;: <code class="type">string</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTid.index">index</span>&nbsp;: <code class="type"><a href="Expr_smt.html#TYPEindex">index</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+unique<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+
+<br>
+The type of identifiers. An <code class="code">'a id</code> is an identifier whose solver-type
+    is represented by an inhabitant of type <code class="code">'a</code>.
+    All identifier have an unique <code class="code">index</code> which is used for comparison,
+    so that the name of a variable is only there for tracability
+    and/or pretty-printing.<br>
+<br>
+<h3 id="3_Types">Types</h3><br>
+
+<pre><code><span id="TYPEttype"><span class="keyword">type</span> <code class="type"></code>ttype</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTttype.Type"><span class="constructor">Type</span></span></code></td>
+
+</tr></table>
+
+
+<br>
+The caml type of solver-types.<br>
+
+<pre><code><span id="TYPEfunction_descr"><span class="keyword">type</span> <code class="type">'ty</code> function_descr</span> = private {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTfunction_descr.fun_vars">fun_vars</span>&nbsp;: <code class="type"><a href="Expr_smt.html#TYPEttype">ttype</a> <a href="Expr_smt.html#TYPEid">id</a> list</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTfunction_descr.fun_args">fun_args</span>&nbsp;: <code class="type">'ty list</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTfunction_descr.fun_ret">fun_ret</span>&nbsp;: <code class="type">'ty</code>;</code></td>
+
+</tr></table>
+}
+
+
+<br>
+This represents the solver-type of a function.
+    Functions can be polymorphic in the variables described in the
+    <code class="code">fun_vars</code> field.<br>
+
+<pre><code><span id="TYPEty_descr"><span class="keyword">type</span> <code class="type"></code>ty_descr</span> = private </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTty_descr.TyVar"><span class="constructor">TyVar</span></span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.html#TYPEttype">ttype</a> <a href="Expr_smt.html#TYPEid">id</a></code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+bound variables (i.e should only appear under a quantifier)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTty_descr.TyApp"><span class="constructor">TyApp</span></span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.html#TYPEttype">ttype</a> <a href="Expr_smt.html#TYPEfunction_descr">function_descr</a> <a href="Expr_smt.html#TYPEid">id</a> * <a href="Expr_smt.html#TYPEty">ty</a> list</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+application of a constant to some arguments<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><code><span id="TYPEty"><span class="keyword">type</span> <code class="type"></code>ty</span> = private {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTty.ty">ty</span>&nbsp;: <code class="type"><a href="Expr_smt.html#TYPEty_descr">ty_descr</a></code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTty.ty_hash">ty_hash</span>&nbsp;: <code class="type"><a href="Expr_smt.html#TYPEhash">hash</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Use Ty.hash instead<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+
+<br>
+These types defines solver-types, i.e the representation of the types
+    of terms in the solver. Record definition for <code class="code">type ty</code> is shown in order
+    to be able to use the <code class="code">ty.ty</code> field in patter matches. Other fields shoud not
+    be accessed directly, but throught the functions provided by the <code class="code">Ty</code> module.<br>
+<br>
+<h3 id="3_Terms">Terms</h3><br>
+
+<pre><code><span id="TYPEterm_descr"><span class="keyword">type</span> <code class="type"></code>term_descr</span> = private </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTterm_descr.Var"><span class="constructor">Var</span></span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.html#TYPEty">ty</a> <a href="Expr_smt.html#TYPEid">id</a></code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+bound variables (i.e should only appear under a quantifier)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTterm_descr.App"><span class="constructor">App</span></span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.html#TYPEty">ty</a> <a href="Expr_smt.html#TYPEfunction_descr">function_descr</a> <a href="Expr_smt.html#TYPEid">id</a> * <a href="Expr_smt.html#TYPEty">ty</a> list<br>        * <a href="Expr_smt.html#TYPEterm">term</a> list</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+application of a constant to some arguments<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><code><span id="TYPEterm"><span class="keyword">type</span> <code class="type"></code>term</span> = private {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTterm.term">term</span>&nbsp;: <code class="type"><a href="Expr_smt.html#TYPEterm_descr">term_descr</a></code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTterm.t_type">t_type</span>&nbsp;: <code class="type"><a href="Expr_smt.html#TYPEty">ty</a></code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTterm.t_hash">t_hash</span>&nbsp;: <code class="type"><a href="Expr_smt.html#TYPEhash">hash</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Do not use this filed, call Term.hash instead<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+
+<br>
+Types defining terms in the solver. The definition is vary similar to that
+    of solver-types, except for type arguments of polymorphic functions which
+    are explicit. This has the advantage that there is a clear and typed distinction
+    between solver-types and terms, but may lead to some duplication of code
+    in some places.<br>
+<br>
+<h3 id="3_Formulas">Formulas</h3><br>
+
+<pre><code><span id="TYPEatom_descr"><span class="keyword">type</span> <code class="type"></code>atom_descr</span> = private </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTatom_descr.Pred"><span class="constructor">Pred</span></span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.html#TYPEterm">term</a></code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTatom_descr.Equal"><span class="constructor">Equal</span></span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.html#TYPEterm">term</a> * <a href="Expr_smt.html#TYPEterm">term</a></code></code></td>
+
+</tr></table>
+
+
+
+<pre><code><span id="TYPEatom"><span class="keyword">type</span> <code class="type"></code>atom</span> = private {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTatom.sign">sign</span>&nbsp;: <code class="type">bool</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTatom.atom">atom</span>&nbsp;: <code class="type"><a href="Expr_smt.html#TYPEatom_descr">atom_descr</a></code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTatom.f_hash">f_hash</span>&nbsp;: <code class="type"><a href="Expr_smt.html#TYPEhash">hash</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Use Formula.hash instead<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+
+<br>
+The type of atoms in the solver. The list of free arguments in quantifiers
+    is a bit tricky, so you should not touch it (see full doc for further
+    explanations).<br>
+<br>
+<h3 id="3_Exceptions">Exceptions</h3><br>
+
+<pre><span id="EXCEPTIONType_mismatch"><span class="keyword">exception</span> Type_mismatch</span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.html#TYPEterm">term</a> * <a href="Expr_smt.html#TYPEty">ty</a> * <a href="Expr_smt.html#TYPEty">ty</a></code></pre>
+
+<pre><span id="EXCEPTIONBad_arity"><span class="keyword">exception</span> Bad_arity</span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.html#TYPEty">ty</a> <a href="Expr_smt.html#TYPEfunction_descr">function_descr</a> <a href="Expr_smt.html#TYPEid">id</a> * <a href="Expr_smt.html#TYPEty">ty</a> list<br>        * <a href="Expr_smt.html#TYPEterm">term</a> list</code></pre>
+
+<pre><span id="EXCEPTIONBad_ty_arity"><span class="keyword">exception</span> Bad_ty_arity</span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.html#TYPEttype">ttype</a> <a href="Expr_smt.html#TYPEfunction_descr">function_descr</a> <a href="Expr_smt.html#TYPEid">id</a> * <a href="Expr_smt.html#TYPEty">ty</a> list</code></pre>
+<div class="info ">
+Raised when trying to build an application with wrong arity<br>
+</div>
+<br>
+<h2 id="2_Printing">Printing</h2><br>
+
+<pre><span class="keyword">module</span> <a href="Expr_smt.Print.html">Print</a>: <code class="code">sig</code> <a href="Expr_smt.Print.html">..</a> <code class="code">end</code></pre><br>
+<h2 id="2_IdentifiersMetas">Identifiers &amp; Metas</h2><br>
+
+<pre><span class="keyword">module</span> <a href="Expr_smt.Id.html">Id</a>: <code class="code">sig</code> <a href="Expr_smt.Id.html">..</a> <code class="code">end</code></pre><br>
+<h2 id="2_Substitutions">Substitutions</h2><br>
+
+<pre><span class="keyword">module</span> <a href="Expr_smt.Subst.html">Subst</a>: <code class="code">sig</code> <a href="Expr_smt.Subst.html">..</a> <code class="code">end</code></pre><br>
+<h2 id="2_Types">Types</h2><br>
+
+<pre><span class="keyword">module</span> <a href="Expr_smt.Ty.html">Ty</a>: <code class="code">sig</code> <a href="Expr_smt.Ty.html">..</a> <code class="code">end</code></pre><br>
+<h2 id="2_Terms">Terms</h2><br>
+
+<pre><span class="keyword">module</span> <a href="Expr_smt.Term.html">Term</a>: <code class="code">sig</code> <a href="Expr_smt.Term.html">..</a> <code class="code">end</code></pre><br>
+<h2 id="2_Formulas">Formulas</h2><br>
+
+<pre><span class="keyword">module</span> <a href="Expr_smt.Atom.html">Atom</a>: <code class="code">sig</code> <a href="Expr_smt.Atom.html">..</a> <code class="code">end</code></pre>
+<pre><span class="keyword">module</span> <a href="Expr_smt.Formula.html">Formula</a>: <code class="type"><a href="Tseitin.S.html">Tseitin.S</a></code><code class="type">  with type atom = atom</code></pre></body></html>

@@ -1,0 +1,587 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="Up" href="Solver_types.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Hashcons" rel="Chapter" href="Hashcons.html">
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
+<link title="Sat" rel="Chapter" href="Sat.html">
+<link title="Type_sat" rel="Chapter" href="Type_sat.html">
+<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
+<link title="Smt" rel="Chapter" href="Smt.html">
+<link title="Type_smt" rel="Chapter" href="Type_smt.html">
+<link title="Unionfind" rel="Chapter" href="Unionfind.html">
+<link title="Eclosure" rel="Chapter" href="Eclosure.html">
+<link title="Mcsat" rel="Chapter" href="Mcsat.html">
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><link title="Type definitions" rel="Section" href="#2_Typedefinitions">
+<link title="Elements" rel="Section" href="#2_Elements">
+<link title="Variables, Litterals & Clauses " rel="Section" href="#2_VariablesLitteralsClauses">
+<link title="Clause names" rel="Section" href="#2_Clausenames">
+<link title="Printing" rel="Section" href="#2_Printing">
+<title>Solver_types.S</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Solver_types.html" title="Solver_types">Up</a>
+&nbsp;</div>
+<h1>Module type <a href="type_Solver_types.S.html">Solver_types.S</a></h1>
+
+<pre><span class="keyword">module type</span> S = <code class="type"><a href="Solver_types_intf.S.html">Solver_types_intf.S</a></code></pre><hr width="100%">
+<br>
+The signatures of clauses used in the Solver.<br>
+
+<pre><span id="VALmcsat"><span class="keyword">val</span> mcsat</span> : <code class="type">bool</code></pre><br>
+<h2 id="2_Typedefinitions">Type definitions</h2><br>
+
+<pre><span id="TYPEterm"><span class="keyword">type</span> <code class="type"></code>term</span> </pre>
+
+
+<pre><span id="TYPEformula"><span class="keyword">type</span> <code class="type"></code>formula</span> </pre>
+
+
+<pre><span id="TYPEproof"><span class="keyword">type</span> <code class="type"></code>proof</span> </pre>
+<div class="info ">
+The types of terms, formulas and proofs. All of these are user-provided.<br>
+</div>
+
+
+<pre><code><span id="TYPElit"><span class="keyword">type</span> <code class="type"></code>lit</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTlit.lid">lid</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Unique identifier<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTlit.term">term</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEterm">term</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Wrapped term<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTlit.l_level">l_level</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Decision level of the assignment<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTlit.l_weight">l_weight</span>&nbsp;: <code class="type">float</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Weight (for the heap)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTlit.assigned">assigned</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEterm">term</a> option</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Assignment<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+<div class="info ">
+Wrapper type for literals, i.e. theory terms (for mcsat only).<br>
+</div>
+
+
+<pre><code><span id="TYPEvar"><span class="keyword">type</span> <code class="type"></code>var</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTvar.vid">vid</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Unique identifier<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTvar.pa">pa</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Link for the positive atom<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTvar.na">na</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Link for the negative atom<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTvar.seen">seen</span>&nbsp;: <code class="type">bool</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Boolean used during propagation<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTvar.v_level">v_level</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Level of decision/propagation<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTvar.v_weight">v_weight</span>&nbsp;: <code class="type">float</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Variable weight (for the heap)<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTvar.v_assignable">v_assignable</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPElit">lit</a> list option</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+In mcsat, the list of lits that wraps subterms of the formula wrapped.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTvar.reason">reason</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEreason">reason</a> option</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The reason for propagation/decision of the literal<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+
+
+<pre><code><span id="TYPEatom"><span class="keyword">type</span> <code class="type"></code>atom</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTatom.aid">aid</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Unique identifier<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTatom.var">var</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEvar">var</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Link for the parent variable<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTatom.neg">neg</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Link for the negation of the atom<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTatom.lit">lit</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEformula">formula</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Wrapped formula<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTatom.is_true">is_true</span>&nbsp;: <code class="type">bool</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Is the atom true ? Conversely, the atom
+                                        is false iff a.neg.is_true<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTatom.watched">watched</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEclause">clause</a> Vec.t</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The vector of clauses that watch this atom<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+<div class="info ">
+Atoms and variables wrap theory formulas. They exist in the form of
+      triplet: a variable and two atoms. For a formula <code class="code">f</code> in normal form,
+      the variable v points to the positive atom <code class="code">a</code> which wraps <code class="code">f</code>, while
+      <code class="code">a.neg</code> wraps the theory negation of <code class="code">f</code>.<br>
+</div>
+
+
+<pre><code><span id="TYPEclause"><span class="keyword">type</span> <code class="type"></code>clause</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTclause.name">name</span>&nbsp;: <code class="type">string</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Clause name, mainly for printing, unique.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTclause.tag">tag</span>&nbsp;: <code class="type">int option</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+User-provided tag for clauses.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTclause.atoms">atoms</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a> array</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The atoms that constitute the clause.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTclause.cpremise">cpremise</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEpremise">premise</a></code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The premise of the clause, i.e. the justification
+                                    of why the clause must be satisfied.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTclause.activity">activity</span>&nbsp;: <code class="type">float</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Clause activity, used for the heap heuristics.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTclause.attached">attached</span>&nbsp;: <code class="type">bool</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Is the clause attached, i.e. does it watch literals.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTclause.visited">visited</span>&nbsp;: <code class="type">bool</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Boolean used during propagation and proof generation.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+<div class="info ">
+The type of clauses. Each clause generated should be true, i.e. enforced
+      by the current problem (for more information, see the cpremise field).<br>
+</div>
+
+
+<pre><code><span id="TYPEreason"><span class="keyword">type</span> <code class="type"></code>reason</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTreason.Decision"><span class="constructor">Decision</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The atom has been decided by the sat solver<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTreason.Bcp"><span class="constructor">Bcp</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPEclause">clause</a></code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The atom has been propagated by the given clause<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTreason.Semantic"><span class="constructor">Semantic</span></span> <span class="keyword">of</span> <code class="type">int</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The atom has been propagated by the theory at the given level.
+                          TODO: remove the int argument, as we should use the atom's level<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+<div class="info ">
+Reasons of propagation/decision of atoms.<br>
+</div>
+
+
+<pre><code><span id="TYPEpremise"><span class="keyword">type</span> <code class="type"></code>premise</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTpremise.Hyp"><span class="constructor">Hyp</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The clause is a hypothesis, provided by the user.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTpremise.Local"><span class="constructor">Local</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The clause is a 1-atom clause,
+                                  where the atom is a local assumption<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTpremise.Lemma"><span class="constructor">Lemma</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPEproof">proof</a></code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The clause is a theory-provided tautology, with
+                                  the given proof.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTpremise.History"><span class="constructor">History</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPEclause">clause</a> list</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The clause can be obtained by resolution of the clauses
+                                  in the list. For a premise <code class="code">History [a_1 :: ... :: a_n]</code>
+                                  the clause is obtained by performing resolution of
+                                  <code class="code">a_1</code> with <code class="code">a_2</code>, and then performing a resolution step between
+                                  the result and <code class="code">a_3</code>, etc...
+                                  Of course, each of the clause <code class="code">a_i</code> also has its own premise.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+<div class="info ">
+Premises for clauses. Indeed each clause generated during a run of the solver
+      should be satisfied, the premise is the justification of why it should be
+      satisfied by the solver.<br>
+</div>
+
+
+<pre><code><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.Lit"><span class="constructor">Lit</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPElit">lit</a></code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTt.Atom"><span class="constructor">Atom</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a></code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Either a lit of an atom<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+<div class="info ">
+<h2 id="2_Decisionsandpropagations">Decisions and propagations</h2><br>
+</div>
+
+
+<pre><span id="VALof_lit"><span class="keyword">val</span> of_lit</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPElit">lit</a> -> <a href="Solver_types_intf.S.html#TYPEt">t</a></code></pre>
+<pre><span id="VALof_atom"><span class="keyword">val</span> of_atom</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a> -> <a href="Solver_types_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+Constructors and destructors<br>
+</div>
+<br>
+<h2 id="2_Elements">Elements</h2><br>
+
+<pre><code><span id="TYPEelt"><span class="keyword">type</span> <code class="type"></code>elt</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTelt.E_lit"><span class="constructor">E_lit</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPElit">lit</a></code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTelt.E_var"><span class="constructor">E_var</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPEvar">var</a></code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Either a lit of a var<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><span id="VALnb_elt"><span class="keyword">val</span> nb_elt</span> : <code class="type">unit -> int</code></pre>
+<pre><span id="VALget_elt"><span class="keyword">val</span> get_elt</span> : <code class="type">int -> <a href="Solver_types_intf.S.html#TYPEelt">elt</a></code></pre>
+<pre><span id="VALiter_elt"><span class="keyword">val</span> iter_elt</span> : <code class="type">(<a href="Solver_types_intf.S.html#TYPEelt">elt</a> -> unit) -> unit</code></pre><div class="info ">
+Read access to the vector of variables created<br>
+</div>
+
+<pre><span id="VALelt_of_lit"><span class="keyword">val</span> elt_of_lit</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPElit">lit</a> -> <a href="Solver_types_intf.S.html#TYPEelt">elt</a></code></pre>
+<pre><span id="VALelt_of_var"><span class="keyword">val</span> elt_of_var</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEvar">var</a> -> <a href="Solver_types_intf.S.html#TYPEelt">elt</a></code></pre><div class="info ">
+Constructors &amp; destructor for elements<br>
+</div>
+
+<pre><span id="VALget_elt_id"><span class="keyword">val</span> get_elt_id</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEelt">elt</a> -> int</code></pre>
+<pre><span id="VALget_elt_level"><span class="keyword">val</span> get_elt_level</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEelt">elt</a> -> int</code></pre>
+<pre><span id="VALget_elt_weight"><span class="keyword">val</span> get_elt_weight</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEelt">elt</a> -> float</code></pre>
+<pre><span id="VALset_elt_level"><span class="keyword">val</span> set_elt_level</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEelt">elt</a> -> int -> unit</code></pre>
+<pre><span id="VALset_elt_weight"><span class="keyword">val</span> set_elt_weight</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEelt">elt</a> -> float -> unit</code></pre><div class="info ">
+Accessors for elements<br>
+</div>
+<br>
+<h2 id="2_VariablesLitteralsClauses">Variables, Litterals &amp; Clauses </h2><br>
+
+<pre><span id="VALdummy_var"><span class="keyword">val</span> dummy_var</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEvar">var</a></code></pre>
+<pre><span id="VALdummy_atom"><span class="keyword">val</span> dummy_atom</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a></code></pre>
+<pre><span id="VALdummy_clause"><span class="keyword">val</span> dummy_clause</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEclause">clause</a></code></pre><div class="info ">
+Dummy values for use in vector dummys<br>
+</div>
+
+<pre><span id="VALadd_term"><span class="keyword">val</span> add_term</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEterm">term</a> -> <a href="Solver_types_intf.S.html#TYPElit">lit</a></code></pre><div class="info ">
+Returns the variable associated with the term<br>
+</div>
+
+<pre><span id="VALadd_atom"><span class="keyword">val</span> add_atom</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEformula">formula</a> -> <a href="Solver_types_intf.S.html#TYPEatom">atom</a></code></pre><div class="info ">
+Returns the atom associated with the given formula<br>
+</div>
+
+<pre><span id="VALmake_boolean_var"><span class="keyword">val</span> make_boolean_var</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEformula">formula</a> -> <a href="Solver_types_intf.S.html#TYPEvar">var</a> * <a href="Formula_intf.html#TYPEnegated">Formula_intf.negated</a></code></pre><div class="info ">
+Returns the variable linked with the given formula, and whether the atom associated with the formula
+      is <code class="code">var.pa</code> or <code class="code">var.na</code><br>
+</div>
+
+<pre><span id="VALempty_clause"><span class="keyword">val</span> empty_clause</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEclause">clause</a></code></pre><div class="info ">
+The empty clause<br>
+</div>
+
+<pre><span id="VALmake_clause"><span class="keyword">val</span> make_clause</span> : <code class="type">?tag:int -><br>       string -><br>       <a href="Solver_types_intf.S.html#TYPEatom">atom</a> list -><br>       <a href="Solver_types_intf.S.html#TYPEpremise">premise</a> -> <a href="Solver_types_intf.S.html#TYPEclause">clause</a></code></pre><div class="info ">
+<code class="code">make_clause name atoms size premise</code> creates a clause with the given attributes.<br>
+</div>
+<br>
+<h2 id="2_Clausenames">Clause names</h2><br>
+
+<pre><span id="VALfresh_name"><span class="keyword">val</span> fresh_name</span> : <code class="type">unit -> string</code></pre>
+<pre><span id="VALfresh_lname"><span class="keyword">val</span> fresh_lname</span> : <code class="type">unit -> string</code></pre>
+<pre><span id="VALfresh_tname"><span class="keyword">val</span> fresh_tname</span> : <code class="type">unit -> string</code></pre>
+<pre><span id="VALfresh_hname"><span class="keyword">val</span> fresh_hname</span> : <code class="type">unit -> string</code></pre><div class="info ">
+Fresh names for clauses<br>
+</div>
+<br>
+<h2 id="2_Printing">Printing</h2><br>
+
+<pre><span id="VALprint_lit"><span class="keyword">val</span> print_lit</span> : <code class="type">Format.formatter -> <a href="Solver_types_intf.S.html#TYPElit">lit</a> -> unit</code></pre>
+<pre><span id="VALprint_atom"><span class="keyword">val</span> print_atom</span> : <code class="type">Format.formatter -> <a href="Solver_types_intf.S.html#TYPEatom">atom</a> -> unit</code></pre>
+<pre><span id="VALprint_clause"><span class="keyword">val</span> print_clause</span> : <code class="type">Format.formatter -> <a href="Solver_types_intf.S.html#TYPEclause">clause</a> -> unit</code></pre><div class="info ">
+Pretty printing functions for atoms and clauses<br>
+</div>
+
+<pre><span id="VALpp"><span class="keyword">val</span> pp</span> : <code class="type">Format.formatter -> <a href="Solver_types_intf.S.html#TYPEt">t</a> -> unit</code></pre>
+<pre><span id="VALpp_lit"><span class="keyword">val</span> pp_lit</span> : <code class="type">Format.formatter -> <a href="Solver_types_intf.S.html#TYPElit">lit</a> -> unit</code></pre>
+<pre><span id="VALpp_atom"><span class="keyword">val</span> pp_atom</span> : <code class="type">Format.formatter -> <a href="Solver_types_intf.S.html#TYPEatom">atom</a> -> unit</code></pre>
+<pre><span id="VALpp_clause"><span class="keyword">val</span> pp_clause</span> : <code class="type">Format.formatter -> <a href="Solver_types_intf.S.html#TYPEclause">clause</a> -> unit</code></pre>
+<pre><span id="VALpp_dimacs"><span class="keyword">val</span> pp_dimacs</span> : <code class="type">Format.formatter -> <a href="Solver_types_intf.S.html#TYPEclause">clause</a> -> unit</code></pre>
+<pre><span id="VALpp_reason"><span class="keyword">val</span> pp_reason</span> : <code class="type">Format.formatter -> int * <a href="Solver_types_intf.S.html#TYPEreason">reason</a> option -> unit</code></pre><div class="info ">
+Debug function for atoms and clauses (very verbose)<br>
+</div>
+</body></html>

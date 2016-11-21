@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Theory_intf.html">
+<link rel="next" href="Expr_intf.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Hashcons" rel="Chapter" href="Hashcons.html">
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
+<link title="Sat" rel="Chapter" href="Sat.html">
+<link title="Type_sat" rel="Chapter" href="Type_sat.html">
+<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
+<link title="Smt" rel="Chapter" href="Smt.html">
+<link title="Type_smt" rel="Chapter" href="Type_smt.html">
+<link title="Unionfind" rel="Chapter" href="Unionfind.html">
+<link title="Eclosure" rel="Chapter" href="Eclosure.html">
+<link title="Mcsat" rel="Chapter" href="Mcsat.html">
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Plugin_intf</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Theory_intf.html" title="Theory_intf">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Expr_intf.html" title="Expr_intf">Next</a>
+</div>
+<h1>Module <a href="type_Plugin_intf.html">Plugin_intf</a></h1>
+
+<pre><span class="keyword">module</span> Plugin_intf: <code class="code">sig</code> <a href="Plugin_intf.html">..</a> <code class="code">end</code></pre><div class="info module top">
+The type of evaluation results, either the given formula cannot be
+    evaluated, or it can thanks to assignment. In that case, the level
+    of the evaluation is the maximum of levels of assignemnts needed
+    to evaluate the given formula.<br>
+</div>
+<hr width="100%">
+
+<pre><code><span id="TYPEeval_res"><span class="keyword">type</span> <code class="type"></code>eval_res</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTeval_res.Valued"><span class="constructor">Valued</span></span> <span class="keyword">of</span> <code class="type">bool * int</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTeval_res.Unknown"><span class="constructor">Unknown</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The type of evaluation results, either the given formula cannot be
+    evaluated, or it can thanks to assignment. In that case, the level
+    of the evaluation is the maximum of levels of assignemnts needed
+    to evaluate the given formula.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><code><span id="TYPEres"><span class="keyword">type</span> <code class="type">('formula, 'proof)</code> res</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTres.Sat"><span class="constructor">Sat</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTres.Unsat"><span class="constructor">Unsat</span></span> <span class="keyword">of</span> <code class="type">'formula list * 'proof</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Type returned by the theory, either the current set of assumptions is satisfiable,
+    or it is not, in which case a tautological clause (hopefully minimal) is returned.
+    Formulas in the unsat clause must come from the current set of assumptions, i.e
+    must have been encountered in a slice.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
+<pre><code><span id="TYPEassumption"><span class="keyword">type</span> <code class="type">('term, 'formula)</code> assumption</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTassumption.Lit"><span class="constructor">Lit</span></span> <span class="keyword">of</span> <code class="type">'formula</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTassumption.Assign"><span class="constructor">Assign</span></span> <span class="keyword">of</span> <code class="type">'term * 'term * int</code></code></td>
+
+</tr></table>
+
+
+<br>
+Asusmptions made by the core SAT solver. Can be either a formula, or an assignment.
+    Assignemnt are given a level.<br>
+
+<pre><code><span id="TYPEslice"><span class="keyword">type</span> <code class="type">('term, 'formula, 'proof)</code> slice</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.start">start</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.length">length</span>&nbsp;: <code class="type">int</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.get">get</span>&nbsp;: <code class="type">int -> ('term, 'formula) <a href="Plugin_intf.html#TYPEassumption">assumption</a></code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.push">push</span>&nbsp;: <code class="type">'formula list -> 'proof -> unit</code>;</code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.propagate">propagate</span>&nbsp;: <code class="type">'formula -> int -> unit</code>;</code></td>
+
+</tr></table>
+}
+
+<div class="info ">
+The type for a slice of litterals to assume/propagate in the theory.
+    <code class="code">get</code> operations should only be used for integers <code class="code"> start &lt;= i &lt; start + length</code>.
+    <code class="code">push clause proof</code> allows to add a tautological clause to the sat solver.<br>
+</div>
+
+
+<pre><span class="keyword">module type</span> <a href="Plugin_intf.S.html">S</a> = <code class="code">sig</code> <a href="Plugin_intf.S.html">..</a> <code class="code">end</code></pre></body></html>
