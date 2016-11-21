@@ -28,9 +28,9 @@ module type S = sig
     term : term;                    (** Wrapped term *)
     mutable l_level : int;          (** Decision level of the assignment *)
     mutable l_weight : float;       (** Weight (for the heap) *)
-    mutable assigned : term option; (** Assignement *)
+    mutable assigned : term option; (** Assignment *)
   }
-  (** Wrapper type for litterals, i.e theory terms (for mcsat only). *)
+  (** Wrapper type for literals, i.e. theory terms (for mcsat only). *)
 
   type var = {
     vid : int;  (** Unique identifier *)
@@ -42,7 +42,7 @@ module type S = sig
     mutable v_assignable: lit list option;
     (** In mcsat, the list of lits that wraps subterms of the formula wrapped. *)
     mutable reason : reason option;
-    (** The reason for propagation/decision of the litteral *)
+    (** The reason for propagation/decision of the literal *)
   }
 
   and atom = {
@@ -66,10 +66,10 @@ module type S = sig
     mutable cpremise : premise; (** The premise of the clause, i.e. the justification
                                     of why the clause must be satisfied. *)
     mutable activity : float;   (** Clause activity, used for the heap heuristics. *)
-    mutable attached : bool;    (** Is the clause attached, i.e. does it watsh literals. *)
+    mutable attached : bool;    (** Is the clause attached, i.e. does it watch literals. *)
     mutable visited : bool;     (** Boolean used during propagation and proof generation. *)
   }
-  (** The type of clauses. Each clause generated should be true, i.e enforced
+  (** The type of clauses. Each clause generated should be true, i.e. enforced
       by the current problem (for more information, see the cpremise field). *)
 
   and reason =
@@ -87,8 +87,8 @@ module type S = sig
                                   the given proof. *)
     | History of clause list  (** The clause can be obtained by resolution of the clauses
                                   in the list. For a premise [History [a_1 :: ... :: a_n]]
-                                  the claus eis obtained by performing resolution of
-                                  [a_1] with [a_2], and then performin a resolution step between
+                                  the clause is obtained by performing resolution of
+                                  [a_1] with [a_2], and then performing a resolution step between
                                   the result and [a_3], etc...
                                   Of course, each of the clause [a_i] also has its own premise. *)
   (** Premises for clauses. Indeed each clause generated during a run of the solver
