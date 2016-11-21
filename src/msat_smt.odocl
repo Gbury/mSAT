@@ -1,17 +1,5 @@
 
+smt/Expr_smt
 smt/Smt
-
-# support
-smt/Cc
-smt/Cnf
-smt/Explanation
-smt/Expr
-smt/ID
-smt/Sat
-smt/Literal
-smt/Mcsat
-smt/Symbols
-smt/Term
-smt/Ty
+smt/Type_smt
 smt/Unionfind
-
