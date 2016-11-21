@@ -28,3 +28,20 @@ backend/Backend_intf
 
 # Auxiliary
 util/Hashcons
+
+
+# SAT solver frontend
+sat/Expr_sat
+sat/Sat
+sat/Type_sat
+
+# SMT solver frontend
+smt/Expr_smt
+smt/Smt
+smt/Type_smt
+smt/Unionfind
+
+# MCsat
+mcsat/Eclosure
+mcsat/Mcsat
+mcsat/Plugin_mcsat
