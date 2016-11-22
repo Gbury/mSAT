@@ -11,7 +11,6 @@ module T = Tseitin.Make(F)
 
 let (|>) x f = f x
 
-let p_check = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
 
@@ -28,8 +27,6 @@ let set_flag opt arg flag l =
 
 let usage = "Usage : test_api [options]"
 let argspec = Arg.align [
-    "-check", Arg.Set p_check,
-    " Build, check and print the proof (if output is set), if unsat";
     "-v", Arg.Int (fun i -> Log.set_debug i),
     "<lvl> Sets the debug verbose level";
   ]
