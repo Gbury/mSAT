@@ -710,34 +710,38 @@ module Make
       in
       Log.debugf 4 "New clause: @[<hov>%a@]" (fun k->k St.pp_clause clause);
       Array.iter (fun x -> insert_var_order (elt_of_var x.var)) clause.atoms;
-      Vec.push vec clause;
       match atoms with
       | [] ->
+        (* Report_unsat will raise, and the current clause will be lost if we do not
+           store it somewhere. Since the proof search will end, any of env.clauses_to_add
+           or env.clauses_root is adequate. *)
+        Stack.push clause env.clauses_root;
         report_unsat clause
       | [a]   ->
-        Log.debugf 5 "New unit clause, propagating : %a" (fun k->k St.pp_atom a);
         cancel_until (base_level ());
         if a.neg.is_true then begin
           (* Since we cannot propagate the atom [a], in order to not lose
              the information that [a] must be true, we add clause to the list
-             of clauses to add, so that it will be e-examined later.
-             Also, in order to avoid it being twice in a clause vector, we pop
-             the vector where it was added. *)
+             of clauses to add, so that it will be e-examined later. *)
+          Log.debugf 5 "Unit clause, adding to clauses to add" (fun k -> k);
           Stack.push clause env.clauses_to_add;
-          Vec.pop vec;
           report_unsat clause
         end else if a.is_true then begin
           (* If the atom is already true, then it should be because of a local hyp.
              However it means we can't propagate it at level 0. In order to not lose
              that information, we store the clause in a stack of clauses that we will
              add to the solver at the next pop. *)
+          Log.debugf 5 "Unit clause, adding to root clauses" (fun k -> k);
           assert (0 < a.var.v_level && a.var.v_level <= base_level ());
           Stack.push clause env.clauses_root;
-          Vec.pop vec;
           ()
-        end else
+        end else begin
+          Log.debugf 5 "Unit clause, propagating: %a" (fun k->k St.pp_atom a);
+          Vec.push vec clause;
           enqueue_bool a ~level:0 (Bcp clause)
+        end
       | a::b::_ ->
+        Vec.push vec clause;
         if a.neg.is_true then begin
           (* Atoms need to be sorted in decreasing order of decision level,
              or we might watch the wrong literals. *)
