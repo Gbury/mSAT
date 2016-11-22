@@ -22,6 +22,12 @@ module Make
   exception Restart
   exception Conflict of clause
 
+  (* Log levels *)
+  let error = 1
+  let warn = 3
+  let info = 5
+  let debug = 50
+
   (* Singleton type containing the current state *)
   type env = {
 
@@ -362,7 +368,7 @@ module Make
   *)
   let attach_clause c =
     assert (not c.attached);
-    Log.debugf 60 "Attaching %a" (fun k -> k St.pp_clause c);
+    Log.debugf debug "Attaching %a" (fun k -> k St.pp_clause c);
     Vec.push c.atoms.(0).neg.watched c;
     Vec.push c.atoms.(1).neg.watched c;
     c.attached <- true;
@@ -379,9 +385,9 @@ module Make
     assert (lvl >= base_level ());
     (* Nothing to do if we try to backtrack to a non-existent level. *)
     if decision_level () <= lvl then
-      Log.debugf 5 "Already at level <= %d" (fun k -> k lvl)
+      Log.debugf debug "Already at level <= %d" (fun k -> k lvl)
     else begin
-      Log.debugf 5 "Backtracking to lvl %d" (fun k -> k lvl);
+      Log.debugf info "Backtracking to lvl %d" (fun k -> k lvl);
       (* We set the head of the solver and theory queue to what it was. *)
       let head = ref (Vec.get env.elt_levels lvl) in
       env.elt_head <- !head;
@@ -434,7 +440,7 @@ module Make
   (* Unsatisfiability is signaled through an exception, since it can happen
      in multiple places (adding new clauses, or solving for instance). *)
   let report_unsat ({atoms=atoms} as confl) : _ =
-    Log.debugf 5 "@[Unsat conflict: %a@]" (fun k -> k St.pp_clause confl);
+    Log.debugf info "@[Unsat conflict: %a@]" (fun k -> k St.pp_clause confl);
     env.unsat_conflict <- Some confl;
     raise Unsat
 
@@ -452,13 +458,23 @@ module Make
           if history = [] then r
           (* no simplification has been done, so [cl] is actually a clause with only
              [a], so it is a valid reason for propagating [a]. *)
-          else
+          else begin
             (* Clauses in [history] have been used to simplify [cl] into a clause [tmp_cl]
                with only one formula (which is [a]). So we explicitly create that clause
                and set it as the cause for the propagation of [a], that way we can
                rebuild the whole resolution tree when we want to prove [a]. *)
-            Bcp (make_clause (fresh_tname ()) l (History (cl :: history)))
-        | _ -> assert false
+            let c' = make_clause (fresh_lname ()) l (History (cl :: history)) in
+            Log.debugf debug "Simplified reason: @[<v>%a@,%a@]"
+              (fun k -> k St.pp_clause cl St.pp_clause c');
+              Bcp c'
+          end
+        | _ ->
+          Log.debugf error "@[<v 2>Failed at reason simplification:@,%a@,%a@]"
+            (fun k ->
+               k (Vec.print ~sep:"" St.pp_atom)
+                 (Vec.from_list l (List.length l) St.dummy_atom)
+                 St.pp_clause cl);
+          assert false
       end
     | r -> r
 
@@ -466,7 +482,7 @@ module Make
      Wrapper function for adding a new propagated formula. *)
   let enqueue_bool a ~level:lvl reason : unit =
     if a.neg.is_true then begin
-      Log.debugf 0 "Trying to enqueue a false literal: %a" (fun k->k St.pp_atom a);
+      Log.debugf error "Trying to enqueue a false literal: %a" (fun k->k St.pp_atom a);
       assert false
     end;
     assert (not a.is_true && a.var.v_level < 0 &&
@@ -479,14 +495,14 @@ module Make
     a.var.v_level <- lvl;
     a.var.reason <- Some reason;
     Vec.push env.elt_queue (of_atom a);
-    Log.debugf 20 "Enqueue (%d): %a"
+    Log.debugf debug "Enqueue (%d): %a"
       (fun k->k (Vec.size env.elt_queue) pp_atom a)
 
   (* MCsat semantic assignment *)
   let enqueue_assign l value lvl =
     match l.assigned with
     | Some _ ->
-      Log.debugf 0 "Trying to assign an already assigned literal: %a"
+      Log.debugf error "Trying to assign an already assigned literal: %a"
         (fun k -> k St.pp_lit l);
       assert false
     | None ->
@@ -494,7 +510,7 @@ module Make
       l.assigned <- Some value;
       l.l_level <- lvl;
       Vec.push env.elt_queue (of_lit l);
-      Log.debugf 20 "Enqueue (%d): %a"
+      Log.debugf debug "Enqueue (%d): %a"
         (fun k -> k (Vec.size env.elt_queue) pp_lit l)
 
   (* evaluate an atom for MCsat, if it's not assigned
@@ -678,6 +694,7 @@ module Make
      - report unsat if conflict at level 0
   *)
   let add_boolean_conflict (confl:clause): unit =
+    Log.debugf info "Boolean conflict: %a" (fun k -> k St.pp_clause confl);
     env.next_decision <- None;
     env.conflicts <- env.conflicts + 1;
     assert (decision_level() >= base_level ());
@@ -691,7 +708,7 @@ module Make
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
   let add_clause ?(force=false) (init:clause) : unit =
-    Log.debugf 90 "Adding clause: @[<hov>%a@]" (fun k -> k St.pp_clause init);
+    Log.debugf debug "Adding clause: @[<hov>%a@]" (fun k -> k St.pp_clause init);
     let vec = match init.cpremise with
       | Hyp -> env.clauses_hyps
       | Local -> env.clauses_temp
@@ -708,7 +725,7 @@ module Make
         )
         else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
       in
-      Log.debugf 4 "New clause: @[<hov>%a@]" (fun k->k St.pp_clause clause);
+      Log.debugf info "New clause: @[<hov>%a@]" (fun k->k St.pp_clause clause);
       Array.iter (fun x -> insert_var_order (elt_of_var x.var)) clause.atoms;
       match atoms with
       | [] ->
@@ -723,7 +740,7 @@ module Make
           (* Since we cannot propagate the atom [a], in order to not lose
              the information that [a] must be true, we add clause to the list
              of clauses to add, so that it will be e-examined later. *)
-          Log.debugf 5 "Unit clause, adding to clauses to add" (fun k -> k);
+          Log.debugf debug "Unit clause, adding to clauses to add" (fun k -> k);
           Stack.push clause env.clauses_to_add;
           report_unsat clause
         end else if a.is_true then begin
@@ -731,12 +748,12 @@ module Make
              However it means we can't propagate it at level 0. In order to not lose
              that information, we store the clause in a stack of clauses that we will
              add to the solver at the next pop. *)
-          Log.debugf 5 "Unit clause, adding to root clauses" (fun k -> k);
+          Log.debugf debug "Unit clause, adding to root clauses" (fun k -> k);
           assert (0 < a.var.v_level && a.var.v_level <= base_level ());
           Stack.push clause env.clauses_root;
           ()
         end else begin
-          Log.debugf 5 "Unit clause, propagating: %a" (fun k->k St.pp_atom a);
+          Log.debugf debug "Unit clause, propagating: %a" (fun k->k St.pp_atom a);
           Vec.push vec clause;
           enqueue_bool a ~level:0 (Bcp clause)
         end
@@ -760,7 +777,7 @@ module Make
         end
     with Trivial ->
       Vec.push vec init;
-      Log.debugf 5 "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init)
+      Log.debugf info "Trivial clause ignored : @[%a@]" (fun k->k St.pp_clause init)
 
   let flush_clauses () =
     if not (Stack.is_empty env.clauses_to_add) then begin
@@ -874,7 +891,7 @@ module Make
   let slice_push (l:formula list) (lemma:proof): unit =
     let atoms = List.rev_map (fun x -> new_atom x) l in
     let c = make_clause (fresh_tname ()) atoms (Lemma lemma) in
-    Log.debugf 10 "Pushing clause %a" (fun k->k St.pp_clause c);
+    Log.debugf info "Pushing clause %a" (fun k->k St.pp_clause c);
     (* do not add the clause yet, wait for the theory propagation to
        be done *)
     Stack.push c env.clauses_to_add
@@ -1021,6 +1038,7 @@ module Make
         if Vec.size env.elt_queue = St.nb_elt ()
         then raise Sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
+          Log.debugf info "Restarting..." (fun k -> k);
           cancel_until (base_level ());
           raise Restart
         end;
@@ -1086,6 +1104,7 @@ module Make
               | Plugin_intf.Unsat (l, p) ->
                 let atoms = List.rev_map new_atom l in
                 let c = make_clause (fresh_tname ()) atoms (Lemma p) in
+                Log.debugf info "Theory conflict clause: %a" (fun k -> k St.pp_clause c);
                 Stack.push c env.clauses_to_add
             end;
             if Stack.is_empty env.clauses_to_add then raise Sat
@@ -1103,10 +1122,17 @@ module Make
 
   (* create a factice decision level for local assumptions *)
   let push (): unit =
+    Log.debugf debug "Pushing a new user level" (fun k -> k);
     cancel_until (base_level ());
+    Log.debugf debug "@[<v>Status:@,@[<hov 2>trail: %d - %d@,%a@]"
+      (fun k -> k env.elt_head env.th_head (Vec.print ~sep:"" St.pp) env.elt_queue);
     begin match propagate () with
-      | Some confl -> report_unsat confl
+      | Some confl ->
+        report_unsat confl
       | None ->
+        Log.debugf debug "@[<v>Current trail:@,@[<hov>%a@]@]"
+          (fun k -> k (Vec.print ~sep:"" St.pp) env.elt_queue);
+        Log.debugf info "Creating new user level" (fun k -> k);
         new_decision_level ();
         Vec.push env.user_levels (Vec.size env.clauses_temp);
         assert (decision_level () = base_level ())
@@ -1114,8 +1140,10 @@ module Make
 
   (* pop the last factice decision level *)
   let pop (): unit =
-    if base_level () = 0 then ()
+    if base_level () = 0 then
+      Log.debugf warn "Cannot pop (already at level 0)" (fun k -> k)
     else begin
+      Log.debugf info "Popping user level" (fun k -> k);
       assert (base_level () > 0);
       env.unsat_conflict <- None;
       let n = Vec.last env.user_levels in
@@ -1134,12 +1162,12 @@ module Make
   let local l =
     let aux lit =
       let a = atom lit in
-      Log.debugf 10 "Local assumption: @[%a@]" (fun k-> k pp_atom a);
+      Log.debugf info "Local assumption: @[%a@]" (fun k-> k pp_atom a);
       assert (decision_level () = base_level ());
       if a.is_true then ()
       else
         let c = make_clause (fresh_hname ()) [a] Local in
-        Log.debugf 10 "Temp clause: @[%a@]" (fun k -> k pp_clause c);
+        Log.debugf debug "Temp clause: @[%a@]" (fun k -> k pp_clause c);
         Vec.push env.clauses_temp c;
         if a.neg.is_true then begin
           (* conflict between assumptions: UNSAT *)
@@ -1151,18 +1179,26 @@ module Make
           (* make a decision, propagate *)
           let level = decision_level() in
           enqueue_bool a ~level (Bcp c);
-      end
+        end
     in
     assert (base_level () > 0);
     match env.unsat_conflict with
     | None ->
+      Log.debugf info "Adding local assumption" (fun k -> k);
       cancel_until (base_level ());
       List.iter aux l
-    | Some _ -> ()
+    | Some _ ->
+      Log.debugf warn "Cannot add local assumption (already unsat)" (fun k -> k)
 
   (* Check satisfiability *)
   let check_clause c =
-    Array_util.exists (fun a -> a.is_true) c.atoms
+    let res = Array_util.exists (fun a -> a.is_true) c.atoms in
+    if not res then begin
+      Log.debugf debug "Clause not satisfied: @[<hov>%a@]"
+        (fun k -> k St.pp_clause c);
+      false
+    end else
+      true
 
   let check_vec v =
     Vec.for_all check_clause v

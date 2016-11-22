@@ -19,6 +19,12 @@ module Make(St : Solver_types.S) = struct
   exception Insuficient_hyps
   exception Resolution_error of string
 
+  (* Log levels *)
+  let error = 1
+  let warn = 3
+  let info = 10
+  let debug = 80
+
   (* Misc functions *)
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
   let compare_atoms a b = Pervasives.compare St.(a.aid) St.(b.aid)
@@ -91,17 +97,17 @@ module Make(St : Solver_types.S) = struct
     assert St.(a.var.v_level >= 0);
     match St.(a.var.reason) with
     | Some St.Bcp c ->
-      Log.debugf 50 "Analysing: @[%a@ %a@]"
+      Log.debugf debug "Analysing: @[%a@ %a@]"
         (fun k -> k St.pp_atom a St.pp_clause c);
       if Array.length c.St.atoms = 1 then begin
-        Log.debugf 30 "Old reason: @[%a@]" (fun k -> k St.pp_atom a);
+        Log.debugf debug "Old reason: @[%a@]" (fun k -> k St.pp_atom a);
         c
       end else begin
         assert (a.St.neg.St.is_true);
         let r = St.History (c :: (Array.fold_left aux [] c.St.atoms)) in
         let c' = St.make_clause (fresh_pcl_name ()) [a.St.neg] r in
         a.St.var.St.reason <- Some St.(Bcp c');
-        Log.debugf 30 "New reason: @[%a@ %a@]"
+        Log.debugf debug "New reason: @[%a@ %a@]"
           (fun k -> k St.pp_atom a St.pp_clause c');
         c'
       end
@@ -110,10 +116,10 @@ module Make(St : Solver_types.S) = struct
   let prove_unsat conflict =
     if Array.length conflict.St.atoms = 0 then conflict
     else begin
-      Log.debugf 3 "Proving unsat from: @[%a@]" (fun k -> k St.pp_clause conflict);
+      Log.debugf info "Proving unsat from: @[%a@]" (fun k -> k St.pp_clause conflict);
       let l = Array.fold_left (fun acc a -> set_atom_proof a :: acc) [] conflict.St.atoms in
       let res = St.make_clause (fresh_pcl_name ()) [] (St.History (conflict :: l)) in
-      Log.debugf 5 "Proof found: @[%a@]" (fun k -> k St.pp_clause res);
+      Log.debugf info "Proof found: @[%a@]" (fun k -> k St.pp_clause res);
       res
     end
 
@@ -137,7 +143,7 @@ module Make(St : Solver_types.S) = struct
 
   let rec chain_res (c, cl) = function
     | d :: r ->
-      Log.debugf 7 "  Resolving clauses : @[%a@\n%a@]"
+      Log.debugf debug "  Resolving clauses : @[%a@\n%a@]"
         (fun k -> k St.pp_clause c St.pp_clause d);
       let dl = to_list d in
       begin match resolve (merge cl dl) with
@@ -154,7 +160,7 @@ module Make(St : Solver_types.S) = struct
     | _ -> assert false
 
   let rec expand conclusion =
-    Log.debugf 5 "Expanding : @[%a@]" (fun k -> k St.pp_clause conclusion);
+    Log.debugf debug "Expanding : @[%a@]" (fun k -> k St.pp_clause conclusion);
     match conclusion.St.cpremise with
     | St.Lemma l ->
       {conclusion; step = Lemma l; }
