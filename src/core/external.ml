@@ -56,10 +56,10 @@ module Make
     | Sat of (St.term,St.formula) sat_state
     | Unsat of (St.clause,Proof.proof) unsat_state
 
-  let pp_all lvl =
+  let pp_all lvl status =
     Log.debugf lvl
-      "@[<v>Full resume:@,@[<hov 2>Trail:@\n%a@]@,@[<hov 2>Temp:@\n%a@]@,@[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,]@."
-      (fun k -> k
+      "@[<v>%s - Full resume:@,@[<hov 2>Trail:@\n%a@]@,@[<hov 2>Temp:@\n%a@]@,@[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,@]@."
+      (fun k -> k status
           (Vec.print ~sep:"" St.pp) (S.trail ())
           (Vec.print ~sep:"" St.pp_clause) (S.temp ())
           (Vec.print ~sep:"" St.pp_clause) (S.hyps ())
@@ -67,7 +67,7 @@ module Make
       )
 
   let mk_sat () : (_,_) sat_state =
-    pp_all 99;
+    pp_all 99 "SAT";
     let t = S.trail () in
     let iter f f' =
       Vec.iter (function
@@ -83,7 +83,7 @@ module Make
     }
 
   let mk_unsat () : (_,_) unsat_state =
-    pp_all 99;
+    pp_all 99 "UNSAT";
     let unsat_conflict () =
       match S.unsat_conflict () with
       | None -> assert false
