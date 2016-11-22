@@ -1006,7 +1006,14 @@ module Make
       match propagate () with
       | Some confl -> (* Conflict *)
         incr conflictC;
-        add_boolean_conflict confl
+        (* When the theory has raised Unsat, add_boolean_conflict
+           might 'forget' the initial conflict clause, and only add the
+           analyzed backtrack clause. So in those case, we use add_clause
+           to make sure the initial conflict clause is also added. *)
+        if confl.attached then
+          add_boolean_conflict confl
+        else
+          add_clause confl
 
       | None -> (* No Conflict *)
         assert (env.elt_head = Vec.size env.elt_queue);
