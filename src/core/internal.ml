@@ -383,8 +383,9 @@ module Make
     else begin
       Log.debugf 5 "Backtracking to lvl %d" (fun k -> k lvl);
       (* We set the head of the solver and theory queue to what it was. *)
-      env.elt_head <- Vec.get env.elt_levels lvl;
-      env.th_head <- env.elt_head;
+      let head = ref (Vec.get env.elt_levels lvl) in
+      env.elt_head <- !head;
+      env.th_head <- !head;
       (* Now we need to cleanup the vars that are not valid anymore
          (i.e to the right of elt_head in the queue. *)
       for c = env.elt_head to Vec.size env.elt_queue - 1 do
@@ -394,8 +395,8 @@ module Make
            a level lower than [lvl], in which case we just move it back. *)
         | Lit l ->
           if l.l_level <= lvl then begin
-            Vec.set env.elt_queue env.elt_head (of_lit l);
-            env.elt_head <- env.elt_head + 1
+            Vec.set env.elt_queue !head (of_lit l);
+            head := !head + 1
           end else begin
             l.assigned <- None;
             l.l_level <- -1;
@@ -404,11 +405,11 @@ module Make
         (* A variable is not true/false anymore, one of two things can happen: *)
         | Atom a ->
           if a.var.v_level <= lvl then begin
-            (* It is a semantic propagation, which can be late, and has a level
+            (* It is a late propagation, which has a level
                lower than where we backtrack, so we just move it to the head
                of the queue, to be propagated again. *)
-            Vec.set env.elt_queue env.elt_head (of_atom a);
-            env.elt_head <- env.elt_head + 1
+            Vec.set env.elt_queue !head (of_atom a);
+            head := !head + 1
           end else begin
             (* it is a result of bolean propagation, or a semantic propagation
                with a level higher than the level to which we backtrack,
@@ -423,7 +424,7 @@ module Make
       (* Recover the right theory state. *)
       Plugin.backtrack (Vec.get env.th_levels lvl);
       (* Resize the vectors according to their new size. *)
-      Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - env.elt_head);
+      Vec.shrink env.elt_queue ((Vec.size env.elt_queue) - !head);
       Vec.shrink env.elt_levels ((Vec.size env.elt_levels) - lvl);
       Vec.shrink env.th_levels ((Vec.size env.th_levels) - lvl);
     end;
