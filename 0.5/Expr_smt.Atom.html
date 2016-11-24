@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Expr_smt.Term.html">
+<link rel="next" href="Expr_smt.Formula.html">
+<link rel="Up" href="Expr_smt.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Hashcons" rel="Chapter" href="Hashcons.html">
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
+<link title="Sat" rel="Chapter" href="Sat.html">
+<link title="Type_sat" rel="Chapter" href="Type_sat.html">
+<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
+<link title="Smt" rel="Chapter" href="Smt.html">
+<link title="Type_smt" rel="Chapter" href="Type_smt.html">
+<link title="Unionfind" rel="Chapter" href="Unionfind.html">
+<link title="Eclosure" rel="Chapter" href="Eclosure.html">
+<link title="Mcsat" rel="Chapter" href="Mcsat.html">
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Expr_smt.Atom</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Expr_smt.Term.html" title="Expr_smt.Term">Previous</a>
+&nbsp;<a class="up" href="Expr_smt.html" title="Expr_smt">Up</a>
+&nbsp;<a class="post" href="Expr_smt.Formula.html" title="Expr_smt.Formula">Next</a>
+</div>
+<h1>Module <a href="type_Expr_smt.Atom.html">Expr_smt.Atom</a></h1>
+
+<pre><span class="keyword">module</span> Atom: <code class="code">sig</code> <a href="Expr_smt.Atom.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> = <code class="type"><a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a></code> </pre>
+
+
+<pre><span id="TYPEproof"><span class="keyword">type</span> <code class="type"></code>proof</span> = <code class="type">unit</code> </pre>
+<div class="info ">
+Type alias<br>
+</div>
+
+
+<pre><span id="VALhash"><span class="keyword">val</span> hash</span> : <code class="type"><a href="Expr_smt.Atom.html#TYPEt">t</a> -> int</code></pre>
+<pre><span id="VALequal"><span class="keyword">val</span> equal</span> : <code class="type"><a href="Expr_smt.Atom.html#TYPEt">t</a> -> <a href="Expr_smt.Atom.html#TYPEt">t</a> -> bool</code></pre>
+<pre><span id="VALcompare"><span class="keyword">val</span> compare</span> : <code class="type"><a href="Expr_smt.Atom.html#TYPEt">t</a> -> <a href="Expr_smt.Atom.html#TYPEt">t</a> -> int</code></pre><div class="info ">
+Usual hash/compare functions<br>
+</div>
+
+<pre><span id="VALprint"><span class="keyword">val</span> print</span> : <code class="type">Format.formatter -> <a href="Expr_smt.Atom.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+Printing functions<br>
+</div>
+
+<pre><span id="VALdummy"><span class="keyword">val</span> dummy</span> : <code class="type"><a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a></code></pre><div class="info ">
+A dummy atom, different from any other atom.<br>
+</div>
+
+<pre><span id="VALfresh"><span class="keyword">val</span> fresh</span> : <code class="type">unit -> <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a></code></pre><div class="info ">
+Create a fresh propositional atom.<br>
+</div>
+
+<pre><span id="VALeq"><span class="keyword">val</span> eq</span> : <code class="type"><a href="Expr_smt.html#TYPEterm">Expr_smt.term</a> -> <a href="Expr_smt.html#TYPEterm">Expr_smt.term</a> -> <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a></code></pre><div class="info ">
+Create an equality over two terms. The two given terms
+      must have the same type <code class="code">t</code>, which must be different from <a href="Expr_smt.Ty.html#VALprop"><code class="code">Expr_smt.Ty.prop</code></a><br>
+</div>
+
+<pre><span id="VALpred"><span class="keyword">val</span> pred</span> : <code class="type"><a href="Expr_smt.html#TYPEterm">Expr_smt.term</a> -> <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a></code></pre><div class="info ">
+Create a atom from a term. The given term must have type <a href="Expr_smt.Ty.html#VALprop"><code class="code">Expr_smt.Ty.prop</code></a><br>
+</div>
+
+<pre><span id="VALneg"><span class="keyword">val</span> neg</span> : <code class="type"><a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> -> <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a></code></pre><div class="info ">
+Returns the negation of the given atom<br>
+</div>
+
+<pre><span id="VALnorm"><span class="keyword">val</span> norm</span> : <code class="type"><a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> -> <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> * <a href="Formula_intf.html#TYPEnegated">Formula_intf.negated</a></code></pre><div class="info ">
+Normalization functions as required by msat.<br>
+</div>
+</body></html>

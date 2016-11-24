@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Mcsat.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Hashcons" rel="Chapter" href="Hashcons.html">
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
+<link title="Sat" rel="Chapter" href="Sat.html">
+<link title="Type_sat" rel="Chapter" href="Type_sat.html">
+<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
+<link title="Smt" rel="Chapter" href="Smt.html">
+<link title="Type_smt" rel="Chapter" href="Type_smt.html">
+<link title="Unionfind" rel="Chapter" href="Unionfind.html">
+<link title="Eclosure" rel="Chapter" href="Eclosure.html">
+<link title="Mcsat" rel="Chapter" href="Mcsat.html">
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Plugin_mcsat</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Mcsat.html" title="Mcsat">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Module <a href="type_Plugin_mcsat.html">Plugin_mcsat</a></h1>
+
+<pre><span class="keyword">module</span> Plugin_mcsat: <code class="code">sig</code> <a href="Plugin_mcsat.html">..</a> <code class="code">end</code></pre><hr width="100%">
+
+<pre><span class="keyword">module</span> <a href="Plugin_mcsat.E.html">E</a>: <code class="type"><a href="Eclosure.Make.html">Eclosure.Make</a></code><code class="code">(</code><code class="type"><a href="Expr_smt.Term.html">Expr_smt.Term</a></code><code class="code">)</code></pre>
+<pre><span class="keyword">module</span> <a href="Plugin_mcsat.H.html">H</a>: <code class="type">Backtrack.Hashtbl</code><code class="code">(</code><code class="type"><a href="Expr_smt.Term.html">Expr_smt.Term</a></code><code class="code">)</code></pre>
+<pre><span class="keyword">module</span> <a href="Plugin_mcsat.M.html">M</a>: <code class="type">Hashtbl.Make</code><code class="code">(</code><code class="type"><a href="Expr_smt.Term.html">Expr_smt.Term</a></code><code class="code">)</code></pre>
+<pre><span id="TYPEproof"><span class="keyword">type</span> <code class="type"></code>proof</span> = <code class="type">unit</code> </pre>
+
+
+<pre><span id="TYPEterm"><span class="keyword">type</span> <code class="type"></code>term</span> = <code class="type"><a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a></code> </pre>
+
+
+<pre><span id="TYPEformula"><span class="keyword">type</span> <code class="type"></code>formula</span> = <code class="type"><a href="Expr_smt.Atom.html#TYPEt">Expr_smt.Atom.t</a></code> </pre>
+
+
+<pre><span id="TYPElevel"><span class="keyword">type</span> <code class="type"></code>level</span> = <code class="type">Backtrack.Stack.level</code> </pre>
+
+
+<pre><span id="EXCEPTIONAbsurd"><span class="keyword">exception</span> Absurd</span> <span class="keyword">of</span> <code class="type"><a href="Expr_smt.Atom.html#TYPEt">Expr_smt.Atom.t</a> list</code></pre>
+
+<pre><span id="VALstack"><span class="keyword">val</span> stack</span> : <code class="type">Backtrack.Stack.t</code></pre>
+<pre><span id="VALdummy"><span class="keyword">val</span> dummy</span> : <code class="type">Backtrack.Stack.level</code></pre>
+<pre><span id="VALcurrent_level"><span class="keyword">val</span> current_level</span> : <code class="type">unit -> Backtrack.Stack.level</code></pre>
+<pre><span id="VALbacktrack"><span class="keyword">val</span> backtrack</span> : <code class="type">Backtrack.Stack.level -> unit</code></pre>
+<pre><span id="VALuf"><span class="keyword">val</span> uf</span> : <code class="type">E.t</code></pre>
+<pre><span id="VALassign"><span class="keyword">val</span> assign</span> : <code class="type">E.var -> E.var</code></pre>
+<pre><span id="VALtrue_"><span class="keyword">val</span> true_</span> : <code class="type"><a href="Expr_smt.html#TYPEterm">Expr_smt.term</a></code></pre>
+<pre><span id="VALfalse_"><span class="keyword">val</span> false_</span> : <code class="type"><a href="Expr_smt.html#TYPEterm">Expr_smt.term</a></code></pre>
+<pre><span id="VALmap"><span class="keyword">val</span> map</span> : <code class="type">(<a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> * int) H.t</code></pre>
+<pre><span id="VALwatch"><span class="keyword">val</span> watch</span> : <code class="type">(H.key * H.key list) list M.t</code></pre>
+<pre><span id="VALinterpretation"><span class="keyword">val</span> interpretation</span> : <code class="type">(H.key * <a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a>) H.t</code></pre>
+<pre><span id="VALpop_watches"><span class="keyword">val</span> pop_watches</span> : <code class="type">M.key -> (H.key * H.key list) list</code></pre>
+<pre><span id="VALadd_job"><span class="keyword">val</span> add_job</span> : <code class="type">H.key * H.key list -> M.key -> unit</code></pre>
+<pre><span id="VALupdate_job"><span class="keyword">val</span> update_job</span> : <code class="type">M.key -> H.key * H.key list -> unit</code></pre>
+<pre><span id="VALupdate_watches"><span class="keyword">val</span> update_watches</span> : <code class="type">M.key -><br>       (H.key * H.key list) list -> unit</code></pre>
+<pre><span id="VALadd_watch"><span class="keyword">val</span> add_watch</span> : <code class="type">M.key -> H.key list -> unit</code></pre>
+<pre><span id="VALadd_assign"><span class="keyword">val</span> add_assign</span> : <code class="type">H.key -> <a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> -> int -> unit</code></pre>
+<pre><span id="VALiter_aux"><span class="keyword">val</span> iter_aux</span> : <code class="type">(<a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> -> unit) -> <a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> -> unit</code></pre>
+<pre><span id="VALiter_assignable"><span class="keyword">val</span> iter_assignable</span> : <code class="type">(<a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> -> unit) -> <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> -> unit</code></pre>
+<pre><span id="VALeval"><span class="keyword">val</span> eval</span> : <code class="type"><a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> -> <a href="Plugin_intf.html#TYPEeval_res">Plugin_intf.eval_res</a></code></pre>
+<pre><span id="VALchain_eq"><span class="keyword">val</span> chain_eq</span> : <code class="type"><a href="Expr_smt.html#TYPEterm">Expr_smt.term</a> list -> <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> list</code></pre>
+<pre><span id="VALassume"><span class="keyword">val</span> assume</span> : <code class="type">(H.key, <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a>, 'a) <a href="Plugin_intf.html#TYPEslice">Plugin_intf.slice</a> -><br>       (<a href="Expr_smt.Atom.html#TYPEt">Expr_smt.Atom.t</a>, unit) <a href="Plugin_intf.html#TYPEres">Plugin_intf.res</a></code></pre>
+<pre><span id="VALif_sat"><span class="keyword">val</span> if_sat</span> : <code class="type">'a -> ('b, 'c) <a href="Plugin_intf.html#TYPEres">Plugin_intf.res</a></code></pre></body></html>
