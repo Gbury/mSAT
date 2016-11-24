@@ -69,15 +69,13 @@ let grow_to_double_size t =
   let size = min Sys.max_array_length (2* Array.length t.data + 1) in
   grow_to_exact t size
 
-(* grow to at least [new_capa] by increments of
-   approximately [new_size = old_size * 1.5] *)
 let grow_to_at_least t new_capa =
   assert (new_capa >= 0);
   if new_capa > Sys.max_array_length then _size_too_big ();
   let data = t.data in
   let capa = ref (Array.length data + 1) in
   while !capa < new_capa do
-    capa := min (!capa + (!capa lsr 1) + 2) Sys.max_array_length;
+    capa := min (2 * !capa + 1) Sys.max_array_length;
   done;
   grow_to_exact t !capa
 
