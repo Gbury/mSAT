@@ -58,7 +58,7 @@ let size t = t.sz
 let is_empty t = t.sz = 0
 
 let grow_to_exact t new_capa =
-  assert (new_capa >= Array.length t.data);
+  assert (new_capa > Array.length t.data);
   let new_data = Array.make new_capa t.dummy in
   assert (t.sz <= new_capa);
   Array.blit t.data 0 new_data 0 t.sz;
