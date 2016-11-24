@@ -49,11 +49,13 @@ val size : 'a t -> int
 
 val is_empty : 'a t -> bool
 
-val grow_to : 'a t -> int -> unit
+val grow_to_exact : 'a t -> int -> unit
 
 val grow_to_double_size : 'a t -> unit
 
-val grow_to_by_double : 'a t -> int -> unit
+val grow_to_at_least : 'a t -> int -> unit
+(** [grow_to_at_least vec n] ensures that [capacity vec >= n] in
+    the most efficient way *)
 
 val is_full : 'a t -> bool
 (** Is the capacity of the vector equal to the number of its elements? *)

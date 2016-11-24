@@ -783,9 +783,9 @@ module Make
     if not (Stack.is_empty env.clauses_to_add) then begin
       let nbv = St.nb_elt () in
       let nbc = env.nb_init_clauses + Stack.length env.clauses_to_add in
-      Iheap.grow_to_by_double env.order nbv;
-      Vec.grow_to_by_double env.clauses_hyps nbc;
-      Vec.grow_to_by_double env.clauses_learnt nbc;
+      Iheap.grow_to_at_least env.order nbv;
+      Vec.grow_to_at_least env.clauses_hyps nbc;
+      Vec.grow_to_at_least env.clauses_learnt nbc;
       env.nb_init_clauses <- nbc;
       while not (Stack.is_empty env.clauses_to_add) do
         let c = Stack.pop env.clauses_to_add in
@@ -898,7 +898,7 @@ module Make
 
   let slice_propagate f lvl =
     let a = atom f in
-    Iheap.grow_to_by_double env.order (St.nb_elt ());
+    Iheap.grow_to_at_least env.order (St.nb_elt ());
     enqueue_bool a lvl (Semantic lvl)
 
   let current_slice (): (_,_,_) Plugin_intf.slice = {
@@ -935,7 +935,7 @@ module Make
       | Plugin_intf.Unsat (l, p) ->
         (* conflict *)
         let l = List.rev_map new_atom l in
-        Iheap.grow_to_by_double env.order (St.nb_elt ());
+        Iheap.grow_to_at_least env.order (St.nb_elt ());
         List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
         let c = St.make_clause (St.fresh_tname ()) l (Lemma p) in
         Some c
@@ -1175,7 +1175,7 @@ module Make
         end else begin
           (* Grow the heap, because when the lit is backtracked,
              it will be added to the heap. *)
-          Iheap.grow_to_by_double env.order (St.nb_elt ());
+          Iheap.grow_to_at_least env.order (St.nb_elt ());
           (* make a decision, propagate *)
           let level = decision_level() in
           enqueue_bool a ~level (Bcp c);

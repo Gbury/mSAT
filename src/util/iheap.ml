@@ -111,9 +111,9 @@ let insert cmp s n =
       percolate_up cmp s (V.get s.indices n)
     end
 
-let grow_to_by_double s sz =
+let grow_to_at_least s sz =
   V.resize s.indices sz;
-  Vec.grow_to_by_double s.heap sz
+  Vec.grow_to_at_least s.heap sz
 
 (*
 let update cmp s n =

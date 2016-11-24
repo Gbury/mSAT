@@ -57,22 +57,19 @@ let size t = t.sz
 
 let is_empty t = t.sz = 0
 
-let grow_to t new_capa =
+let grow_to_exact t new_capa =
   assert (new_capa >= Array.length t.data);
   let new_data = Array.make new_capa t.dummy in
   assert (t.sz <= new_capa);
-  let old = t.data in
-  for i = 0 to t.sz - 1 do
-    Array.unsafe_set new_data i (Array.unsafe_get old i)
-  done;
+  Array.blit t.data 0 new_data 0 t.sz;
   t.data <- new_data
 
 let grow_to_double_size t =
   if Array.length t.data = Sys.max_array_length then _size_too_big();
   let size = min Sys.max_array_length (2* Array.length t.data + 1) in
-  grow_to t size
+  grow_to_exact t size
 
-let grow_to_by_double t new_capa =
+let grow_to_at_least t new_capa =
   assert (new_capa >= 0);
   if new_capa > Sys.max_array_length then _size_too_big ();
   let data = t.data in
@@ -80,7 +77,7 @@ let grow_to_by_double t new_capa =
   while !capa < new_capa do
     capa := min (2 * !capa + 1) Sys.max_array_length;
   done;
-  grow_to t !capa
+  grow_to_exact t !capa
 
 let is_full t = Array.length t.data = t.sz
 
