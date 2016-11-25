@@ -76,5 +76,10 @@ module type S = sig
   (** Prints the entire set of clauses in the input problem
       (including hypothesis, lemmas and local assumptions),
       in the dimacs format. *)
+
+  val export_icnf : Format.formatter -> unit -> unit
+  (** Export the current problem contents to iCNF format.
+      This function is meant to be used icnrementally, i.e.
+      called for each return value of the solve function. *)
 end
 
