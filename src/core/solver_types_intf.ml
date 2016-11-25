@@ -75,8 +75,7 @@ module type S = sig
   and reason =
     | Decision        (** The atom has been decided by the sat solver *)
     | Bcp of clause   (** The atom has been propagated by the given clause *)
-    | Semantic of int (** The atom has been propagated by the theory at the given level.
-                          TODO: remove the int argument, as we should use the atom's level*)
+    | Semantic        (** The atom has been propagated by the theory at the given level. *)
   (** Reasons of propagation/decision of atoms. *)
 
   and premise =

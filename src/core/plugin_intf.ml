@@ -12,9 +12,9 @@
 (*                                                                        *)
 (**************************************************************************)
 
-type eval_res =
-  | Valued of bool * int
+type 'term eval_res =
   | Unknown
+  | Valued of bool * ('term list)
 (** The type of evaluation results, either the given formula cannot be
     evaluated, or it can thanks to assignment. In that case, the level
     of the evaluation is the maximum of levels of assignemnts needed
@@ -30,7 +30,7 @@ type ('formula, 'proof) res =
 
 type ('term, 'formula) assumption =
   | Lit of 'formula
-  | Assign of 'term * 'term * int (* Assign(x, alpha) *)
+  | Assign of 'term * 'term
 (** Asusmptions made by the core SAT solver. Can be either a formula, or an assignment.
     Assignemnt are given a level. *)
 
@@ -39,7 +39,7 @@ type ('term, 'formula, 'proof) slice = {
   length : int;
   get : int -> ('term, 'formula) assumption;
   push : 'formula list -> 'proof -> unit;
-  propagate : 'formula -> int -> unit;
+  propagate : 'formula -> 'term list -> unit;
 }
 (** The type for a slice of litterals to assume/propagate in the theory.
     [get] operations should only be used for integers [ start <= i < start + length].
@@ -86,7 +86,7 @@ module type S = sig
   val iter_assignable : (term -> unit) -> formula -> unit
   (** An iterator over the subterms of a formula that should be assigned a value (usually the poure subterms) *)
 
-  val eval : formula -> eval_res
+  val eval : formula -> term eval_res
   (** Returns the evaluation of the formula in the current assignment *)
 
 end

@@ -68,7 +68,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   and reason =
     | Decision
     | Bcp of clause
-    | Semantic of int
+    | Semantic
 
   and premise =
     | Hyp
@@ -272,8 +272,8 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       Format.fprintf fmt "@@%d" n
     | n, Some Bcp c ->
       Format.fprintf fmt "->%d/%s" n c.name
-    | n, Some Semantic lvl ->
-      Format.fprintf fmt "::%d/%d" n lvl
+    | n, Some Semantic ->
+      Format.fprintf fmt "::%d" n
 
   let pp_level fmt a =
     pp_reason fmt (a.var.v_level, a.var.reason)

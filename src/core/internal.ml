@@ -328,13 +328,13 @@ module Make
               partition_aux trues unassigned falses (cl :: history) (i + 1)
             (* A var false at level 0 can be eliminated from the clause,
                but we need to kepp in mind that we used another clause to simplify it. *)
-            | Some (Semantic 0) ->
+            | Some Semantic ->
               partition_aux trues unassigned falses history (i + 1)
             (* Semantic propagations at level 0 are, well not easy to deal with,
                this shouldn't really happen actually (because semantic propagations
                at level 0 should come with a proof). *)
             (* TODO: get a proof of the propagation. *)
-            | None | Some (Decision | Semantic _ ) -> assert false
+            | None | Some Decision -> assert false
             (* The var must have a reason, and it cannot be a decision/assumption,
                since its level is 0. *)
           end else
@@ -498,6 +498,14 @@ module Make
     Log.debugf debug "Enqueue (%d): %a"
       (fun k->k (Vec.size env.elt_queue) pp_atom a)
 
+  let enqueue_semantic a terms =
+    let l = List.map St.add_term terms in
+    let lvl = List.fold_left (fun acc {l_level; _} ->
+        assert (l_level > 0); max acc l_level) 0 l in
+    assert (lvl > 0);
+    Iheap.grow_to_at_least env.order (St.nb_elt ());
+    enqueue_bool a lvl Semantic
+
   (* MCsat semantic assignment *)
   let enqueue_assign l value lvl =
     match l.assigned with
@@ -519,9 +527,9 @@ module Make
     if a.is_true || a.neg.is_true then None
     else match Plugin.eval a.lit with
       | Plugin_intf.Unknown -> None
-      | Plugin_intf.Valued (b, lvl) ->
+      | Plugin_intf.Valued (b, l) ->
         let atom = if b then a else a.neg in
-        enqueue_bool atom ~level:lvl (Semantic lvl);
+        enqueue_semantic atom l;
         Some b
 
   (* conflict analysis: find the list of atoms of [l] that have the
@@ -632,7 +640,7 @@ module Make
       | 0, _ ->
         cond := false;
         learnt := p.neg :: (List.rev !learnt)
-      | n, Some Semantic _ ->
+      | n, Some Semantic ->
         assert (n > 0);
         learnt := p.neg :: !learnt
       | n, Some Bcp cl ->
@@ -884,8 +892,8 @@ module Make
     match Vec.get env.elt_queue i with
     | Atom a ->
       Plugin_intf.Lit a.lit
-    | Lit {l_level; term; assigned = Some v} ->
-      Plugin_intf.Assign (term, v, l_level)
+    | Lit {term; assigned = Some v} ->
+      Plugin_intf.Assign (term, v)
     | Lit _ -> assert false
 
   let slice_push (l:formula list) (lemma:proof): unit =
@@ -896,10 +904,9 @@ module Make
        be done *)
     Stack.push c env.clauses_to_add
 
-  let slice_propagate f lvl =
+  let slice_propagate f l =
     let a = atom f in
-    Iheap.grow_to_at_least env.order (St.nb_elt ());
-    enqueue_bool a lvl (Semantic lvl)
+    enqueue_semantic a l
 
   let current_slice (): (_,_,_) Plugin_intf.slice = {
     Plugin_intf.start = env.th_head;
@@ -986,9 +993,9 @@ module Make
         new_decision_level();
         let current_level = decision_level () in
         enqueue_bool atom current_level Decision
-      | Plugin_intf.Valued (b, lvl) ->
+      | Plugin_intf.Valued (b, l) ->
         let a = if b then atom else atom.neg in
-        enqueue_bool a lvl (Semantic lvl)
+        enqueue_semantic a l
 
   and pick_branch_lit () =
     match env.next_decision with

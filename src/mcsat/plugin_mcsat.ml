@@ -40,7 +40,7 @@ let false_ = Expr_smt.(Term.of_id (Id.ty "false" Ty.prop))
 
 (* Uninterpreted functions and predicates *)
 
-let map = H.create stack
+let map : Expr_smt.term H.t = H.create stack
 let watch = M.create 4096
 let interpretation = H.create stack
 
@@ -65,8 +65,8 @@ let update_job x ((t, watchees) as job) =
     begin match t with
       | { Expr_smt.term = Expr_smt.App (f, tys, l) } ->
         let is_prop = Expr_smt.(Ty.equal t.t_type Ty.prop) in
-        let t_v, _ = H.find map t in
-        let l' = List.map (fun x -> fst (H.find map x)) l in
+        let t_v = H.find map t in
+        let l' = List.map (H.find map) l in
         let u = Expr_smt.Term.apply f tys l' in
         begin try
             let t', u_v = H.find interpretation u in
@@ -110,8 +110,8 @@ let rec update_watches x = function
 let add_watch t l =
   update_job t (t, l)
 
-let add_assign t v lvl =
-  H.add map t (v, lvl);
+let add_assign t v =
+  H.add map t v;
   update_watches t (pop_watches t)
 
 (* Assignemnts *)
@@ -137,11 +137,11 @@ let iter_assignable f = function
 let eval = function
   | { Expr_smt.atom = Expr_smt.Pred t } ->
     begin try
-        let v, lvl = H.find map t in
+        let v = H.find map t in
         if Expr_smt.Term.equal v true_ then
-          Plugin_intf.Valued (true, lvl)
+          Plugin_intf.Valued (true, [t])
         else if Expr_smt.Term.equal v false_ then
-          Plugin_intf.Valued (false, lvl)
+          Plugin_intf.Valued (false, [t])
         else
           Plugin_intf.Unknown
       with Not_found ->
@@ -149,12 +149,12 @@ let eval = function
     end
   | { Expr_smt.atom = Expr_smt.Equal (a, b); sign } ->
     begin try
-        let v_a, a_lvl = H.find map a in
-        let v_b, b_lvl = H.find map b in
+        let v_a = H.find map a in
+        let v_b = H.find map b in
         if Expr_smt.Term.equal v_a v_b then
-          Plugin_intf.Valued(sign, max a_lvl b_lvl)
+          Plugin_intf.Valued(sign, [a; b])
         else
-          Plugin_intf.Valued(not sign, max a_lvl b_lvl)
+          Plugin_intf.Valued(not sign, [a; b])
       with Not_found ->
         Plugin_intf.Unknown
     end
@@ -171,8 +171,8 @@ let assume s =
   try
     for i = s.start to s.start + s.length - 1 do
       match s.get i with
-      | Assign (t, v, lvl) ->
-        add_assign t v lvl;
+      | Assign (t, v) ->
+        add_assign t v;
         E.add_tag uf t v
       | Lit f ->
         begin match f with
@@ -182,7 +182,7 @@ let assume s =
             E.add_neq uf u v
           | { Expr_smt.atom = Expr_smt.Pred p; sign } ->
             let v = if sign then true_ else false_ in
-            add_assign p v ~-1
+            add_assign p v
         end
     done;
     Plugin_intf.Sat
