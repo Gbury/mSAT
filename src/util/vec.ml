@@ -73,11 +73,13 @@ let grow_to_at_least t new_capa =
   assert (new_capa >= 0);
   if new_capa > Sys.max_array_length then _size_too_big ();
   let data = t.data in
-  let capa = ref (Array.length data + 1) in
+  let capa = ref (max (Array.length data) 1) in
   while !capa < new_capa do
     capa := min (2 * !capa + 1) Sys.max_array_length;
   done;
-  grow_to_exact t !capa
+  if !capa > Array.length data then (
+    grow_to_exact t !capa
+  )
 
 let is_full t = Array.length t.data = t.sz
 
