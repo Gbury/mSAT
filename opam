@@ -1,7 +1,7 @@
 opam-version: "1.2"
 name: "msat"
 license: "Apache"
-version: "dev"
+version: "0.5.1"
 author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "Guillaume Bury"]
 maintainer: ["guillaume.bury@gmail.com" "simon.cruanes@inria.fr"]
 build: [
