@@ -4,7 +4,14 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+(** mSAT safe interface
+
+    This module defines a safe interface for the core solver.
+    It is the basis of the {!module:Solver} and {!module:Mcsolver} modules.
+*)
+
 module type S = Solver_intf.S
+(** Safe external interface of solvers. *)
 
 module Make
     (St : Solver_types.S)
@@ -13,5 +20,6 @@ module Make
                          and type proof = St.proof)
     (Dummy : sig end) :
   S with module St = St
+(** Functor to make a safe external interface. *)
 
 

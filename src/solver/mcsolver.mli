@@ -5,7 +5,9 @@ Copyright 2014 Simon Cruanes
 *)
 
 (** Create McSat solver
-    This module provides a functor to create an McSAt solver. *)
+
+    This module provides a functor to create an McSAt solver.
+*)
 
 module type S = Solver_intf.S
 (** The interface exposed by the solver. *)

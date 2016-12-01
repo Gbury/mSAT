@@ -5,9 +5,11 @@ Copyright 2014 Simon Cruanes
 *)
 
 (** Create SAT/SMT Solvers
+
     This module provides a functor to create an SMT solver. Additionally, it also
     gives a functor that produce an adequate empty theory that can be given to the [Make]
-    functor in order to create a pure SAT solver. *)
+    functor in order to create a pure SAT solver.
+*)
 
 module type S = Solver_intf.S
 (** The interface of instantiated solvers. *)

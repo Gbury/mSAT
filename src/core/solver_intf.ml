@@ -5,9 +5,11 @@ Copyright 2016 Simon Cruanes
 *)
 
 (** Interface for Solvers
+
     This modules defines the safe external interface for solvers.
     Solvers that implements this interface can be obtained using the [Make]
-    functor in {!Solver} or {!Mcsolver}. *)
+    functor in {!Solver} or {!Mcsolver}.
+*)
 
 type ('term, 'form) sat_state = {
   eval: 'form -> bool;
@@ -57,8 +59,8 @@ module type S = sig
   (** The type of atoms given by the module argument for formulas *)
 
   type res =
-    | Sat of (St.term,St.formula) sat_state
-    | Unsat of (St.clause,Proof.proof) unsat_state (**)
+    | Sat of (St.term,St.formula) sat_state         (** Returned when the solver reaches SAT *)
+    | Unsat of (St.clause,Proof.proof) unsat_state  (** Returned when the solver reaches UNSAT *)
   (** Result type for the solver *)
 
   exception UndecidedLit

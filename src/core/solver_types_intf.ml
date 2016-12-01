@@ -11,10 +11,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Internal types (interface)
+
+    This modules defines the interface of most of the internal types
+    used in the core solver.
+*)
+
 module type S = sig
   (** The signatures of clauses used in the Solver. *)
 
   val mcsat : bool
+  (** TODO:deprecate. *)
 
   (** {2 Type definitions} *)
 

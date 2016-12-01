@@ -11,7 +11,17 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** Internal types (implementation)
+
+    This modules actually implements the internal types used by the solver.
+    Since mutation is heavily used in the solver, it is really, really, *really*
+    discouraged to direclty use the functions in this module if you don't know the
+    inner working of mSAT perfectly as even the simplest
+    change can have dramatic effects on the solver.
+*)
+
 module type S = Solver_types_intf.S
+(** Interface for the internal types. *)
 
 module McMake (E : Expr_intf.S)(Dummy : sig end):
     S with type term = E.Term.t and type formula = E.Formula.t and type proof = E.proof

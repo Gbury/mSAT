@@ -4,6 +4,14 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+(** mSAT core
+
+    This is the core of msat, containing the code doing the actual solving.
+    This module is based on mini-sat, and as such the solver heavily uses mutation,
+    which makes using it direclty kinda tricky (some exceptions can be raised
+    at surprising times, mutating is dangerous for maintaining invariants, etc...).
+*)
+
 module Make
   (St : Solver_types.S)
   (Th : Plugin_intf.S with type term = St.term and type formula = St.formula and type proof = St.proof)
