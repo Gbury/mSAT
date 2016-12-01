@@ -42,7 +42,7 @@ Backend interface
 <tr><td align="left"><br>D</td></tr>
 <tr><td><a href="Dedukti.html">Dedukti</a> </td>
 <td><div class="info">
-Functor to generate a backend to output proofs for the dedukti type checker.
+Deduki backend for proofs
 </div>
 </td></tr>
 <tr><td><a href="Dot.html">Dot</a> </td>
@@ -62,7 +62,10 @@ Mcsat expressions
 </div>
 </td></tr>
 <tr><td><a href="External.html">External</a> </td>
-<td></td></tr>
+<td><div class="info">
+mSAT safe interface
+</div>
+</td></tr>
 <tr><td align="left"><br>F</td></tr>
 <tr><td><a href="Expr_intf.S.Formula.html">Formula</a> [<a href="Expr_intf.S.html">Expr_intf.S</a>]</td>
 <td></td></tr>
@@ -74,7 +77,7 @@ SMT formulas
 <tr><td align="left"><br>I</td></tr>
 <tr><td><a href="Internal.html">Internal</a> </td>
 <td><div class="info">
-Functor to create a solver parametrised by the atomic formulas and a theory.
+mSAT core
 </div>
 </td></tr>
 <tr><td align="left"><br>L</td></tr>
@@ -111,7 +114,10 @@ Functor to create a SMT Solver parametrised by the atomic
 </div>
 </td></tr>
 <tr><td><a href="External.Make.html">Make</a> [<a href="External.html">External</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Functor to make a safe external interface.
+</div>
+</td></tr>
 <tr><td><a href="Internal.Make.html">Make</a> [<a href="Internal.html">Internal</a>]</td>
 <td></td></tr>
 <tr><td><a href="Res.Make.html">Make</a> [<a href="Res.html">Res</a>]</td>
@@ -127,7 +133,6 @@ Functor to instantiate the types of clauses for a solver.
 <tr><td><a href="Mcsolver.html">Mcsolver</a> </td>
 <td><div class="info">
 Create McSat solver
-    This module provides a functor to create an McSAt solver.
 </div>
 </td></tr>
 <tr><td align="left"><br>P</td></tr>
@@ -163,23 +168,21 @@ Functor to instantiate the types of clauses for a solver.
 <tr><td><a href="Solver.html">Solver</a> </td>
 <td><div class="info">
 Create SAT/SMT Solvers
-    This module provides a functor to create an SMT solver.
 </div>
 </td></tr>
 <tr><td><a href="Solver_intf.html">Solver_intf</a> </td>
 <td><div class="info">
 Interface for Solvers
-    This modules defines the safe external interface for solvers.
 </div>
 </td></tr>
 <tr><td><a href="Solver_types.html">Solver_types</a> </td>
 <td><div class="info">
-Functor to instantiate the types of clauses for a solver.
+Internal types (implementation)
 </div>
 </td></tr>
 <tr><td><a href="Solver_types_intf.html">Solver_types_intf</a> </td>
 <td><div class="info">
-The signatures of clauses used in the Solver.
+Internal types (interface)
 </div>
 </td></tr>
 <tr><td><a href="Solver_intf.S.St.html">St</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>

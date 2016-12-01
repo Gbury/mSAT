@@ -40,11 +40,21 @@
 <h1>Module <a href="type_Solver_types.html">Solver_types</a></h1>
 
 <pre><span class="keyword">module</span> Solver_types: <code class="code">sig</code> <a href="Solver_types.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Functor to instantiate the types of clauses for a solver.<br>
+Internal types (implementation)
+<p>
+
+    This modules actually implements the internal types used by the solver.
+    Since mutation is heavily used in the solver, it is really, really, *really*
+    discouraged to direclty use the functions in this module if you don't know the
+    inner working of mSAT perfectly as even the simplest
+    change can have dramatic effects on the solver.<br>
 </div>
 <hr width="100%">
 
-<pre><span class="keyword">module type</span> <a href="Solver_types.S.html">S</a> = <code class="type"><a href="Solver_types_intf.S.html">Solver_types_intf.S</a></code></pre>
+<pre><span class="keyword">module type</span> <a href="Solver_types.S.html">S</a> = <code class="type"><a href="Solver_types_intf.S.html">Solver_types_intf.S</a></code></pre><div class="info">
+Interface for the internal types.
+</div>
+
 <pre><span class="keyword">module</span> <a href="Solver_types.McMake.html">McMake</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">E</code><code class="code"> : </code><code class="type"><a href="Expr_intf.S.html">Expr_intf.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Solver_types.S.html">S</a></code><code class="type">  with type term = E.Term.t and type formula = E.Formula.t and type proof = E.proof</code></div></div></pre><div class="info">
 Functor to instantiate the types of clauses for a solver.
 </div>

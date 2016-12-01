@@ -40,7 +40,13 @@
 <h1>Module <a href="type_Internal.html">Internal</a></h1>
 
 <pre><span class="keyword">module</span> Internal: <code class="code">sig</code> <a href="Internal.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Functor to create a solver parametrised by the atomic formulas and a theory.<br>
+mSAT core
+<p>
+
+    This is the core of msat, containing the code doing the actual solving.
+    This module is based on mini-sat, and as such the solver heavily uses mutation,
+    which makes using it direclty kinda tricky (some exceptions can be raised
+    at surprising times, mutating is dangerous for maintaining invariants, etc...).<br>
 </div>
 <hr width="100%">
 

@@ -38,7 +38,10 @@
 &nbsp;</div>
 <h1>Module type <a href="type_External.S.html">External.S</a></h1>
 
-<pre><span class="keyword">module type</span> S = <code class="type"><a href="Solver_intf.S.html">Solver_intf.S</a></code></pre><hr width="100%">
+<pre><span class="keyword">module type</span> S = <code class="type"><a href="Solver_intf.S.html">Solver_intf.S</a></code></pre><div class="info modtype top">
+Safe external interface of solvers.<br>
+</div>
+<hr width="100%">
 <br>
 <h2 id="2_Internalmodules">Internal modules</h2>
       These are the internal modules used, you should probably not use them
@@ -67,7 +70,10 @@ The type of atoms given by the module argument for formulas<br>
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTres.Sat"><span class="constructor">Sat</span></span> <span class="keyword">of</span> <code class="type">(St.term, St.formula) <a href="Solver_intf.html#TYPEsat_state">Solver_intf.sat_state</a></code></code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Returned when the solver reaches SAT<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
@@ -75,6 +81,7 @@ The type of atoms given by the module argument for formulas<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTres.Unsat"><span class="constructor">Unsat</span></span> <span class="keyword">of</span> <code class="type">(St.clause, Proof.proof) <a href="Solver_intf.html#TYPEunsat_state">Solver_intf.unsat_state</a></code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Returned when the solver reaches UNSAT<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
