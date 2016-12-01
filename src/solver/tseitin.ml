@@ -10,6 +10,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+module type Arg = Tseitin_intf.Arg
+
 module type S = Tseitin_intf.S
 
 module Make (F : Tseitin_intf.Arg) = struct
