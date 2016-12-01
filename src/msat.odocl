@@ -27,8 +27,8 @@ backend/Dedukti
 backend/Backend_intf
 
 # SAT solver frontend
-#sat/Sat
-#sat/Expr_sat
+sat/Sat
+sat/Expr_sat
 #sat/Type_sat
 
 # SMT solver frontend

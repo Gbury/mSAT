@@ -1,3 +1,8 @@
+(*
+MSAT is free software, using the Apache license, see file LICENSE
+Copyright 2014 Guillaume Bury
+Copyright 2014 Simon Cruanes
+*)
 
 (* Log&Module Init *)
 (* ************************************************************************ *)
@@ -5,7 +10,7 @@
 module Id = Dolmen.Id
 module Ast = Dolmen.Term
 module H = Hashtbl.Make(Id)
-module Formula = Tseitin.Make(Expr_sat)
+module Formula = Tseitin.Make(Sat.Expr)
 
 (* Exceptions *)
 (* ************************************************************************ *)
@@ -21,7 +26,7 @@ let find_id id =
   try
     H.find symbols id
   with Not_found ->
-    let res = Expr_sat.fresh () in
+    let res = Sat.Expr.fresh () in
     H.add symbols id res;
     res
 

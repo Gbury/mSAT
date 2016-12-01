@@ -37,12 +37,12 @@ as shown in the following code :
 
 ```ocaml
     (* Module initialization *)
-    module F = Msat.Sat.Tseitin
     module Sat = Msat.Sat.Make()
+    module F = Msat.Tseitin.Make(Msat.Sat.Expr)
 
     (* We create here two distinct atoms *)
-    let a = Msat.Sat.Fsat.fresh ()    (* A 'new_atom' is always distinct from any other atom *)
-    let b = Msat.Sat.Fsat.make 1      (* Atoms can be created from integers *)
+    let a = Msat.Sat.Expr.fresh ()    (* A 'new_atom' is always distinct from any other atom *)
+    let b = Msat.Sat.Expr.make 1      (* Atoms can be created from integers *)
 
     (* Let's create some formulas *)
     let p = F.make_atom a
@@ -52,12 +52,12 @@ as shown in the following code :
 
     (* We can try and check the satisfiability of the given formulas *)
     Sat.assume (F.make_cnf r)
-    let _ = Sat.solve ()        (* Should return Sat.Sat *)
+    let _ = Sat.solve ()        (* Should return (Sat.Sat _) *)
 
     (* The Sat solver has an incremental mutable state, so we still have
      * the formula 'r' in our assumptions *)
     Sat.assume (F.make_cnf s)
-    let _ = Sat.solve ()        (* Should return Sat.Unsat *)
+    let _ = Sat.solve ()        (* Should return (Sat.Unsat _) *)
 ```
 
 ## INSTALLATION
