@@ -1,0 +1,83 @@
+{1 Dolmen}
+
+{2 License}
+
+This code is free, under the Apache 2.0 license.
+
+{2 Contents}
+
+mSAT is an ocaml library provinding SAT/SMT/McSat solvers. More precisely,
+what mSAT provides are functors to easily create such solvers. Indeed, the core
+of a sat solver does not need much information about neither the exact representation
+of terms nor the innner workings of a theory.
+
+{4 Solver creation}
+
+The following modules allow to easily create a SAT or SMT solver (remark: a SAT solver is
+simply an SMT solver with an empty theory).
+
+{!modules:
+Solver
+Formula_intf
+Theory_intf
+}
+
+The following modules allow the creation of a McSat solver (Model Constructing solver):
+
+{!ṃodules:
+Mcsolver
+Expr_intf
+Plugin_intf
+}
+
+Lastly, mSAT also provides an implementation of Tseitin's CNF conversion:
+
+{!modules
+Tseitin
+Tseitin_intf
+}
+
+{4 Proof Management}
+
+mSAT solvers are able to provide detailed proofs when an unsat state is reached. To do
+so, it require the provided theory to give proofs of the tautologies it gives the solver.
+These proofs will be called lemmas. The type of lemmas is defined by the theory and can
+very well be [unit].
+
+In this context a proof is a resolution tree, whose conclusion (i.e. root) is the
+empty clause, effectively allowing to deduce [false] from the hypotheses.
+A resolution tree is a binary tree whose nodes are clauses. Inner nodes' clauses are
+obtained by performing resolution between the two clauses of the children nodes, while
+leafs of the tree are either hypotheses, or tautologies (i.e. conflicts returned by
+the theory).
+
+{!modules:
+Res
+Res_intf
+}
+
+Backends for exporting proofs to different formats:
+
+{!modules:
+Dot
+Dedukti
+Backend_intf
+}
+
+{4 Internal modules}
+
+WARNING: for advanced users only ! These modules expose a lot of unsafe functions
+that must be used with care to not break the required invariants. Additionally, these
+interfaces are not part of the main API and so are subject to a lot more breaking changes
+than the safe modules above.
+
+{!modules:
+Internal
+External
+Solver_types
+Solver_types_intf
+}
+
+{2 Index}
+
+{!indexlist}

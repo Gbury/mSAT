@@ -7,4 +7,6 @@ _build/
 .session
 *.docdir
 src/util/log.ml
+doc/index.html
+
 msat

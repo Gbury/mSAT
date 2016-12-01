@@ -1,0 +1,34 @@
+#!/bin/bash -e
+
+# Get current verison number
+version=`cat VERSION`
+
+# Enssure we are on master branch
+git checkout master
+
+# Generate documentation
+(cd src && make doc)
+(cd doc && asciidoc index.txt)
+
+# Checkout gh-pages
+git checkout gh-pages
+git pull
+
+# Create doc folder if it does not exists
+mkdir -p ./$version
+
+# Copy doc to the right locations
+cp doc/index.html ./
+cp src/dolmen.docdir/* ./$version/
+
+# Add potentially new pages
+git add ./$version/*
+git add ./index.html
+
+# Commit it all & push
+git commit -m "Doc release $version"
+git push
+
+# Get back to master branch
+git checkout master
+
