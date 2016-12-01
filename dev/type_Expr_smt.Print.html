@@ -36,25 +36,25 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Expr_smt.Print</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Expr_smt.Print</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;id&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;id_ty&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;id_ttype&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;const_ty&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;const_ttype&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ty&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fun_ty&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ttype&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fun_ttype&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;term&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;atom&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;id&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;id_ty&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;id_ttype&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;const_ty&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;const_ttype&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ty&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fun_ty&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ttype&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fun_ttype&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;term&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;atom&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 <span class="keyword">end</span></code></body></html>

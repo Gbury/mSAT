@@ -36,37 +36,37 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Res_intf.S</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Res_intf.S</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">St</span>&nbsp;:&nbsp;<span class="constructor">Solver_types</span>.<span class="constructor">S</span>
-&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Insuficient_hyps</span>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;atom&nbsp;=&nbsp;<span class="constructor">St</span>.atom
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;clause&nbsp;=&nbsp;<span class="constructor">St</span>.clause
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;lemma&nbsp;=&nbsp;<span class="constructor">St</span>.proof
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof
-&nbsp;&nbsp;<span class="keyword">and</span>&nbsp;proof_node&nbsp;=&nbsp;{
-&nbsp;&nbsp;&nbsp;&nbsp;conclusion&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause;
-&nbsp;&nbsp;&nbsp;&nbsp;step&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.step;
-&nbsp;&nbsp;}
-&nbsp;&nbsp;<span class="keyword">and</span>&nbsp;step&nbsp;=
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Hypothesis</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Assumption</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Lemma</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.lemma
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Resolution</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;*&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;*&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_list&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;merge&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;resolve&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list&nbsp;*&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;prove&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;prove_unsat&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;prove_atom&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;option
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;expand&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof_node
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fold&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof_node&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;unsat_core&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;list
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;check&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print_clause&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">St</span>&nbsp;:&nbsp;<span class="constructor">Solver_types</span>.<span class="constructor">S</span><br>
+&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Insuficient_hyps</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;atom&nbsp;=&nbsp;<span class="constructor">St</span>.atom<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;clause&nbsp;=&nbsp;<span class="constructor">St</span>.clause<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;lemma&nbsp;=&nbsp;<span class="constructor">St</span>.proof<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof<br>
+&nbsp;&nbsp;<span class="keyword">and</span>&nbsp;proof_node&nbsp;=&nbsp;{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;conclusion&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;step&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.step;<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="keyword">and</span>&nbsp;step&nbsp;=<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Hypothesis</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Assumption</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Lemma</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.lemma<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Resolution</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;*&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;*&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_list&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;merge&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;resolve&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list&nbsp;*&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;list<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;prove&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;prove_unsat&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;prove_atom&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;option<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;expand&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof_node<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fold&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof_node&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;unsat_core&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;list<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;check&nbsp;:&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.proof&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print_clause&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Res_intf</span>.<span class="constructor">S</span>.clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 <span class="keyword">end</span></code></body></html>

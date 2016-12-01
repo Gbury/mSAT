@@ -42,7 +42,7 @@
 <link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><link title="Internal modules" rel="Section" href="#2_Internalmodules">
 <link title="Types" rel="Section" href="#2_Types">
 <link title="Base operations" rel="Section" href="#2_Baseoperations">
-<title>Smt.Make</title>
+<title>mSAT doc : Smt.Make</title>
 </head>
 <body>
 <div class="navbar">&nbsp;<a class="up" href="Smt.html" title="Smt">Up</a>
@@ -134,5 +134,11 @@ Recover tag from a clause, if any<br>
 Prints the entire set of clauses in the input problem
       (including hypothesis, lemmas and local assumptions),
       in the dimacs format.<br>
+</div>
+
+<pre><span id="VALexport_icnf"><span class="keyword">val</span> export_icnf</span> : <code class="type">Format.formatter -> unit -> unit</code></pre><div class="info ">
+Export the current problem contents to iCNF format.
+      This function is meant to be used icnrementally, i.e.
+      called for each return value of the solve function.<br>
 </div>
 </body></html>

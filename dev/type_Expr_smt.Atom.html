@@ -36,20 +36,20 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Expr_smt.Atom</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Expr_smt.Atom</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t&nbsp;=&nbsp;<span class="constructor">Expr_smt</span>.atom
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof&nbsp;=&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;hash&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;equal&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;compare&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;dummy&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.atom
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fresh&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eq&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pred&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;neg&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;norm&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom&nbsp;*&nbsp;<span class="constructor">Formula_intf</span>.negated
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t&nbsp;=&nbsp;<span class="constructor">Expr_smt</span>.atom<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof&nbsp;=&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;hash&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;equal&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;compare&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Atom</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;dummy&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.atom<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fresh&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eq&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;pred&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;neg&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;norm&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.atom&nbsp;*&nbsp;<span class="constructor">Formula_intf</span>.negated<br>
 <span class="keyword">end</span></code></body></html>

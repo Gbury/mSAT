@@ -36,45 +36,45 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Eclosure</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Eclosure</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="keyword">type</span>&nbsp;<span class="constructor">Key</span>&nbsp;=
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">sig</span>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;hash&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;equal&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;compare&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">end</span>
-&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="keyword">type</span>&nbsp;<span class="constructor">S</span>&nbsp;=
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">sig</span>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;var
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Unsat</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;*&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;*
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;list
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;create&nbsp;:&nbsp;<span class="constructor">Backtrack</span>.<span class="constructor">Stack</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_eq&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_neq&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_tag&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find_tag&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;*&nbsp;(<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;*&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var)&nbsp;option
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">end</span>
-&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">Make</span>&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">functor</span>&nbsp;(<span class="constructor">T</span>&nbsp;:&nbsp;<span class="constructor">Key</span>)&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">sig</span>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;var&nbsp;=&nbsp;<span class="constructor">T</span>.t
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Unsat</span>&nbsp;<span class="keyword">of</span>&nbsp;var&nbsp;*&nbsp;var&nbsp;*&nbsp;var&nbsp;list
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;create&nbsp;:&nbsp;<span class="constructor">Backtrack</span>.<span class="constructor">Stack</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_eq&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_neq&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_tag&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find_tag&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;*&nbsp;(var&nbsp;*&nbsp;var)&nbsp;option
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">end</span>
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="keyword">type</span>&nbsp;<span class="constructor">Key</span>&nbsp;=<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">sig</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;hash&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;equal&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;compare&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Key</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">end</span><br>
+&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="keyword">type</span>&nbsp;<span class="constructor">S</span>&nbsp;=<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">sig</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;var<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Unsat</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;*&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;*<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;create&nbsp;:&nbsp;<span class="constructor">Backtrack</span>.<span class="constructor">Stack</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_eq&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_neq&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_tag&nbsp;:&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find_tag&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;*&nbsp;(<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var&nbsp;*&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">S</span>.var)&nbsp;option<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">end</span><br>
+&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">Make</span>&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">functor</span>&nbsp;(<span class="constructor">T</span>&nbsp;:&nbsp;<span class="constructor">Key</span>)&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">sig</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;var&nbsp;=&nbsp;<span class="constructor">T</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Unsat</span>&nbsp;<span class="keyword">of</span>&nbsp;var&nbsp;*&nbsp;var&nbsp;*&nbsp;var&nbsp;list<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;create&nbsp;:&nbsp;<span class="constructor">Backtrack</span>.<span class="constructor">Stack</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_eq&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_neq&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_tag&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find_tag&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;*&nbsp;(var&nbsp;*&nbsp;var)&nbsp;option<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">end</span><br>
 <span class="keyword">end</span></code></body></html>

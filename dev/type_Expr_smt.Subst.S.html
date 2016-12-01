@@ -36,24 +36,24 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Expr_smt.Subst.S</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Expr_smt.Subst.S</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;key
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>b
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;mem&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;bind&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>b&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;remove&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;key<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>b<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;mem&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;bind&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>b&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;remove&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.<span class="constructor">S</span>.key,&nbsp;<span class="keywordsign">'</span>b)&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Subst</span>.t<br>
 <span class="keyword">end</span></code></body></html>

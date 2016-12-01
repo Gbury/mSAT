@@ -36,15 +36,15 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Unionfind.Make</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Unionfind.Make</title>
 </head>
 <body>
-<code class="code"><span class="keyword">functor</span>&nbsp;(<span class="constructor">T</span>&nbsp;:&nbsp;<span class="constructor">OrderedType</span>)&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;<span class="keyword">sig</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Unsat</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">T</span>.t&nbsp;*&nbsp;<span class="constructor">T</span>.t
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;empty&nbsp;:&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find&nbsp;:&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;union&nbsp;:&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;forbid&nbsp;:&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t
+<code class="code"><span class="keyword">functor</span>&nbsp;(<span class="constructor">T</span>&nbsp;:&nbsp;<span class="constructor">OrderedType</span>)&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;<span class="keyword">sig</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Unsat</span>&nbsp;<span class="keyword">of</span>&nbsp;<span class="constructor">T</span>.t&nbsp;*&nbsp;<span class="constructor">T</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;empty&nbsp;:&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find&nbsp;:&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;union&nbsp;:&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;forbid&nbsp;:&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">T</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Unionfind</span>.<span class="constructor">Make</span>.t<br>
 &nbsp;&nbsp;<span class="keyword">end</span></code></body></html>

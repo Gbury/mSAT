@@ -36,24 +36,24 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Expr_smt.Id</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Expr_smt.Id</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;t&nbsp;=&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.id
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;hash&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;equal&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;compare&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;prop&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;base&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ttype&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.id
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ty&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.id
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ty_fun&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;term_fun&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;t&nbsp;=&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.id<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;hash&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;equal&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;compare&nbsp;:&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="keywordsign">'</span>a&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Id</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;prop&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;base&nbsp;:&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ttype&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.id<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ty&nbsp;:&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.id<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;ty_fun&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;term_fun&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ttype&nbsp;<span class="constructor">Expr_smt</span>.id&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Expr_smt</span>.ty&nbsp;<span class="constructor">Expr_smt</span>.function_descr&nbsp;<span class="constructor">Expr_smt</span>.id<br>
 <span class="keyword">end</span></code></body></html>

@@ -42,6 +42,9 @@
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
 <link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><link title="Type definitions" rel="Section" href="#2_Typedefinitions">
+<link title="Type definitions" rel="Section" href="#2_Typedefinitions">
+<link title="Type definitions" rel="Section" href="#2_Typedefinitions">
+<link title="Type definitions" rel="Section" href="#2_Typedefinitions">
 <link title="Printing" rel="Section" href="#2_Printing">
 <link title="Identifiers & Metas" rel="Section" href="#2_IdentifiersMetas">
 <link title="Substitutions" rel="Section" href="#2_Substitutions">
@@ -49,11 +52,12 @@
 <link title="Terms" rel="Section" href="#2_Terms">
 <link title="Formulas" rel="Section" href="#2_Formulas">
 <link title="Identifiers" rel="Subsection" href="#3_Identifiers">
+<link title="Identifiers" rel="Subsection" href="#3_Identifiers">
 <link title="Types" rel="Subsection" href="#3_Types">
 <link title="Terms" rel="Subsection" href="#3_Terms">
 <link title="Formulas" rel="Subsection" href="#3_Formulas">
 <link title="Exceptions" rel="Subsection" href="#3_Exceptions">
-<title>Expr_smt</title>
+<title>mSAT doc : Expr_smt</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Type_sat.html" title="Type_sat">Previous</a>
@@ -66,6 +70,18 @@
 Expressions for TabSat<br>
 </div>
 <hr width="100%">
+<br>
+<h2 id="2_Typedefinitions">Type definitions</h2><br>
+<br>
+<h2 id="2_Typedefinitions">Type definitions</h2><br>
+<br>
+These are custom types used in functions later.<br>
+<br>
+<h2 id="2_Typedefinitions">Type definitions</h2><br>
+<br>
+These are custom types used in functions later.<br>
+<br>
+<h3 id="3_Identifiers">Identifiers</h3><br>
 <br>
 <h2 id="2_Typedefinitions">Type definitions</h2><br>
 <br>
@@ -112,6 +128,12 @@ unique<br>
 }
 
 
+<br>
+The type of identifiers. An <code class="code">'a id</code> is an identifier whose solver-type
+    is represented by an inhabitant of type <code class="code">'a</code>.
+    All identifier have an unique <code class="code">index</code> which is used for comparison,
+    so that the name of a variable is only there for tracability
+    and/or pretty-printing.<br>
 <br>
 The type of identifiers. An <code class="code">'a id</code> is an identifier whose solver-type
     is represented by an inhabitant of type <code class="code">'a</code>.
@@ -215,6 +237,11 @@ These types defines solver-types, i.e the representation of the types
     to be able to use the <code class="code">ty.ty</code> field in patter matches. Other fields shoud not
     be accessed directly, but throught the functions provided by the <code class="code">Ty</code> module.<br>
 <br>
+These types defines solver-types, i.e the representation of the types
+    of terms in the solver. Record definition for <code class="code">type ty</code> is shown in order
+    to be able to use the <code class="code">ty.ty</code> field in patter matches. Other fields shoud not
+    be accessed directly, but throught the functions provided by the <code class="code">Ty</code> module.<br>
+<br>
 <h3 id="3_Terms">Terms</h3><br>
 
 <pre><code><span id="TYPEterm_descr"><span class="keyword">type</span> <code class="type"></code>term_descr</span> = private </code></pre><table class="typetable">
@@ -276,6 +303,12 @@ Types defining terms in the solver. The definition is vary similar to that
     between solver-types and terms, but may lead to some duplication of code
     in some places.<br>
 <br>
+Types defining terms in the solver. The definition is vary similar to that
+    of solver-types, except for type arguments of polymorphic functions which
+    are explicit. This has the advantage that there is a clear and typed distinction
+    between solver-types and terms, but may lead to some duplication of code
+    in some places.<br>
+<br>
 <h3 id="3_Formulas">Formulas</h3><br>
 
 <pre><code><span id="TYPEatom_descr"><span class="keyword">type</span> <code class="type"></code>atom_descr</span> = private </code></pre><table class="typetable">
@@ -324,6 +357,10 @@ Use Formula.hash instead<br>
 }
 
 
+<br>
+The type of atoms in the solver. The list of free arguments in quantifiers
+    is a bit tricky, so you should not touch it (see full doc for further
+    explanations).<br>
 <br>
 The type of atoms in the solver. The list of free arguments in quantifiers
     is a bit tricky, so you should not touch it (see full doc for further

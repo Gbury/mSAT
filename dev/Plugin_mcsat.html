@@ -40,7 +40,7 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Plugin_mcsat</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Plugin_mcsat</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Mcsat.html" title="Mcsat">Previous</a>
@@ -75,7 +75,7 @@
 <pre><span id="VALassign"><span class="keyword">val</span> assign</span> : <code class="type">E.var -> E.var</code></pre>
 <pre><span id="VALtrue_"><span class="keyword">val</span> true_</span> : <code class="type"><a href="Expr_smt.html#TYPEterm">Expr_smt.term</a></code></pre>
 <pre><span id="VALfalse_"><span class="keyword">val</span> false_</span> : <code class="type"><a href="Expr_smt.html#TYPEterm">Expr_smt.term</a></code></pre>
-<pre><span id="VALmap"><span class="keyword">val</span> map</span> : <code class="type">(<a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> * int) H.t</code></pre>
+<pre><span id="VALmap"><span class="keyword">val</span> map</span> : <code class="type"><a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> H.t</code></pre>
 <pre><span id="VALwatch"><span class="keyword">val</span> watch</span> : <code class="type">(H.key * H.key list) list M.t</code></pre>
 <pre><span id="VALinterpretation"><span class="keyword">val</span> interpretation</span> : <code class="type">(H.key * <a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a>) H.t</code></pre>
 <pre><span id="VALpop_watches"><span class="keyword">val</span> pop_watches</span> : <code class="type">M.key -> (H.key * H.key list) list</code></pre>
@@ -83,10 +83,10 @@
 <pre><span id="VALupdate_job"><span class="keyword">val</span> update_job</span> : <code class="type">M.key -> H.key * H.key list -> unit</code></pre>
 <pre><span id="VALupdate_watches"><span class="keyword">val</span> update_watches</span> : <code class="type">M.key -><br>       (H.key * H.key list) list -> unit</code></pre>
 <pre><span id="VALadd_watch"><span class="keyword">val</span> add_watch</span> : <code class="type">M.key -> H.key list -> unit</code></pre>
-<pre><span id="VALadd_assign"><span class="keyword">val</span> add_assign</span> : <code class="type">H.key -> <a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> -> int -> unit</code></pre>
+<pre><span id="VALadd_assign"><span class="keyword">val</span> add_assign</span> : <code class="type">H.key -> <a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> -> unit</code></pre>
 <pre><span id="VALiter_aux"><span class="keyword">val</span> iter_aux</span> : <code class="type">(<a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> -> unit) -> <a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> -> unit</code></pre>
 <pre><span id="VALiter_assignable"><span class="keyword">val</span> iter_assignable</span> : <code class="type">(<a href="Expr_smt.Term.html#TYPEt">Expr_smt.Term.t</a> -> unit) -> <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> -> unit</code></pre>
-<pre><span id="VALeval"><span class="keyword">val</span> eval</span> : <code class="type"><a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> -> <a href="Plugin_intf.html#TYPEeval_res">Plugin_intf.eval_res</a></code></pre>
+<pre><span id="VALeval"><span class="keyword">val</span> eval</span> : <code class="type"><a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> -> <a href="Expr_smt.html#TYPEterm">Expr_smt.term</a> <a href="Plugin_intf.html#TYPEeval_res">Plugin_intf.eval_res</a></code></pre>
 <pre><span id="VALchain_eq"><span class="keyword">val</span> chain_eq</span> : <code class="type"><a href="Expr_smt.html#TYPEterm">Expr_smt.term</a> list -> <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a> list</code></pre>
 <pre><span id="VALassume"><span class="keyword">val</span> assume</span> : <code class="type">(H.key, <a href="Expr_smt.html#TYPEatom">Expr_smt.atom</a>, 'a) <a href="Plugin_intf.html#TYPEslice">Plugin_intf.slice</a> -><br>       (<a href="Expr_smt.Atom.html#TYPEt">Expr_smt.Atom.t</a>, unit) <a href="Plugin_intf.html#TYPEres">Plugin_intf.res</a></code></pre>
 <pre><span id="VALif_sat"><span class="keyword">val</span> if_sat</span> : <code class="type">'a -> ('b, 'c) <a href="Plugin_intf.html#TYPEres">Plugin_intf.res</a></code></pre></body></html>

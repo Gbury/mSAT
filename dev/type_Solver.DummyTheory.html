@@ -36,19 +36,19 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Solver.DummyTheory</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Solver.DummyTheory</title>
 </head>
 <body>
-<code class="code"><span class="keyword">functor</span>&nbsp;(<span class="constructor">F</span>&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>)&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;<span class="keyword">sig</span>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;formula&nbsp;=&nbsp;<span class="constructor">F</span>.t
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof&nbsp;=&nbsp;<span class="constructor">F</span>.proof
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;level
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;dummy&nbsp;:&nbsp;level
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;current_level&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;level
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;assume&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(formula,&nbsp;proof)&nbsp;<span class="constructor">Theory_intf</span>.slice&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(formula,&nbsp;proof)&nbsp;<span class="constructor">Theory_intf</span>.res
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;if_sat&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(formula,&nbsp;proof)&nbsp;<span class="constructor">Theory_intf</span>.slice&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(formula,&nbsp;proof)&nbsp;<span class="constructor">Theory_intf</span>.res
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;backtrack&nbsp;:&nbsp;level&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
+<code class="code"><span class="keyword">functor</span>&nbsp;(<span class="constructor">F</span>&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>)&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;<span class="keyword">sig</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;formula&nbsp;=&nbsp;<span class="constructor">F</span>.t<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof&nbsp;=&nbsp;<span class="constructor">F</span>.proof<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;level<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;dummy&nbsp;:&nbsp;level<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;current_level&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;level<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;assume&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(formula,&nbsp;proof)&nbsp;<span class="constructor">Theory_intf</span>.slice&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(formula,&nbsp;proof)&nbsp;<span class="constructor">Theory_intf</span>.res<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;if_sat&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(formula,&nbsp;proof)&nbsp;<span class="constructor">Theory_intf</span>.slice&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;(formula,&nbsp;proof)&nbsp;<span class="constructor">Theory_intf</span>.res<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;backtrack&nbsp;:&nbsp;level&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 &nbsp;&nbsp;<span class="keyword">end</span></code></body></html>

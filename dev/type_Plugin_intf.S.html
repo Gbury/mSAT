@@ -36,27 +36,27 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Plugin_intf.S</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Plugin_intf.S</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;term
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;formula
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;level
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;dummy&nbsp;:&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.level
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;current_level&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.level
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;assume&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.proof)
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Plugin_intf</span>.slice&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.proof)&nbsp;<span class="constructor">Plugin_intf</span>.res
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;if_sat&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.proof)
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Plugin_intf</span>.slice&nbsp;<span class="keywordsign">-&gt;</span>
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.proof)&nbsp;<span class="constructor">Plugin_intf</span>.res
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;backtrack&nbsp;:&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.level&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;assign&nbsp;:&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;iter_assignable&nbsp;:
-&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eval&nbsp;:&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Plugin_intf</span>.eval_res
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;term<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;formula<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;level<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;dummy&nbsp;:&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.level<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;current_level&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.level<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;assume&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.proof)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Plugin_intf</span>.slice&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.proof)&nbsp;<span class="constructor">Plugin_intf</span>.res<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;if_sat&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.proof)<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Plugin_intf</span>.slice&nbsp;<span class="keywordsign">-&gt;</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula,&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.proof)&nbsp;<span class="constructor">Plugin_intf</span>.res<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;backtrack&nbsp;:&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.level&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;assign&nbsp;:&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;iter_assignable&nbsp;:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit)&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;eval&nbsp;:&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.formula&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Plugin_intf</span>.<span class="constructor">S</span>.term&nbsp;<span class="constructor">Plugin_intf</span>.eval_res<br>
 <span class="keyword">end</span></code></body></html>

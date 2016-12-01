@@ -36,21 +36,21 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Expr_smt.Formula</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Expr_smt.Formula</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;atom&nbsp;=&nbsp;atom
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;f_true&nbsp;:&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;f_false&nbsp;:&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_atom&nbsp;:&nbsp;atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_not&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_and&nbsp;:&nbsp;t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_or&nbsp;:&nbsp;t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_imply&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_equiv&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_xor&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_cnf&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;atom&nbsp;list&nbsp;list
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;atom&nbsp;=&nbsp;atom<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;f_true&nbsp;:&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;f_false&nbsp;:&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_atom&nbsp;:&nbsp;atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_not&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_and&nbsp;:&nbsp;t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_or&nbsp;:&nbsp;t&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_imply&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_equiv&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_xor&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;make_cnf&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;atom&nbsp;list&nbsp;list<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 <span class="keyword">end</span></code></body></html>

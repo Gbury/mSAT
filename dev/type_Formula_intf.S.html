@@ -36,16 +36,16 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Formula_intf.S</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Formula_intf.S</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;hash&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;equal&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;dummy&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;neg&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;norm&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;*&nbsp;<span class="constructor">Formula_intf</span>.negated
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;hash&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;equal&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;print&nbsp;:&nbsp;<span class="constructor">Format</span>.formatter&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;dummy&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;neg&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;norm&nbsp;:&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Formula_intf</span>.<span class="constructor">S</span>.t&nbsp;*&nbsp;<span class="constructor">Formula_intf</span>.negated<br>
 <span class="keyword">end</span></code></body></html>

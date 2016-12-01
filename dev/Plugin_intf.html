@@ -41,7 +41,7 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Plugin_intf</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Plugin_intf</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Theory_intf.html" title="Theory_intf">Previous</a>
@@ -58,19 +58,19 @@ The type of evaluation results, either the given formula cannot be
 </div>
 <hr width="100%">
 
-<pre><code><span id="TYPEeval_res"><span class="keyword">type</span> <code class="type"></code>eval_res</span> = </code></pre><table class="typetable">
+<pre><code><span id="TYPEeval_res"><span class="keyword">type</span> <code class="type">'term</code> eval_res</span> = </code></pre><table class="typetable">
 <tr>
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTeval_res.Valued"><span class="constructor">Valued</span></span> <span class="keyword">of</span> <code class="type">bool * int</code></code></td>
+<code><span id="TYPEELTeval_res.Unknown"><span class="constructor">Unknown</span></span></code></td>
 
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTeval_res.Unknown"><span class="constructor">Unknown</span></span></code></td>
+<code><span id="TYPEELTeval_res.Valued"><span class="constructor">Valued</span></span> <span class="keyword">of</span> <code class="type">bool * 'term list</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 The type of evaluation results, either the given formula cannot be
     evaluated, or it can thanks to assignment. In that case, the level
@@ -118,14 +118,15 @@ Type returned by the theory, either the current set of assumptions is satisfiabl
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTassumption.Assign"><span class="constructor">Assign</span></span> <span class="keyword">of</span> <code class="type">'term * 'term * int</code></code></td>
-
+<code><span id="TYPEELTassumption.Assign"><span class="constructor">Assign</span></span> <span class="keyword">of</span> <code class="type">'term * 'term</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Asusmptions made by the core SAT solver. Can be either a formula, or an assignment.
+    Assignemnt are given a level.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
 
-<br>
-Asusmptions made by the core SAT solver. Can be either a formula, or an assignment.
-    Assignemnt are given a level.<br>
 
 <pre><code><span id="TYPEslice"><span class="keyword">type</span> <code class="type">('term, 'formula, 'proof)</code> slice</span> = {</code></pre><table class="typetable">
 <tr>
@@ -160,7 +161,7 @@ Asusmptions made by the core SAT solver. Can be either a formula, or an assignme
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTslice.propagate">propagate</span>&nbsp;: <code class="type">'formula -> int -> unit</code>;</code></td>
+<code><span id="TYPEELTslice.propagate">propagate</span>&nbsp;: <code class="type">'formula -> 'term list -> unit</code>;</code></td>
 
 </tr></table>
 }

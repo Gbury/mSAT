@@ -36,17 +36,17 @@
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
 <link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>Plugin_mcsat.E</title>
+<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Plugin_mcsat.E</title>
 </head>
 <body>
-<code class="code"><span class="keyword">sig</span>
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t&nbsp;=&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Make</span>(<span class="constructor">Expr_smt</span>.<span class="constructor">Term</span>).t
-&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;var&nbsp;=&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Term</span>.t
-&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Unsat</span>&nbsp;<span class="keyword">of</span>&nbsp;var&nbsp;*&nbsp;var&nbsp;*&nbsp;var&nbsp;list
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;create&nbsp;:&nbsp;<span class="constructor">Backtrack</span>.<span class="constructor">Stack</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_eq&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_neq&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_tag&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit
-&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find_tag&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;*&nbsp;(var&nbsp;*&nbsp;var)&nbsp;option
+<code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;t&nbsp;=&nbsp;<span class="constructor">Eclosure</span>.<span class="constructor">Make</span>(<span class="constructor">Expr_smt</span>.<span class="constructor">Term</span>).t<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;var&nbsp;=&nbsp;<span class="constructor">Expr_smt</span>.<span class="constructor">Term</span>.t<br>
+&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">Unsat</span>&nbsp;<span class="keyword">of</span>&nbsp;var&nbsp;*&nbsp;var&nbsp;*&nbsp;var&nbsp;list<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;create&nbsp;:&nbsp;<span class="constructor">Backtrack</span>.<span class="constructor">Stack</span>.t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;t<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_eq&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_neq&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;add_tag&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;find_tag&nbsp;:&nbsp;t&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;var&nbsp;*&nbsp;(var&nbsp;*&nbsp;var)&nbsp;option<br>
 <span class="keyword">end</span></code></body></html>
