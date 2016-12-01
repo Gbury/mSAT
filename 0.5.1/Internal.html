@@ -1,0 +1,53 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Res.html">
+<link rel="next" href="External.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Internal</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Res.html" title="Res">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="External.html" title="External">Next</a>
+</div>
+<h1>Module <a href="type_Internal.html">Internal</a></h1>
+
+<pre><span class="keyword">module</span> Internal: <code class="code">sig</code> <a href="Internal.html">..</a> <code class="code">end</code></pre><div class="info module top">
+mSAT core
+<p>
+
+    This is the core of msat, containing the code doing the actual solving.
+    This module is based on mini-sat, and as such the solver heavily uses mutation,
+    which makes using it direclty kinda tricky (some exceptions can be raised
+    at surprising times, mutating is dangerous for maintaining invariants, etc...).<br>
+</div>
+<hr width="100%">
+
+<pre><span class="keyword">module</span> <a href="Internal.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">St</code><code class="code"> : </code><code class="type"><a href="Solver_types.S.html">Solver_types.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Th</code><code class="code"> : </code><code class="type"><a href="Plugin_intf.S.html">Plugin_intf.S</a></code><code class="type">  with type term = St.term and type formula = St.formula and type proof = St.proof</code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="code">sig</code> <a href="Internal.Make.html">..</a> <code class="code">end</code></div></div></div></pre></body></html>

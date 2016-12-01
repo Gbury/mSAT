@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Tseitin.Arg.html">
+<link rel="Up" href="Tseitin.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Tseitin.S</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Tseitin.Arg.html" title="Tseitin.Arg">Previous</a>
+&nbsp;<a class="up" href="Tseitin.html" title="Tseitin">Up</a>
+&nbsp;</div>
+<h1>Module type <a href="type_Tseitin.S.html">Tseitin.S</a></h1>
+
+<pre><span class="keyword">module type</span> S = <code class="type"><a href="Tseitin_intf.S.html">Tseitin_intf.S</a></code></pre><div class="info modtype top">
+The exposed interface of Tseitin's CNF conversion.<br>
+</div>
+<hr width="100%">
+<br>
+CNF conversion
+<p>
+
+      This modules allows to convert arbitrary boolean formulas
+      into CNF.<br>
+
+<pre><span id="TYPEatom"><span class="keyword">type</span> <code class="type"></code>atom</span> </pre>
+<div class="info ">
+The type of atomic formulas.<br>
+</div>
+
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+<div class="info ">
+The type of arbitrary boolean formulas. Arbitrary boolean formulas
+      can be built using functions in this module, and then converted
+      to a CNF, which is a list of clauses that only use atomic formulas.<br>
+</div>
+
+
+<pre><span id="VALf_true"><span class="keyword">val</span> f_true</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+The <code class="code">true</code> formula, i.e a formula that is always satisfied.<br>
+</div>
+
+<pre><span id="VALf_false"><span class="keyword">val</span> f_false</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+The <code class="code">false</code> formula, i.e a formula that cannot be satisfied.<br>
+</div>
+
+<pre><span id="VALmake_atom"><span class="keyword">val</span> make_atom</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEatom">atom</a> -> <a href="Tseitin_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">make_atom p</code> builds the boolean formula equivalent to the atomic formula <code class="code">p</code>.<br>
+</div>
+
+<pre><span id="VALmake_not"><span class="keyword">val</span> make_not</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEt">t</a> -> <a href="Tseitin_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+Creates the negation of a boolean formula.<br>
+</div>
+
+<pre><span id="VALmake_and"><span class="keyword">val</span> make_and</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEt">t</a> list -> <a href="Tseitin_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+Creates the conjunction of a list of formulas. An empty conjunction is always satisfied.<br>
+</div>
+
+<pre><span id="VALmake_or"><span class="keyword">val</span> make_or</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEt">t</a> list -> <a href="Tseitin_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+Creates the disjunction of a list of formulas. An empty disjunction is never satisfied.<br>
+</div>
+
+<pre><span id="VALmake_xor"><span class="keyword">val</span> make_xor</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEt">t</a> -> <a href="Tseitin_intf.S.html#TYPEt">t</a> -> <a href="Tseitin_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">make_xor p q</code> creates the boolean formula "<code class="code">p</code> xor <code class="code">q</code>".<br>
+</div>
+
+<pre><span id="VALmake_imply"><span class="keyword">val</span> make_imply</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEt">t</a> -> <a href="Tseitin_intf.S.html#TYPEt">t</a> -> <a href="Tseitin_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">make_imply p q</code> creates the boolean formula "<code class="code">p</code> implies <code class="code">q</code>".<br>
+</div>
+
+<pre><span id="VALmake_equiv"><span class="keyword">val</span> make_equiv</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEt">t</a> -> <a href="Tseitin_intf.S.html#TYPEt">t</a> -> <a href="Tseitin_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
+<code class="code">make_equiv p q</code> creates the boolena formula "<code class="code">p</code> is equivalent to <code class="code">q</code>".<br>
+</div>
+
+<pre><span id="VALmake_cnf"><span class="keyword">val</span> make_cnf</span> : <code class="type"><a href="Tseitin_intf.S.html#TYPEt">t</a> -> <a href="Tseitin_intf.S.html#TYPEatom">atom</a> list list</code></pre><div class="info ">
+<code class="code">make_cnf f</code> returns a conjunctive normal form of <code class="code">f</code> under the form: a
+      list (which is a conjunction) of lists (which are disjunctions) of
+      atomic formulas.<br>
+</div>
+
+<pre><span id="VALprint"><span class="keyword">val</span> print</span> : <code class="type">Format.formatter -> <a href="Tseitin_intf.S.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+<code class="code">print fmt f</code> prints the formula on the formatter <code class="code">fmt</code>.<br>
+</div>
+</body></html>
