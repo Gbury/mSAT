@@ -24,7 +24,7 @@ Theory_intf
 
 The following modules allow the creation of a McSat solver (Model Constructing solver):
 
-{!ṃodules:
+{!modules:
 Mcsolver
 Expr_intf
 Plugin_intf
@@ -32,7 +32,7 @@ Plugin_intf
 
 Lastly, mSAT also provides an implementation of Tseitin's CNF conversion:
 
-{!modules
+{!modules:
 Tseitin
 Tseitin_intf
 }

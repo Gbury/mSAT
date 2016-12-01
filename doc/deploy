@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-# Enssure we are on master branch
+# Ensure we are on master branch
 git checkout master
 
 # Generate documentation

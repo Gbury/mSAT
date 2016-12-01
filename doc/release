@@ -7,7 +7,7 @@ version=`cat VERSION`
 git checkout master
 
 # Generate documentation
-(cd src && make doc)
+make doc
 (cd doc && asciidoc index.txt)
 
 # Checkout gh-pages
@@ -19,7 +19,7 @@ mkdir -p ./$version
 
 # Copy doc to the right locations
 cp doc/index.html ./
-cp src/dolmen.docdir/* ./$version/
+cp msat.docdir/* ./$version/
 
 # Add potentially new pages
 git add ./$version/*

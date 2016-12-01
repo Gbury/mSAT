@@ -26,22 +26,18 @@ backend/Dot
 backend/Dedukti
 backend/Backend_intf
 
-# Auxiliary
-util/Hashcons
-
-
 # SAT solver frontend
-sat/Expr_sat
 sat/Sat
+sat/Expr_sat
 sat/Type_sat
 
 # SMT solver frontend
-smt/Expr_smt
 smt/Smt
+smt/Expr_smt
 smt/Type_smt
 smt/Unionfind
 
-# MCsat
-mcsat/Eclosure
+# MCsat solver frontend
 mcsat/Mcsat
+mcsat/Eclosure
 mcsat/Plugin_mcsat
