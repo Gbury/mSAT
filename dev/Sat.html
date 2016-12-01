@@ -32,15 +32,7 @@
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Sat</title>
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html"><title>mSAT doc : Sat</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Backend_intf.html" title="Backend_intf">Previous</a>
@@ -49,6 +41,20 @@
 </div>
 <h1>Module <a href="type_Sat.html">Sat</a></h1>
 
-<pre><span class="keyword">module</span> Sat: <code class="code">sig</code> <a href="Sat.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<pre><span class="keyword">module</span> Sat: <code class="code">sig</code> <a href="Sat.html">..</a> <code class="code">end</code></pre><div class="info module top">
+Sat solver
+<p>
 
-<pre><span class="keyword">module</span> <a href="Sat.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Solver.S.html">Solver.S</a></code><code class="type">  with type St.formula = <a href="Expr_sat.html">Expr_sat</a>.t</code></div></pre></body></html>
+    This modules instanciates a pure sat solver using integers to represent
+    atomic propositions.<br>
+</div>
+<hr width="100%">
+
+<pre><span class="keyword">module</span> <a href="Sat.Expr.html">Expr</a>: <code class="type"><a href="Expr_sat.html">Expr_sat</a></code></pre><div class="info">
+The module defining formulas
+</div>
+
+<pre><span class="keyword">module</span> <a href="Sat.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Solver.S.html">Solver.S</a></code><code class="type">  with type St.formula = <a href="Expr_sat.html">Expr_sat</a>.t</code></div></pre><div class="info">
+A functor that can generate as many solvers as needed.
+</div>
+</body></html>

@@ -26,7 +26,9 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Index of modules</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Sat" rel="Chapter" href="Sat.html">
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html"><title>mSAT doc : Index of modules</title>
 </head>
 <body>
 <div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
@@ -56,9 +58,19 @@ Simple case where the proof type is <code class="code">unit</code> and the theor
 </div>
 </td></tr>
 <tr><td align="left"><br>E</td></tr>
+<tr><td><a href="Sat.Expr.html">Expr</a> [<a href="Sat.html">Sat</a>]</td>
+<td><div class="info">
+The module defining formulas
+</div>
+</td></tr>
 <tr><td><a href="Expr_intf.html">Expr_intf</a> </td>
 <td><div class="info">
 Mcsat expressions
+</div>
+</td></tr>
+<tr><td><a href="Expr_sat.html">Expr_sat</a> </td>
+<td><div class="info">
+SAT Formulas
 </div>
 </td></tr>
 <tr><td><a href="External.html">External</a> </td>
@@ -87,6 +99,11 @@ Logging function, for debugging
 </div>
 </td></tr>
 <tr><td align="left"><br>M</td></tr>
+<tr><td><a href="Sat.Make.html">Make</a> [<a href="Sat.html">Sat</a>]</td>
+<td><div class="info">
+A functor that can generate as many solvers as needed.
+</div>
+</td></tr>
 <tr><td><a href="Dedukti.Make.html">Make</a> [<a href="Dedukti.html">Dedukti</a>]</td>
 <td><div class="info">
 Functor to generate a backend to output proofs for the dedukti type checker.
@@ -160,6 +177,11 @@ Interface for proofs
 </div>
 </td></tr>
 <tr><td align="left"><br>S</td></tr>
+<tr><td><a href="Sat.html">Sat</a> </td>
+<td><div class="info">
+Sat solver
+</div>
+</td></tr>
 <tr><td><a href="Solver_types.SatMake.html">SatMake</a> [<a href="Solver_types.html">Solver_types</a>]</td>
 <td><div class="info">
 Functor to instantiate the types of clauses for a solver.

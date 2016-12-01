@@ -27,18 +27,11 @@
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Sat</title>
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html"><title>mSAT doc : Sat</title>
 </head>
 <body>
 <code class="code"><span class="keyword">sig</span><br>
+&nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">Expr</span>&nbsp;=&nbsp;<span class="constructor">Expr_sat</span><br>
 &nbsp;&nbsp;<span class="keyword">module</span>&nbsp;<span class="constructor">Make</span>&nbsp;:<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">functor</span>&nbsp;(<span class="constructor">Dummy</span>&nbsp;:&nbsp;<span class="keyword">sig</span>&nbsp;&nbsp;<span class="keyword">end</span>)&nbsp;<span class="keywordsign">-&gt;</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">sig</span><br>
