@@ -30,17 +30,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Dot</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Dot</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Tseitin.html" title="Tseitin">Previous</a>
@@ -49,8 +39,21 @@
 </div>
 <h1>Module <a href="type_Dot.html">Dot</a></h1>
 
-<pre><span class="keyword">module</span> Dot: <code class="code">sig</code> <a href="Dot.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<pre><span class="keyword">module</span> Dot: <code class="code">sig</code> <a href="Dot.html">..</a> <code class="code">end</code></pre><div class="info module top">
+Dot backend for proofs
+<p>
 
-<pre><span class="keyword">module type</span> <a href="Dot.S.html">S</a> = <code class="type"><a href="Backend_intf.S.html">Backend_intf.S</a></code></pre>
+    This modules provides functions to export proofs into the dot graph format.
+    Graphs in dot format can be used to generates images using the graphviz tool.<br>
+</div>
+<hr width="100%">
+
+<pre><span class="keyword">module type</span> <a href="Dot.S.html">S</a> = <code class="type"><a href="Backend_intf.S.html">Backend_intf.S</a></code></pre><div class="info">
+Interface for exporting proofs.
+</div>
+
 <pre><span class="keyword">module type</span> <a href="Dot.Arg.html">Arg</a> = <code class="code">sig</code> <a href="Dot.Arg.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Dot.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.atom and type lemma := S.lemma</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre></body></html>
+<pre><span class="keyword">module</span> <a href="Dot.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.atom and type lemma := S.lemma</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info">
+Functor for making a module to export proofs to the DOT format.
+</div>
+</body></html>

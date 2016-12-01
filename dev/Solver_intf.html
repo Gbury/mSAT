@@ -30,17 +30,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Solver_intf</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Solver_intf</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Solver_types_intf.html" title="Solver_types_intf">Previous</a>
@@ -50,9 +40,10 @@
 <h1>Module <a href="type_Solver_intf.html">Solver_intf</a></h1>
 
 <pre><span class="keyword">module</span> Solver_intf: <code class="code">sig</code> <a href="Solver_intf.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Returns the valuation of a formula in the current state
-      of the sat solver.<br>
-<b>Raises</b> <code>UndecidedLit</code> if the literal is not decided<br>
+Interface for Solvers
+    This modules defines the safe external interface for solvers.
+    Solvers that implements this interface can be obtained using the <code class="code">Make</code>
+    functor in <a href="Solver.html"><code class="code">Solver</code></a> or <a href="Mcsolver.html"><code class="code">Mcsolver</code></a>.<br>
 </div>
 <hr width="100%">
 
@@ -106,6 +97,9 @@ Returns the model found if the formula is satisfiable.<br>
 </tr></table>
 }
 
+<div class="info ">
+The type of values returned when the solver reaches a SAT state.<br>
+</div>
 
 
 <pre><code><span id="TYPEunsat_state"><span class="keyword">type</span> <code class="type">('clause, 'proof)</code> unsat_state</span> = {</code></pre><table class="typetable">
@@ -131,6 +125,13 @@ returns a persistent proof of the empty clause from the Unsat result.<br>
 </tr></table>
 }
 
+<div class="info ">
+The type of values returned when the solver reaches an UNSAT state.<br>
+</div>
 
 
-<pre><span class="keyword">module type</span> <a href="Solver_intf.S.html">S</a> = <code class="code">sig</code> <a href="Solver_intf.S.html">..</a> <code class="code">end</code></pre></body></html>
+<pre><span class="keyword">module type</span> <a href="Solver_intf.S.html">S</a> = <code class="code">sig</code> <a href="Solver_intf.S.html">..</a> <code class="code">end</code></pre><div class="info">
+The external interface implemented by safe solvers, such as the one
+    created by the <a href="Solver.Make.html"><code class="code">Solver.Make</code></a> and <a href="Mcsolver.Make.html"><code class="code">Mcsolver.Make</code></a> functors.
+</div>
+</body></html>

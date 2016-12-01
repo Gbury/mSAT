@@ -29,17 +29,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Dot.Arg</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Dot.Arg</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Dot.S.html" title="Dot.S">Previous</a>
@@ -48,12 +38,41 @@
 <h1>Module type <a href="type_Dot.Arg.html">Dot.Arg</a></h1>
 
 <pre><span class="keyword">module type</span> Arg = <code class="code">sig</code> <a href="Dot.Arg.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+Term printing for DOT
+<p>
+
+      This module defines what functions are required in order to export
+      a proof to the DOT format.<br>
 
 <pre><span id="TYPEatom"><span class="keyword">type</span> <code class="type"></code>atom</span> </pre>
+<div class="info ">
+The type of atomic formuals<br>
+</div>
 
 
 <pre><span id="TYPElemma"><span class="keyword">type</span> <code class="type"></code>lemma</span> </pre>
+<div class="info ">
+The type of theory-specifi proofs (also called lemmas).<br>
+</div>
 
 
-<pre><span id="VALprint_atom"><span class="keyword">val</span> print_atom</span> : <code class="type">Format.formatter -> <a href="Dot.Arg.html#TYPEatom">atom</a> -> unit</code></pre>
-<pre><span id="VALlemma_info"><span class="keyword">val</span> lemma_info</span> : <code class="type"><a href="Dot.Arg.html#TYPElemma">lemma</a> -><br>       string * string option * (Format.formatter -> unit -> unit) list</code></pre></body></html>
+<pre><span id="VALprint_atom"><span class="keyword">val</span> print_atom</span> : <code class="type">Format.formatter -> <a href="Dot.Arg.html#TYPEatom">atom</a> -> unit</code></pre><div class="info ">
+Print the contents of the given atomic formulas.
+      WARNING: this function should take care to esapce and/or not output special
+      reserved characters for the dot format (such as quotes and so on).<br>
+</div>
+
+<pre><span id="VALlemma_info"><span class="keyword">val</span> lemma_info</span> : <code class="type"><a href="Dot.Arg.html#TYPElemma">lemma</a> -><br>       string * string option * (Format.formatter -> unit -> unit) list</code></pre><div class="info ">
+Generate some information about a theory specific lemmas. This backend does not
+      support printing of proper proofs in DOT format, so all proofs are printed as leafs
+      of the resolution tree. This function should return a triplet <code class="code">(rule, color, l)</code>,
+      such that:<ul>
+<li><code class="code">rule</code> is a name for the proof (arbitrary, does not need to be unique, but
+        should rather be descriptive)</li>
+<li><code class="code">color</code> is a color name (optional) understood by DOT</li>
+<li><code class="code">l</code> is a list of printers that will be called to print some additional information</li>
+</ul>
+<br>
+</div>
+</body></html>

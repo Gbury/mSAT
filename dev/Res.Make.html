@@ -28,17 +28,8 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><link title="Type declarations" rel="Section" href="#3_Typedeclarations">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><link title="Type declarations" rel="Section" href="#3_Typedeclarations">
+<link title="Resolution helpers" rel="Section" href="#3_Resolutionhelpers">
 <link title="Proof building functions" rel="Section" href="#3_Proofbuildingfunctions">
 <link title="Proof Manipulation" rel="Section" href="#3_ProofManipulation">
 <link title="Misc" rel="Section" href="#3_Misc">
@@ -94,6 +85,10 @@ Abstract types for atoms, clauses and theory-specific lemmas<br>
 
 
 <pre><span id="TYPEproof"><span class="keyword">type</span> <code class="type"></code>proof</span> </pre>
+<div class="info ">
+Lazy type for proof trees. Proofs are persistent objects, and can be
+      extended to proof nodes using functions defined later.<br>
+</div>
 
 
 <pre><code><span id="TYPEproof_node"><span class="keyword">type</span> <code class="type"></code>proof_node</span> = {</code></pre><table class="typetable">
@@ -102,17 +97,26 @@ Abstract types for atoms, clauses and theory-specific lemmas<br>
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTproof_node.conclusion">conclusion</span>&nbsp;: <code class="type"><a href="Res_intf.S.html#TYPEclause">clause</a></code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The conclusion of the proof<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTproof_node.step">step</span>&nbsp;: <code class="type"><a href="Res_intf.S.html#TYPEstep">step</a></code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The reasoning step used to prove the conclusion<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 }
 
+<div class="info ">
+A proof can be expanded into a proof node, which show the first step of the proof.<br>
+</div>
 
 
 <pre><code><span id="TYPEstep"><span class="keyword">type</span> <code class="type"></code>step</span> = </code></pre><table class="typetable">
@@ -121,21 +125,30 @@ Abstract types for atoms, clauses and theory-specific lemmas<br>
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstep.Hypothesis"><span class="constructor">Hypothesis</span></span></code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The conclusion is a user-provided hypothesis<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstep.Assumption"><span class="constructor">Assumption</span></span></code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The conclusion has been locally assumed by the user<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstep.Lemma"><span class="constructor">Lemma</span></span> <span class="keyword">of</span> <code class="type"><a href="Res_intf.S.html#TYPElemma">lemma</a></code></code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The conclusion is a tautology provided by the theory, with associated proof<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
@@ -143,17 +156,20 @@ Abstract types for atoms, clauses and theory-specific lemmas<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTstep.Resolution"><span class="constructor">Resolution</span></span> <span class="keyword">of</span> <code class="type"><a href="Res_intf.S.html#TYPEproof">proof</a> * <a href="Res_intf.S.html#TYPEproof">proof</a> * <a href="Res_intf.S.html#TYPEatom">atom</a></code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Lazy type for proof trees. Proofs are persistent objects, and can be
-      extended to proof nodes using functions defined later.<br>
+The conclusion can be deduced by performing a resolution between the conclusions
+          of the two given proofs. The atom on which to perform the resolution is also given.<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
+<div class="info ">
+The type of reasoning steps allowed in a proof.<br>
+</div>
 
+<br>
+<h3 id="3_Resolutionhelpers">Resolution helpers</h3><br>
 
 <pre><span id="VALto_list"><span class="keyword">val</span> to_list</span> : <code class="type"><a href="Res_intf.S.html#TYPEclause">clause</a> -> <a href="Res_intf.S.html#TYPEatom">atom</a> list</code></pre><div class="info ">
-<h3 id="3_Resolutionhelpers">Resolution helpers</h3>
-<p>
 Returns the sorted list of atoms of a clause.<br>
 </div>
 

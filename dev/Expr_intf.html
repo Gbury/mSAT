@@ -30,17 +30,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Expr_intf</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Expr_intf</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Plugin_intf.html" title="Plugin_intf">Previous</a>
@@ -50,7 +40,10 @@
 <h1>Module <a href="type_Expr_intf.html">Expr_intf</a></h1>
 
 <pre><span class="keyword">module</span> Expr_intf: <code class="code">sig</code> <a href="Expr_intf.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Signature of formulas that parametrises the Mcsat Solver Module.<br>
+Mcsat expressions
+<p>
+
+    This modules defines the required implementation of expressions for Mcsat.<br>
 </div>
 <hr width="100%">
 
@@ -60,16 +53,26 @@ Signature of formulas that parametrises the Mcsat Solver Module.<br>
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTnegated.Negated"><span class="constructor">Negated</span></span></code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+changed sign<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTnegated.Same_sign"><span class="constructor">Same_sign</span></span></code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+kept sign<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
+<div class="info ">
+This type is used during the normalisation of formulas.
+    See <code class="code">Expr_intf.S.norm</code> for more details.<br>
+</div>
 
 
 <pre><span class="keyword">module type</span> <a href="Expr_intf.S.html">S</a> = <code class="code">sig</code> <a href="Expr_intf.S.html">..</a> <code class="code">end</code></pre></body></html>

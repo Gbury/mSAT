@@ -26,17 +26,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Index of module types</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Index of module types</title>
 </head>
 <body>
 <div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
@@ -48,44 +38,55 @@
 <td></td></tr>
 <tr><td><a href="Dot.Arg.html">Arg</a> [<a href="Dot.html">Dot</a>]</td>
 <td></td></tr>
-<tr><td><a href="Tseitin_intf.Arg.html">Arg</a> [<a href="Tseitin_intf.html">Tseitin_intf</a>]</td>
-<td></td></tr>
-<tr><td align="left"><br>K</td></tr>
-<tr><td><a href="Eclosure.Key.html">Key</a> [<a href="Eclosure.html">Eclosure</a>]</td>
-<td></td></tr>
-<tr><td align="left"><br>O</td></tr>
-<tr><td><a href="Unionfind.OrderedType.html">OrderedType</a> [<a href="Unionfind.html">Unionfind</a>]</td>
-<td></td></tr>
-<tr><td align="left"><br>S</td></tr>
-<tr><td><a href="Eclosure.S.html">S</a> [<a href="Eclosure.html">Eclosure</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.Subst.S.html">S</a> [<a href="Expr_smt.Subst.html">Expr_smt.Subst</a>]</td>
+<tr><td><a href="Tseitin.Arg.html">Arg</a> [<a href="Tseitin.html">Tseitin</a>]</td>
 <td><div class="info">
-Concrete subtitutions 
+The implementation of formulas required to implement Tseitin's CNF conversion.
 </div>
 </td></tr>
+<tr><td><a href="Tseitin_intf.Arg.html">Arg</a> [<a href="Tseitin_intf.html">Tseitin_intf</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>S</td></tr>
 <tr><td><a href="Backend_intf.S.html">S</a> [<a href="Backend_intf.html">Backend_intf</a>]</td>
 <td></td></tr>
 <tr><td><a href="Dedukti.S.html">S</a> [<a href="Dedukti.html">Dedukti</a>]</td>
 <td></td></tr>
 <tr><td><a href="Dot.S.html">S</a> [<a href="Dot.html">Dot</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Interface for exporting proofs.
+</div>
+</td></tr>
 <tr><td><a href="Tseitin.S.html">S</a> [<a href="Tseitin.html">Tseitin</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The exposed interface of Tseitin's CNF conversion.
+</div>
+</td></tr>
 <tr><td><a href="Mcsolver.S.html">S</a> [<a href="Mcsolver.html">Mcsolver</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The interface exposed by the solver.
+</div>
+</td></tr>
 <tr><td><a href="Solver.S.html">S</a> [<a href="Solver.html">Solver</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The interface of instantiated solvers.
+</div>
+</td></tr>
 <tr><td><a href="Solver_types.S.html">S</a> [<a href="Solver_types.html">Solver_types</a>]</td>
 <td></td></tr>
 <tr><td><a href="External.S.html">S</a> [<a href="External.html">External</a>]</td>
 <td></td></tr>
 <tr><td><a href="Res.S.html">S</a> [<a href="Res.html">Res</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Interface for a module manipulating resolution proofs.
+</div>
+</td></tr>
 <tr><td><a href="Tseitin_intf.S.html">S</a> [<a href="Tseitin_intf.html">Tseitin_intf</a>]</td>
 <td></td></tr>
 <tr><td><a href="Solver_intf.S.html">S</a> [<a href="Solver_intf.html">Solver_intf</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The external interface implemented by safe solvers, such as the one
+    created by the <a href="Solver.Make.html"><code class="code">Solver.Make</code></a> and <a href="Mcsolver.Make.html"><code class="code">Mcsolver.Make</code></a> functors.
+</div>
+</td></tr>
 <tr><td><a href="Solver_types_intf.S.html">S</a> [<a href="Solver_types_intf.html">Solver_types_intf</a>]</td>
 <td></td></tr>
 <tr><td><a href="Res_intf.S.html">S</a> [<a href="Res_intf.html">Res_intf</a>]</td>

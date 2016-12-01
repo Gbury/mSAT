@@ -26,17 +26,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Index of types</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Index of types</title>
 </head>
 <body>
 <div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
@@ -45,13 +35,20 @@
 <table>
 <tr><td align="left"><br>A</td></tr>
 <tr><td><a href="Plugin_intf.html#TYPEassumption">assumption</a> [<a href="Plugin_intf.html">Plugin_intf</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.html#TYPEatom">atom</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Asusmptions made by the core SAT solver.
+</div>
+</td></tr>
 <tr><td><a href="Dot.Arg.html#TYPEatom">atom</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The type of atomic formuals
+</div>
+</td></tr>
 <tr><td><a href="Tseitin_intf.S.html#TYPEatom">atom</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The type of atomic formulas.
+</div>
+</td></tr>
 <tr><td><a href="Solver_intf.S.html#TYPEatom">atom</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
 <td><div class="info">
 The type of atoms given by the module argument for formulas
@@ -63,8 +60,6 @@ Atoms and variables wrap theory formulas.
 </div>
 </td></tr>
 <tr><td><a href="Res_intf.S.html#TYPEatom">atom</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.html#TYPEatom_descr">atom_descr</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
 <td></td></tr>
 <tr><td align="left"><br>C</td></tr>
 <tr><td><a href="Solver_types_intf.S.html#TYPEclause">clause</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
@@ -78,10 +73,11 @@ The type of clauses.
 <tr><td><a href="Solver_types_intf.S.html#TYPEelt">elt</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
 <td></td></tr>
 <tr><td><a href="Plugin_intf.html#TYPEeval_res">eval_res</a> [<a href="Plugin_intf.html">Plugin_intf</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The type of evaluation results for a given formula.
+</div>
+</td></tr>
 <tr><td align="left"><br>F</td></tr>
-<tr><td><a href="Plugin_mcsat.html#TYPEformula">formula</a> [<a href="Plugin_mcsat.html">Plugin_mcsat</a>]</td>
-<td></td></tr>
 <tr><td><a href="Dedukti.Arg.html#TYPEformula">formula</a> [<a href="Dedukti.Arg.html">Dedukti.Arg</a>]</td>
 <td></td></tr>
 <tr><td><a href="Solver_types_intf.S.html#TYPEformula">formula</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
@@ -96,31 +92,19 @@ The type of formulas.
 The type of formulas.
 </div>
 </td></tr>
-<tr><td><a href="Expr_smt.html#TYPEfunction_descr">function_descr</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
-<tr><td align="left"><br>H</td></tr>
-<tr><td><a href="Expr_smt.html#TYPEhash">hash</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
-<tr><td align="left"><br>I</td></tr>
-<tr><td><a href="Expr_smt.html#TYPEid">id</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.html#TYPEindex">index</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
-<tr><td align="left"><br>K</td></tr>
-<tr><td><a href="Expr_smt.Subst.S.html#TYPEkey">key</a> [<a href="Expr_smt.Subst.S.html">Expr_smt.Subst.S</a>]</td>
-<td></td></tr>
 <tr><td align="left"><br>L</td></tr>
 <tr><td><a href="Dedukti.Arg.html#TYPElemma">lemma</a> [<a href="Dedukti.Arg.html">Dedukti.Arg</a>]</td>
 <td></td></tr>
 <tr><td><a href="Dot.Arg.html#TYPElemma">lemma</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The type of theory-specifi proofs (also called lemmas).
+</div>
+</td></tr>
 <tr><td><a href="Res_intf.S.html#TYPElemma">lemma</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
 <td><div class="info">
 Abstract types for atoms, clauses and theory-specific lemmas
 </div>
 </td></tr>
-<tr><td><a href="Plugin_mcsat.html#TYPElevel">level</a> [<a href="Plugin_mcsat.html">Plugin_mcsat</a>]</td>
-<td></td></tr>
 <tr><td><a href="Plugin_intf.S.html#TYPElevel">level</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
 <td><div class="info">
 The type for levels to allow backtracking.
@@ -138,20 +122,19 @@ Wrapper type for literals, i.e.
 </td></tr>
 <tr><td align="left"><br>N</td></tr>
 <tr><td><a href="Expr_intf.html#TYPEnegated">negated</a> [<a href="Expr_intf.html">Expr_intf</a>]</td>
-<td></td></tr>
+<td><div class="info">
+This type is used during the normalisation of formulas.
+</div>
+</td></tr>
 <tr><td><a href="Formula_intf.html#TYPEnegated">negated</a> [<a href="Formula_intf.html">Formula_intf</a>]</td>
-<td></td></tr>
+<td><div class="info">
+This type is used during the normalisation of formulas.
+</div>
+</td></tr>
 <tr><td align="left"><br>P</td></tr>
 <tr><td><a href="Solver_types_intf.S.html#TYPEpremise">premise</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
 <td><div class="info">
 Premises for clauses.
-</div>
-</td></tr>
-<tr><td><a href="Plugin_mcsat.html#TYPEproof">proof</a> [<a href="Plugin_mcsat.html">Plugin_mcsat</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.Atom.html#TYPEproof">proof</a> [<a href="Expr_smt.Atom.html">Expr_smt.Atom</a>]</td>
-<td><div class="info">
-Type alias
 </div>
 </td></tr>
 <tr><td><a href="Dedukti.Arg.html#TYPEproof">proof</a> [<a href="Dedukti.Arg.html">Dedukti.Arg</a>]</td>
@@ -162,7 +145,10 @@ The types of terms, formulas and proofs.
 </div>
 </td></tr>
 <tr><td><a href="Res_intf.S.html#TYPEproof">proof</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Lazy type for proof trees.
+</div>
+</td></tr>
 <tr><td><a href="Expr_intf.S.html#TYPEproof">proof</a> [<a href="Expr_intf.S.html">Expr_intf.S</a>]</td>
 <td><div class="info">
 An abstract type for proofs
@@ -184,7 +170,10 @@ An abstract type for proofs
 </div>
 </td></tr>
 <tr><td><a href="Res_intf.S.html#TYPEproof_node">proof_node</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
-<td></td></tr>
+<td><div class="info">
+A proof can be expanded into a proof node, which show the first step of the proof.
+</div>
+</td></tr>
 <tr><td align="left"><br>R</td></tr>
 <tr><td><a href="Solver_types_intf.S.html#TYPEreason">reason</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
 <td><div class="info">
@@ -192,77 +181,55 @@ Reasons of propagation/decision of atoms.
 </div>
 </td></tr>
 <tr><td><a href="Solver_intf.S.html#TYPEres">res</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Result type for the solver
+</div>
+</td></tr>
 <tr><td><a href="Plugin_intf.html#TYPEres">res</a> [<a href="Plugin_intf.html">Plugin_intf</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Type returned by the theory.
+</div>
+</td></tr>
 <tr><td><a href="Theory_intf.html#TYPEres">res</a> [<a href="Theory_intf.html">Theory_intf</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Type returned by the theory.
+</div>
+</td></tr>
 <tr><td align="left"><br>S</td></tr>
 <tr><td><a href="Solver_intf.html#TYPEsat_state">sat_state</a> [<a href="Solver_intf.html">Solver_intf</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The type of values returned when the solver reaches a SAT state.
+</div>
+</td></tr>
 <tr><td><a href="Plugin_intf.html#TYPEslice">slice</a> [<a href="Plugin_intf.html">Plugin_intf</a>]</td>
 <td><div class="info">
-The type for a slice of litterals to assume/propagate in the theory.
+The type for a slice of assertions to assume/propagate in the theory.
 </div>
 </td></tr>
 <tr><td><a href="Theory_intf.html#TYPEslice">slice</a> [<a href="Theory_intf.html">Theory_intf</a>]</td>
 <td><div class="info">
-The type for a slice of literals to assume/propagate in the theory.
+The type for a slice.
 </div>
 </td></tr>
 <tr><td><a href="Res_intf.S.html#TYPEstep">step</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.Term.html#TYPEsubst">subst</a> [<a href="Expr_smt.Term.html">Expr_smt.Term</a>]</td>
 <td><div class="info">
-The type of substitutions in types.
-</div>
-</td></tr>
-<tr><td><a href="Expr_smt.Ty.html#TYPEsubst">subst</a> [<a href="Expr_smt.Ty.html">Expr_smt.Ty</a>]</td>
-<td><div class="info">
-The type of substitutions over types.
+The type of reasoning steps allowed in a proof.
 </div>
 </td></tr>
 <tr><td align="left"><br>T</td></tr>
-<tr><td><a href="Eclosure.Key.html#TYPEt">t</a> [<a href="Eclosure.Key.html">Eclosure.Key</a>]</td>
-<td></td></tr>
-<tr><td><a href="Eclosure.S.html#TYPEt">t</a> [<a href="Eclosure.S.html">Eclosure.S</a>]</td>
-<td><div class="info">
-Mutable state of the equality closure algorithm.
-</div>
-</td></tr>
-<tr><td><a href="Unionfind.OrderedType.html#TYPEt">t</a> [<a href="Unionfind.OrderedType.html">Unionfind.OrderedType</a>]</td>
-<td></td></tr>
-<tr><td><a href="Unionfind.Make.html#TYPEt">t</a> [<a href="Unionfind.Make.html">Unionfind.Make</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.Atom.html#TYPEt">t</a> [<a href="Expr_smt.Atom.html">Expr_smt.Atom</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.Term.html#TYPEt">t</a> [<a href="Expr_smt.Term.html">Expr_smt.Term</a>]</td>
-<td><div class="info">
-Type alias
-</div>
-</td></tr>
-<tr><td><a href="Expr_smt.Ty.html#TYPEt">t</a> [<a href="Expr_smt.Ty.html">Expr_smt.Ty</a>]</td>
-<td><div class="info">
-Type alias
-</div>
-</td></tr>
-<tr><td><a href="Expr_smt.Subst.html#TYPEt">t</a> [<a href="Expr_smt.Subst.html">Expr_smt.Subst</a>]</td>
-<td><div class="info">
-The type of substitutions from values of type <code class="code">'a</code> to values of type <code class="code">'b</code>.
-</div>
-</td></tr>
-<tr><td><a href="Expr_smt.Id.html#TYPEt">t</a> [<a href="Expr_smt.Id.html">Expr_smt.Id</a>]</td>
-<td></td></tr>
 <tr><td><a href="Backend_intf.S.html#TYPEt">t</a> [<a href="Backend_intf.S.html">Backend_intf.S</a>]</td>
-<td></td></tr>
+<td><div class="info">
+The type of proofs.
+</div>
+</td></tr>
 <tr><td><a href="Tseitin_intf.S.html#TYPEt">t</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
 <td><div class="info">
-The type of ground formulas
+The type of arbitrary boolean formulas.
 </div>
 </td></tr>
 <tr><td><a href="Tseitin_intf.Arg.html#TYPEt">t</a> [<a href="Tseitin_intf.Arg.html">Tseitin_intf.Arg</a>]</td>
 <td><div class="info">
-Type of atomic formulas
+Type of atomic formulas.
 </div>
 </td></tr>
 <tr><td><a href="Solver_types_intf.S.html#TYPEt">t</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
@@ -285,10 +252,6 @@ The type of terms
 The type of atomic formulas.
 </div>
 </td></tr>
-<tr><td><a href="Plugin_mcsat.html#TYPEterm">term</a> [<a href="Plugin_mcsat.html">Plugin_mcsat</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.html#TYPEterm">term</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
 <tr><td><a href="Solver_types_intf.S.html#TYPEterm">term</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
 <td></td></tr>
 <tr><td><a href="Plugin_intf.S.html#TYPEterm">term</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
@@ -296,23 +259,13 @@ The type of atomic formulas.
 The type of terms.
 </div>
 </td></tr>
-<tr><td><a href="Expr_smt.html#TYPEterm_descr">term_descr</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.html#TYPEttype">ttype</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.html#TYPEty">ty</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
-<tr><td><a href="Expr_smt.html#TYPEty_descr">ty_descr</a> [<a href="Expr_smt.html">Expr_smt</a>]</td>
-<td></td></tr>
 <tr><td align="left"><br>U</td></tr>
 <tr><td><a href="Solver_intf.html#TYPEunsat_state">unsat_state</a> [<a href="Solver_intf.html">Solver_intf</a>]</td>
-<td></td></tr>
-<tr><td align="left"><br>V</td></tr>
-<tr><td><a href="Eclosure.S.html#TYPEvar">var</a> [<a href="Eclosure.S.html">Eclosure.S</a>]</td>
 <td><div class="info">
-The type of expressions on which equality closure is built
+The type of values returned when the solver reaches an UNSAT state.
 </div>
 </td></tr>
+<tr><td align="left"><br>V</td></tr>
 <tr><td><a href="Solver_types_intf.S.html#TYPEvar">var</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
 <td></td></tr>
 </table>

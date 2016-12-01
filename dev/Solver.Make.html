@@ -29,17 +29,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><link title="Internal modules" rel="Section" href="#2_Internalmodules">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><link title="Internal modules" rel="Section" href="#2_Internalmodules">
 <link title="Types" rel="Section" href="#2_Types">
 <link title="Base operations" rel="Section" href="#2_Baseoperations">
 <title>mSAT doc : Solver.Make</title>
@@ -54,7 +44,7 @@
                          and type proof = F.proof</code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Solver.S.html">S</a></code><code class="type">  with type St.formula = F.t
      and type St.proof = F.proof</code></div></div></div></pre><div class="info module top">
 Functor to create a SMT Solver parametrised by the atomic
-      formulas and a theory.<br>
+    formulas and a theory.<br>
 </div>
 <table border="0" cellpadding="3" width="100%">
 <tr>
@@ -87,8 +77,15 @@ Functor to create a SMT Solver parametrised by the atomic
       These are the internal modules used, you should probably not use them
       if you're not familiar with the internals of mSAT.<br>
 
-<pre><span class="keyword">module</span> <a href="Solver_intf.S.St.html">St</a>: <code class="type"><a href="Solver_types.S.html">Solver_types.S</a></code><code class="type"> </code></pre>
-<pre><span class="keyword">module</span> <a href="Solver_intf.S.Proof.html">Proof</a>: <code class="type"><a href="Res.S.html">Res.S</a></code><code class="type">  with module St = St</code></pre><br>
+<pre><span class="keyword">module</span> <a href="Solver_intf.S.St.html">St</a>: <code class="type"><a href="Solver_types.S.html">Solver_types.S</a></code><code class="type"> </code></pre><div class="info">
+WARNING: Very dangerous module that expose the internal representation used
+      by the solver.
+</div>
+
+<pre><span class="keyword">module</span> <a href="Solver_intf.S.Proof.html">Proof</a>: <code class="type"><a href="Res.S.html">Res.S</a></code><code class="type">  with module St = St</code></pre><div class="info">
+A module to manipulate proofs.
+</div>
+<br>
 <h2 id="2_Types">Types</h2><br>
 
 <pre><span id="TYPEatom"><span class="keyword">type</span> <code class="type"></code>atom</span> = <code class="type">St.formula</code> </pre>
@@ -111,11 +108,13 @@ The type of atoms given by the module argument for formulas<br>
 <td align="left" valign="top" >
 <code><span id="TYPEELTres.Unsat"><span class="constructor">Unsat</span></span> <span class="keyword">of</span> <code class="type">(St.clause, Proof.proof) <a href="Solver_intf.html#TYPEunsat_state">Solver_intf.unsat_state</a></code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Result type for the solver<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
+<div class="info ">
+Result type for the solver<br>
+</div>
 
 
 <pre><span id="EXCEPTIONUndecidedLit"><span class="keyword">exception</span> UndecidedLit</span></pre>

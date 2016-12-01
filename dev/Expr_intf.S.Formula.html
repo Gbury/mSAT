@@ -29,17 +29,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Expr_intf.S.Formula</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Expr_intf.S.Formula</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Expr_intf.S.Term.html" title="Expr_intf.S.Term">Previous</a>
@@ -48,6 +38,8 @@
 <h1>Module <a href="type_Expr_intf.S.Formula.html">Expr_intf.S.Formula</a></h1>
 
 <pre><span class="keyword">module</span> Formula: <code class="code">sig</code> <a href="Expr_intf.S.Formula.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+McSat formulas<br>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
 <div class="info ">
@@ -55,14 +47,21 @@ The type of atomic formulas over terms.<br>
 </div>
 
 
-<pre><span id="VALhash"><span class="keyword">val</span> hash</span> : <code class="type"><a href="Expr_intf.S.Formula.html#TYPEt">t</a> -> int</code></pre>
-<pre><span id="VALequal"><span class="keyword">val</span> equal</span> : <code class="type"><a href="Expr_intf.S.Formula.html#TYPEt">t</a> -> <a href="Expr_intf.S.Formula.html#TYPEt">t</a> -> bool</code></pre>
+<pre><span id="VALequal"><span class="keyword">val</span> equal</span> : <code class="type"><a href="Expr_intf.S.Formula.html#TYPEt">t</a> -> <a href="Expr_intf.S.Formula.html#TYPEt">t</a> -> bool</code></pre><div class="info ">
+Equality over formulas.<br>
+</div>
+
+<pre><span id="VALhash"><span class="keyword">val</span> hash</span> : <code class="type"><a href="Expr_intf.S.Formula.html#TYPEt">t</a> -> int</code></pre><div class="info ">
+Hashing function for formulas. Should be such that two formulas equal according
+        to <code class="code">Expr_intf.S.equal</code> have the same hash.<br>
+</div>
+
 <pre><span id="VALprint"><span class="keyword">val</span> print</span> : <code class="type">Format.formatter -> <a href="Expr_intf.S.Formula.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
-Common functions<br>
+Printing function used among other thing for debugging.<br>
 </div>
 
 <pre><span id="VALdummy"><span class="keyword">val</span> dummy</span> : <code class="type"><a href="Expr_intf.S.Formula.html#TYPEt">t</a></code></pre><div class="info ">
-Formula constants. A valid formula should never be physically equal to <code class="code">dummy</code><br>
+Constant formula. A valid formula should never be physically equal to <code class="code">dummy</code><br>
 </div>
 
 <pre><span id="VALneg"><span class="keyword">val</span> neg</span> : <code class="type"><a href="Expr_intf.S.Formula.html#TYPEt">t</a> -> <a href="Expr_intf.S.Formula.html#TYPEt">t</a></code></pre><div class="info ">

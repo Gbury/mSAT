@@ -28,17 +28,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Dedukti.Make</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Dedukti.Make</title>
 </head>
 <body>
 <div class="navbar">&nbsp;<a class="up" href="Dedukti.html" title="Dedukti">Up</a>
@@ -74,8 +64,20 @@ Functor to generate a backend to output proofs for the dedukti type checker.<br>
 </tr>
 </table>
 <hr width="100%">
+<br>
+Proof exporting
+<p>
+
+      Currently, exporting a proof means printing it into a file
+      according to the conventions of a given format.<br>
 
 <pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+<div class="info ">
+The type of proofs.<br>
+</div>
 
 
-<pre><span id="VALprint"><span class="keyword">val</span> print</span> : <code class="type">Format.formatter -> <a href="Backend_intf.S.html#TYPEt">t</a> -> unit</code></pre></body></html>
+<pre><span id="VALprint"><span class="keyword">val</span> print</span> : <code class="type">Format.formatter -> <a href="Backend_intf.S.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+A function for printing proofs in the desired format.<br>
+</div>
+</body></html>

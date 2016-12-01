@@ -30,17 +30,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Plugin_intf</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Plugin_intf</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Theory_intf.html" title="Theory_intf">Previous</a>
@@ -50,10 +40,11 @@
 <h1>Module <a href="type_Plugin_intf.html">Plugin_intf</a></h1>
 
 <pre><span class="keyword">module</span> Plugin_intf: <code class="code">sig</code> <a href="Plugin_intf.html">..</a> <code class="code">end</code></pre><div class="info module top">
-The type of evaluation results, either the given formula cannot be
-    evaluated, or it can thanks to assignment. In that case, the level
-    of the evaluation is the maximum of levels of assignemnts needed
-    to evaluate the given formula.<br>
+McSat Theory
+<p>
+
+    This module defines what a theory must implement in order to
+    be sued in a McSat solver.<br>
 </div>
 <hr width="100%">
 
@@ -63,7 +54,10 @@ The type of evaluation results, either the given formula cannot be
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTeval_res.Unknown"><span class="constructor">Unknown</span></span></code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The given formula does not have an evaluation<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
@@ -71,14 +65,24 @@ The type of evaluation results, either the given formula cannot be
 <td align="left" valign="top" >
 <code><span id="TYPEELTeval_res.Valued"><span class="constructor">Valued</span></span> <span class="keyword">of</span> <code class="type">bool * 'term list</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-The type of evaluation results, either the given formula cannot be
-    evaluated, or it can thanks to assignment. In that case, the level
-    of the evaluation is the maximum of levels of assignemnts needed
-    to evaluate the given formula.<br>
+The given formula can be evaluated to the given bool.
+                                      The list of terms to give is the list of terms that
+                                      were effectively used for the evaluation.<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
+<div class="info ">
+The type of evaluation results for a given formula.
+    For instance, let's suppose we want to evaluate the formula <code class="code">x * y = 0</code>, the
+    following result are correct:<ul>
+<li><code class="code">Unknown</code> if neither <code class="code">x</code> nor <code class="code">y</code> are assigned to a value</li>
+<li><code class="code">Valued (true, [x])</code> if <code class="code">x</code> is assigned to <code class="code">0</code></li>
+<li><code class="code">Valued (true, [y])</code> if <code class="code">y</code> is assigned to <code class="code">0</code></li>
+<li><code class="code">Valued (false, [x; y])</code> if <code class="code">x</code> and <code class="code">y</code> are assigned to 1 (or any non-zero number)</li>
+</ul>
+<br>
+</div>
 
 
 <pre><code><span id="TYPEres"><span class="keyword">type</span> <code class="type">('formula, 'proof)</code> res</span> = </code></pre><table class="typetable">
@@ -87,7 +91,10 @@ The type of evaluation results, either the given formula cannot be
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTres.Sat"><span class="constructor">Sat</span></span></code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The current set of assumptions is satisfiable.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
@@ -95,14 +102,17 @@ The type of evaluation results, either the given formula cannot be
 <td align="left" valign="top" >
 <code><span id="TYPEELTres.Unsat"><span class="constructor">Unsat</span></span> <span class="keyword">of</span> <code class="type">'formula list * 'proof</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Type returned by the theory, either the current set of assumptions is satisfiable,
-    or it is not, in which case a tautological clause (hopefully minimal) is returned.
-    Formulas in the unsat clause must come from the current set of assumptions, i.e
-    must have been encountered in a slice.<br>
+The current set of assumptions is *NOT* satisfiable, and here is a
+        theory tautology (with its proof), for which every litteral is false
+        under the current assumptions.<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
+<div class="info ">
+Type returned by the theory. Formulas in the unsat clause must come from the
+    current set of assumptions, i.e must have been encountered in a slice.<br>
+</div>
 
 
 <pre><code><span id="TYPEassumption"><span class="keyword">type</span> <code class="type">('term, 'formula)</code> assumption</span> = </code></pre><table class="typetable">
@@ -111,7 +121,10 @@ Type returned by the theory, either the current set of assumptions is satisfiabl
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTassumption.Lit"><span class="constructor">Lit</span></span> <span class="keyword">of</span> <code class="type">'formula</code></code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The given formula is asserted true by the solver<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
@@ -119,12 +132,14 @@ Type returned by the theory, either the current set of assumptions is satisfiabl
 <td align="left" valign="top" >
 <code><span id="TYPEELTassumption.Assign"><span class="constructor">Assign</span></span> <span class="keyword">of</span> <code class="type">'term * 'term</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Asusmptions made by the core SAT solver. Can be either a formula, or an assignment.
-    Assignemnt are given a level.<br>
+The first term is assigned to the second<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 
+<div class="info ">
+Asusmptions made by the core SAT solver.<br>
+</div>
 
 
 <pre><code><span id="TYPEslice"><span class="keyword">type</span> <code class="type">('term, 'formula, 'proof)</code> slice</span> = {</code></pre><table class="typetable">
@@ -133,42 +148,59 @@ Asusmptions made by the core SAT solver. Can be either a formula, or an assignme
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTslice.start">start</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Start of the slice<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTslice.length">length</span>&nbsp;: <code class="type">int</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Length of the slice<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTslice.get">get</span>&nbsp;: <code class="type">int -> ('term, 'formula) <a href="Plugin_intf.html#TYPEassumption">assumption</a></code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Accessor for the assertions in the slice.
+                                                  Should only be called on integers <code class="code">i</code> s.t.
+                                                  <code class="code">start &lt;= i &lt; start + length</code><br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTslice.push">push</span>&nbsp;: <code class="type">'formula list -> 'proof -> unit</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Add a clause to the solver.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
 <tr>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTslice.propagate">propagate</span>&nbsp;: <code class="type">'formula -> 'term list -> unit</code>;</code></td>
-
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Propagate a formula, i.e. the theory can
+                                                  evaluate the formula to be true (see the
+                                                  definition of <a href="Plugin_intf.html#TYPEeval_res"><code class="code">Plugin_intf.eval_res</code></a><br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
 }
 
 <div class="info ">
-The type for a slice of litterals to assume/propagate in the theory.
-    <code class="code">get</code> operations should only be used for integers <code class="code"> start &lt;= i &lt; start + length</code>.
-    <code class="code">push clause proof</code> allows to add a tautological clause to the sat solver.<br>
+The type for a slice of assertions to assume/propagate in the theory.<br>
 </div>
 
 

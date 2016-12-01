@@ -27,17 +27,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc</title>
 </head>
 <body>
 <h1>mSAT doc</h1>
@@ -53,10 +43,10 @@ This code is free, under the Apache 2.0 license.
 <h2 id="2_Contents">Contents</h2>
 <p>
 
-mSAT is an ocaml library provinding SAT/SMT/McSat solvers. More precisely,
+mSAT is an ocaml library providing SAT/SMT/McSat solvers. More precisely,
 what mSAT provides are functors to easily create such solvers. Indeed, the core
 of a sat solver does not need much information about neither the exact representation
-of terms nor the innner workings of a theory.
+of terms nor the inner workings of a theory.
 <p>
 
 <h4 id="4_Solvercreation">Solver creation</h4>
@@ -69,16 +59,21 @@ simply an SMT solver with an empty theory).
 <br>
 <table class="indextable">
 <tr><td class="module"><a href="Solver.html">Solver</a></td><td><div class="info">
-Simple case where the proof type is <code class="code">unit</code> and the theory is empty
+Create SAT/SMT Solvers
+    This module provides a functor to create an SMT solver.
+</div>
+</td></tr>
+<tr><td class="module"><a href="Solver_intf.html">Solver_intf</a></td><td><div class="info">
+Interface for Solvers
+    This modules defines the safe external interface for solvers.
 </div>
 </td></tr>
 <tr><td class="module"><a href="Formula_intf.html">Formula_intf</a></td><td><div class="info">
-Signature of formulas that parametrises the SAT/SMT Solver Module.
+SMT formulas
 </div>
 </td></tr>
 <tr><td class="module"><a href="Theory_intf.html">Theory_intf</a></td><td><div class="info">
-Type returned by the theory, either the current set of assumptions is satisfiable,
-    or it is not, in which case a tautological clause (hopefully minimal) is returned.
+SMT Theory
 </div>
 </td></tr>
 </table>
@@ -91,16 +86,21 @@ The following modules allow the creation of a McSat solver (Model Constructing s
 <br>
 <table class="indextable">
 <tr><td class="module"><a href="Mcsolver.html">Mcsolver</a></td><td><div class="info">
-Functor to create a solver parametrised by the atomic formulas and a theory.
+Create McSat solver
+    This module provides a functor to create an McSAt solver.
+</div>
+</td></tr>
+<tr><td class="module"><a href="Solver_intf.html">Solver_intf</a></td><td><div class="info">
+Interface for Solvers
+    This modules defines the safe external interface for solvers.
 </div>
 </td></tr>
 <tr><td class="module"><a href="Expr_intf.html">Expr_intf</a></td><td><div class="info">
-Signature of formulas that parametrises the Mcsat Solver Module.
+Mcsat expressions
 </div>
 </td></tr>
 <tr><td class="module"><a href="Plugin_intf.html">Plugin_intf</a></td><td><div class="info">
-The type of evaluation results, either the given formula cannot be
-    evaluated, or it can thanks to assignment.
+McSat Theory
 </div>
 </td></tr>
 </table>
@@ -112,9 +112,12 @@ Lastly, mSAT also provides an implementation of Tseitin's CNF conversion:
 
 <br>
 <table class="indextable">
-<tr><td class="module"><a href="Tseitin.html">Tseitin</a></td><td></td></tr>
+<tr><td class="module"><a href="Tseitin.html">Tseitin</a></td><td><div class="info">
+Tseitin CNF conversion
+</div>
+</td></tr>
 <tr><td class="module"><a href="Tseitin_intf.html">Tseitin_intf</a></td><td><div class="info">
-Type of atomic formulas
+Interfaces for Tseitin's CNF conversion
 </div>
 </td></tr>
 </table>
@@ -141,11 +144,11 @@ the theory).
 <br>
 <table class="indextable">
 <tr><td class="module"><a href="Res.html">Res</a></td><td><div class="info">
-Functor to create a module building proofs from a sat-solver unsat trace.
+Resolution proofs
 </div>
 </td></tr>
 <tr><td class="module"><a href="Res_intf.html">Res_intf</a></td><td><div class="info">
-Signature for a module handling proof by resolution from sat solving traces
+Interface for proofs
 </div>
 </td></tr>
 </table>
@@ -157,12 +160,18 @@ Backends for exporting proofs to different formats:
 
 <br>
 <table class="indextable">
-<tr><td class="module"><a href="Dot.html">Dot</a></td><td></td></tr>
+<tr><td class="module"><a href="Dot.html">Dot</a></td><td><div class="info">
+Dot backend for proofs
+</div>
+</td></tr>
 <tr><td class="module"><a href="Dedukti.html">Dedukti</a></td><td><div class="info">
 Functor to generate a backend to output proofs for the dedukti type checker.
 </div>
 </td></tr>
-<tr><td class="module"><a href="Backend_intf.html">Backend_intf</a></td><td></td></tr>
+<tr><td class="module"><a href="Backend_intf.html">Backend_intf</a></td><td><div class="info">
+Backend interface
+</div>
+</td></tr>
 </table>
 
 <p>

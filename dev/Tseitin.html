@@ -30,17 +30,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Tseitin</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Tseitin</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Mcsolver.html" title="Mcsolver">Previous</a>
@@ -49,7 +39,25 @@
 </div>
 <h1>Module <a href="type_Tseitin.html">Tseitin</a></h1>
 
-<pre><span class="keyword">module</span> Tseitin: <code class="code">sig</code> <a href="Tseitin.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<pre><span class="keyword">module</span> Tseitin: <code class="code">sig</code> <a href="Tseitin.html">..</a> <code class="code">end</code></pre><div class="info module top">
+Tseitin CNF conversion
+<p>
 
-<pre><span class="keyword">module type</span> <a href="Tseitin.S.html">S</a> = <code class="type"><a href="Tseitin_intf.S.html">Tseitin_intf.S</a></code></pre>
-<pre><span class="keyword">module</span> <a href="Tseitin.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">F</code><code class="code"> : </code><code class="type"><a href="Tseitin_intf.Arg.html">Tseitin_intf.Arg</a></code><code class="code">) -&gt; </code><code class="type"><a href="Tseitin.S.html">S</a></code><code class="type">  with type atom = F.t</code></div></pre></body></html>
+    This modules implements Tseitin's Conjunctive Normal Form conversion, i.e.
+    the ability to transform an arbitrary boolean formula into an equi-satisfiable
+    CNF, that can then be fed to a SAT/SMT/McSat solver.<br>
+</div>
+<hr width="100%">
+
+<pre><span class="keyword">module type</span> <a href="Tseitin.Arg.html">Arg</a> = <code class="type"><a href="Tseitin_intf.Arg.html">Tseitin_intf.Arg</a></code></pre><div class="info">
+The implementation of formulas required to implement Tseitin's CNF conversion.
+</div>
+
+<pre><span class="keyword">module type</span> <a href="Tseitin.S.html">S</a> = <code class="type"><a href="Tseitin_intf.S.html">Tseitin_intf.S</a></code></pre><div class="info">
+The exposed interface of Tseitin's CNF conversion.
+</div>
+
+<pre><span class="keyword">module</span> <a href="Tseitin.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">F</code><code class="code"> : </code><code class="type"><a href="Tseitin.Arg.html">Arg</a></code><code class="code">) -&gt; </code><code class="type"><a href="Tseitin.S.html">S</a></code><code class="type">  with type atom = F.t</code></div></pre><div class="info">
+This functor provides an implementation of Tseitin's CNF conversion.
+</div>
+</body></html>

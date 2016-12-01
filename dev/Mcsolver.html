@@ -30,17 +30,7 @@
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
-<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
-<link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Smt" rel="Chapter" href="Smt.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
-<link title="Type_smt" rel="Chapter" href="Type_smt.html">
-<link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Mcsat" rel="Chapter" href="Mcsat.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
-<link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc : Mcsolver</title>
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html"><title>mSAT doc : Mcsolver</title>
 </head>
 <body>
 <div class="navbar"><a class="pre" href="Solver.html" title="Solver">Previous</a>
@@ -50,11 +40,15 @@
 <h1>Module <a href="type_Mcsolver.html">Mcsolver</a></h1>
 
 <pre><span class="keyword">module</span> Mcsolver: <code class="code">sig</code> <a href="Mcsolver.html">..</a> <code class="code">end</code></pre><div class="info module top">
-Functor to create a solver parametrised by the atomic formulas and a theory.<br>
+Create McSat solver
+    This module provides a functor to create an McSAt solver.<br>
 </div>
 <hr width="100%">
 
-<pre><span class="keyword">module type</span> <a href="Mcsolver.S.html">S</a> = <code class="type"><a href="Solver_intf.S.html">Solver_intf.S</a></code></pre>
+<pre><span class="keyword">module type</span> <a href="Mcsolver.S.html">S</a> = <code class="type"><a href="Solver_intf.S.html">Solver_intf.S</a></code></pre><div class="info">
+The interface exposed by the solver.
+</div>
+
 <pre><span class="keyword">module</span> <a href="Mcsolver.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">E</code><code class="code"> : </code><code class="type"><a href="Expr_intf.S.html">Expr_intf.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Th</code><code class="code"> : </code><code class="type"><a href="Plugin_intf.S.html">Plugin_intf.S</a></code><code class="type">  with type term = E.Term.t
                          and type formula = E.Formula.t
                          and type proof = E.proof</code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Mcsolver.S.html">S</a></code><code class="type">  with type St.term = E.Term.t
