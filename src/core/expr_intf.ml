@@ -4,9 +4,16 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+(** Mcsat expressions
+
+    This modules defines the required implementation of expressions for Mcsat.
+*)
+
 type negated = Formula_intf.negated =
-  | Negated (* changed sign *)
-  | Same_sign (* kept sign *)
+  | Negated     (** changed sign *)
+  | Same_sign   (** kept sign *)
+(** This type is used during the normalisation of formulas.
+    See {!val:Expr_intf.S.norm} for more details. *)
 
 module type S = sig
   (** Signature of formulas that parametrises the Mcsat Solver Module. *)
@@ -15,29 +22,41 @@ module type S = sig
   (** An abstract type for proofs *)
 
   module Term : sig
+    (** McSat Terms *)
 
     type t
     (** The type of terms *)
 
-    val hash : t -> int
     val equal : t -> t -> bool
+    (** Equality over terms. *)
+
+    val hash : t -> int
+    (** Hashing function for terms. Should be such that two terms equal according
+        to {!val:Expr_intf.S.equal} have the same hash. *)
+
     val print : Format.formatter -> t -> unit
-    (** Common functions *)
+    (** Printing function used among other for debugging. *)
 
   end
 
   module Formula : sig
+    (** McSat formulas *)
 
     type t
     (** The type of atomic formulas over terms. *)
 
-    val hash : t -> int
     val equal : t -> t -> bool
+    (** Equality over formulas. *)
+
+    val hash : t -> int
+    (** Hashing function for formulas. Should be such that two formulas equal according
+        to {!val:Expr_intf.S.equal} have the same hash. *)
+
     val print : Format.formatter -> t -> unit
-    (** Common functions *)
+    (** Printing function used among other thing for debugging.  *)
 
     val dummy : t
-    (** Formula constants. A valid formula should never be physically equal to [dummy] *)
+    (** Constant formula. A valid formula should never be physically equal to [dummy] *)
 
     val neg : t -> t
     (** Formula negation *)

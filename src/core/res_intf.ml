@@ -4,6 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+(** Interface for proofs *)
+
 module type S = sig
   (** Signature for a module handling proof by resolution from sat solving traces *)
 
@@ -21,19 +23,28 @@ module type S = sig
   (** Abstract types for atoms, clauses and theory-specific lemmas *)
 
   type proof
-  and proof_node = {
-    conclusion : clause;
-    step : step;
-  }
-  and step =
-    | Hypothesis
-    | Assumption
-    | Lemma of lemma
-    | Resolution of proof * proof * atom
   (** Lazy type for proof trees. Proofs are persistent objects, and can be
       extended to proof nodes using functions defined later. *)
+  and proof_node = {
+    conclusion : clause;  (** The conclusion of the proof *)
+    step : step;          (** The reasoning step used to prove the conclusion *)
+  }
+  (** A proof can be expanded into a proof node, which show the first step of the proof. *)
+  and step =
+    | Hypothesis
+      (** The conclusion is a user-provided hypothesis *)
+    | Assumption
+      (** The conclusion has been locally assumed by the user *)
+    | Lemma of lemma
+      (** The conclusion is a tautology provided by the theory, with associated proof *)
+    | Resolution of proof * proof * atom
+      (** The conclusion can be deduced by performing a resolution between the conclusions
+          of the two given proofs. The atom on which to perform the resolution is also given. *)
+  (** The type of reasoning steps allowed in a proof. *)
+
 
   (** {3 Resolution helpers} *)
+
   val to_list : clause -> atom list
   (** Returns the sorted list of atoms of a clause. *)
 
@@ -44,6 +55,7 @@ module type S = sig
   (** Performs a "resolution step" on a sorted list of atoms.
       [resolve (List.merge l1 l2)] where [l1] and [l2] are sorted atom lists should return the pair
       [\[a\], l'], where [l'] is the result of the resolution of [l1] and [l2] over [a]. *)
+
 
   (** {3 Proof building functions} *)
 
@@ -58,6 +70,7 @@ module type S = sig
   val prove_atom : atom -> proof option
   (** Given an atom [a], returns a proof of the clause [\[a\]] if [a] is true at level 0 *)
 
+
   (** {3 Proof Manipulation} *)
 
   val expand : proof -> proof_node
@@ -71,6 +84,7 @@ module type S = sig
   val unsat_core : proof -> clause list
   (** Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof.
       More efficient than using the [fold] function since it has access to the internal representation of proofs *)
+
 
   (** {3 Misc} *)
 

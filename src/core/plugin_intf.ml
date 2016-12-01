@@ -12,38 +12,54 @@
 (*                                                                        *)
 (**************************************************************************)
 
+(** McSat Theory
+
+    This module defines what a theory must implement in order to
+    be sued in a McSat solver.
+*)
+
 type 'term eval_res =
-  | Unknown
-  | Valued of bool * ('term list)
-(** The type of evaluation results, either the given formula cannot be
-    evaluated, or it can thanks to assignment. In that case, the level
-    of the evaluation is the maximum of levels of assignemnts needed
-    to evaluate the given formula. *)
+  | Unknown                       (** The given formula does not have an evaluation *)
+  | Valued of bool * ('term list) (** The given formula can be evaluated to the given bool.
+                                      The list of terms to give is the list of terms that
+                                      were effectively used for the evaluation.
+                                      *)
+(** The type of evaluation results for a given formula.
+    For instance, let's suppose we want to evaluate the formula [x * y = 0], the
+    following result are correct:
+    - [Unknown] if neither [x] nor [y] are assigned to a value
+    - [Valued (true, [x])] if [x] is assigned to [0]
+    - [Valued (true, [y])] if [y] is assigned to [0]
+    - [Valued (false, [x; y])] if [x] and [y] are assigned to 1 (or any non-zero number)
+  *)
 
 type ('formula, 'proof) res =
   | Sat
+    (** The current set of assumptions is satisfiable. *)
   | Unsat of 'formula list * 'proof
-(** Type returned by the theory, either the current set of assumptions is satisfiable,
-    or it is not, in which case a tautological clause (hopefully minimal) is returned.
-    Formulas in the unsat clause must come from the current set of assumptions, i.e
-    must have been encountered in a slice. *)
+    (** The current set of assumptions is *NOT* satisfiable, and here is a
+        theory tautology (with its proof), for which every litteral is false
+        under the current assumptions. *)
+(** Type returned by the theory. Formulas in the unsat clause must come from the
+    current set of assumptions, i.e must have been encountered in a slice. *)
 
 type ('term, 'formula) assumption =
-  | Lit of 'formula
-  | Assign of 'term * 'term
-(** Asusmptions made by the core SAT solver. Can be either a formula, or an assignment.
-    Assignemnt are given a level. *)
+  | Lit of 'formula         (** The given formula is asserted true by the solver *)
+  | Assign of 'term * 'term (** The first term is assigned to the second *)
+(** Asusmptions made by the core SAT solver. *)
 
 type ('term, 'formula, 'proof) slice = {
-  start : int;
-  length : int;
-  get : int -> ('term, 'formula) assumption;
-  push : 'formula list -> 'proof -> unit;
-  propagate : 'formula -> 'term list -> unit;
+  start : int;                                (** Start of the slice *)
+  length : int;                               (** Length of the slice *)
+  get : int -> ('term, 'formula) assumption;  (** Accessor for the assertions in the slice.
+                                                  Should only be called on integers [i] s.t.
+                                                  [start <= i < start + length] *)
+  push : 'formula list -> 'proof -> unit;     (** Add a clause to the solver. *)
+  propagate : 'formula -> 'term list -> unit; (** Propagate a formula, i.e. the theory can
+                                                  evaluate the formula to be true (see the
+                                                  definition of {!type:eval_res} *)
 }
-(** The type for a slice of litterals to assume/propagate in the theory.
-    [get] operations should only be used for integers [ start <= i < start + length].
-    [push clause proof] allows to add a tautological clause to the sat solver. *)
+(** The type for a slice of assertions to assume/propagate in the theory. *)
 
 module type S = sig
   (** Signature for theories to be given to the Model Constructing Solver. *)

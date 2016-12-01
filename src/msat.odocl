@@ -27,17 +27,17 @@ backend/Dedukti
 backend/Backend_intf
 
 # SAT solver frontend
-sat/Sat
-sat/Expr_sat
-sat/Type_sat
+#sat/Sat
+#sat/Expr_sat
+#sat/Type_sat
 
 # SMT solver frontend
-smt/Smt
-smt/Expr_smt
-smt/Type_smt
-smt/Unionfind
+#smt/Smt
+#smt/Expr_smt
+#smt/Type_smt
+#smt/Unionfind
 
 # MCsat solver frontend
-mcsat/Mcsat
-mcsat/Eclosure
-mcsat/Plugin_mcsat
+#mcsat/Mcsat
+#mcsat/Eclosure
+#mcsat/Plugin_mcsat

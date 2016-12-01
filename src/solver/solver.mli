@@ -4,12 +4,18 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module type S = Solver_intf.S
+(** Create SAT/SMT Solvers
+    This module provides a functor to create an SMT solver. Additionally, it also
+    gives a functor that produce an adequate empty theory that can be given to the [Make]
+    functor in order to create a pure SAT solver. *)
 
-(** Simple case where the proof type is [unit] and the theory is empty *)
+module type S = Solver_intf.S
+(** The interface of instantiated solvers. *)
+
 module DummyTheory(F : Formula_intf.S) :
   Theory_intf.S with type formula = F.t
                  and type proof = F.proof
+(** Simple case where the proof type is [unit] and the theory is empty *)
 
 module Make (F : Formula_intf.S)
     (Th : Theory_intf.S with type formula = F.t
@@ -17,6 +23,6 @@ module Make (F : Formula_intf.S)
     (Dummy: sig end) :
   S with type St.formula = F.t
      and type St.proof = F.proof
-  (** Functor to create a SMT Solver parametrised by the atomic
-      formulas and a theory. *)
+(** Functor to create a SMT Solver parametrised by the atomic
+    formulas and a theory. *)
 

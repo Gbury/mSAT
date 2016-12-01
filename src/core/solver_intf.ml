@@ -4,6 +4,11 @@ Copyright 2016 Guillaume Bury
 Copyright 2016 Simon Cruanes
 *)
 
+(** Interface for Solvers
+    This modules defines the safe external interface for solvers.
+    Solvers that implements this interface can be obtained using the [Make]
+    functor in {!Solver} or {!Mcsolver}. *)
+
 type ('term, 'form) sat_state = {
   eval: 'form -> bool;
   (** Returns the valuation of a formula in the current state
@@ -21,6 +26,7 @@ type ('term, 'form) sat_state = {
   model: unit -> ('term * 'term) list;
   (** Returns the model found if the formula is satisfiable. *)
 }
+(** The type of values returned when the solver reaches a SAT state. *)
 
 type ('clause, 'proof) unsat_state = {
   unsat_conflict : unit -> 'clause;
@@ -28,7 +34,10 @@ type ('clause, 'proof) unsat_state = {
   get_proof : unit -> 'proof;
   (** returns a persistent proof of the empty clause from the Unsat result. *)
 }
+(** The type of values returned when the solver reaches an UNSAT state. *)
 
+(** The external interface implemented by safe solvers, such as the one
+    created by the {!Solver.Make} and {!Mcsolver.Make} functors. *)
 module type S = sig
 
   (** {2 Internal modules}
@@ -36,8 +45,11 @@ module type S = sig
       if you're not familiar with the internals of mSAT. *)
 
   module St : Solver_types.S
+  (** WARNING: Very dangerous module that expose the internal representation used
+      by the solver. *)
 
   module Proof : Res.S with module St = St
+  (** A module to manipulate proofs. *)
 
   (** {2 Types} *)
 
@@ -46,7 +58,7 @@ module type S = sig
 
   type res =
     | Sat of (St.term,St.formula) sat_state
-    | Unsat of (St.clause,Proof.proof) unsat_state
+    | Unsat of (St.clause,Proof.proof) unsat_state (**)
   (** Result type for the solver *)
 
   exception UndecidedLit
