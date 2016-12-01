@@ -28,16 +28,15 @@
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Hashcons" rel="Chapter" href="Hashcons.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
 <link title="Sat" rel="Chapter" href="Sat.html">
+<link title="Expr_sat" rel="Chapter" href="Expr_sat.html">
 <link title="Type_sat" rel="Chapter" href="Type_sat.html">
-<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
 <link title="Smt" rel="Chapter" href="Smt.html">
+<link title="Expr_smt" rel="Chapter" href="Expr_smt.html">
 <link title="Type_smt" rel="Chapter" href="Type_smt.html">
 <link title="Unionfind" rel="Chapter" href="Unionfind.html">
-<link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Mcsat" rel="Chapter" href="Mcsat.html">
+<link title="Eclosure" rel="Chapter" href="Eclosure.html">
 <link title="Plugin_mcsat" rel="Chapter" href="Plugin_mcsat.html"><title>mSAT doc</title>
 </head>
 <body>
@@ -89,18 +88,37 @@ Type returned by the theory, either the current set of assumptions is satisfiabl
 The following modules allow the creation of a McSat solver (Model Constructing solver):
 <p>
 
-<code class="code">ṃodules:
-Mcsolver
-Expr_intf
-Plugin_intf</code>
+<br>
+<table class="indextable">
+<tr><td class="module"><a href="Mcsolver.html">Mcsolver</a></td><td><div class="info">
+Functor to create a solver parametrised by the atomic formulas and a theory.
+</div>
+</td></tr>
+<tr><td class="module"><a href="Expr_intf.html">Expr_intf</a></td><td><div class="info">
+Signature of formulas that parametrises the Mcsat Solver Module.
+</div>
+</td></tr>
+<tr><td class="module"><a href="Plugin_intf.html">Plugin_intf</a></td><td><div class="info">
+The type of evaluation results, either the given formula cannot be
+    evaluated, or it can thanks to assignment.
+</div>
+</td></tr>
+</table>
+
 <p>
 
 Lastly, mSAT also provides an implementation of Tseitin's CNF conversion:
 <p>
 
-<code class="code">modules
-Tseitin
-Tseitin_intf</code>
+<br>
+<table class="indextable">
+<tr><td class="module"><a href="Tseitin.html">Tseitin</a></td><td></td></tr>
+<tr><td class="module"><a href="Tseitin_intf.html">Tseitin_intf</a></td><td><div class="info">
+Type of atomic formulas
+</div>
+</td></tr>
+</table>
+
 <p>
 
 <h4 id="4_ProofManagement">Proof Management</h4>
