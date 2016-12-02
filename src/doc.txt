@@ -2,14 +2,18 @@
 
 {2 License}
 
-This code is free, under the Apache 2.0 license.
+This code is free, under the {{:https://github.com/Gbury/mSAT/blob/master/LICENSE}Apache 2.0 license}.
 
 {2 Contents}
 
 mSAT is an ocaml library providing SAT/SMT/McSat solvers. More precisely,
 what mSAT provides are functors to easily create such solvers. Indeed, the core
-of a sat solver does not need much information about neither the exact representation
-of terms nor the inner workings of a theory.
+of a sat solver does not need much information about either the exact representation
+of terms or the inner workings of a theory.
+
+Most modules in mSAT actually define functors. These functors usually take one
+or two arguments, usually an implementation of Terms and formulas used, and an implementation
+of the theory used during solving.
 
 {4 Solver creation}
 
