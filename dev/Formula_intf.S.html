@@ -29,8 +29,7 @@
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html"><title>mSAT doc : Formula_intf.S</title>
+<link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Formula_intf.S</title>
 </head>
 <body>
 <div class="navbar">&nbsp;<a class="up" href="Formula_intf.html" title="Formula_intf">Up</a>
@@ -71,13 +70,15 @@ Formula constant. A valid formula should never be physically equal to <code clas
 </div>
 
 <pre><span id="VALneg"><span class="keyword">val</span> neg</span> : <code class="type"><a href="Formula_intf.S.html#TYPEt">t</a> -> <a href="Formula_intf.S.html#TYPEt">t</a></code></pre><div class="info ">
-Formula negation<br>
+Formula negation. Should be an involution, i.e. <code class="code">equal a (neg neg a)</code> should
+      always hold.<br>
 </div>
 
 <pre><span id="VALnorm"><span class="keyword">val</span> norm</span> : <code class="type"><a href="Formula_intf.S.html#TYPEt">t</a> -> <a href="Formula_intf.S.html#TYPEt">t</a> * <a href="Formula_intf.html#TYPEnegated">Formula_intf.negated</a></code></pre><div class="info ">
 Returns a 'normalized' form of the formula, possibly negated
-      (in which case return <code class="code">Negated</code>).
-      <code class="code">norm</code> must be so that <code class="code">a</code> and <code class="code">neg a</code> normalise to the same formula,
-      but one returns <code class="code">Same_sign</code> and one returns <code class="code">Negated</code><br>
+      (in which case return <code class="code">Negated</code>). This function is used to recognize
+      the link between a formula <code class="code">a</code> and its negation <code class="code">neg a</code>, so the goal is
+      that <code class="code">a</code> and <code class="code">neg a</code> normalise to the same formula,
+      but one returns <code class="code">Same_sign</code> and the other one returns <code class="code">Negated</code><br>
 </div>
 </body></html>

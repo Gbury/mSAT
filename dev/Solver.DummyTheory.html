@@ -30,8 +30,7 @@
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html"><title>mSAT doc : Solver.DummyTheory</title>
+<link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Solver.DummyTheory</title>
 </head>
 <body>
 <div class="navbar">&nbsp;<a class="up" href="Solver.html" title="Solver">Up</a>
@@ -41,7 +40,8 @@
 
 <pre><span class="keyword">module</span> DummyTheory: <div class="sig_block"><code class="code">functor (</code><code class="code">F</code><code class="code"> : </code><code class="type"><a href="Formula_intf.S.html">Formula_intf.S</a></code><code class="code">) -&gt; </code><code class="type"><a href="Theory_intf.S.html">Theory_intf.S</a></code><code class="type">  with type formula = F.t
                  and type proof = F.proof</code></div></pre><div class="info module top">
-Simple case where the proof type is <code class="code">unit</code> and the theory is empty<br>
+Simple case where the theory is empty and
+    the proof type is the one given in the formula interface<br>
 </div>
 <table border="0" cellpadding="3" width="100%">
 <tr>

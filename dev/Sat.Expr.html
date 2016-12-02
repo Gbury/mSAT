@@ -30,8 +30,7 @@
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html"><title>mSAT doc : Sat.Expr</title>
+<link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Sat.Expr</title>
 </head>
 <body>
 <div class="navbar">&nbsp;<a class="up" href="Sat.html" title="Sat">Up</a>
@@ -39,10 +38,17 @@
 </div>
 <h1>Module <a href="type_Sat.Expr.html">Sat.Expr</a></h1>
 
-<pre><span class="keyword">module</span> Expr: <code class="type"><a href="Expr_sat.html">Expr_sat</a></code></pre><div class="info module top">
+<pre><span class="keyword">module</span> Expr: <code class="code">sig</code> <a href="Sat.Expr.html">..</a> <code class="code">end</code></pre><div class="info module top">
 The module defining formulas<br>
 </div>
 <hr width="100%">
+<br>
+SAT Formulas
+<p>
+
+      This modules implements formuals adequate for use in a pure SAT Solver.
+      Atomic formuals are represented using integers, that should allow
+      near optimal efficiency (both in terms of space and time).<br>
 
 <pre><span class="keyword">include</span> <a href="Formula_intf.S.html">Formula_intf.S</a></pre>
 <br>

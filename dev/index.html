@@ -28,8 +28,7 @@
 <link title="Dot" rel="Chapter" href="Dot.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
-<link title="Sat" rel="Chapter" href="Sat.html">
-<link title="Expr_sat" rel="Chapter" href="Expr_sat.html"><title>mSAT doc</title>
+<link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc</title>
 </head>
 <body>
 <h1>mSAT doc</h1>
@@ -39,7 +38,7 @@
 <h2 id="2_License">License</h2>
 <p>
 
-This code is free, under the Apache 2.0 license.
+This code is free, under the <a href="https://github.com/Gbury/mSAT/blob/master/LICENSE">Apache 2.0 license</a>.
 <p>
 
 <h2 id="2_Contents">Contents</h2>
@@ -47,8 +46,13 @@ This code is free, under the Apache 2.0 license.
 
 mSAT is an ocaml library providing SAT/SMT/McSat solvers. More precisely,
 what mSAT provides are functors to easily create such solvers. Indeed, the core
-of a sat solver does not need much information about neither the exact representation
-of terms nor the inner workings of a theory.
+of a sat solver does not need much information about either the exact representation
+of terms or the inner workings of a theory.
+<p>
+
+Most modules in mSAT actually define functors. These functors usually take one
+or two arguments, usually an implementation of Terms and formulas used, and an implementation
+of the theory used during solving.
 <p>
 
 <h4 id="4_Solvercreation">Solver creation</h4>
@@ -115,10 +119,6 @@ An instanciation of a pure sat solver is also provided:
 <table class="indextable">
 <tr><td class="module"><a href="Sat.html">Sat</a></td><td><div class="info">
 Sat solver
-</div>
-</td></tr>
-<tr><td class="module"><a href="Expr_sat.html">Expr_sat</a></td><td><div class="info">
-SAT Formulas
 </div>
 </td></tr>
 </table>
