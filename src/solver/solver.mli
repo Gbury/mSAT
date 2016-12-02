@@ -17,7 +17,8 @@ module type S = Solver_intf.S
 module DummyTheory(F : Formula_intf.S) :
   Theory_intf.S with type formula = F.t
                  and type proof = F.proof
-(** Simple case where the proof type is [unit] and the theory is empty *)
+(** Simple case where the proof type is the one given in the formula interface
+    and the theory is empty *)
 
 module Make (F : Formula_intf.S)
     (Th : Theory_intf.S with type formula = F.t

@@ -38,7 +38,6 @@ An instanciation of a pure sat solver is also provided:
 
 {!modules:
 Sat
-Expr_sat
 }
 
 Lastly, mSAT also provides an implementation of Tseitin's CNF conversion:
