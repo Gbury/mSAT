@@ -69,6 +69,10 @@ module Make
   val model : unit -> (St.term * St.term) list
   (** Returns the model found if the formula is satisfiable. *)
 
+  val full_slice : unit -> (St.term, St.formula, St.proof) Plugin_intf.slice
+  (** View the current state of the trail as a slice. Mainly useful when the
+      solver has reached a SAT conclusion. *)
+
   val check : unit -> bool
   (** Check the satisfiability of the current model. Only has meaning
       if the solver finished proof search and has returned [Sat]. *)
