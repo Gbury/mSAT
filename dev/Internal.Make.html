@@ -125,6 +125,11 @@ Returns the unsat clause found at the toplevel, if it exists (i.e if
 Returns the model found if the formula is satisfiable.<br>
 </div>
 
+<pre><span id="VALfull_slice"><span class="keyword">val</span> full_slice</span> : <code class="type">unit -> (St.term, St.formula, St.proof) <a href="Plugin_intf.html#TYPEslice">Plugin_intf.slice</a></code></pre><div class="info ">
+View the current state of the trail as a slice. Mainly useful when the
+      solver has reached a SAT conclusion.<br>
+</div>
+
 <pre><span id="VALcheck"><span class="keyword">val</span> check</span> : <code class="type">unit -> bool</code></pre><div class="info ">
 Check the satisfiability of the current model. Only has meaning
       if the solver finished proof search and has returned <code class="code">Sat</code>.<br>
