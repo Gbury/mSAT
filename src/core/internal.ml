@@ -499,11 +499,14 @@ module Make
       (fun k->k (Vec.size env.elt_queue) pp_atom a)
 
   let enqueue_semantic a terms =
-    let l = List.map St.add_term terms in
-    let lvl = List.fold_left (fun acc {l_level; _} ->
-        assert (l_level > 0); max acc l_level) 0 l in
-    Iheap.grow_to_at_least env.order (St.nb_elt ());
-    enqueue_bool a lvl Semantic
+    if a.is_true then ()
+    else begin
+      let l = List.map St.add_term terms in
+      let lvl = List.fold_left (fun acc {l_level; _} ->
+          assert (l_level > 0); max acc l_level) 0 l in
+      Iheap.grow_to_at_least env.order (St.nb_elt ());
+      enqueue_bool a lvl Semantic
+    end
 
   (* MCsat semantic assignment *)
   let enqueue_assign l value lvl =
