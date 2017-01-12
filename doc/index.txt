@@ -1,6 +1,6 @@
 
-Dolmen
-======
+mSAT
+====
 Guillaume Bury <guillaume.bury@gmail.com>
 
 * link:dev[]
