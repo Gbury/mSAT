@@ -1,7 +1,7 @@
 # MSAT  [![Build Status](https://travis-ci.org/Gbury/mSAT.svg?branch=master)](https://travis-ci.org/Gbury/mSAT)
 
 MSAT is an OCaml library that features a modular SAT-solver and some
-extensions (including SMT). This is **work in progress**.
+extensions (including SMT).
 
 
 It derives from [Alt-Ergo Zero](http://cubicle.lri.fr/alt-ergo-zero).
@@ -15,6 +15,21 @@ This program is distributed under the Apache Software License version
 ## Documentation
 
 See https://gbury.github.io/mSAT/
+
+## INSTALLATION
+
+### Via opam
+
+Once the package is on [opam](http://opam.ocaml.org), just `opam install msat`.
+For the development version, use:
+
+    opam pin add msat https://github.com/Gbury/mSAT.git
+
+### Manual installation
+
+You will need ocamlfind and ocamlbuild. The command is:
+
+    make install
 
 ## USAGE
 
@@ -59,21 +74,4 @@ as shown in the following code :
     Sat.assume (F.make_cnf s)
     let _ = Sat.solve ()        (* Should return (Sat.Unsat _) *)
 ```
-
-## INSTALLATION
-
-### Via opam
-
-Once the package is on [opam](http://opam.ocaml.org), just `opam install msat`.
-For the development version, use:
-
-    opam pin add msat https://github.com/Gbury/mSAT.git
-
-### Manual installation
-
-You will need ocamlfind. The command is:
-
-    make install
-
-
 
