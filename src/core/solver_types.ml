@@ -44,6 +44,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     vid : int;
     pa : atom;
     na : atom;
+    mutable used : int;
     mutable seen : bool;
     mutable v_level : int;
     mutable v_weight : float;
@@ -92,6 +93,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     { vid = -101;
       pa = dummy_atom;
       na = dummy_atom;
+      used = 0;
       seen = false;
       v_level = -1;
       v_weight = -1.;
@@ -159,6 +161,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
           { vid = !cpt_mk_var;
             pa = pa;
             na = na;
+            used = 0;
             seen = false;
             v_level = -1;
             v_weight = 0.;

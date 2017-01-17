@@ -48,6 +48,7 @@ module type S = sig
     vid : int;  (** Unique identifier *)
     pa : atom;  (** Link for the positive atom *)
     na : atom;  (** Link for the negative atom *)
+    mutable used : int;         (** Number of attached clause that contain the var *)
     mutable seen : bool;        (** Boolean used during propagation *)
     mutable v_level : int;      (** Level of decision/propagation *)
     mutable v_weight : float;   (** Variable weight (for the heap) *)
