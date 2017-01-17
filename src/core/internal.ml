@@ -196,7 +196,7 @@ module Make
      When incrementing activity, we want to be able to iterate over
      all subterms of a formula. However, the function provided by the theory
      may be costly (if it walks a tree-like structure, and does some processing
-     to ignore some subterms for instance), so we want to 'cache' to list
+     to ignore some subterms for instance), so we want to 'cache' the list
      of subterms of each formula, so we have a field [v_assignable]
      directly in variables to do so.  *)
   let iter_sub f v =
