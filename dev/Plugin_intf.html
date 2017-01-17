@@ -143,6 +143,30 @@ Asusmptions made by the core SAT solver.<br>
 </div>
 
 
+<pre><code><span id="TYPEreason"><span class="keyword">type</span> <code class="type">('term, 'formula, 'proof)</code> reason</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTreason.Eval"><span class="constructor">Eval</span></span> <span class="keyword">of</span> <code class="type">'term list</code></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTreason.Consequence"><span class="constructor">Consequence</span></span> <span class="keyword">of</span> <code class="type">'formula list * 'proof</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The type of reasons for propagations of a formula <code class="code">f</code>.
+    <code class="code">Semantic lvl</code> means that <code class="code">f</code> is true because of the assignments whose level is <code class="code">&lt;= lvl</code>.
+    <code class="code">Consequence (l, p)</code> means that the formulas in <code class="code">l</code> imply <code class="code">f</code>. The proof should be a proof
+    of the clause "<code class="code">l</code> implies <code class="code">f</code>".<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+
+
 <pre><code><span id="TYPEslice"><span class="keyword">type</span> <code class="type">('term, 'formula, 'proof)</code> slice</span> = {</code></pre><table class="typetable">
 <tr>
 <td align="left" valign="top" >
@@ -190,7 +214,7 @@ Add a clause to the solver.<br>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
-<code><span id="TYPEELTslice.propagate">propagate</span>&nbsp;: <code class="type">'formula -> 'term list -> unit</code>;</code></td>
+<code><span id="TYPEELTslice.propagate">propagate</span>&nbsp;: <code class="type">'formula -> ('term, 'formula, 'proof) <a href="Plugin_intf.html#TYPEreason">reason</a> -> unit</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 Propagate a formula, i.e. the theory can
                                                   evaluate the formula to be true (see the

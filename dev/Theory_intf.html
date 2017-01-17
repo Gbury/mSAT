@@ -107,8 +107,8 @@ Length of the slice<br>
 <code><span id="TYPEELTslice.get">get</span>&nbsp;: <code class="type">int -> 'form</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 Accesor for the formuals in the slice.
-                                          Should only be called on integers <code class="code">i</code> s.t.
-                                          <code class="code">start &lt;= i &lt; start + length</code><br>
+                                            Should only be called on integers <code class="code">i</code> s.t.
+                                            <code class="code">start &lt;= i &lt; start + length</code><br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr>
@@ -119,6 +119,19 @@ Accesor for the formuals in the slice.
 <code><span id="TYPEELTslice.push">push</span>&nbsp;: <code class="type">'form list -> 'proof -> unit</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 Allows to add to the solver a clause.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.propagate">propagate</span>&nbsp;: <code class="type">'form -> 'form list -> 'proof -> unit</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<code class="code">propagate lit causes proof</code> informs the solver to propagate <code class="code">lit</code>, with the reason
+    that the clause <code class="code">causes =&gt; lit</code> is a theory tautology. It is faster than pushing
+    the associated clause but the clause will not be remembered by the sat solver,
+    i.e it will not be used by the solver to do boolean propagation.<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
