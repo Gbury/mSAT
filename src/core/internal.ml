@@ -369,6 +369,7 @@ module Make
   let attach_clause c =
     assert (not c.attached);
     Log.debugf debug "Attaching %a" (fun k -> k St.pp_clause c);
+    Array.iter (fun a -> a.var.used <- a.var.used + 1) c.atoms;
     Vec.push c.atoms.(0).neg.watched c;
     Vec.push c.atoms.(1).neg.watched c;
     c.attached <- true;
@@ -986,7 +987,10 @@ module Make
   (* Decide on a new literal, and enqueue it into the trail *)
   let rec pick_branch_aux atom: unit =
     let v = atom.var in
-    if v.v_level >= 0 then begin
+    if v.used <= 0 then begin
+      assert (v.used = 0);
+      pick_branch_lit ()
+    end else if v.v_level >= 0 then begin
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit ()
     end else match Plugin.eval atom.lit with
