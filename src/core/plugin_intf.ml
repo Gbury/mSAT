@@ -54,12 +54,11 @@ type ('term, 'formula) assumption =
 (** Asusmptions made by the core SAT solver. *)
 
 type ('term, 'formula, 'proof) reason =
-  | Eval of 'term list
-  | Consequence of 'formula list * 'proof
-(** The type of reasons for propagations of a formula [f].
-    [Semantic lvl] means that [f] is true because of the assignments whose level is [<= lvl].
-    [Consequence (l, p)] means that the formulas in [l] imply [f]. The proof should be a proof
-    of the clause "[l] implies [f]". *)
+  | Eval of 'term list                      (** The formula can be evalutaed using the terms in the list *)
+  | Consequence of 'formula list * 'proof   (** [Consequence (l, p)] means that the formulas in [l] imply
+                                                the propagated formula [f]. The proof should be a proof of
+                                                the clause "[l] implies [f]". *)
+(** The type of reasons for propagations of a formula [f]. *)
 
 type ('term, 'formula, 'proof) slice = {
   start : int;                                (** Start of the slice *)
