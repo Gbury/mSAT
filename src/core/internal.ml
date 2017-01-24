@@ -886,7 +886,7 @@ module Make
     ()
 
   (* Propagation (boolean and theory) *)
-  let new_atom f =
+  let create_atom f =
     let a = atom f in
     ignore (th_eval a);
     a
@@ -900,7 +900,7 @@ module Make
     | Lit _ -> assert false
 
   let slice_push (l:formula list) (lemma:proof): unit =
-    let atoms = List.rev_map (fun x -> new_atom x) l in
+    let atoms = List.rev_map create_atom l in
     let c = make_clause (fresh_tname ()) atoms (Lemma lemma) in
     Log.debugf info "Pushing clause %a" (fun k->k St.pp_clause c);
     (* do not add the clause yet, wait for the theory propagation to
@@ -954,7 +954,7 @@ module Make
         propagate ()
       | Plugin_intf.Unsat (l, p) ->
         (* conflict *)
-        let l = List.rev_map new_atom l in
+        let l = List.rev_map create_atom l in
         Iheap.grow_to_at_least env.order (St.nb_elt ());
         List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
         let c = St.make_clause (St.fresh_tname ()) l (Lemma p) in
@@ -1125,7 +1125,7 @@ module Make
             begin match Plugin.if_sat (full_slice ()) with
               | Plugin_intf.Sat -> ()
               | Plugin_intf.Unsat (l, p) ->
-                let atoms = List.rev_map new_atom l in
+                let atoms = List.rev_map create_atom l in
                 let c = make_clause (fresh_tname ()) atoms (Lemma p) in
                 Log.debugf info "Theory conflict clause: %a" (fun k -> k St.pp_clause c);
                 Stack.push c env.clauses_to_add
