@@ -45,6 +45,8 @@ module Make
       @param assumptions list of additional local assumptions to make,
         removed after the callback returns a value *)
 
+  (** {2 Propositional models} *)
+
   val eval : St.formula -> bool
   (** Returns the valuation of a formula in the current state
       of the sat solver.
@@ -57,6 +59,12 @@ module Make
       that can potentially be backtracked.
       @raise UndecidedLit if the literal is not decided *)
 
+  val model : unit -> (St.term * St.term) list
+  (** Returns the model found if the formula is satisfiable. *)
+
+  val check : unit -> bool
+  (** Check the satisfiability of the current model. Only has meaning
+      if the solver finished proof search and has returned [Sat]. *)
 
   (** {2 Proofs and Models} *)
 
@@ -66,16 +74,9 @@ module Make
   (** Returns the unsat clause found at the toplevel, if it exists (i.e if
       [solve] has raised [Unsat]) *)
 
-  val model : unit -> (St.term * St.term) list
-  (** Returns the model found if the formula is satisfiable. *)
-
   val full_slice : unit -> (St.term, St.formula, St.proof) Plugin_intf.slice
   (** View the current state of the trail as a slice. Mainly useful when the
       solver has reached a SAT conclusion. *)
-
-  val check : unit -> bool
-  (** Check the satisfiability of the current model. Only has meaning
-      if the solver finished proof search and has returned [Sat]. *)
 
   (** {2 Internal data}
       These functions expose some internal data stored by the solver, as such
