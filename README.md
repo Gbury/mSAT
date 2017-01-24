@@ -51,27 +51,27 @@ A ready-to-use SAT solver is available in the Sat module. It can be used
 as shown in the following code :
 
 ```ocaml
-    (* Module initialization *)
-    module Sat = Msat.Sat.Make()
-    module F = Msat.Tseitin.Make(Msat.Sat.Expr)
+(* Module initialization *)
+module Sat = Msat.Sat.Make()
+module F = Msat.Tseitin.Make(Msat.Sat.Expr)
 
-    (* We create here two distinct atoms *)
-    let a = Msat.Sat.Expr.fresh ()    (* A 'new_atom' is always distinct from any other atom *)
-    let b = Msat.Sat.Expr.make 1      (* Atoms can be created from integers *)
+(* We create here two distinct atoms *)
+let a = Msat.Sat.Expr.fresh ()    (* A 'new_atom' is always distinct from any other atom *)
+let b = Msat.Sat.Expr.make 1      (* Atoms can be created from integers *)
 
-    (* Let's create some formulas *)
-    let p = F.make_atom a
-    let q = F.make_atom b
-    let r = F.make_and [p; q]
-    let s = F.make_or [F.make_not p; F.make_not q]
+(* Let's create some formulas *)
+let p = F.make_atom a
+let q = F.make_atom b
+let r = F.make_and [p; q]
+let s = F.make_or [F.make_not p; F.make_not q]
 
-    (* We can try and check the satisfiability of the given formulas *)
-    Sat.assume (F.make_cnf r)
-    let _ = Sat.solve ()        (* Should return (Sat.Sat _) *)
+(* We can try and check the satisfiability of the given formulas *)
+Sat.assume (F.make_cnf r)
+let _ = Sat.solve ()        (* Should return (Sat.Sat _) *)
 
-    (* The Sat solver has an incremental mutable state, so we still have
-     * the formula 'r' in our assumptions *)
-    Sat.assume (F.make_cnf s)
-    let _ = Sat.solve ()        (* Should return (Sat.Unsat _) *)
+(* The Sat solver has an incremental mutable state, so we still have
+ * the formula 'r' in our assumptions *)
+Sat.assume (F.make_cnf s)
+let _ = Sat.solve ()        (* Should return (Sat.Unsat _) *)
 ```
 
