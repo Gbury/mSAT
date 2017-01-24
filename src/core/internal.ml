@@ -233,6 +233,21 @@ module Make
       Iheap.insert f_weight env.order v.vid;
       iter_sub (fun t -> insert_var_order (elt_of_lit t)) v
 
+  (* Add new litterals/atoms on which to decide on, even if there is no
+     clause that constrains it.
+     We could maybe check if they have already has been decided before
+     inserting them into the heap, if it appears that it helps performance. *)
+  let new_lit t =
+    let l = add_term t in
+    insert_var_order (E_lit l)
+
+  let new_atom p =
+    let a = atom p in
+    (* This is necessary to ensure that the var will not be dropped
+       during the next backtrack. *)
+    a.var.used <- a.var.used + 1;
+    insert_var_order (E_var a.var)
+
   (* Rather than iterate over all the heap when we want to decrease all the
      variables/literals activity, we instead increase the value by which
      we increase the activity of 'interesting' var/lits. *)

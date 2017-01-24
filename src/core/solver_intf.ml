@@ -76,6 +76,16 @@ module type S = sig
   val solve : ?assumptions:atom list -> unit -> res
   (** Try and solves the current set of assumptions. *)
 
+  val new_lit : St.term -> unit
+  (** Add a new litteral (i.e term) to the solver. This term will
+      be decided on at some point during solving, wether it appears
+      in clauses or not. *)
+
+  val new_atom : atom -> unit
+  (** Add a new atom (i.e propositional formula) to the solver.
+      This formula will be decided on at some point during solving,
+      wether it appears in clauses or not. *)
+
   val unsat_core : Proof.proof -> St.clause list
   (** Returns the unsat core of a given proof. *)
 

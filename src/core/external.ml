@@ -118,6 +118,9 @@ module Make
 
   let get_tag cl = St.(cl.tag)
 
+  let new_lit = S.new_lit
+  let new_atom = S.new_atom
+
   (* Dimacs & iCNF export *)
   let export_vec name fmt vec =
     Format.fprintf fmt "c %s@,%a@," name (Vec.print ~sep:"" St.pp_dimacs) vec

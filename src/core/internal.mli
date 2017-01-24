@@ -33,6 +33,16 @@ module Make
   (** Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place. *)
 
+  val new_lit : St.term -> unit
+  (** Add a new litteral (i.e term) to the solver. This term will
+      be decided on at some point during solving, wether it appears
+      in clauses or not. *)
+
+  val new_atom : St.formula -> unit
+  (** Add a new atom (i.e propositional formula) to the solver.
+      This formula will be decided on at some point during solving,
+      wether it appears in clauses or not. *)
+
   val push : unit -> unit
   (** Create a decision level for local assumptions.
       @raise Unsat if a conflict is detected in the current state. *)
