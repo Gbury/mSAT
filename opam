@@ -8,11 +8,14 @@ build: [
     [make "disable_log"]
     [make "lib"]
 ]
+build-doc: [
+    [make "doc"]
+]
 install: [
-    [make "install"]
+    [make "DOCDIR=%{msat:doc}%" "install"]
 ]
 remove: [
-    ["ocamlfind" "remove" "msat"]
+    [make "uninstall"]
 ]
 depends: [
   "ocamlfind" {build}
