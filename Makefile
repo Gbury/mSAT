@@ -48,15 +48,15 @@ TO_INSTALL=META $(addprefix _build/src/,$(LIB) $(TO_INSTALL_LIB))
 
 install: lib
 	ocamlfind install $(NAME) $(TO_INSTALL)
-	mkdir -p $(DOCDIR)
-	cp -v $(NAME).docdir/*.html $(NAME).docdir/*.css $(DOCDIR)
+	if [ -d "$(NAME).docdir" ]; then \
+		mkdir -p $(DOCDIR) ; \
+		cp -v $(NAME).docdir/*.html $(NAME).docdir/*.css $(DOCDIR) ; \
+	fi
 
 uninstall:
 	ocamlfind remove $(NAME)
+	rm -rf $(DOCDIR)
 
-remove:
-	ocamlfind remove $(NAME) || true
-
-reinstall: | remove install
+reinstall: | uninstall install
 
 .PHONY: clean doc all bench install uninstall remove reinstall enable_log disable_log bin test

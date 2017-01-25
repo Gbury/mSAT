@@ -15,7 +15,7 @@ install: [
     [make "DOCDIR=%{msat:doc}%" "install"]
 ]
 remove: [
-    [make "uninstall"]
+    [make "DOCDIR=%{msat:doc}%" "uninstall"]
 ]
 depends: [
   "ocamlfind" {build}
