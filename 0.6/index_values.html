@@ -1,0 +1,632 @@
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Index of values</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;</div>
+<h1>Index of values</h1>
+<table>
+<tr><td align="left"><br>A</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALadd_atom">add_atom</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Returns the atom associated with the given formula
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALadd_term">add_term</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Returns the variable associated with the term
+</div>
+</td></tr>
+<tr><td><a href="Plugin_intf.S.html#VALassign">assign</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
+<td><div class="info">
+Returns an assignment value for the given term.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALassume">assume</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Add the list of clauses to the current set of assumptions.
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALassume">assume</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Add the list of clauses to the current set of assumptions.
+</div>
+</td></tr>
+<tr><td><a href="Plugin_intf.S.html#VALassume">assume</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
+<td><div class="info">
+Assume the formulas in the slice, possibly pushing new formulas to be propagated,
+      and returns the result of the new assumptions.
+</div>
+</td></tr>
+<tr><td><a href="Theory_intf.S.html#VALassume">assume</a> [<a href="Theory_intf.S.html">Theory_intf.S</a>]</td>
+<td><div class="info">
+Assume the formulas in the slice, possibly pushing new formulas to be propagated,
+      and returns the result of the new assumptions.
+</div>
+</td></tr>
+<tr><td align="left"><br>B</td></tr>
+<tr><td><a href="Plugin_intf.S.html#VALbacktrack">backtrack</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
+<td><div class="info">
+Backtrack to the given level.
+</div>
+</td></tr>
+<tr><td><a href="Theory_intf.S.html#VALbacktrack">backtrack</a> [<a href="Theory_intf.S.html">Theory_intf.S</a>]</td>
+<td><div class="info">
+Backtrack to the given level.
+</div>
+</td></tr>
+<tr><td align="left"><br>C</td></tr>
+<tr><td><a href="Internal.Make.html#VALcheck">check</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Check the satisfiability of the current model.
+</div>
+</td></tr>
+<tr><td><a href="Res_intf.S.html#VALcheck">check</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Check the contents of a proof.
+</div>
+</td></tr>
+<tr><td><a href="Dedukti.Arg.html#VALcontext">context</a> [<a href="Dedukti.Arg.html">Dedukti.Arg</a>]</td>
+<td></td></tr>
+<tr><td><a href="Plugin_intf.S.html#VALcurrent_level">current_level</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
+<td><div class="info">
+Return the current level of the theory (either the empty/beginning state, or the
+      last level returned by the <code class="code">assume</code> function).
+</div>
+</td></tr>
+<tr><td><a href="Theory_intf.S.html#VALcurrent_level">current_level</a> [<a href="Theory_intf.S.html">Theory_intf.S</a>]</td>
+<td><div class="info">
+Return the current level of the theory (either the empty/beginning state, or the
+      last level returned by the <code class="code">assume</code> function).
+</div>
+</td></tr>
+<tr><td align="left"><br>D</td></tr>
+<tr><td><a href="Log.html#VALdebug">debug</a> [<a href="Log.html">Log</a>]</td>
+<td><div class="info">
+Simpler version of <a href="Log.html#VALdebug"><code class="code">Log.debug</code></a>, without formatting
+</div>
+</td></tr>
+<tr><td><a href="Log.html#VALdebugf">debugf</a> [<a href="Log.html">Log</a>]</td>
+<td><div class="info">
+Emit a debug message at the given level.
+</div>
+</td></tr>
+<tr><td><a href="Expr_intf.S.Formula.html#VALdummy">dummy</a> [<a href="Expr_intf.S.Formula.html">Expr_intf.S.Formula</a>]</td>
+<td><div class="info">
+Constant formula.
+</div>
+</td></tr>
+<tr><td><a href="Plugin_intf.S.html#VALdummy">dummy</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
+<td><div class="info">
+A dummy level.
+</div>
+</td></tr>
+<tr><td><a href="Theory_intf.S.html#VALdummy">dummy</a> [<a href="Theory_intf.S.html">Theory_intf.S</a>]</td>
+<td><div class="info">
+A dummy level.
+</div>
+</td></tr>
+<tr><td><a href="Formula_intf.S.html#VALdummy">dummy</a> [<a href="Formula_intf.S.html">Formula_intf.S</a>]</td>
+<td><div class="info">
+Formula constant.
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALdummy_atom">dummy_atom</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALdummy_clause">dummy_clause</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Dummy values for use in vector dummys
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALdummy_var">dummy_var</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>E</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALelt_of_lit">elt_of_lit</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALelt_of_var">elt_of_var</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Constructors &amp; destructor for elements
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALempty_clause">empty_clause</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+The empty clause
+</div>
+</td></tr>
+<tr><td><a href="Expr_intf.S.Formula.html#VALequal">equal</a> [<a href="Expr_intf.S.Formula.html">Expr_intf.S.Formula</a>]</td>
+<td><div class="info">
+Equality over formulas.
+</div>
+</td></tr>
+<tr><td><a href="Expr_intf.S.Term.html#VALequal">equal</a> [<a href="Expr_intf.S.Term.html">Expr_intf.S.Term</a>]</td>
+<td><div class="info">
+Equality over terms.
+</div>
+</td></tr>
+<tr><td><a href="Formula_intf.S.html#VALequal">equal</a> [<a href="Formula_intf.S.html">Formula_intf.S</a>]</td>
+<td><div class="info">
+Equality over formulas.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALeval">eval</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Returns the valuation of a formula in the current state
+      of the sat solver.
+</div>
+</td></tr>
+<tr><td><a href="Plugin_intf.S.html#VALeval">eval</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
+<td><div class="info">
+Returns the evaluation of the formula in the current assignment
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALeval_level">eval_level</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Return the current assignement of the literals, as well as its
+      decision level.
+</div>
+</td></tr>
+<tr><td><a href="Res_intf.S.html#VALexpand">expand</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Return the proof step at the root of a given proof.
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALexport_dimacs">export_dimacs</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Prints the entire set of clauses in the input problem
+      (including hypothesis, lemmas and local assumptions),
+      in the dimacs format.
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALexport_icnf">export_icnf</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Export the current problem contents to iCNF format.
+</div>
+</td></tr>
+<tr><td align="left"><br>F</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALf_false">f_false</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+The <code class="code">false</code> formula, i.e a formula that cannot be satisfied.
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALf_true">f_true</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+The <code class="code">true</code> formula, i.e a formula that is always satisfied.
+</div>
+</td></tr>
+<tr><td><a href="Res_intf.S.html#VALfold">fold</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+<code class="code">fold f acc p</code>, fold <code class="code">f</code> over the proof <code class="code">p</code> and all its node.
+</div>
+</td></tr>
+<tr><td><a href="Sat.Expr.html#VALfresh">fresh</a> [<a href="Sat.Expr.html">Sat.Expr</a>]</td>
+<td><div class="info">
+Make a fresh atom
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.Arg.html#VALfresh">fresh</a> [<a href="Tseitin_intf.Arg.html">Tseitin_intf.Arg</a>]</td>
+<td><div class="info">
+Generate fresh formulas (that are different from any other).
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALfresh_hname">fresh_hname</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Fresh names for clauses
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALfresh_lname">fresh_lname</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALfresh_name">fresh_name</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALfresh_tname">fresh_tname</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Internal.Make.html#VALfull_slice">full_slice</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+View the current state of the trail as a slice.
+</div>
+</td></tr>
+<tr><td align="left"><br>G</td></tr>
+<tr><td><a href="Log.html#VALget_debug">get_debug</a> [<a href="Log.html">Log</a>]</td>
+<td><div class="info">
+Current debug level
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALget_elt">get_elt</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALget_elt_id">get_elt_id</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALget_elt_level">get_elt_level</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALget_elt_weight">get_elt_weight</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_intf.S.html#VALget_tag">get_tag</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Recover tag from a clause, if any
+</div>
+</td></tr>
+<tr><td align="left"><br>H</td></tr>
+<tr><td><a href="Expr_intf.S.Formula.html#VALhash">hash</a> [<a href="Expr_intf.S.Formula.html">Expr_intf.S.Formula</a>]</td>
+<td><div class="info">
+Hashing function for formulas.
+</div>
+</td></tr>
+<tr><td><a href="Expr_intf.S.Term.html#VALhash">hash</a> [<a href="Expr_intf.S.Term.html">Expr_intf.S.Term</a>]</td>
+<td><div class="info">
+Hashing function for terms.
+</div>
+</td></tr>
+<tr><td><a href="Formula_intf.S.html#VALhash">hash</a> [<a href="Formula_intf.S.html">Formula_intf.S</a>]</td>
+<td><div class="info">
+Hashing function for formulas.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALhistory">history</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Returns the history of learnt clauses, with no guarantees on order.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALhyps">hyps</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Returns the vector of assumptions used by the solver.
+</div>
+</td></tr>
+<tr><td align="left"><br>I</td></tr>
+<tr><td><a href="Plugin_intf.S.html#VALif_sat">if_sat</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
+<td><div class="info">
+Called at the end of the search in case a model has been found.
+</div>
+</td></tr>
+<tr><td><a href="Theory_intf.S.html#VALif_sat">if_sat</a> [<a href="Theory_intf.S.html">Theory_intf.S</a>]</td>
+<td><div class="info">
+Called at the end of the search in case a model has been found.
+</div>
+</td></tr>
+<tr><td><a href="Plugin_intf.S.html#VALiter_assignable">iter_assignable</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
+<td><div class="info">
+An iterator over the subterms of a formula that should be assigned a value (usually the poure subterms)
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALiter_elt">iter_elt</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Read access to the vector of variables created
+</div>
+</td></tr>
+<tr><td align="left"><br>L</td></tr>
+<tr><td><a href="Dot.Arg.html#VALlemma_info">lemma_info</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
+<td><div class="info">
+Generate some information about a theory specific lemmas.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALlocal">local</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Add local assumptions
+</div>
+</td></tr>
+<tr><td align="left"><br>M</td></tr>
+<tr><td><a href="Sat.Expr.html#VALmake">make</a> [<a href="Sat.Expr.html">Sat.Expr</a>]</td>
+<td><div class="info">
+Make a proposition from an integer.
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALmake_and">make_and</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+Creates the conjunction of a list of formulas.
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALmake_atom">make_atom</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+<code class="code">make_atom p</code> builds the boolean formula equivalent to the atomic formula <code class="code">p</code>.
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALmake_boolean_var">make_boolean_var</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Returns the variable linked with the given formula, and whether the atom associated with the formula
+      is <code class="code">var.pa</code> or <code class="code">var.na</code>
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALmake_clause">make_clause</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+<code class="code">make_clause name atoms size premise</code> creates a clause with the given attributes.
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALmake_cnf">make_cnf</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+<code class="code">make_cnf f</code> returns a conjunctive normal form of <code class="code">f</code> under the form: a
+      list (which is a conjunction) of lists (which are disjunctions) of
+      atomic formulas.
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALmake_equiv">make_equiv</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+<code class="code">make_equiv p q</code> creates the boolena formula "<code class="code">p</code> is equivalent to <code class="code">q</code>".
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALmake_imply">make_imply</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+<code class="code">make_imply p q</code> creates the boolean formula "<code class="code">p</code> implies <code class="code">q</code>".
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALmake_not">make_not</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+Creates the negation of a boolean formula.
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALmake_or">make_or</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+Creates the disjunction of a list of formulas.
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALmake_xor">make_xor</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+<code class="code">make_xor p q</code> creates the boolean formula "<code class="code">p</code> xor <code class="code">q</code>".
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALmcsat">mcsat</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+TODO:deprecate.
+</div>
+</td></tr>
+<tr><td><a href="Res_intf.S.html#VALmerge">merge</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Merge two sorted atom list using a suitable comparison function.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALmodel">model</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Returns the model found if the formula is satisfiable.
+</div>
+</td></tr>
+<tr><td align="left"><br>N</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALnb_elt">nb_elt</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Tseitin_intf.Arg.html#VALneg">neg</a> [<a href="Tseitin_intf.Arg.html">Tseitin_intf.Arg</a>]</td>
+<td><div class="info">
+Negation of atomic formulas.
+</div>
+</td></tr>
+<tr><td><a href="Expr_intf.S.Formula.html#VALneg">neg</a> [<a href="Expr_intf.S.Formula.html">Expr_intf.S.Formula</a>]</td>
+<td><div class="info">
+Formula negation
+</div>
+</td></tr>
+<tr><td><a href="Formula_intf.S.html#VALneg">neg</a> [<a href="Formula_intf.S.html">Formula_intf.S</a>]</td>
+<td><div class="info">
+Formula negation.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALnew_atom">new_atom</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Add a new atom (i.e propositional formula) to the solver.
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALnew_atom">new_atom</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Add a new atom (i.e propositional formula) to the solver.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALnew_lit">new_lit</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Add a new litteral (i.e term) to the solver.
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALnew_lit">new_lit</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Add a new litteral (i.e term) to the solver.
+</div>
+</td></tr>
+<tr><td><a href="Expr_intf.S.Formula.html#VALnorm">norm</a> [<a href="Expr_intf.S.Formula.html">Expr_intf.S.Formula</a>]</td>
+<td><div class="info">
+Returns a 'normalized' form of the formula, possibly negated
+        (in which case return <code class="code">Negated</code>).
+</div>
+</td></tr>
+<tr><td><a href="Formula_intf.S.html#VALnorm">norm</a> [<a href="Formula_intf.S.html">Formula_intf.S</a>]</td>
+<td><div class="info">
+Returns a 'normalized' form of the formula, possibly negated
+      (in which case return <code class="code">Negated</code>).
+</div>
+</td></tr>
+<tr><td align="left"><br>O</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALof_atom">of_atom</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Constructors and destructors
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALof_lit">of_lit</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td align="left"><br>P</td></tr>
+<tr><td><a href="Internal.Make.html#VALpop">pop</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Pop a decision level for local assumptions.
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALpp">pp</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALpp_atom">pp_atom</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALpp_clause">pp_clause</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALpp_dimacs">pp_dimacs</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALpp_lit">pp_lit</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALpp_reason">pp_reason</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Debug function for atoms and clauses (very verbose)
+</div>
+</td></tr>
+<tr><td><a href="Dedukti.Arg.html#VALprint">print</a> [<a href="Dedukti.Arg.html">Dedukti.Arg</a>]</td>
+<td></td></tr>
+<tr><td><a href="Backend_intf.S.html#VALprint">print</a> [<a href="Backend_intf.S.html">Backend_intf.S</a>]</td>
+<td><div class="info">
+A function for printing proofs in the desired format.
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.S.html#VALprint">print</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
+<td><div class="info">
+<code class="code">print fmt f</code> prints the formula on the formatter <code class="code">fmt</code>.
+</div>
+</td></tr>
+<tr><td><a href="Tseitin_intf.Arg.html#VALprint">print</a> [<a href="Tseitin_intf.Arg.html">Tseitin_intf.Arg</a>]</td>
+<td><div class="info">
+Print the given formula.
+</div>
+</td></tr>
+<tr><td><a href="Expr_intf.S.Formula.html#VALprint">print</a> [<a href="Expr_intf.S.Formula.html">Expr_intf.S.Formula</a>]</td>
+<td><div class="info">
+Printing function used among other thing for debugging.
+</div>
+</td></tr>
+<tr><td><a href="Expr_intf.S.Term.html#VALprint">print</a> [<a href="Expr_intf.S.Term.html">Expr_intf.S.Term</a>]</td>
+<td><div class="info">
+Printing function used among other for debugging.
+</div>
+</td></tr>
+<tr><td><a href="Formula_intf.S.html#VALprint">print</a> [<a href="Formula_intf.S.html">Formula_intf.S</a>]</td>
+<td><div class="info">
+Printing function used among other thing for debugging.
+</div>
+</td></tr>
+<tr><td><a href="Dot.Arg.html#VALprint_atom">print_atom</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
+<td><div class="info">
+Print the contents of the given atomic formulas.
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALprint_atom">print_atom</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALprint_clause">print_clause</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Pretty printing functions for atoms and clauses
+</div>
+</td></tr>
+<tr><td><a href="Res_intf.S.html#VALprint_clause">print_clause</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+A nice looking printer for clauses, which sort the atoms before printing.
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALprint_lit">print_lit</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Dedukti.Arg.html#VALprove">prove</a> [<a href="Dedukti.Arg.html">Dedukti.Arg</a>]</td>
+<td></td></tr>
+<tr><td><a href="Res_intf.S.html#VALprove">prove</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Given a clause, return a proof of that clause.
+</div>
+</td></tr>
+<tr><td><a href="Res_intf.S.html#VALprove_atom">prove_atom</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Given an atom <code class="code">a</code>, returns a proof of the clause <code class="code">[a]</code> if <code class="code">a</code> is true at level 0
+</div>
+</td></tr>
+<tr><td><a href="Res_intf.S.html#VALprove_unsat">prove_unsat</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Given a conflict clause <code class="code">c</code>, returns a proof of the empty clause.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALpush">push</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Create a decision level for local assumptions.
+</div>
+</td></tr>
+<tr><td align="left"><br>R</td></tr>
+<tr><td><a href="Res_intf.S.html#VALresolve">resolve</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Performs a "resolution step" on a sorted list of atoms.
+</div>
+</td></tr>
+<tr><td align="left"><br>S</td></tr>
+<tr><td><a href="Log.html#VALset_debug">set_debug</a> [<a href="Log.html">Log</a>]</td>
+<td><div class="info">
+Set debug level
+</div>
+</td></tr>
+<tr><td><a href="Log.html#VALset_debug_out">set_debug_out</a> [<a href="Log.html">Log</a>]</td>
+<td><div class="info">
+Change the output formatter.
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALset_elt_level">set_elt_level</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALset_elt_weight">set_elt_weight</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Accessors for elements
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALsolve">solve</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Try and solves the current set of assumptions.
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALsolve">solve</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Try and solves the current set of assumptions.
+</div>
+</td></tr>
+<tr><td align="left"><br>T</td></tr>
+<tr><td><a href="Internal.Make.html#VALtemp">temp</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Returns the clauses coreesponding to the local assumptions.
+</div>
+</td></tr>
+<tr><td><a href="Res_intf.S.html#VALto_list">to_list</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Returns the sorted list of atoms of a clause.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALtrail">trail</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Returns the current trail.
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALtrue_at_level0">true_at_level0</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+<code class="code">true_at_level0 a</code> returns <code class="code">true</code> if <code class="code">a</code> was proved at level0, i.e.
+</div>
+</td></tr>
+<tr><td align="left"><br>U</td></tr>
+<tr><td><a href="Internal.Make.html#VALunsat_conflict">unsat_conflict</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Returns the unsat clause found at the toplevel, if it exists (i.e if
+      <code class="code">solve</code> has raised <code class="code">Unsat</code>)
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALunsat_core">unsat_core</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Returns the unsat core of a given proof.
+</div>
+</td></tr>
+<tr><td><a href="Res_intf.S.html#VALunsat_core">unsat_core</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof.
+</div>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="next" href="Expr_intf.S.Formula.html">
+<link rel="Up" href="Expr_intf.S.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Expr_intf.S.Term</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="Expr_intf.S.html" title="Expr_intf.S">Up</a>
+&nbsp;<a class="post" href="Expr_intf.S.Formula.html" title="Expr_intf.S.Formula">Next</a>
+</div>
+<h1>Module <a href="type_Expr_intf.S.Term.html">Expr_intf.S.Term</a></h1>
+
+<pre><span class="keyword">module</span> Term: <code class="code">sig</code> <a href="Expr_intf.S.Term.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<br>
+McSat Terms<br>
+
+<pre><span id="TYPEt"><span class="keyword">type</span> <code class="type"></code>t</span> </pre>
+<div class="info ">
+The type of terms<br>
+</div>
+
+
+<pre><span id="VALequal"><span class="keyword">val</span> equal</span> : <code class="type"><a href="Expr_intf.S.Term.html#TYPEt">t</a> -> <a href="Expr_intf.S.Term.html#TYPEt">t</a> -> bool</code></pre><div class="info ">
+Equality over terms.<br>
+</div>
+
+<pre><span id="VALhash"><span class="keyword">val</span> hash</span> : <code class="type"><a href="Expr_intf.S.Term.html#TYPEt">t</a> -> int</code></pre><div class="info ">
+Hashing function for terms. Should be such that two terms equal according
+        to <code class="code">Expr_intf.S.equal</code> have the same hash.<br>
+</div>
+
+<pre><span id="VALprint"><span class="keyword">val</span> print</span> : <code class="type">Format.formatter -> <a href="Expr_intf.S.Term.html#TYPEt">t</a> -> unit</code></pre><div class="info ">
+Printing function used among other for debugging.<br>
+</div>
+</body></html>

@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Formula_intf.html">
+<link rel="next" href="Plugin_intf.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Theory_intf</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Formula_intf.html" title="Formula_intf">Previous</a>
+&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Plugin_intf.html" title="Plugin_intf">Next</a>
+</div>
+<h1>Module <a href="type_Theory_intf.html">Theory_intf</a></h1>
+
+<pre><span class="keyword">module</span> Theory_intf: <code class="code">sig</code> <a href="Theory_intf.html">..</a> <code class="code">end</code></pre><div class="info module top">
+SMT Theory
+<p>
+
+    This module defines what a theory must implement in order to
+    be used in an SMT solver.<br>
+</div>
+<hr width="100%">
+
+<pre><span id="TYPEres"><span class="keyword">type</span> <code class="type">('formula, 'proof)</code> res</span> = <code class="type">('formula, 'proof) <a href="Plugin_intf.html#TYPEres">Plugin_intf.res</a></code> = </pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTres.Sat"><span class="constructor">Sat</span></span></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The current set of assumptions is satisfiable.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTres.Unsat"><span class="constructor">Unsat</span></span> <span class="keyword">of</span> <code class="type">'formula list * 'proof</code></code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+The current set of assumptions is *NOT* satisfiable, and here is a
+        theory tautology (with its proof), for which every litteral is false
+        under the current assumptions.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+
+<div class="info ">
+Type returned by the theory. Formulas in the unsat clause must come from the
+    current set of assumptions, i.e must have been encountered in a slice.<br>
+</div>
+
+
+<pre><code><span id="TYPEslice"><span class="keyword">type</span> <code class="type">('form, 'proof)</code> slice</span> = {</code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.start">start</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Start of the slice<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.length">length</span>&nbsp;: <code class="type">int</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Length of the slice<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.get">get</span>&nbsp;: <code class="type">int -> 'form</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Accesor for the formuals in the slice.
+                                            Should only be called on integers <code class="code">i</code> s.t.
+                                            <code class="code">start &lt;= i &lt; start + length</code><br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.push">push</span>&nbsp;: <code class="type">'form list -> 'proof -> unit</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+Allows to add to the solver a clause.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code>&nbsp;&nbsp;</code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTslice.propagate">propagate</span>&nbsp;: <code class="type">'form -> 'form list -> 'proof -> unit</code>;</code></td>
+<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
+<code class="code">propagate lit causes proof</code> informs the solver to propagate <code class="code">lit</code>, with the reason
+    that the clause <code class="code">causes =&gt; lit</code> is a theory tautology. It is faster than pushing
+    the associated clause but the clause will not be remembered by the sat solver,
+    i.e it will not be used by the solver to do boolean propagation.<br>
+</div>
+</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+</tr></table>
+}
+
+<div class="info ">
+The type for a slice. Slices are some kind of view of the current
+    propagation queue. They allow to look at the propagated literals,
+    and to add new clauses to the solver.<br>
+</div>
+
+
+<pre><span class="keyword">module type</span> <a href="Theory_intf.S.html">S</a> = <code class="code">sig</code> <a href="Theory_intf.S.html">..</a> <code class="code">end</code></pre></body></html>
