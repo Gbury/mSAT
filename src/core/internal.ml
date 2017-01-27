@@ -733,7 +733,7 @@ module Make
 
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
-  let add_clause ?(force=false) (init:clause) : unit =
+  let add_clause (init:clause) : unit =
     Log.debugf debug "Adding clause: @[<hov>%a@]" (fun k -> k St.pp_clause init);
     let vec = match init.cpremise with
       | Hyp -> env.clauses_hyps
@@ -932,7 +932,11 @@ module Make
         let p = atom f in
         let c = make_clause (fresh_tname ())
             (p :: List.map (fun a -> a.neg) l) (Lemma proof) in
-        enqueue_bool p (decision_level ()) (Bcp c)
+        if p.is_true then ()
+        else if p.neg.is_true then
+          Stack.push c env.clauses_to_add
+        else
+          enqueue_bool p (decision_level ()) (Bcp c)
       else
         raise (Invalid_argument "Msat.Internal.slice_propagate")
 
