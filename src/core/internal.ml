@@ -231,6 +231,9 @@ module Make
       Iheap.insert f_weight env.order l.lid
     | E_var v ->
       Iheap.insert f_weight env.order v.vid;
+      insert_subterms_order v
+
+    and insert_subterms_order v =
       iter_sub (fun t -> insert_var_order (elt_of_lit t)) v
 
   (* Add new litterals/atoms on which to decide on, even if there is no
@@ -935,8 +938,11 @@ module Make
         if p.is_true then ()
         else if p.neg.is_true then
           Stack.push c env.clauses_to_add
-        else
+        else begin
+          Iheap.grow_to_at_least env.order (St.nb_elt ());
+          insert_subterms_order p.var;
           enqueue_bool p (decision_level ()) (Bcp c)
+        end
       else
         raise (Invalid_argument "Msat.Internal.slice_propagate")
 
