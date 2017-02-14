@@ -72,10 +72,18 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
     | S.Hypothesis ->
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) "Hypothesis" "LIGHTBLUE"
         [(fun fmt () -> (Format.fprintf fmt "%s" (node_id n)))];
+    | S.Assumption ->
+      print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) "Assumption" "LIGHTBLUE"
+        [(fun fmt () -> (Format.fprintf fmt "%s" (node_id n)))];
     | S.Lemma lemma ->
       let rule, color, l = A.lemma_info lemma in
       let color = match color with None -> "YELLOW" | Some c -> c in
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) rule color l
+    | S.Duplicate (p, l) ->
+      print_dot_node fmt (node_id n) "GREY" S.(n.conclusion) "Duplicate" "GREY"
+        ((fun fmt () -> (Format.fprintf fmt "%s" (node_id n))) ::
+        List.map (ttify A.print_atom) l);
+      print_edge fmt (node_id n) (node_id (S.expand p))
     | S.Resolution (_, _, a) ->
       print_dot_node fmt (node_id n) "GREY" S.(n.conclusion) "Resolution" "GREY"
         [(fun fmt () -> (Format.fprintf fmt "%s" (node_id n)))];

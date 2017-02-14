@@ -36,7 +36,10 @@ module type S = sig
     | Assumption
       (** The conclusion has been locally assumed by the user *)
     | Lemma of lemma
-      (** The conclusion is a tautology provided by the theory, with associated proof *)
+    (** The conclusion is a tautology provided by the theory, with associated proof *)
+    | Duplicate of proof * atom list
+    (** The conclusion is obtained by eliminating multiple occurences of the atom in
+        the conclusion of the provided proof. *)
     | Resolution of proof * proof * atom
       (** The conclusion can be deduced by performing a resolution between the conclusions
           of the two given proofs. The atom on which to perform the resolution is also given. *)

@@ -29,6 +29,7 @@ true: inline(100), optimize(3), unbox_closures, unbox_closures_factor(20)
 <src/smt/type_smt.*>: package(dolmen)
 
 # more warnings
+<src/**/*.ml>: warn_error(+8)
 <src/**/*.ml>: warn_K, warn_Y, warn_X
 <src/**/*.ml>: short_paths, safe_string, strict_sequence
 <src/**/*.cm*>: debug

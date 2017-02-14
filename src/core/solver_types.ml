@@ -298,7 +298,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     | Hyp -> Format.fprintf out "hyp"
     | Local -> Format.fprintf out "local"
     | Lemma _ -> Format.fprintf out "th_lemma"
-    | History v -> List.iter (fun {name=name} -> Format.fprintf out "%s,@ " name) v
+    | History v -> List.iter (fun { name; _ } -> Format.fprintf out "%s,@ " name) v
 
   let pp_assign fmt v =
     match v.assigned with
@@ -312,11 +312,11 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       (v.lid+1) pp_assign v E.Term.print v.term
 
   let pp_atom out a =
-    Format.fprintf out "%s%d[%a][atom:@[<hov>%a@]]@ "
+    Format.fprintf out "%s%d[%a][atom:@[<hov>%a@]]"
       (sign a) (a.var.vid+1) pp_value a E.Formula.print a.lit
 
   let pp_atoms_vec out vec =
-    Array.iter (fun a -> pp_atom out a) vec
+    Array.iter (fun a -> Format.fprintf out "%a@ " pp_atom a) vec
 
   let pp_clause out {name=name; atoms=arr; cpremise=cp; } =
     Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"

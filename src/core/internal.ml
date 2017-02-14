@@ -318,6 +318,20 @@ module Make
     if i >= Array.length arr then []
     else Array.to_list (Array.sub arr i (Array.length arr - i))
 
+  (* Eliminates atom doublons in clauses *)
+  let eliminate_doublons clause : clause =
+    let duplicates = ref [] in
+    let res = ref [] in
+    Array.iter (fun a ->
+        if a.var.seen then duplicates := a :: !duplicates
+        else (a.var.seen <- true; res := a :: !res)
+      ) clause.atoms;
+    List.iter (fun a -> a.var.seen <- false) !res;
+    if !duplicates = [] then
+      clause
+    else
+      make_clause (fresh_lname ()) !res (History [clause])
+
   (* Partition literals for new clauses, into:
      - true literals (maybe makes the clause trivial if the lit is proved true at level 0)
      - unassigned literals, yet to be decided
@@ -734,15 +748,18 @@ module Make
     cancel_until (max cr.cr_backtrack_lvl (base_level ()));
     record_learnt_clause confl cr
 
+  (* Get the correct vector to insert a clause in. *)
+  let rec clause_vector c =
+    match c.cpremise with
+      | Hyp -> env.clauses_hyps
+      | Local -> env.clauses_temp
+      | Lemma _ | History _ -> env.clauses_learnt
+
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
   let add_clause (init:clause) : unit =
     Log.debugf debug "Adding clause: @[<hov>%a@]" (fun k -> k St.pp_clause init);
-    let vec = match init.cpremise with
-      | Hyp -> env.clauses_hyps
-      | Local -> env.clauses_temp
-      | History _ | Lemma _ -> env.clauses_learnt
-    in
+    let vec = clause_vector init in
     try
       let atoms, history = partition init.atoms in
       let clause =
@@ -921,9 +938,7 @@ module Make
     let atoms = List.rev_map create_atom l in
     let c = make_clause (fresh_tname ()) atoms (Lemma lemma) in
     Log.debugf info "Pushing clause %a" (fun k->k St.pp_clause c);
-    (* do not add the clause yet, wait for the theory propagation to
-       be done *)
-    Stack.push c env.clauses_to_add
+    Stack.push (eliminate_doublons c) env.clauses_to_add
 
   let slice_propagate f = function
     | Plugin_intf.Eval l ->
@@ -937,7 +952,7 @@ module Make
             (p :: List.map (fun a -> a.neg) l) (Lemma proof) in
         if p.is_true then ()
         else if p.neg.is_true then
-          Stack.push c env.clauses_to_add
+          Stack.push (eliminate_doublons c) env.clauses_to_add
         else begin
           Iheap.grow_to_at_least env.order (St.nb_elt ());
           insert_subterms_order p.var;
@@ -1153,7 +1168,7 @@ module Make
                 let atoms = List.rev_map create_atom l in
                 let c = make_clause (fresh_tname ()) atoms (Lemma p) in
                 Log.debugf info "Theory conflict clause: %a" (fun k -> k St.pp_clause c);
-                Stack.push c env.clauses_to_add
+                Stack.push (eliminate_doublons c) env.clauses_to_add
             end;
             if Stack.is_empty env.clauses_to_add then raise Sat
         end
@@ -1165,7 +1180,10 @@ module Make
       (fun l ->
          let atoms = List.rev_map atom l in
          let c = make_clause ?tag (fresh_hname ()) atoms Hyp in
-         Stack.push c env.clauses_to_add)
+         Log.debugf debug "Assuming clause: @[<hov 2>%a@]" (fun k -> k pp_clause c);
+         let c' = eliminate_doublons c in
+         Log.debugf debug "Inserting clause: @[<hov 2>%a@]" (fun k -> k pp_clause c');
+         Stack.push c' env.clauses_to_add)
       cnf
 
   (* create a factice decision level for local assumptions *)

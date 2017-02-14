@@ -1,0 +1,10 @@
+p cnf 2 3
+c Local assumptions
+
+c Hypotheses
+-2 -2 -1 -1 0
+1 0
+2 0
+c Lemmas
+
+

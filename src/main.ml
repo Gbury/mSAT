@@ -11,8 +11,8 @@ exception Out_of_space
 let file = ref ""
 let p_cnf = ref false
 let p_check = ref false
+let p_dot_proof = ref ""
 let p_proof_print = ref false
-let p_unsat_core = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
 
@@ -27,7 +27,14 @@ end
 module Make
     (S : External.S)
     (T : Type.S with type atom := S.atom)
-= struct
+  : sig
+    val do_task : Dolmen.Statement.t -> unit
+  end = struct
+
+  module D = Dot.Make(S.Proof)(struct
+      let print_atom = S.St.print_atom
+      let lemma_info _ = "<>", None, []
+    end)
 
   let hyps = ref []
 
@@ -57,6 +64,10 @@ module Make
           if !p_check then begin
             let p = state.Solver_intf.get_proof () in
             S.Proof.check p;
+            if !p_dot_proof <> "" then begin
+              let fmt = Format.formatter_of_out_channel (open_out !p_dot_proof) in
+              D.print fmt p
+            end
           end;
           let t' = Sys.time () -. t in
           Format.printf "Unsat (%f/%f)@." t t'
@@ -128,6 +139,8 @@ let argspec = Arg.align [
     " Prints the cnf used.";
     "-check", Arg.Set p_check,
     " Build, check and print the proof (if output is set), if unsat";
+    "-dot", Arg.Set_string p_dot_proof,
+    " If provided, print the dot proof in the given file";
     "-gc", Arg.Unit setup_gc_stat,
     " Outputs statistics about the GC";
     "-s", Arg.String set_solver,
@@ -136,8 +149,6 @@ let argspec = Arg.align [
     "<s>[kMGT] Sets the size limit for the sat solver";
     "-time", Arg.String (int_arg time_limit),
     "<t>[smhd] Sets the time limit for the sat solver";
-    "-u", Arg.Set p_unsat_core,
-    " Prints the unsat-core explanation of the unsat proof (if used with -check)";
     "-v", Arg.Int (fun i -> Log.set_debug i),
     "<lvl> Sets the debug verbose level";
   ]

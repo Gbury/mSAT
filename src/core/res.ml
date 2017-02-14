@@ -34,6 +34,7 @@ module Make(St : Solver_types.S) = struct
   let merge = List.merge compare_atoms
 
   let _c = ref 0
+  let fresh_dpl_name () = incr _c; "D" ^ (string_of_int !_c)
   let fresh_pcl_name () = incr _c; "R" ^ (string_of_int !_c)
 
   (* Compute resolution of 2 clauses *)
@@ -52,22 +53,44 @@ module Make(St : Solver_types.S) = struct
     let resolved, new_clause = aux [] [] l in
     resolved, List.rev new_clause
 
-  (* List.sort_uniq is only since 4.02.0 *)
-  let sort_uniq compare l =
-    let rec aux = function
-      | x :: ((y :: _) as r) -> if compare x y = 0 then aux r else x :: aux r
-      | l -> l
+  (* Compute the set of doublons of a clause *)
+  let list c = List.sort compare_atoms (Array.to_list St.(c.atoms))
+
+  let analyze cl =
+    let rec aux duplicates free = function
+      | [] -> duplicates, free
+      | [ x ] -> duplicates, x :: free
+      | x :: ((y :: r) as l) ->
+        if equal_atoms x y then
+          count duplicates (x :: free) x [y] r
+        else
+          aux duplicates (x :: free) l
+    and count duplicates free x acc = function
+      | (y :: r) when equal_atoms x y ->
+        count duplicates free x (y :: acc) r
+      | l ->
+        aux (acc :: duplicates) free l
     in
-    aux (List.sort compare l)
+    let doublons, acc = aux [] [] cl in
+    doublons, List.rev acc
 
   let to_list c =
-    let v = St.(c.atoms) in
-    let l = Array.to_list v in
-    let res = sort_uniq compare_atoms l in
-    let l, _ = resolve res in
-    if l <> [] then
-      Log.debug 3 "Input clause is a tautology";
-    res
+    let cl = list c in
+    let doublons, l = analyze cl in
+    let conflicts, _ = resolve l in
+    if doublons <> [] then
+      Log.debug warn "Input clause has redundancies";
+    if conflicts <> [] then
+      Log.debug warn "Input clause is a tautology";
+    cl
+
+  let rec pp_cl fmt l =
+    let rec aux fmt = function
+      | [] -> ()
+      | a :: r ->
+        Format.fprintf fmt "%a@,%a" St.pp_atom a aux r
+    in
+    Format.fprintf fmt "@[<v>%a@]" aux l
 
   (* Comparison of clauses *)
   let cmp_cl c d =
@@ -139,6 +162,7 @@ module Make(St : Solver_types.S) = struct
     | Hypothesis
     | Assumption
     | Lemma of lemma
+    | Duplicate of proof * atom list
     | Resolution of proof * proof * atom
 
   let rec chain_res (c, cl) = function
@@ -171,8 +195,9 @@ module Make(St : Solver_types.S) = struct
     | St.History [] ->
       assert false
     | St.History [ c ] ->
-      assert (cmp c conclusion = 0);
-      expand c
+      let duplicates, res = analyze (list c) in
+      assert (cmp_cl res (list conclusion) = 0);
+      { conclusion; step = Duplicate (c, List.concat duplicates) }
     | St.History ( c :: ([d] as r)) ->
       let (l, c', d', a) = chain_res (c, to_list c) r in
       assert (cmp_cl l (to_list conclusion) = 0);
@@ -231,10 +256,12 @@ module Make(St : Solver_types.S) = struct
         Stack.push (Leaving c) s;
         let node = expand c in
         begin match node.step with
+          | Duplicate (p1, _) ->
+            Stack.push (Enter p1) s
           | Resolution (p1, p2, _) ->
             Stack.push (Enter p2) s;
             Stack.push (Enter p1) s
-          | _ -> ()
+          | Hypothesis | Assumption | Lemma _ -> ()
         end
       end;
       fold_aux s h f acc

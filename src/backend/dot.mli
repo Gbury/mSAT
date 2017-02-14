@@ -28,7 +28,7 @@ module type Arg = sig
 
   val print_atom : Format.formatter -> atom -> unit
   (** Print the contents of the given atomic formulas.
-      WARNING: this function should take care to esapce and/or not output special
+      WARNING: this function should take care to escape and/or not output special
       reserved characters for the dot format (such as quotes and so on). *)
 
   val lemma_info : lemma -> string * string option * (Format.formatter -> unit -> unit) list
