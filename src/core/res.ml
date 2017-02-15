@@ -19,7 +19,7 @@ module Make(St : Solver_types.S) = struct
   exception Resolution_error of string
 
   (* Log levels *)
-  (* let error = 1 *)
+  let error = 1
   let warn = 3
   let info = 10
   let debug = 80
@@ -132,8 +132,8 @@ module Make(St : Solver_types.S) = struct
         c'
       end
     | _ ->
-      raise (Resolution_error
-               (Format.asprintf "Cannot prove atom %a" St.pp_atom a))
+      Log.debugf error "Error while proving atom %a" (fun k -> k St.pp_atom a);
+      raise (Resolution_error "Cannot prove atom")
 
   let prove_unsat conflict =
     if Array.length conflict.St.atoms = 0 then conflict
@@ -179,9 +179,9 @@ module Make(St : Solver_types.S) = struct
               chain_res (new_clause, l) r
           end
         | _ ->
-          raise (Resolution_error (
-              Format.asprintf "Cannot resolve the clauses: %a && %a"
-                St.pp_clause c St.pp_clause d))
+          Log.debugf error "While resolving clauses:@[<hov>%a@\n%a@]"
+            (fun k -> k St.pp_clause c St.pp_clause d);
+          raise (Resolution_error "Clause mismatch")
       end
     | _ ->
       raise (Resolution_error "Bad history")
@@ -196,8 +196,8 @@ module Make(St : Solver_types.S) = struct
     | St.Local ->
       { conclusion; step = Assumption; }
     | St.History [] ->
-      raise (Resolution_error (
-          Format.asprintf "Empty history for %a" St.pp_clause conclusion))
+      Log.debugf error "Empty history for clause: %a" (fun k -> k St.pp_clause conclusion);
+      raise (Resolution_error "Empty history")
     | St.History [ c ] ->
       let duplicates, res = analyze (list c) in
       assert (cmp_cl res (list conclusion) = 0);
