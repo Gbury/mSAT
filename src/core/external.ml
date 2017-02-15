@@ -48,8 +48,6 @@ module Make
   exception UndecidedLit = S.UndecidedLit
 
   type atom = St.formula
-  type clause = St.clause
-  type proof = Proof.proof
 
   (* Result type *)
   type res =

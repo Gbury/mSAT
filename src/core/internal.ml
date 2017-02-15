@@ -179,7 +179,7 @@ module Make
   let to_int f = int_of_float f
 
   let nb_clauses () = Vec.size env.clauses_hyps
-  let nb_vars    () = St.nb_elt ()
+  (* let nb_vars    () = St.nb_elt () *)
   let decision_level () = Vec.size env.elt_levels
   let base_level () = Vec.size env.user_levels
 
@@ -407,9 +407,6 @@ module Make
     c.attached <- true;
     ()
 
-  (* Is a clause satisfied ? *)
-  let satisfied c = Array_util.exists (fun atom -> atom.is_true) c.atoms
-
   (* Backtracking.
      Used to backtrack, i.e cancel down to [lvl] excluded,
      i.e we want to go back to the state the solver was in
@@ -566,16 +563,6 @@ module Make
         let atom = if b then a else a.neg in
         enqueue_semantic atom l;
         Some b
-
-  (* conflict analysis: find the list of atoms of [l] that have the
-     maximal level *)
-  let max_lvl_atoms (l:atom list) : int * atom list =
-    List.fold_left
-      (fun (max_lvl, acc) a ->
-         if a.var.v_level = max_lvl then (max_lvl, a :: acc)
-         else if a.var.v_level > max_lvl then (a.var.v_level, [a])
-         else (max_lvl, acc))
-      (0, []) l
 
   (* find which level to backtrack to, given a conflict clause
      and a boolean stating whether it is
@@ -749,7 +736,7 @@ module Make
     record_learnt_clause confl cr
 
   (* Get the correct vector to insert a clause in. *)
-  let rec clause_vector c =
+  let clause_vector c =
     match c.cpremise with
       | Hyp -> env.clauses_hyps
       | Local -> env.clauses_temp
@@ -1113,13 +1100,6 @@ module Make
 
         pick_branch_lit ()
     done
-
-  (* check that clause is true *)
-  let check_clause (c:clause): unit =
-    let ok = Array_util.exists (fun a -> a.is_true) c.atoms in
-    assert ok
-
-  let check_vec vec = Vec.iter check_clause vec
 
   let eval_level lit =
     let var, negated = make_boolean_var lit in

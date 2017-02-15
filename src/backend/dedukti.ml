@@ -21,9 +21,9 @@ module Make(S : Res.S)(A : Arg with type formula := S.St.formula and type lemma 
   let pp_nl fmt = Format.fprintf fmt "@\n"
   let fprintf fmt format = Format.kfprintf pp_nl fmt format
 
-  let clause_name c = S.St.(c.name)
+  let _clause_name c = S.St.(c.name)
 
-  let pp_clause fmt c =
+  let _pp_clause fmt c =
     let rec aux fmt = function
       | [] -> ()
       | a :: r ->

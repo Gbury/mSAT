@@ -16,8 +16,6 @@ Copyright 2016 Guillaume Bury
 Copyright 2016 Simon Cruanes
 *)
 
-open Printf
-
 module type S = Solver_types_intf.S
 
 (* Solver types for McSat Solving *)

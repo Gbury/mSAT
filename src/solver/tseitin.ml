@@ -127,7 +127,7 @@ module Make (F : Tseitin_intf.Arg) = struct
       sform (make_not f) (fun f' -> sform_list_not (f'::acc) tail k)
 
   let ( @@ ) l1 l2 = List.rev_append l1 l2
-  let ( @ ) = `Use_rev_append_instead   (* prevent use of non-tailrec append *)
+  (* let ( @ ) = `Use_rev_append_instead   (* prevent use of non-tailrec append *) *)
 
   (*
   let distrib l_and l_or =

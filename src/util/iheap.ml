@@ -75,8 +75,10 @@ let in_heap s n = n < V.length s.indices && V.get s.indices n >= 0
 let decrease cmp s n =
   assert (in_heap s n); percolate_up cmp s (V.get s.indices n)
 
+(*
 let increase cmp s n =
   assert (in_heap s n); percolate_down cmp s (V.get s.indices n)
+*)
 
 let filter s filt cmp =
   let j = ref 0 in

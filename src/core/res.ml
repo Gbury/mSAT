@@ -14,13 +14,12 @@ module Make(St : Solver_types.S) = struct
   type lemma = St.proof
   type clause = St.clause
   type atom = St.atom
-  type int_cl = clause * St.atom list
 
   exception Insuficient_hyps
   exception Resolution_error of string
 
   (* Log levels *)
-  let error = 1
+  (* let error = 1 *)
   let warn = 3
   let info = 10
   let debug = 80
@@ -34,7 +33,6 @@ module Make(St : Solver_types.S) = struct
   let merge = List.merge compare_atoms
 
   let _c = ref 0
-  let fresh_dpl_name () = incr _c; "D" ^ (string_of_int !_c)
   let fresh_pcl_name () = incr _c; "R" ^ (string_of_int !_c)
 
   (* Compute resolution of 2 clauses *)
@@ -84,13 +82,15 @@ module Make(St : Solver_types.S) = struct
       Log.debug warn "Input clause is a tautology";
     cl
 
-  let rec pp_cl fmt l =
+  (*
+  let pp_cl fmt l =
     let rec aux fmt = function
       | [] -> ()
       | a :: r ->
         Format.fprintf fmt "%a@,%a" St.pp_atom a aux r
     in
     Format.fprintf fmt "@[<v>%a@]" aux l
+  *)
 
   (* Comparison of clauses *)
   let cmp_cl c d =
@@ -104,9 +104,6 @@ module Make(St : Solver_types.S) = struct
       | [], _ :: _ -> 1
     in
     aux (c, d)
-
-  let cmp c d =
-    cmp_cl (to_list c) (to_list d)
 
   let prove conclusion =
     assert St.(conclusion.cpremise <> History []);
@@ -134,7 +131,9 @@ module Make(St : Solver_types.S) = struct
           (fun k -> k St.pp_atom a St.pp_clause c');
         c'
       end
-    | _ -> assert false
+    | _ ->
+      raise (Resolution_error
+               (Format.asprintf "Cannot prove atom %a" St.pp_atom a))
 
   let prove_unsat conflict =
     if Array.length conflict.St.atoms = 0 then conflict
@@ -179,11 +178,15 @@ module Make(St : Solver_types.S) = struct
                   l (St.History [c; d]) in
               chain_res (new_clause, l) r
           end
-        | _ -> assert false
+        | _ ->
+          raise (Resolution_error (
+              Format.asprintf "Cannot resolve the clauses: %a && %a"
+                St.pp_clause c St.pp_clause d))
       end
-    | _ -> assert false
+    | _ ->
+      raise (Resolution_error "Bad history")
 
-  let rec expand conclusion =
+  let expand conclusion =
     Log.debugf debug "Expanding : @[%a@]" (fun k -> k St.pp_clause conclusion);
     match conclusion.St.cpremise with
     | St.Lemma l ->
@@ -193,7 +196,8 @@ module Make(St : Solver_types.S) = struct
     | St.Local ->
       { conclusion; step = Assumption; }
     | St.History [] ->
-      assert false
+      raise (Resolution_error (
+          Format.asprintf "Empty history for %a" St.pp_clause conclusion))
     | St.History [ c ] ->
       let duplicates, res = analyze (list c) in
       assert (cmp_cl res (list conclusion) = 0);

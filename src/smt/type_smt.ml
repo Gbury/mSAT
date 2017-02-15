@@ -178,15 +178,6 @@ let find_let env name =
         `Not_found
     end
 
-let pp_expect fmt = function
-  | Nothing -> Format.fprintf fmt "<>"
-  | Type -> Format.fprintf fmt "<tType>"
-  | Typed ty -> Expr.Print.ty fmt ty
-
-let pp_map pp fmt map =
-  M.iter (fun k v ->
-      Format.fprintf fmt "%s->%a;" k.Id.name pp v) map
-
 (* Some helper functions *)
 (* ************************************************************************ *)
 
@@ -288,7 +279,9 @@ let infer env s args =
 
 let rec parse_expr (env : env) t =
   match t with
-  (* Base Type *)
+  (* Base Types *)
+  | { Ast.term = Ast.Builtin Ast.Ttype } ->
+    Ttype
   | { Ast.term = Ast.Symbol { Id.name = "Bool" } } ->
     Ty (Expr_smt.Ty.prop)
 
