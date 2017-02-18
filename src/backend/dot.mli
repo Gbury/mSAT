@@ -48,3 +48,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
   S with type t := S.proof
 (** Functor for making a module to export proofs to the DOT format. *)
 
+module Simple(S : Res.S)(A : Arg with type atom := S.St.formula and type lemma := S.lemma) :
+  S with type t := S.proof
+(** Functor for making a module to export proofs to the DOT format. *)
+

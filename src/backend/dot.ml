@@ -101,5 +101,9 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
 
 end
 
-
+module Simple(S : Res.S)(A : Arg with type atom := S.St.formula and type lemma := S.lemma) =
+  Make(S)(struct
+    let lemma_info = A.lemma_info
+    let print_atom fmt a = A.print_atom fmt a.S.St.lit
+  end)
 
