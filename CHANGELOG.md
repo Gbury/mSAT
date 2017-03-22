@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.6.1
+
+- add simple functor for DOT backend
+- various bugfixes
+
 ## 0.6
 
 ### Feature
