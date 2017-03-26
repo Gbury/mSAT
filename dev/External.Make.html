@@ -3,6 +3,7 @@
 <head>
 <link rel="stylesheet" href="style.css" type="text/css">
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link rel="Up" href="External.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
@@ -135,6 +136,18 @@ Add the list of clauses to the current set of assumptions.
 
 <pre><span id="VALsolve"><span class="keyword">val</span> solve</span> : <code class="type">?assumptions:<a href="Solver_intf.S.html#TYPEatom">atom</a> list -> unit -> <a href="Solver_intf.S.html#TYPEres">res</a></code></pre><div class="info ">
 Try and solves the current set of assumptions.<br>
+</div>
+
+<pre><span id="VALnew_lit"><span class="keyword">val</span> new_lit</span> : <code class="type">St.term -> unit</code></pre><div class="info ">
+Add a new litteral (i.e term) to the solver. This term will
+      be decided on at some point during solving, wether it appears
+      in clauses or not.<br>
+</div>
+
+<pre><span id="VALnew_atom"><span class="keyword">val</span> new_atom</span> : <code class="type"><a href="Solver_intf.S.html#TYPEatom">atom</a> -> unit</code></pre><div class="info ">
+Add a new atom (i.e propositional formula) to the solver.
+      This formula will be decided on at some point during solving,
+      wether it appears in clauses or not.<br>
 </div>
 
 <pre><span id="VALunsat_core"><span class="keyword">val</span> unsat_core</span> : <code class="type">Proof.proof -> St.clause list</code></pre><div class="info ">

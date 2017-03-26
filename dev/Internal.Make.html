@@ -3,6 +3,7 @@
 <head>
 <link rel="stylesheet" href="style.css" type="text/css">
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link rel="Up" href="Internal.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
@@ -30,6 +31,7 @@
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><link title="Solving facilities" rel="Section" href="#2_Solvingfacilities">
+<link title="Propositional models" rel="Section" href="#2_Propositionalmodels">
 <link title="Proofs and Models" rel="Section" href="#2_ProofsandModels">
 <link title="Internal data" rel="Section" href="#2_Internaldata">
 <title>mSAT doc : Internal.Make</title>
@@ -67,8 +69,6 @@
 <br>
 Functor to create a solver parametrised by the atomic formulas and a theory.<br>
 <br>
-Functor to create a solver parametrised by the atomic formulas and a theory.<br>
-<br>
 <h2 id="2_Solvingfacilities">Solving facilities</h2><br>
 
 <pre><span id="EXCEPTIONUnsat"><span class="keyword">exception</span> Unsat</span></pre>
@@ -86,6 +86,18 @@ Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place.<br>
 </div>
 
+<pre><span id="VALnew_lit"><span class="keyword">val</span> new_lit</span> : <code class="type">St.term -> unit</code></pre><div class="info ">
+Add a new litteral (i.e term) to the solver. This term will
+      be decided on at some point during solving, wether it appears
+      in clauses or not.<br>
+</div>
+
+<pre><span id="VALnew_atom"><span class="keyword">val</span> new_atom</span> : <code class="type">St.formula -> unit</code></pre><div class="info ">
+Add a new atom (i.e propositional formula) to the solver.
+      This formula will be decided on at some point during solving,
+      wether it appears in clauses or not.<br>
+</div>
+
 <pre><span id="VALpush"><span class="keyword">val</span> push</span> : <code class="type">unit -> unit</code></pre><div class="info ">
 Create a decision level for local assumptions.<br>
 <b>Raises</b> <code>Unsat</code> if a conflict is detected in the current state.<br>
@@ -98,6 +110,8 @@ Pop a decision level for local assumptions.<br>
 <pre><span id="VALlocal"><span class="keyword">val</span> local</span> : <code class="type">St.formula list -> unit</code></pre><div class="info ">
 Add local assumptions<br>
 </div>
+<br>
+<h2 id="2_Propositionalmodels">Propositional models</h2><br>
 
 <pre><span id="VALeval"><span class="keyword">val</span> eval</span> : <code class="type">St.formula -> bool</code></pre><div class="info ">
 Returns the valuation of a formula in the current state
@@ -112,6 +126,15 @@ Return the current assignement of the literals, as well as its
       that can potentially be backtracked.<br>
 <b>Raises</b> <code>UndecidedLit</code> if the literal is not decided<br>
 </div>
+
+<pre><span id="VALmodel"><span class="keyword">val</span> model</span> : <code class="type">unit -> (St.term * St.term) list</code></pre><div class="info ">
+Returns the model found if the formula is satisfiable.<br>
+</div>
+
+<pre><span id="VALcheck"><span class="keyword">val</span> check</span> : <code class="type">unit -> bool</code></pre><div class="info ">
+Check the satisfiability of the current model. Only has meaning
+      if the solver finished proof search and has returned <code class="code">Sat</code>.<br>
+</div>
 <br>
 <h2 id="2_ProofsandModels">Proofs and Models</h2><br>
 
@@ -121,18 +144,9 @@ Returns the unsat clause found at the toplevel, if it exists (i.e if
       <code class="code">solve</code> has raised <code class="code">Unsat</code>)<br>
 </div>
 
-<pre><span id="VALmodel"><span class="keyword">val</span> model</span> : <code class="type">unit -> (St.term * St.term) list</code></pre><div class="info ">
-Returns the model found if the formula is satisfiable.<br>
-</div>
-
 <pre><span id="VALfull_slice"><span class="keyword">val</span> full_slice</span> : <code class="type">unit -> (St.term, St.formula, St.proof) <a href="Plugin_intf.html#TYPEslice">Plugin_intf.slice</a></code></pre><div class="info ">
 View the current state of the trail as a slice. Mainly useful when the
       solver has reached a SAT conclusion.<br>
-</div>
-
-<pre><span id="VALcheck"><span class="keyword">val</span> check</span> : <code class="type">unit -> bool</code></pre><div class="info ">
-Check the satisfiability of the current model. Only has meaning
-      if the solver finished proof search and has returned <code class="code">Sat</code>.<br>
 </div>
 <br>
 <h2 id="2_Internaldata">Internal data</h2>

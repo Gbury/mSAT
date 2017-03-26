@@ -3,6 +3,7 @@
 <head>
 <link rel="stylesheet" href="style.css" type="text/css">
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link rel="next" href="Sat.Make.html">
 <link rel="Up" href="Sat.html">
@@ -60,5 +61,22 @@ Make a proposition from an integer.<br>
 
 <pre><span id="VALfresh"><span class="keyword">val</span> fresh</span> : <code class="type">unit -> t</code></pre><div class="info ">
 Make a fresh atom<br>
+</div>
+
+<pre><span id="VALcompare"><span class="keyword">val</span> compare</span> : <code class="type">t -> t -> int</code></pre><div class="info ">
+Compare atoms<br>
+</div>
+
+<pre><span id="VALsign"><span class="keyword">val</span> sign</span> : <code class="type">t -> bool</code></pre><div class="info ">
+Is the given atom positive ?<br>
+</div>
+
+<pre><span id="VALapply_sign"><span class="keyword">val</span> apply_sign</span> : <code class="type">bool -> t -> t</code></pre><div class="info ">
+<code class="code">apply_sign b</code> is the identity if <code class="code">b</code> is <code class="code">true</code>, and the negation
+      function if <code class="code">b</code> is <code class="code">false</code>.<br>
+</div>
+
+<pre><span id="VALset_sign"><span class="keyword">val</span> set_sign</span> : <code class="type">bool -> t -> t</code></pre><div class="info ">
+Return the atom with the sign set.<br>
 </div>
 </body></html>

@@ -1,6 +1,7 @@
 <html><head>
 <link rel="stylesheet" href="style.css" type="text/css">
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
 <link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
@@ -231,6 +232,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Hypothesis</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Assumption</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Lemma</span>&nbsp;<span class="keyword">of</span>&nbsp;lemma<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Duplicate</span>&nbsp;<span class="keyword">of</span>&nbsp;proof&nbsp;*&nbsp;atom&nbsp;list<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Resolution</span>&nbsp;<span class="keyword">of</span>&nbsp;proof&nbsp;*&nbsp;proof&nbsp;*&nbsp;atom<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;to_list&nbsp;:&nbsp;clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;atom&nbsp;list<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;merge&nbsp;:&nbsp;atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;atom&nbsp;list<br>
@@ -251,6 +253,8 @@
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">exception</span>&nbsp;<span class="constructor">UndecidedLit</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;assume&nbsp;:&nbsp;?tag:int&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;atom&nbsp;list&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;solve&nbsp;:&nbsp;?assumptions:atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;res<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;new_lit&nbsp;:&nbsp;<span class="constructor">St</span>.term&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;new_atom&nbsp;:&nbsp;atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;unsat_core&nbsp;:&nbsp;<span class="constructor">Proof</span>.proof&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">St</span>.clause&nbsp;list<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;true_at_level0&nbsp;:&nbsp;atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;get_tag&nbsp;:&nbsp;<span class="constructor">St</span>.clause&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;int&nbsp;option<br>

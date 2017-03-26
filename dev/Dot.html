@@ -3,6 +3,7 @@
 <head>
 <link rel="stylesheet" href="style.css" type="text/css">
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link rel="previous" href="Tseitin.html">
 <link rel="next" href="Dedukti.html">
@@ -55,6 +56,10 @@ Interface for exporting proofs.
 
 <pre><span class="keyword">module type</span> <a href="Dot.Arg.html">Arg</a> = <code class="code">sig</code> <a href="Dot.Arg.html">..</a> <code class="code">end</code></pre>
 <pre><span class="keyword">module</span> <a href="Dot.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.atom and type lemma := S.lemma</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info">
+Functor for making a module to export proofs to the DOT format.
+</div>
+
+<pre><span class="keyword">module</span> <a href="Dot.Simple.html">Simple</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.St.formula and type lemma := S.lemma</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info">
 Functor for making a module to export proofs to the DOT format.
 </div>
 </body></html>

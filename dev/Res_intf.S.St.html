@@ -3,6 +3,7 @@
 <head>
 <link rel="stylesheet" href="style.css" type="text/css">
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link rel="Up" href="Res_intf.S.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
@@ -448,7 +449,10 @@ The clause is a theory-provided tautology, with
 <code><span id="TYPEELTpremise.History"><span class="constructor">History</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPEclause">clause</a> list</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 The clause can be obtained by resolution of the clauses
-                                  in the list. For a premise <code class="code">History [a_1 :: ... :: a_n]</code>
+                                  in the list. If the list has a single element <code class="code">c</code> , then
+                                  the clause can be obtained by simplifying <code class="code">c</code> (i.e
+                                  eliminating doublons in its atom list).
+                                  For a premise <code class="code">History [a_1 :: ... :: a_n]</code> (<code class="code">n &gt; 0</code>)
                                   the clause is obtained by performing resolution of
                                   <code class="code">a_1</code> with <code class="code">a_2</code>, and then performing a resolution step between
                                   the result and <code class="code">a_3</code>, etc...

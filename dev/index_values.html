@@ -2,6 +2,7 @@
 <head>
 <link rel="stylesheet" href="style.css" type="text/css">
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
 <link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
@@ -43,6 +44,12 @@ Returns the atom associated with the given formula
 <tr><td><a href="Solver_types_intf.S.html#VALadd_term">add_term</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
 <td><div class="info">
 Returns the variable associated with the term
+</div>
+</td></tr>
+<tr><td><a href="Sat.Expr.html#VALapply_sign">apply_sign</a> [<a href="Sat.Expr.html">Sat.Expr</a>]</td>
+<td><div class="info">
+<code class="code">apply_sign b</code> is the identity if <code class="code">b</code> is <code class="code">true</code>, and the negation
+      function if <code class="code">b</code> is <code class="code">false</code>.
 </div>
 </td></tr>
 <tr><td><a href="Plugin_intf.S.html#VALassign">assign</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
@@ -92,6 +99,11 @@ Check the satisfiability of the current model.
 <tr><td><a href="Res_intf.S.html#VALcheck">check</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
 <td><div class="info">
 Check the contents of a proof.
+</div>
+</td></tr>
+<tr><td><a href="Sat.Expr.html#VALcompare">compare</a> [<a href="Sat.Expr.html">Sat.Expr</a>]</td>
+<td><div class="info">
+Compare atoms
 </div>
 </td></tr>
 <tr><td><a href="Dedukti.Arg.html#VALcontext">context</a> [<a href="Dedukti.Arg.html">Dedukti.Arg</a>]</td>
@@ -421,6 +433,26 @@ Formula negation
 Formula negation.
 </div>
 </td></tr>
+<tr><td><a href="Internal.Make.html#VALnew_atom">new_atom</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Add a new atom (i.e propositional formula) to the solver.
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALnew_atom">new_atom</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Add a new atom (i.e propositional formula) to the solver.
+</div>
+</td></tr>
+<tr><td><a href="Internal.Make.html#VALnew_lit">new_lit</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
+<td><div class="info">
+Add a new litteral (i.e term) to the solver.
+</div>
+</td></tr>
+<tr><td><a href="Solver_intf.S.html#VALnew_lit">new_lit</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
+<td><div class="info">
+Add a new litteral (i.e term) to the solver.
+</div>
+</td></tr>
 <tr><td><a href="Expr_intf.S.Formula.html#VALnorm">norm</a> [<a href="Expr_intf.S.Formula.html">Expr_intf.S.Formula</a>]</td>
 <td><div class="info">
 Returns a 'normalized' form of the formula, possibly negated
@@ -557,6 +589,16 @@ Change the output formatter.
 <tr><td><a href="Solver_types_intf.S.html#VALset_elt_weight">set_elt_weight</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
 <td><div class="info">
 Accessors for elements
+</div>
+</td></tr>
+<tr><td><a href="Sat.Expr.html#VALset_sign">set_sign</a> [<a href="Sat.Expr.html">Sat.Expr</a>]</td>
+<td><div class="info">
+Return the atom with the sign set.
+</div>
+</td></tr>
+<tr><td><a href="Sat.Expr.html#VALsign">sign</a> [<a href="Sat.Expr.html">Sat.Expr</a>]</td>
+<td><div class="info">
+Is the given atom positive ?
 </div>
 </td></tr>
 <tr><td><a href="Internal.Make.html#VALsolve">solve</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
