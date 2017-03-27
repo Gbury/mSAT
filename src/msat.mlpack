@@ -22,6 +22,7 @@ Solver_types
 Res
 Backend_intf
 Dot
+Dimacs
 Dedukti
 
 # Auxiliary modules

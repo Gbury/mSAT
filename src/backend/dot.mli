@@ -6,7 +6,7 @@ Copyright 2014 Simon Cruanes
 
 (** Dot backend for proofs
 
-    This modules provides functions to export proofs into the dot graph format.
+    This module provides functions to export proofs into the dot graph format.
     Graphs in dot format can be used to generates images using the graphviz tool.
 *)
 

@@ -86,6 +86,7 @@ interfaces are not part of the main API and so are subject to a lot more breakin
 than the safe modules above.
 
 {!modules:
+Dimacs
 Internal
 External
 Solver_types

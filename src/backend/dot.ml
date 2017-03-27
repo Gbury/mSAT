@@ -4,17 +4,23 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+(** Output interface for the backend *)
 module type S = Backend_intf.S
 
+(** Input module for the backend *)
 module type Arg = sig
 
   type atom
   type lemma
+  (** Types *)
 
   val print_atom : Format.formatter -> atom -> unit
   val lemma_info : lemma -> string * string option * (Format.formatter -> unit -> unit) list
+  (** Printing functions for atoms and lemmas. *)
+
 end
 
+(** Functor to provide dot printing *)
 module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemma) = struct
 
   let node_id n = n.S.conclusion.S.St.name
