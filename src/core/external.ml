@@ -120,7 +120,7 @@ module Make
   let new_atom = S.new_atom
 
   (* Dimacs & iCNF export *)
-  module D = Dimacs.Make(St)
+  module D = Dimacs.Make(St)(struct end)
 
   let export_dimacs fmt () =
     let hyps = S.hyps () in

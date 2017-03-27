@@ -30,7 +30,7 @@ module type S = sig
 
 end
 
-module Make(St : Solver_types.S) = struct
+module Make(St : Solver_types.S)(Dummy: sig end) = struct
 
   (* Dimacs & iCNF export *)
   let export_vec name fmt vec =
