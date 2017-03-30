@@ -1237,7 +1237,11 @@ module Make
 
   (* Check satisfiability *)
   let check_clause c =
-    let res = Array_util.exists (fun a -> a.is_true) c.atoms in
+    let tmp = Array.map (fun a ->
+        if a.is_true then true
+        else if a.neg.is_true then false
+        else raise UndecidedLit) c.atoms in
+    let res = Array_util.exists (fun x -> x) tmp in
     if not res then begin
       Log.debugf debug "Clause not satisfied: @[<hov>%a@]"
         (fun k -> k St.pp_clause c);
