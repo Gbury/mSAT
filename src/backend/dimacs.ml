@@ -39,7 +39,7 @@ module Make(St : Solver_types.S)(Dummy: sig end) = struct
   let export_assumption fmt vec =
     Format.fprintf fmt "c Local assumptions@,a %a@," St.pp_dimacs vec
 
-  let export_icnf r name map_filter fmt vec =
+  let export_icnf_aux r name map_filter fmt vec =
     let aux fmt v =
       for i = !r to (Vec.size vec) - 1 do
         let x = Vec.get vec i in
@@ -113,8 +113,8 @@ module Make(St : Solver_types.S)(Dummy: sig end) = struct
     Format.fprintf fmt
       "@[<v>%s@,%a%a%a@]@."
       (if !icnf_hyp = 0 && !icnf_lemmas = 0 then "p inccnf" else "")
-      (export_icnf icnf_hyp "Hypotheses" (fun x -> Some x)) hyps
-      (export_icnf icnf_lemmas "Lemmas" map_filter_learnt) lemmas
+      (export_icnf_aux icnf_hyp "Hypotheses" (fun x -> Some x)) hyps
+      (export_icnf_aux icnf_lemmas "Lemmas" map_filter_learnt) lemmas
       export_assumption local
 
 end
