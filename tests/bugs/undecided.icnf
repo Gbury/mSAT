@@ -1,4 +1,5 @@
 c Bug found using archsat commit c9e1ba0a95b23dfe222dc83ea4db376966153ae0
+c   on problem: tptp-v6.1.0/Problems/COM/COM014+1.p
 c The bug is that when a clause is trivial, its litterals are *not*
 c added to the heap to decide on later; which breaks invariants later
 
