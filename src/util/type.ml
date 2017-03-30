@@ -16,6 +16,9 @@ module type S = sig
   val def  : Dolmen.Id.t -> Dolmen.Term.t -> unit
   (** New definition, i.e an identifier and the term it is equal to. *)
 
+  val assumptions : Dolmen.Term.t -> atom list
+  (** Parse a list of local assumptions. *)
+
   val consequent : Dolmen.Term.t -> atom list list
   val antecedent : Dolmen.Term.t -> atom list list
   (** Parse a formula, and return a cnf ready to be given to the solver.

@@ -68,6 +68,14 @@ let decl _ t =
 let def _ t =
   raise (Typing_error ("Definitions are not allowed in pure sat", t))
 
+let assumptions t =
+  let f = parse t in
+  let cnf = Formula.make_cnf f in
+  List.map (function
+      | [ x ] -> x
+      | _ -> assert false
+    ) cnf
+
 let antecedent t =
   let f = parse t in
   Formula.make_cnf f

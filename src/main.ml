@@ -38,6 +38,40 @@ module Make
 
   let hyps = ref []
 
+  let check_model state =
+    let check_clause c =
+      let l = List.map (function a ->
+          Log.debugf 99 "Checking value of %a"
+            (fun k -> k S.St.pp_atom (S.St.add_atom a));
+          state.Solver_intf.eval a) c in
+      List.exists (fun x -> x) l
+    in
+    let l = List.map check_clause !hyps in
+    List.for_all (fun x -> x) l
+
+  let prove ~assumptions =
+    let res = S.solve () in
+    let t = Sys.time () in
+    begin match res with
+      | S.Sat state ->
+        if !p_check then
+          if not (check_model state) then
+            raise Incorrect_model;
+        let t' = Sys.time () -. t in
+        Format.printf "Sat (%f/%f)@." t t'
+      | S.Unsat state ->
+        if !p_check then begin
+          let p = state.Solver_intf.get_proof () in
+          S.Proof.check p;
+          if !p_dot_proof <> "" then begin
+            let fmt = Format.formatter_of_out_channel (open_out !p_dot_proof) in
+            D.print fmt p
+          end
+        end;
+        let t' = Sys.time () -. t in
+        Format.printf "Unsat (%f/%f)@." t t'
+    end
+
   let do_task s =
     match s.Dolmen.Statement.descr with
     | Dolmen.Statement.Def (id, t) -> T.def id t
@@ -50,28 +84,16 @@ module Make
       let cnf = T.antecedent t in
       hyps := cnf @ !hyps;
       S.assume cnf
+    | Dolmen.Statement.Pack [
+        { Dolmen.Statement.descr = Dolmen.Statement.Push 1; };
+        { Dolmen.Statement.descr = Dolmen.Statement.Antecedent f; };
+        { Dolmen.Statement.descr = Dolmen.Statement.Prove; };
+        { Dolmen.Statement.descr = Dolmen.Statement.Pop 1; };
+      ] ->
+      let assumptions = T.assumptions f in
+      prove ~assumptions
     | Dolmen.Statement.Prove ->
-      let res = S.solve () in
-      let t = Sys.time () in
-      begin match res with
-        | S.Sat state ->
-          if !p_check then
-            if not (List.for_all (List.exists state.Solver_intf.eval) !hyps) then
-              raise Incorrect_model;
-          let t' = Sys.time () -. t in
-          Format.printf "Sat (%f/%f)@." t t'
-        | S.Unsat state ->
-          if !p_check then begin
-            let p = state.Solver_intf.get_proof () in
-            S.Proof.check p;
-            if !p_dot_proof <> "" then begin
-              let fmt = Format.formatter_of_out_channel (open_out !p_dot_proof) in
-              D.print fmt p
-            end
-          end;
-          let t' = Sys.time () -. t in
-          Format.printf "Unsat (%f/%f)@." t t'
-      end
+      prove ~assumptions:[]
     | _ ->
       Format.printf "Command not supported:@\n%a@."
         Dolmen.Statement.print s

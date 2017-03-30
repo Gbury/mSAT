@@ -609,6 +609,13 @@ let formula t =
   Log.debugf 5 "Typing top-level formula: %a" (fun k -> k Ast.print t);
   parse_formula env t
 
+let assumptions t =
+  let cnf = Expr.Formula.make_cnf (formula t) in
+  List.map (function
+      | [ x ] -> x
+      | _ -> assert false
+    ) cnf
+
 let antecedent t =
   Expr.Formula.make_cnf (formula t)
 
