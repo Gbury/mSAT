@@ -746,6 +746,9 @@ module Make
      the clause is false in the current trail *)
   let add_clause (init:clause) : unit =
     Log.debugf debug "Adding clause: @[<hov>%a@]" (fun k -> k St.pp_clause init);
+    (* Insertion of new lits is done before simplification. Indeed, else a lit in a
+       trivial clause could end up being not decided on, which is a bug. *)
+    Array.iter (fun x -> insert_var_order (elt_of_var x.var)) init.atoms;
     let vec = clause_vector init in
     try
       let atoms, history = partition init.atoms in
@@ -759,7 +762,6 @@ module Make
         else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
       in
       Log.debugf info "New clause: @[<hov>%a@]" (fun k->k St.pp_clause clause);
-      Array.iter (fun x -> insert_var_order (elt_of_var x.var)) clause.atoms;
       match atoms with
       | [] ->
         (* Report_unsat will raise, and the current clause will be lost if we do not
@@ -1024,10 +1026,7 @@ module Make
   (* Decide on a new literal, and enqueue it into the trail *)
   let rec pick_branch_aux atom: unit =
     let v = atom.var in
-    if v.used <= 0 then begin
-      assert (v.used = 0);
-      pick_branch_lit ()
-    end else if v.v_level >= 0 then begin
+    if v.v_level >= 0 then begin
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit ()
     end else match Plugin.eval atom.lit with
