@@ -1,0 +1,9 @@
+c Doublons test
+p cnf 2 3
+
+c dummy clause that might cause a bug
+-1 1 0
+
+c Clearly SAT clauses
+2 0
+-1 -2 0
