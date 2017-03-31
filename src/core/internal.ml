@@ -759,7 +759,9 @@ module Make
     Array.iter (fun x -> insert_var_order (elt_of_var x.var)) init.atoms;
     let vec = clause_vector init in
     try
-      let atoms, history = partition init.atoms in
+      let c = eliminate_doublons init in
+      Log.debugf debug "Doublons eliminated: %a" (fun k -> k St.pp_clause c);
+      let atoms, history = partition c.atoms in
       let clause =
         if history = []
         then (
@@ -767,7 +769,7 @@ module Make
           List.iteri (fun i a -> init.atoms.(i) <- a) atoms;
           init
         )
-        else make_clause ?tag:init.tag (fresh_name ()) atoms (History (init :: history))
+        else make_clause ?tag:init.tag (fresh_name ()) atoms (History (c :: history))
       in
       Log.debugf info "New clause: @[<hov>%a@]" (fun k->k St.pp_clause clause);
       match atoms with
@@ -935,7 +937,7 @@ module Make
     let atoms = List.rev_map create_atom l in
     let c = make_clause (fresh_tname ()) atoms (Lemma lemma) in
     Log.debugf info "Pushing clause %a" (fun k->k St.pp_clause c);
-    Stack.push (eliminate_doublons c) env.clauses_to_add
+    Stack.push c env.clauses_to_add
 
   let slice_propagate f = function
     | Plugin_intf.Eval l ->
@@ -949,7 +951,7 @@ module Make
             (p :: List.map (fun a -> a.neg) l) (Lemma proof) in
         if p.is_true then ()
         else if p.neg.is_true then
-          Stack.push (eliminate_doublons c) env.clauses_to_add
+          Stack.push c env.clauses_to_add
         else begin
           Iheap.grow_to_at_least env.order (St.nb_elt ());
           insert_subterms_order p.var;
@@ -1155,7 +1157,7 @@ module Make
                 let atoms = List.rev_map create_atom l in
                 let c = make_clause (fresh_tname ()) atoms (Lemma p) in
                 Log.debugf info "Theory conflict clause: %a" (fun k -> k St.pp_clause c);
-                Stack.push (eliminate_doublons c) env.clauses_to_add
+                Stack.push c env.clauses_to_add
             end;
             if Stack.is_empty env.clauses_to_add then raise Sat
         end
@@ -1168,9 +1170,7 @@ module Make
          let atoms = List.rev_map atom l in
          let c = make_clause ?tag (fresh_hname ()) atoms Hyp in
          Log.debugf debug "Assuming clause: @[<hov 2>%a@]" (fun k -> k pp_clause c);
-         let c' = eliminate_doublons c in
-         Log.debugf debug "Inserting clause: @[<hov 2>%a@]" (fun k -> k pp_clause c');
-         Stack.push c' env.clauses_to_add)
+         Stack.push c env.clauses_to_add)
       cnf
 
   (* create a factice decision level for local assumptions *)
