@@ -320,14 +320,22 @@ module Make
 
   (* Eliminates atom doublons in clauses *)
   let eliminate_doublons clause : clause =
+    let trivial = ref false in
     let duplicates = ref [] in
     let res = ref [] in
     Array.iter (fun a ->
-        if a.var.seen then duplicates := a :: !duplicates
-        else (a.var.seen <- true; res := a :: !res)
+        if seen a then duplicates := a :: !duplicates
+        else (mark a; res := a :: !res)
       ) clause.atoms;
-    List.iter (fun a -> a.var.seen <- false) !res;
-    if !duplicates = [] then
+    List.iter (fun a ->
+        begin match a.var.seen with
+        | Both -> trivial := true
+        | _ -> ()
+        end;
+        clear a.var) !res;
+    if !trivial then
+      raise Trivial
+    else if !duplicates = [] then
       clause
     else
       make_clause (fresh_lname ()) !res (History [clause])
@@ -632,8 +640,8 @@ module Make
           | Some Bcp cl -> history := cl :: !history
           | _ -> assert false
         end;
-        if not q.var.seen then begin
-          q.var.seen <- true;
+        if not (q.var.seen = Both) then begin
+          q.var.seen <- Both;
           seen := q :: !seen;
           if q.var.v_level > 0 then begin
             var_bump_activity q.var;
@@ -650,7 +658,7 @@ module Make
       (* look for the next node to expand *)
       while
         let q = get_atom !tr_ind in
-        (not q.var.seen) ||
+        (not (q.var.seen = Both)) ||
         (q.var.v_level < conflict_level)
       do
         decr tr_ind;
@@ -671,7 +679,7 @@ module Make
         c := cl
       | n, _ -> assert false
     done;
-    List.iter (fun q -> q.var.seen <- false) !seen;
+    List.iter (fun q -> clear q.var) !seen;
     let l = List.fast_sort (fun p q -> compare q.var.v_level p.var.v_level) !learnt in
     let level, is_uip = backtrack_lvl l in
     { cr_backtrack_lvl = level;

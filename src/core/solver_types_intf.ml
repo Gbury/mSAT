@@ -35,6 +35,12 @@ module type S = sig
   type proof
   (** The types of terms, formulas and proofs. All of these are user-provided. *)
 
+  type seen =
+    | Nope
+    | Both
+    | Positive
+    | Negative
+
   type lit = {
     lid : int;                      (** Unique identifier *)
     term : term;                    (** Wrapped term *)
@@ -49,7 +55,7 @@ module type S = sig
     pa : atom;  (** Link for the positive atom *)
     na : atom;  (** Link for the negative atom *)
     mutable used : int;         (** Number of attached clause that contain the var *)
-    mutable seen : bool;        (** Boolean used during propagation *)
+    mutable seen : seen;        (** Boolean used during propagation *)
     mutable v_level : int;      (** Level of decision/propagation *)
     mutable v_weight : float;   (** Variable weight (for the heap) *)
     mutable v_assignable: lit list option;
@@ -162,6 +168,17 @@ module type S = sig
   (** The empty clause *)
   val make_clause : ?tag:int -> string -> atom list -> premise -> clause
   (** [make_clause name atoms size premise] creates a clause with the given attributes. *)
+
+
+  (** {2 Helpers} *)
+
+  val mark : atom -> unit
+  (** Mark the atom as seen, using the 'seen' field in the variable. *)
+  val seen : atom -> bool
+  (** Returns wether the atom has been marked as seen. *)
+  val clear : var -> unit
+  (** Clear the 'seen' field of the variable. *)
+
 
   (** {2 Clause names} *)
 

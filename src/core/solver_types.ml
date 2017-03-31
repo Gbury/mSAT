@@ -30,6 +30,12 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   type formula = E.Formula.t
   type proof = E.proof
 
+  type seen =
+    | Nope
+    | Both
+    | Positive
+    | Negative
+
   type lit = {
     lid : int;
     term : term;
@@ -43,7 +49,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     pa : atom;
     na : atom;
     mutable used : int;
-    mutable seen : bool;
+    mutable seen : seen;
     mutable v_level : int;
     mutable v_weight : float;
     mutable v_assignable: lit list option;
@@ -92,7 +98,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       pa = dummy_atom;
       na = dummy_atom;
       used = 0;
-      seen = false;
+      seen = Nope;
       v_level = -1;
       v_weight = -1.;
       v_assignable = None;
@@ -160,7 +166,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
             pa = pa;
             na = na;
             used = 0;
-            seen = false;
+            seen = Nope;
             v_level = -1;
             v_weight = 0.;
             v_assignable = None;
@@ -204,6 +210,30 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       cpremise = premise}
 
   let empty_clause = make_clause "Empty" [] (History [])
+
+  (* Marking helpers *)
+  let clear v = v.seen <- Nope
+
+  let seen a =
+    let pos = (a == a.var.pa) in
+    match a.var.seen, pos with
+    | Nope, _ -> false
+    | Both, _
+    | Positive, true
+    | Negative, false -> true
+    | Positive, false
+    | Negative, true -> false
+
+  let mark a =
+    let pos = (a == a.var.pa) in
+    match a.var.seen with
+    | Both -> ()
+    | Nope ->
+      a.var.seen <- (if pos then Positive else Negative)
+    | Positive ->
+      if pos then () else a.var.seen <- Both
+    | Negative ->
+      if pos then a.var.seen <- Both else ()
 
   (* Decisions & propagations *)
   type t =
