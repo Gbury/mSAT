@@ -657,9 +657,11 @@ module Make
 
       (* look for the next node to expand *)
       while
-        let q = get_atom !tr_ind in
-        (not (q.var.seen = Both)) ||
-        (q.var.v_level < conflict_level)
+        match Vec.get env.elt_queue !tr_ind with
+        | Atom q ->
+          (not (q.var.seen = Both)) ||
+          (q.var.v_level < conflict_level)
+        | Lit _ -> true
       do
         decr tr_ind;
       done;
