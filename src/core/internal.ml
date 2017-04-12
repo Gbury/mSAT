@@ -768,8 +768,8 @@ module Make
         if history = []
         then (
           (* update order of atoms *)
-          List.iteri (fun i a -> init.atoms.(i) <- a) atoms;
-          init
+          List.iteri (fun i a -> c.atoms.(i) <- a) atoms;
+          c
         )
         else make_clause ?tag:init.tag (fresh_name ()) atoms (History (c :: history))
       in
