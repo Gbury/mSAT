@@ -771,7 +771,7 @@ module Make
           List.iteri (fun i a -> c.atoms.(i) <- a) atoms;
           c
         )
-        else make_clause ?tag:init.tag (fresh_name ()) atoms (History (c :: history))
+        else make_clause (fresh_name ()) atoms (History (c :: history))
       in
       Log.debugf info "New clause: @[<hov>%a@]" (fun k->k St.pp_clause clause);
       match atoms with
