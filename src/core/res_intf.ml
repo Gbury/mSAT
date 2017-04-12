@@ -74,6 +74,22 @@ module type S = sig
   (** Given an atom [a], returns a proof of the clause [\[a\]] if [a] is true at level 0 *)
 
 
+  (** {3 Proof Nodes} *)
+
+  val is_leaf : step -> bool
+  (** Returns wether the the proof node is a leaf, i.e. an hypothesis,
+      an assumption, or a lemma.
+      [true] if and only if {parents} returns the empty list. *)
+
+  val expl : step -> string
+  (** Returns a short string description for the proof step; for instance
+      ["hypothesis"] for a [Hypothesis] (generally, it currently is the
+      variant name in lowercase). *)
+
+  val parents : step -> proof list
+  (** Returns the parents of a proof node. *)
+
+
   (** {3 Proof Manipulation} *)
 
   val expand : proof -> proof_node

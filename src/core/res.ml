@@ -212,6 +212,28 @@ module Make(St : Solver_types.S) = struct
       assert (cmp_cl l (to_list conclusion) = 0);
       { conclusion; step = Resolution (c', d', a); }
 
+  (* Proof nodes manipulation *)
+  let is_leaf = function
+    | Hypothesis
+    | Assumption
+    | Lemma _ -> true
+    | Duplicate _
+    | Resolution _ -> false
+
+  let parents = function
+    | Hypothesis
+    | Assumption
+    | Lemma _ -> []
+    | Duplicate (p, _) -> [p]
+    | Resolution (p, p', _) -> [p; p']
+
+  let expl = function
+    | Hypothesis -> "hypothesis"
+    | Assumption -> "assumption"
+    | Lemma _ -> "lemma"
+    | Duplicate _ -> "duplicate"
+    | Resolution _ -> "resolution"
+
   (* Compute unsat-core
      TODO: replace visited bool by a int unique to each call
      of unsat_core, so that the cleanup can be removed ? *)
