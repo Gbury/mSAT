@@ -20,7 +20,7 @@ before_install:
   - opam init
   - opam switch ${OCAML_VERSION}
   - eval `opam config env`
-  - opam install ocamlfind ocamlbuild
+  - opam install ocamlfind ocamlbuild landmarks
   - if ${RUN_TEST}; then opam pin add dolmen https://github.com/Gbury/dolmen.git; fi
 install:
   - make lib
