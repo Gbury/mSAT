@@ -23,6 +23,9 @@ bin:
 	$(COMP) $(FLAGS) $(BIN)
 	cp $(BIN) $(NAME) && rm $(BIN)
 
+bench: bin
+	OCAML_LANDMARKS=on,output=temporary,format=json ./$(NAME) tests/pigeon/hole8.cnf
+
 test_bin:
 	$(COMP) $(FLAGS) $(TEST_BIN)
 

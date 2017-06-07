@@ -11,6 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@landmark "auto"]
+
 module V = Sparse_vec
 
 type t = {heap : int Vec.t; indices : int V.t }

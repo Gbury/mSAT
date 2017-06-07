@@ -4,6 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+[@@@landmark "auto"]
+
 module Make
     (St : Solver_types.S)
     (Plugin : Plugin_intf.S with type term = St.term

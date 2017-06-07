@@ -11,6 +11,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+[@@@landmark "auto"]
+
 type 'a t = { mutable dummy: 'a; mutable data : 'a array; mutable sz : int }
 
 let _size_too_big()=

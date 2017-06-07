@@ -4,6 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+[@@@landmark "auto"]
+
 exception Incorrect_model
 exception Out_of_time
 exception Out_of_space
