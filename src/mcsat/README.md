@@ -6,21 +6,21 @@
 McSat theories have different interfaces and requirements than classic SMT theories.
 The good point of these additional requirements is that it becomes easier to combine
 theories, since the assignments allow theories to exchange information about
-the equality of terms. In a context where there are multple theories, they each have
+the equality of terms. In a context where there are multiple theories, they each have
 to handle the following operations:
 
-- return an assignement value for a given term
-- receive a new assignemnt value for a term (the assignemnt may, or not, have been
+- return an assignment value for a given term
+- receive a new assignment value for a term (the assignment may, or not, have been
   done by another theory)
-- receive a new assertion (i.e an atomic formula asseted to be true by the sat solver)
+- receive a new assertion (i.e an atomic formula asserted to be true by the sat solver)
 
 With assignments, the reason for a theory returning UNSAT now becomes when
-some term has no potential assignemnt value because of past assignemnts
+some term has no potential assignment value because of past assignments
 and assertions, (or in some cases, an assignments decided by a theory A is
 incompatible with the possible assignments of the same term according to theory B).
 
 When returning UNSAT, the theory must, as usual return a conflict clause.
-The conflcit clause must be a tautology, and such that every atomic proposition
+The conflict clause must be a tautology, and such that every atomic proposition
 in it must evaluate to false using assignments.
 
 
@@ -31,9 +31,9 @@ of known equalities (*NOT* computing congruence closure, only the reflexive-tran
 closure of the equalities), where each class can be tagged with an optional assignment.
 
 When receiving a new assertions by the sat, we update the union-find. When the theory is
-asked for an assignemnt value for a term, we lookup its class. If it is tagged, we return
+asked for an assignment value for a term, we lookup its class. If it is tagged, we return
 the tagged value. Else, we take an arbitrary representative $x$ of the class and return it.
-When a new assignement $t \mapsto v$ is propagated by the sat solver, there are three cases:
+When a new assignment $t \mapsto v$ is propagated by the sat solver, there are three cases:
 
 - the class of $t$ if not tagged, we then tag it with $t \mapsto v$ and continue
 - the class of $t$ is already tagged with $\_ mapsto v$, we do nothing
