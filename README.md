@@ -86,7 +86,7 @@ module E = Msat.Sat.Expr (* expressions *)
 module F = Msat.Tseitin.Make(E)
 
 (* We create here two distinct atoms *)
-let a = E.fresh ()    (* A 'new_atom' is always distinct from any other atom *)
+let a = E.fresh ()    (* A fresh is always distinct from any other atom *)
 let b = E.make 1      (* Atoms can be created from integers *)
 
 (* Let's create some formulas *)
