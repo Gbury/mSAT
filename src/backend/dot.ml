@@ -69,7 +69,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
       id table_options color table (c, rule, rule_color, l)
 
   let print_dot_res_node fmt id a =
-    Format.fprintf fmt "%s [label=\"%a\"];@\n" id A.print_atom a
+    Format.fprintf fmt "%s [label=<%a>];@\n" id A.print_atom a
 
   let ttify f c = fun fmt () -> f fmt c
 
