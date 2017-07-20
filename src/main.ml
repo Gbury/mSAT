@@ -31,10 +31,7 @@ module Make
     val do_task : Dolmen.Statement.t -> unit
   end = struct
 
-  module D = Dot.Make(S.Proof)(struct
-      let print_atom = S.St.print_atom
-      let lemma_info _ = "<>", None, []
-    end)
+  module D = Dot.Make(S.Proof)(Dot.Default(S.Proof))
 
   let hyps = ref []
 

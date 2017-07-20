@@ -23,7 +23,9 @@ module type Arg = sig
   type atom
   (** The type of atomic formuals *)
 
+  type hyp
   type lemma
+  type assumption
   (** The type of theory-specifi proofs (also called lemmas). *)
 
   val print_atom : Format.formatter -> atom -> unit
@@ -31,11 +33,12 @@ module type Arg = sig
       WARNING: this function should take care to escape and/or not output special
       reserved characters for the dot format (such as quotes and so on). *)
 
+  val hyp_info : hyp -> string * string option * (Format.formatter -> unit -> unit) list
   val lemma_info : lemma -> string * string option * (Format.formatter -> unit -> unit) list
-  (** Generate some information about a theory specific lemmas. This backend does not
-      support printing of proper proofs in DOT format, so all proofs are printed as leafs
-      of the resolution tree. This function should return a triplet [(rule, color, l)],
-      such that:
+  val assumption_info : assumption -> string * string option * (Format.formatter -> unit -> unit) list
+  (** Generate some information about the leafs of the proof tree. Currently this backend
+      print each lemma/assumption/hypothesis as a single leaf of the proof tree.
+      These function should return a triplet [(rule, color, l)], such that:
       - [rule] is a name for the proof (arbitrary, does not need to be unique, but
         should rather be descriptive)
       - [color] is a color name (optional) understood by DOT
@@ -44,11 +47,24 @@ module type Arg = sig
 
 end
 
-module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemma) :
-  S with type t := S.proof
+module Default(S : Res.S) : Arg with type atom := S.atom
+                                 and type hyp := S.clause
+                                 and type lemma := S.clause
+                                 and type assumption := S.clause
+(** Provides a reasonnable default to instantiate the [Make] functor, assuming
+    the original printing functions are compatible with DOT html labels. *)
+
+module Make(S : Res.S)(A : Arg with type atom := S.atom
+                                and type hyp := S.clause
+                                and type lemma := S.clause
+                                and type assumption := S.clause) : S with type t := S.proof
 (** Functor for making a module to export proofs to the DOT format. *)
 
-module Simple(S : Res.S)(A : Arg with type atom := S.St.formula and type lemma := S.lemma) :
-  S with type t := S.proof
-(** Functor for making a module to export proofs to the DOT format. *)
+module Simple(S : Res.S)(A : Arg with type atom := S.St.formula
+                                  and type hyp = S.St.formula list
+                                  and type lemma := S.lemma
+                                  and type assumption = S.St.formula) : S with type t := S.proof
+(** Functor for making a module to export proofs to the DOT format.
+    The substitution of the hyp type is non-destructive due to a restriction
+    of destructive substitutions on earlier versions of ocaml. *)
 

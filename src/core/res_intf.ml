@@ -18,8 +18,8 @@ module type S = sig
   (** Raised when a complete resolution derivation cannot be found using the current hypotheses. *)
 
   type atom = St.atom
-  type clause = St.clause
   type lemma = St.proof
+  type clause = St.clause
   (** Abstract types for atoms, clauses and theory-specific lemmas *)
 
   type proof

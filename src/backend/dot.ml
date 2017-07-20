@@ -11,17 +11,46 @@ module type S = Backend_intf.S
 module type Arg = sig
 
   type atom
+  (* Type of atoms *)
+
+  type hyp
   type lemma
-  (** Types *)
+  type assumption
+  (** Types for hypotheses, lemmas, and assumptions. *)
 
   val print_atom : Format.formatter -> atom -> unit
+  (** Printing function for atoms *)
+
+  val hyp_info : hyp -> string * string option * (Format.formatter -> unit -> unit) list
   val lemma_info : lemma -> string * string option * (Format.formatter -> unit -> unit) list
-  (** Printing functions for atoms and lemmas. *)
+  val assumption_info : assumption -> string * string option * (Format.formatter -> unit -> unit) list
+  (** Functions to return information about hypotheses and lemmas *)
+
+end
+
+module Default(S : Res.S) = struct
+
+  let print_atom = S.St.print_atom
+
+  let hyp_info c =
+    "hypothesis", Some "LIGHTBLUE",
+    [ fun fmt () -> Format.fprintf fmt "%s" c.S.St.name]
+
+  let lemma_info c =
+    "lemma", Some "BLUE",
+    [ fun fmt () -> Format.fprintf fmt "%s" c.S.St.name]
+
+  let assumption_info c =
+    "assumption", Some "PURPLE",
+    [ fun fmt () -> Format.fprintf fmt "%s" c.S.St.name]
 
 end
 
 (** Functor to provide dot printing *)
-module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemma) = struct
+module Make(S : Res.S)(A : Arg with type atom := S.atom
+                                and type hyp := S.clause
+                                and type lemma := S.clause
+                                and type assumption := S.clause) = struct
 
   let node_id n = n.S.conclusion.S.St.name
 
@@ -75,16 +104,21 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
 
   let print_contents fmt n =
     match S.(n.step) with
+    (* Leafs of the proof tree *)
     | S.Hypothesis ->
-      print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) "Hypothesis" "LIGHTBLUE"
-        [(fun fmt () -> (Format.fprintf fmt "%s" (node_id n)))];
+      let rule, color, l = A.hyp_info S.(n.conclusion) in
+      let color = match color with None -> "LIGHTBLUE" | Some c -> c in
+      print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) rule color l
     | S.Assumption ->
-      print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) "Assumption" "LIGHTBLUE"
-        [(fun fmt () -> (Format.fprintf fmt "%s" (node_id n)))];
+      let rule, color, l = A.assumption_info S.(n.conclusion) in
+      let color = match color with None -> "LIGHTBLUE" | Some c -> c in
+      print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) rule color l
     | S.Lemma lemma ->
-      let rule, color, l = A.lemma_info lemma in
+      let rule, color, l = A.lemma_info S.(n.conclusion) in
       let color = match color with None -> "YELLOW" | Some c -> c in
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) rule color l
+
+    (* Tree nodes *)
     | S.Duplicate (p, l) ->
       print_dot_node fmt (node_id n) "GREY" S.(n.conclusion) "Duplicate" "GREY"
         ((fun fmt () -> (Format.fprintf fmt "%s" (node_id n))) ::
@@ -107,9 +141,38 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
 
 end
 
-module Simple(S : Res.S)(A : Arg with type atom := S.St.formula and type lemma := S.lemma) =
+module Simple(S : Res.S)
+    (A : Arg with type atom := S.St.formula
+              and type hyp = S.St.formula list
+              and type lemma := S.lemma
+              and type assumption = S.St.formula) =
   Make(S)(struct
-    let lemma_info = A.lemma_info
-    let print_atom fmt a = A.print_atom fmt a.S.St.lit
+
+    (* Some helpers *)
+    let lit a = a.S.St.lit
+
+    let get_assumption c =
+      match S.to_list c with
+      | [ x ] -> x
+      | _ -> assert false
+
+    let get_lemma c =
+      match c.S.St.cpremise with
+      | S.St.Lemma p -> p
+      | _ -> assert false
+
+    (* Actual functions *)
+    let print_atom fmt a =
+      A.print_atom fmt a.S.St.lit
+
+    let hyp_info c =
+      A.hyp_info (List.map lit (S.to_list c))
+
+    let lemma_info c =
+      A.lemma_info (get_lemma c)
+
+    let assumption_info c =
+      A.assumption_info (lit (get_assumption c))
+
   end)
 
