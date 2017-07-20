@@ -42,7 +42,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom and type lemma := S.lemm
       done
 
   let print_edge fmt i j =
-    Format.fprintf fmt "%s -> %s;@\n" i j
+    Format.fprintf fmt "%s <- %s;@\n" i j
 
   let print_edges fmt n =
     match S.(n.step) with
