@@ -71,7 +71,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
       done
 
   let print_edge fmt i j =
-    Format.fprintf fmt "%s <- %s;@\n" i j
+    Format.fprintf fmt "%s -> %s;@\n" j i
 
   let print_edges fmt n =
     match S.(n.step) with
