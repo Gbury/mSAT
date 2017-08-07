@@ -23,6 +23,7 @@ solver/Tseitin
 
 # Backends
 backend/Dot
+backend/Coq
 backend/Dedukti
 backend/Backend_intf
 

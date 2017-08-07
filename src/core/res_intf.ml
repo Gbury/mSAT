@@ -83,8 +83,8 @@ module type S = sig
 
   val expl : step -> string
   (** Returns a short string description for the proof step; for instance
-      ["hypothesis"] for a [Hypothesis] (generally, it currently is the
-      variant name in lowercase). *)
+      ["hypothesis"] for a [Hypothesis]
+      (it currently returns the variant name in lowercase). *)
 
   val parents : step -> proof list
   (** Returns the parents of a proof node. *)
@@ -97,8 +97,8 @@ module type S = sig
 
   val fold : ('a -> proof_node -> 'a) -> 'a -> proof -> 'a
   (** [fold f acc p], fold [f] over the proof [p] and all its node. It is guaranteed that
-      [f] is executed exactly once on each proof ndoe in the tree, and that the execution of
-      [f] on a proof node happens after the execution on the children of the nodes. *)
+      [f] is executed exactly once on each proof node in the tree, and that the execution of
+      [f] on a proof node happens after the execution on the parents of the nodes. *)
 
   val unsat_core : proof -> clause list
   (** Returns the unsat_core of the given proof, i.e the lists of conclusions of all leafs of the proof.
@@ -112,5 +112,14 @@ module type S = sig
 
   val print_clause : Format.formatter -> clause -> unit
   (** A nice looking printer for clauses, which sort the atoms before printing. *)
+
+
+  (** {3 Unsafe} *)
+
+  module H : Hashtbl.S with type key = clause
+  (** Hashtable over clauses. Uses the details of the internal representation
+      to achieve the best performances, however hashtables from this module
+      become invalid when solving is restarted, so they should only be live
+      during inspection of a single proof. *)
 
 end

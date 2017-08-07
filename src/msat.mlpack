@@ -22,6 +22,7 @@ Solver_types
 Res
 Backend_intf
 Dot
+Coq
 Dimacs
 Dedukti
 

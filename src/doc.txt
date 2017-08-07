@@ -74,6 +74,7 @@ Backends for exporting proofs to different formats:
 
 {!modules:
 Dot
+Coq
 Dedukti
 Backend_intf
 }
