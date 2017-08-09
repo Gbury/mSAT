@@ -32,7 +32,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
     end)
 
   let name c = c.S.St.name
-  let name_tmp c = c.S.St.name ^ "_or"
+  let name_tmp c = c.S.St.name ^ "_tmp"
 
   let pp_atom fmt a =
     if a == S.St.(a.var.pa) then
@@ -65,8 +65,8 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
     m
 
   let clausify fmt clause =
-    Format.fprintf fmt "assert (%s: %a).@\nintros; try destruct %s; auto. clear %s.@\n"
-      (name clause) pp_clause clause (name_tmp clause) (name_tmp clause)
+    Format.fprintf fmt "assert (%s: %a).@\ntauto. clear %s.@\n"
+      (name clause) pp_clause clause (name_tmp clause)
 
   let elim_duplicate fmt goal hyp _ =
     (** Printing info comment in coq *)
