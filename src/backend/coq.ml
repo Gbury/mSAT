@@ -90,8 +90,12 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
     Format.fprintf fmt "(* Clausal resolution.@\n";
     Format.fprintf fmt "   Goal : %s ; Hyps : %s, %s *)@\n"
       (name goal) (name h1) (name h2);
-    (** use a cut to introduce the clause we want to prove *)
-    Format.fprintf fmt "assert (%s: %a).@\n" (name goal) pp_clause goal;
+    (** use a cut to introduce the clause we want to prove
+        *except* if it is the last clause, i.e the empty clause because
+                 we already want to prove 'False',
+                 no need to introduce it as a subgoal *)
+    if Array.length goal.S.St.atoms <> 0 then
+        Format.fprintf fmt "assert (%s: %a).@\n" (name goal) pp_clause goal;
     (** Prove the goal: intro the axioms, then perform resolution *)
     let m = pp_clause_intro fmt goal in
     Format.fprintf fmt "exact (%s%a).@\n"
