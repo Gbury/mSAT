@@ -73,6 +73,10 @@ module Make
     match s.Dolmen.Statement.descr with
     | Dolmen.Statement.Def (id, t) -> T.def id t
     | Dolmen.Statement.Decl (id, t) -> T.decl id t
+    | Dolmen.Statement.Clause l ->
+      let cnf = T.antecedent (Dolmen.Term.or_ l) in
+      hyps := cnf @ !hyps;
+      S.assume cnf
     | Dolmen.Statement.Consequent t ->
       let cnf = T.consequent t in
       hyps := cnf @ !hyps;
