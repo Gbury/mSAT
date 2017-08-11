@@ -38,21 +38,22 @@ currently 4 opam\cite{opam} packages that provide an OCaml library for SAT
 solving\footnote{There are a few additional packages for SMT solving, which we
 do not include because of the added complexity providing a full SMT solver
 compared to providing an interface for SAT solving.}, 3 of which are bindings to
-one or more SAT solvers written in C (such as minisat\cite{minisat}). The fourth
-and only one written in pure OCaml is \msat{}, which we will present.
+one or more SAT solvers written in C (such as minisat\cite{minisat}). We will
+present the fourth one, \msat{}, which is entirely written in OCaml.
 
 \section*{Sat and SMT Solving}
 
-Sat solvers work on propositional clauses, i.e. disjunctions of atomic
+Sat solvers work on propositional clauses, which are disjunctions of atomic
 propositions. A set of propositional clauses is satisfiable iff there exist a
-model for it, i.e. an assignment from the atomic propositions to booleans, such
+model for it, that is an assignment from the atomic propositions to booleans, such
 that for every clause there exist an atomic proposition in the clause which is
-assigned to $\top$. A SAT solver solves the satisfiability problems, i.e. for an
+assigned to $\top$. A SAT solver solves the satisfiability problems, meaning that for an
 input problem given as a set of clauses, it returns either `sat' if the problem
 is satisfiable, or `unsat' if it is not.
 
 SMT\footnote{Acronym for Satisfiability Modulo Theories.} solvers are extensions
-of SAT solvers to first-order quantifier-free clauses such as
+of SAT solvers to quantifier-free clauses built using first-order theories (like
+linear arithmetic); clauses such as
 $\neg (x + 1 > y) \lor \neg (y > z - 5) \lor (x > z - 10)$. In order to verify
 the satisfiability of a set of first-order clauses, a SAT solver is combined
 with a first-order theory: the basic idea is for the SAT solver to enumerate
@@ -65,25 +66,33 @@ the theory only has to deal with the satisfiability of a set of first-order
 atomic propositions, while the SAT solver deals with the propositional structure
 of the input problem.
 
+\section*{\msat{}}
+
 \msat{}\cite{msat} is a library entirely written in OCaml, which derives from
 \aez{}\cite{aez}, itself derived from the SMT solver
 \altergo{}\cite{altergo}\footnote{Apart from the initial fork of \aez{}, it is of
-interest to note that the development of \msat{} is completely separate from
-that of \aez{} and \altergo{}}. While there exist full SMT solvers written in
-OCaml, \msat{} currently is the only public library for pure SAT solving written
-entirely in OCaml.
-\msat{} provides functors to instantiate SMT solvers\footnote{Only the SAT
-solver is provided, \msat{} does not provide any implementation of theories},
-and by extension SAT solvers, since an SMT solver with an empty theory (i.e. a
-theory which always returns `sat') is a SAT solver. \msat{} supports the same
-features as current SAT solvers, for instance, local assumptions, but more
-importantly provides unique and original features like the ability to
-instantiate one's own SMT solver and a proof output for unsatisfiable problems.
+interest to note that the development of \msat{} is completely separate and independant
+from that of \aez{} and \altergo{}}. While there exist full SMT solvers as well SAT solvers
+available in OCaml, \msat{} is somewhere between the two: it doesn't provides builtin theories
+like SMT solvers, but instead allows the user to provide her own implementation of
+theories, something which is impossible to do using the bindings to SAT solvers written in C.
+\msat{} is therefore the first OCaml library to allow to create custom SMT solvers.
 
-The reason for providing a functor is that it makes it easy to create SMT
-solvers, something that no other library allows, and it closely follows the
+Specifically, \msat{} provides functors to instantiate SMT solvers,
+and by extension SAT solvers, since an SMT solver with an empty theory (that is, a
+theory which always returns `sat') is a SAT solver. This closely follows the
 theoretical foundation of SMT solvers, where any theory respecting adequate
 invariants can be plugged into a SAT solver to make a SMT solver.
+
+\msat{} supports most usual
+features of SAT solvers, such as local assumptions, but more
+importantly provides unique and original features like:
+\begin{itemize}
+  \item the ability to instantiate one's own SMT solver
+  \item a detailed proof output for unsatisfiable problems, including printing
+    of coq proof scripts
+\end{itemize}
+
 
 \section*{Presentation}
 
@@ -95,9 +104,9 @@ points:
   \item How to use the SAT solver exported by \msat{}
   \item How to instantiate a custom SMT solver using \msat{}, explaining in
     detail the various documented invariant expected to create a fully
-    operational SMT solver. This will be accompanied by an example of such
-    instantiation.
-  \item How to use and benefit from the proof output of \msat{}
+    operational SMT solver, and the design choices behind them.
+    This will be accompanied by an example of such instantiation.
+  \item The design of the proof output of \msat{}
 \end{itemize}
 
 Lastly, there will be a comparison between \msat{} and the other SAT solvers
