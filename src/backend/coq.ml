@@ -43,42 +43,58 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
   let pp_clause fmt c =
     let rec aux fmt (a, i) =
       if i < Array.length a then
-        Format.fprintf fmt "@[<h>%a ->@ @]%a"
+        Format.fprintf fmt "%a ->@ %a"
           pp_atom a.(i) aux (a, i + 1)
       else
         Format.fprintf fmt "False"
     in
     Format.fprintf fmt "@[<hov 1>(%a)@]" aux (c.S.St.atoms, 0)
 
-  let pp_clause_intro fmt c =
-    let rec aux fmt acc a i =
+  let clause_map c =
+    let rec aux acc a i =
       if i >= Array.length a then acc
       else begin
         let name = Format.sprintf "A%d" i in
-        Format.fprintf fmt "%s@ " name;
-        aux fmt (M.add a.(i) name acc) a (i + 1)
+        aux (M.add a.(i) name acc) a (i + 1)
       end
     in
-    Format.fprintf fmt "intros @[<hov>";
-    let m = aux fmt M.empty c.S.St.atoms 0 in
-    Format.fprintf fmt "@].@\n";
-    m
+    aux M.empty c.S.St.atoms 0
 
   let clausify fmt clause =
+    Format.fprintf fmt "(* Encoding theory clause %s into: %s *)@\n"
+      (name_tmp clause) (name clause);
     Format.fprintf fmt "assert (%s: %a).@\ntauto. clear %s.@\n"
       (name clause) pp_clause clause (name_tmp clause)
 
+  let clause_iter m format fmt clause =
+    let aux atom = Format.fprintf fmt format (M.find atom m) in
+    Array.iter aux clause.S.St.atoms
+
   let elim_duplicate fmt goal hyp _ =
     (** Printing info comment in coq *)
-    Format.fprintf fmt "(* Eliminating doublons.@\n";
-    Format.fprintf fmt "   Goal : %s ; Hyp : %s *)@\n" (name goal) (name hyp);
-    (** Use 'assert' to introduce the clause we want to prove *)
-    Format.fprintf fmt "assert (%s: %a).@\n" (name goal) pp_clause goal;
+    Format.fprintf fmt
+      "(* Eliminating doublons. Goal : %s ; Hyp : %s *)@\n"
+      (name goal) (name hyp);
     (** Prove the goal: intro the atoms, then use them with the hyp *)
-    let m = pp_clause_intro fmt goal in
-    Format.fprintf fmt "exact (%s%a).@\n"
-      (name hyp) (fun fmt -> Array.iter (fun atom ->
-          Format.fprintf fmt " %s" (M.find atom m))) hyp.S.St.atoms
+    let m = clause_map goal in
+    Format.fprintf fmt "pose proof @[<hov>(fun %a=>@ %s%a) as %s@].@\n"
+      (clause_iter m "%s@ ") goal (name hyp)
+      (clause_iter m "@ %s") hyp (name goal)
+
+  let resolution_aux m a h1 h2 fmt () =
+    Format.fprintf fmt "%s%a" (name h1)
+      (fun fmt -> Array.iter (fun b ->
+           if b == a then begin
+             Format.fprintf fmt "@ (fun p =>@ %s%a)"
+               (name h2) (fun fmt -> (Array.iter (fun c ->
+                   if c == a.S.St.neg then
+                     Format.fprintf fmt "@ (fun np => np p)"
+                   else
+                     Format.fprintf fmt "@ %s" (M.find c m)))
+                 ) h2.S.St.atoms
+           end else
+             Format.fprintf fmt "@ %s" (M.find b m)
+         )) h1.S.St.atoms
 
   let resolution fmt goal hyp1 hyp2 atom =
     let a = S.St.(atom.var.pa) in
@@ -87,30 +103,18 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
       else (assert (Array.memq a hyp2.S.St.atoms); hyp2, hyp1)
     in
     (** Print some debug info *)
-    Format.fprintf fmt "(* Clausal resolution.@\n";
-    Format.fprintf fmt "   Goal : %s ; Hyps : %s, %s *)@\n"
+    Format.fprintf fmt
+      "(* Clausal resolution. Goal : %s ; Hyps : %s, %s *)@\n"
       (name goal) (name h1) (name h2);
-    (** use a cut to introduce the clause we want to prove
-        *except* if it is the last clause, i.e the empty clause because
-                 we already want to prove 'False',
-                 no need to introduce it as a subgoal *)
-    if Array.length goal.S.St.atoms <> 0 then
-        Format.fprintf fmt "assert (%s: %a).@\n" (name goal) pp_clause goal;
     (** Prove the goal: intro the axioms, then perform resolution *)
-    let m = pp_clause_intro fmt goal in
-    Format.fprintf fmt "exact (%s%a).@\n"
-      (name h1) (fun fmt -> Array.iter (fun b ->
-          if b == a then begin
-            Format.fprintf fmt " (fun p => %s%a)"
-              (name h2) (fun fmt -> (Array.iter (fun c ->
-                  if c == a.S.St.neg then
-                    Format.fprintf fmt " (fun np => np p)"
-                  else
-                    Format.fprintf fmt " %s" (M.find c m)))
-                ) h2.S.St.atoms
-          end else
-            Format.fprintf fmt " %s" (M.find b m))
-        ) h1.S.St.atoms
+    if Array.length goal.S.St.atoms = 0 then begin
+      let m = M.empty in
+      Format.fprintf fmt "exact @[<hov 1>(%a)@].@\n" (resolution_aux m a h1 h2) ()
+    end else begin
+      let m = clause_map goal in
+      Format.fprintf fmt "pose proof @[<hov>(fun %a=>@ %a)@ as %s.@]@\n"
+        (clause_iter m "%s@ ") goal (resolution_aux m a h1 h2) () (name goal)
+    end
 
 
   let prove_node t fmt node =
@@ -138,9 +142,9 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
   let print fmt p =
     let h = S.H.create 4013 in
     let aux () node =
-      Format.fprintf fmt "%a@\n@\n" (prove_node h) node
+      Format.fprintf fmt "%a" (prove_node h) node
     in
-    Format.fprintf fmt "(* Coq proof generated by mSAT*)@\n@\n";
+    Format.fprintf fmt "(* Coq proof generated by mSAT*)@\n";
     S.fold aux () p
 
 end
