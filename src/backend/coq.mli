@@ -31,7 +31,11 @@ module type Arg = sig
   val prove_assumption : Format.formatter -> string -> assumption -> unit
   (** Proving function for hypotheses, lemmas and assumptions.
       [prove_x fmt name x] should prove [x], and be such that after
-      executing it, [x] is among the coq hypotheses under the name [name]. *)
+      executing it, [x] is among the coq hypotheses under the name [name].
+      The hypothesis should be the encoding of the given clause, i.e
+      for a clause [a \/ not b \/ c], the proved hypothesis should be:
+      [ ~ a -> ~ ~ b -> ~ c -> False ], keeping the same order as the
+      one in the atoms array of the clause. *)
 
 end
 

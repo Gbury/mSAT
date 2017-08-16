@@ -32,7 +32,6 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
     end)
 
   let name c = c.S.St.name
-  let name_tmp c = c.S.St.name ^ "_tmp"
 
   let pp_atom fmt a =
     if a == S.St.(a.var.pa) then
@@ -59,12 +58,6 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
       end
     in
     aux M.empty c.S.St.atoms 0
-
-  let clausify fmt clause =
-    Format.fprintf fmt "(* Encoding theory clause %s into: %s *)@\n"
-      (name_tmp clause) (name clause);
-    Format.fprintf fmt "assert (%s: %a).@\ntauto. clear %s.@\n"
-      (name clause) pp_clause clause (name_tmp clause)
 
   let clause_iter m format fmt clause =
     let aux atom = Format.fprintf fmt format (M.find atom m) in
@@ -121,14 +114,11 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
     let clause = node.S.conclusion in
     match node.S.step with
     | S.Hypothesis ->
-      A.prove_hyp fmt (name_tmp clause) clause;
-      clausify fmt clause
+      A.prove_hyp fmt (name clause) clause
     | S.Assumption ->
-      A.prove_assumption fmt (name_tmp clause) clause;
-      clausify fmt clause
+      A.prove_assumption fmt (name clause) clause
     | S.Lemma _ ->
-      A.prove_lemma fmt (name_tmp clause) clause;
-      clausify fmt clause
+      A.prove_lemma fmt (name clause) clause
     | S.Duplicate (p, l) ->
       let c = (S.expand p).S.conclusion in
       elim_duplicate fmt clause c l
