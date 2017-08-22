@@ -7,13 +7,9 @@ module type S = Backend_intf.S
 
 module type Arg = sig
 
-  type atom
-
   type hyp
   type lemma
   type assumption
-
-  val print_atom : Format.formatter -> atom -> unit
 
   val prove_hyp : Format.formatter -> string -> hyp -> unit
   val prove_lemma : Format.formatter -> string -> lemma -> unit
@@ -21,8 +17,7 @@ module type Arg = sig
 
 end
 
-module Make(S : Res.S)(A : Arg with type atom := S.atom
-                                and type hyp := S.clause
+module Make(S : Res.S)(A : Arg with type hyp := S.clause
                                 and type lemma := S.clause
                                 and type assumption := S.clause) = struct
 
@@ -32,22 +27,6 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
     end)
 
   let name c = c.S.St.name
-
-  let pp_atom fmt a =
-    if a == S.St.(a.var.pa) then
-      Format.fprintf fmt "~ %a" A.print_atom a
-    else
-      Format.fprintf fmt "~ ~ %a" A.print_atom a.S.St.neg
-
-  let pp_clause fmt c =
-    let rec aux fmt (a, i) =
-      if i < Array.length a then
-        Format.fprintf fmt "%a ->@ %a"
-          pp_atom a.(i) aux (a, i + 1)
-      else
-        Format.fprintf fmt "False"
-    in
-    Format.fprintf fmt "@[<hov 1>(%a)@]" aux (c.S.St.atoms, 0)
 
   let clause_map c =
     let rec aux acc a i =
@@ -141,8 +120,7 @@ end
 
 
 module Simple(S : Res.S)
-    (A : Arg with type atom := S.St.formula
-              and type hyp = S.St.formula list
+    (A : Arg with type hyp = S.St.formula list
               and type lemma := S.lemma
               and type assumption := S.St.formula) =
   Make(S)(struct
@@ -159,10 +137,6 @@ module Simple(S : Res.S)
       match c.S.St.cpremise with
       | S.St.Lemma p -> p
       | _ -> assert false
-
-    (* Actual functions *)
-    let print_atom fmt a =
-      A.print_atom fmt a.S.St.lit
 
     let prove_hyp fmt name c =
       A.prove_hyp fmt name (List.map lit (S.to_list c))

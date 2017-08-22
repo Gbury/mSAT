@@ -15,16 +15,10 @@ module type S = Backend_intf.S
 module type Arg = sig
   (** Term printing for Coq *)
 
-  type atom
-  (** The type of atomic formulas *)
-
   type hyp
   type lemma
   type assumption
   (** The types of hypotheses, lemmas, and assumptions *)
-
-  val print_atom : Format.formatter -> atom -> unit
-  (** Print the given atomic formula *)
 
   val prove_hyp : Format.formatter -> string -> hyp -> unit
   val prove_lemma : Format.formatter -> string -> lemma -> unit
@@ -39,15 +33,13 @@ module type Arg = sig
 
 end
 
-module Make(S : Res.S)(A : Arg with type atom := S.atom
-                                and type hyp := S.clause
+module Make(S : Res.S)(A : Arg with type hyp := S.clause
                                 and type lemma := S.clause
                                 and type assumption := S.clause) : S with type t := S.proof
 (** Base functor to output Coq proofs *)
 
 
-module Simple(S : Res.S)(A : Arg with type atom := S.St.formula
-                                  and type hyp = S.St.formula list
+module Simple(S : Res.S)(A : Arg with type hyp = S.St.formula list
                                   and type lemma := S.lemma
                                   and type assumption := S.St.formula) : S with type t := S.proof
 (** Simple functo to output Coq proofs *)
