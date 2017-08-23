@@ -1,0 +1,111 @@
+\usepackage{multicol}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{tikz}
+
+\usepackage[right=1cm,left=1cm,top=1cm,bottom=1cm]{geometry}
+\setlength{\parindent}{0.0cm}
+\renewcommand{\sfdefault}{lmss}
+
+\definecolor{orangeinria}{RGB}{227,55,41} % Orange INRIA
+\definecolor{color1}{RGB}{227,55,41} % Orange INRIA
+\definecolor{color2}{RGB}{116,101,110} % Blue INRIA
+\definecolor{orange}{RGB}{243,154,38}
+\definecolor{red}{RGB}{226,0,38}
+\definecolor{orange2}{RGB}{236,117,40}
+\definecolor{grey}{RGB}{50, 50, 50}
+
+% args: width, number, title, txt
+\newcommand{\tblock}[2]{
+%  \addtocounter{nblock}{1}
+  \begin{tikzpicture}
+    \tikzstyle{txtblock}=[draw=grey,rounded corners=40pt]
+    \draw node (zou) [txtblock, text width=0.9 \columnwidth, inner sep=25pt, line width=5pt, text justified] {
+	\Large #2
+    };
+    \draw node () at (zou.north) [line width=10pt,inner sep=15pt,anchor=center,fill=white] {
+      \begin{Huge}
+        \textcolor{orangeinria}{\textbf{#1}}
+      \end{Huge}
+    };
+  \end{tikzpicture}
+  \vspace{10mm}
+}
+
+\newcommand{\cblock}[2]{
+%  \addtocounter{nblock}{1}
+  \begin{tikzpicture}
+    \tikzstyle{txtblock}=[draw=grey,rounded corners=40pt,fill=gray!10]
+    \draw node (zou) [txtblock, text width=0.9 \columnwidth, inner sep=25pt, line width=5pt, text justified] {
+	\Large #2
+    };
+    \draw node () at (zou.north) [line width=10pt,inner sep=15pt,anchor=center,fill=white] {
+      \begin{Huge}
+        \textcolor{orangeinria}{\textbf{#1}}
+      \end{Huge}
+    };
+  \end{tikzpicture}
+  \vspace{10mm}
+}
+
+
+\newcommand{\block}[1]{
+%  \addtocounter{nblock}{1}
+  \begin{tikzpicture}
+    \tikzstyle{txtblock}=[draw=grey,fill=gray!10]
+    \draw node (zou) [txtblock, text width=0.9 \columnwidth, inner sep=25pt, line width=4pt, text justified] {
+      \Large #1
+    };
+  \end{tikzpicture}
+  \vspace{10mm}
+}
+
+% args: title, authors, affiliation
+\newcommand{\postertitle}[3]{
+  \begin{tikzpicture}
+    \draw node (titlebar) [inner sep=0cm, 
+                           inner ysep=10mm,
+                           text width=\textwidth, fill=orangeinria] {
+        \hspace{0.2 \textwidth}
+        \begin{minipage}[c]{0.79 \textwidth}
+            \begin{center}
+                \begin{VeryHuge}
+                    {\color{white} \bfseries
+                      #1
+                    }
+                \end{VeryHuge}
+              \end{center}
+            \end{minipage}
+};
+
+    \draw node (authors) at (titlebar.south) [anchor=north, yshift=-5mm,
+                           text width=\textwidth, inner xsep=0cm] {
+        \hspace{0.2 \textwidth}
+        \begin{minipage}[c]{0.79 \textwidth}
+            \begin{center}
+                \begin{huge}
+                  \color{orangeinria}
+                  \textbf{#2}
+
+                  \vspace{5mm}
+
+                  #3
+                \end{huge}
+            \end{center}
+        \end{minipage}
+    };
+
+    \node[xshift=0.1 \textwidth, yshift=-15mm] (logo) at (titlebar.west) {};
+
+    \foreach \s in {0, 0.25, ..., 2.5}
+    {
+      \node[xshift=\s mm, yshift=-\s mm,fill=grey,opacity=0.07,rounded corners=20pt,line width=2pt, minimum width=0.18 \textwidth, minimum height=0.18 \textwidth] () at (logo) {
+      };
+    }
+
+    \node[draw=grey,rounded corners=20pt,fill=white,line width=2pt, minimum width=0.18 \textwidth, minimum height=0.18 \textwidth] () at (logo) {
+      \includegraphics[width=0.16 \textwidth]{logo.jpg}
+    };
+\end{tikzpicture}
+}

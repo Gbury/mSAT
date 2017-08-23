@@ -1,0 +1,100 @@
+\documentclass[portrait,a0,final]{a0poster}
+
+\usepackage[utf8]{inputenc}
+\usepackage[OT1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{enumitem}
+\usepackage{verbatim}
+\usepackage{amsfonts, amsmath, amssymb, amsthm, dsfont}
+
+\usepackage{listings}
+\lstset{language=[Objective]Caml}
+
+\usepackage{bussproofs}
+\newcommand\typ[2]{\Gamma\vdash#1:#2}
+
+\input{template_deducteam.tex}
+
+\def\aez{\textsf{Alt-Ergo~Zero}}
+\def\altergo{\textsf{Alt-Ergo}}
+\def\ens{\textsf{ENS Paris-Saclay}}
+\def\inria{\textsf{Inria}}
+\def\lsv{\textsf{LSV}}
+\def\msat{\textsf{mSAT}}
+\def\opam{\textsf{opam}}
+
+\begin{document}
+
+\sffamily % Font Family
+
+\postertitle
+{\msat{}:~An~OCaml~SAT~Solver}
+{Guillaume \textsc{Bury}}
+{DEDUC$\vdash$EAM (INRIA) - LSV / CNRS\\
+\Large \textcolor{black}{\texttt{guillaume.bury@inria.fr}}}
+
+
+\begin{center}
+
+\begin{multicols}{2}
+
+\tblock{Introduction} % TODO
+{
+  \vspace{0cm} % Pour pas se faire manger par le titre
+
+  \msat{} is a SAT solving library written in OCaml. It allows to solve the satisfiability
+  of propositional problems in clausal normal form, and produce either a propositional model,
+  or a resolution proof of the problem's unsatisfiability.
+}
+
+\tblock{Conflict Driven Clause learning}
+{
+  \begin{description}
+    \item[Propagation] If there exists a clause $C = C' \lor a$, where
+      $C'$ is false in the partial model, then add $a \mapsto \top$ to
+      the partial model, and record $C$ as the reason for $a$.
+    \item[Decision] Take an atom $a$ which is not yet in the partial model,
+      and add $a \mapsto \top$ to the model.
+    \item[Conflict] A conflict is a clause $C$ that is false in the current partial
+      model.
+    \item[Analyze] Perform resolution between the analyzed clause and the reason
+      behind the propagation of its most recently assigned litteral, until
+      the analyzed clause is suitable for backumping
+    \item[Backjump] A clause is suitable for backjumping if its most recently
+      assigned litteral $a$ is a decision. We can then backtrack to before the
+      decision, and add the analyzed clause to the solver, which will then enable
+      to propagate $a \mapsto \bot$.
+    \item[SMT] Formulas using first-order theories can be handled using a theory.
+      Each formula propagated or decided is sent to the theory, which then
+      has the duty to check whether the conjunction of all formulas seen so
+      far is satisfiable, if not, it should return a theory tautology (as a clause),
+      that is not satisfied in the current partial model.
+  \end{description}
+}
+
+\columnbreak
+
+\tblock{Problem example}
+{
+
+}
+
+\cblock{Theory interface}
+{
+  \lstinputlisting{theory_intf.ml}
+}
+
+\cblock{Proof management}
+{
+  \lstinputlisting{proof_intf.ml}
+}
+
+
+\end{multicols}
+
+
+\Large \msat{} is available on \opam{} and on github: \texttt{https://github.com/Gbury/mSAT}
+
+\end{center}
+
+\end{document}
