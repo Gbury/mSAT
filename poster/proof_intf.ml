@@ -1,7 +1,3 @@
-type clause_premise =
-    | Hyp | Local | Lemma of lemma
-    | History of clause list
-
 type proof = clause
 and proof_node = {
   conclusion : clause;

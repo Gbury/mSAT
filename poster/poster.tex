@@ -33,14 +33,13 @@
 {DEDUC$\vdash$EAM (INRIA) - LSV / CNRS\\
 \Large \textcolor{black}{\texttt{guillaume.bury@inria.fr}}}
 
-
 \begin{center}
 
 \begin{multicols}{2}
 
 \tblock{Introduction} % TODO
 {
-  \vspace{0cm} % Pour pas se faire manger par le titre
+  \vspace{0.5cm} % Pour pas se faire manger par le titre
 
   \msat{} is a SAT solving library written in OCaml. It allows to solve the satisfiability
   of propositional problems in clausal normal form, and produce either a propositional model,
@@ -72,23 +71,70 @@
   \end{description}
 }
 
+\tblock{Implementation}
+{
+  \begin{itemize}[label=$\blacktriangleright$]
+    \item Imperative design
+      \begin{itemize}[label=\checkmark]
+        \item 2-watch litteral
+        \item Generative functors
+        \item Backtrackable theories (less demanding than immutable theories)
+      \end{itemize}
+    \item Features
+      \begin{itemize}[label=\checkmark]
+        \item Functorized design
+        \item Local assumptions
+        \item Model output
+        \item Proof output (Coq, dot)
+      \end{itemize}
+  \end{itemize}
+}
+
+\tblock{Related work}
+{
+  \begin{itemize}[label=$\bullet$]
+    \item regstab: binary only
+    \item Minisat, sattools, ocaml-sat-solvers: bindings to C sat solvers (cannot make a SMT)
+    \item Alt-ego, Alt-ergo-zero: Full SMT (no functorized design, cannot change the theory)
+    \item ocamlyices, yices2: SMT bindings (not full ocaml)
+  \end{itemize}
+}
+
+
 \columnbreak
 
 \tblock{Problem example}
 {
-
+  \vspace{.5cm}
+  \[
+  \begin{matrix}
+    H1: & a = b   & \quad & H2: & b = c \lor b = d \\
+    H3: & a <> d  & \quad & H4: & a <> c \\
+  \end{matrix}
+  \]
+  \includegraphics[height=33cm]{proof}
 }
 
-\cblock{Theory interface}
+\tblock{Proof generation}
 {
-  \lstinputlisting{theory_intf.ml}
+  \begin{itemize}[label=\checkmark]
+    \item Each clause records it "history", that is the clauses
+      used during analyzing
+    \item Minimal impact on proof search (already done to compute
+      unsat-core)
+    \item Sufficient to rebuild the whole resolution tree
+    \item Enables various proof output:
+      \begin{itemize}[label=$\bullet$]
+        \item Dot/Graphviz (see example)
+        \item Coq formal proof
+      \end{itemize}
+  \end{itemize}
 }
 
-\cblock{Proof management}
+\cblock{Proof interface}
 {
   \lstinputlisting{proof_intf.ml}
 }
-
 
 \end{multicols}
 
