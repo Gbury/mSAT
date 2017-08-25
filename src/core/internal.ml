@@ -80,7 +80,7 @@ module Make
        - this is repeated until a fixpoint is reached;
        - before a decision (and after the fixpoint),
          th_head = elt_head = length elt_queue
-      *)
+    *)
 
 
     mutable simpDB_props : int;
@@ -211,12 +211,12 @@ module Make
     let res = add_atom f in
     if St.mcsat then
       begin match res.var.v_assignable with
-      | Some _ -> ()
-      | None ->
-        let l = ref [] in
-        Plugin.iter_assignable (fun t -> l := add_term t :: !l) res.var.pa.lit;
-        res.var.v_assignable <- Some !l;
-    end;
+        | Some _ -> ()
+        | None ->
+          let l = ref [] in
+          Plugin.iter_assignable (fun t -> l := add_term t :: !l) res.var.pa.lit;
+          res.var.v_assignable <- Some !l;
+      end;
     res
 
   (* Variable and literal activity.
@@ -233,8 +233,8 @@ module Make
       Iheap.insert f_weight env.order v.vid;
       insert_subterms_order v
 
-    and insert_subterms_order v =
-      iter_sub (fun t -> insert_var_order (elt_of_lit t)) v
+  and insert_subterms_order v =
+    iter_sub (fun t -> insert_var_order (elt_of_lit t)) v
 
   (* Add new litterals/atoms on which to decide on, even if there is no
      clause that constrains it.
@@ -329,8 +329,8 @@ module Make
       ) clause.atoms;
     List.iter (fun a ->
         begin match a.var.seen with
-        | Both -> trivial := true
-        | _ -> ()
+          | Both -> trivial := true
+          | _ -> ()
         end;
         clear a.var) !res;
     if !trivial then
@@ -504,7 +504,7 @@ module Make
             let c' = make_clause (fresh_lname ()) l (History (cl :: history)) in
             Log.debugf debug "Simplified reason: @[<v>%a@,%a@]"
               (fun k -> k St.pp_clause cl St.pp_clause c');
-              Bcp c'
+            Bcp c'
           end
         | _ ->
           Log.debugf error "@[<v 2>Failed at reason simplification:@,%a@,%a@]"
@@ -759,9 +759,9 @@ module Make
   (* Get the correct vector to insert a clause in. *)
   let clause_vector c =
     match c.cpremise with
-      | Hyp -> env.clauses_hyps
-      | Local -> env.clauses_temp
-      | Lemma _ | History _ -> env.clauses_learnt
+    | Hyp -> env.clauses_hyps
+    | Local -> env.clauses_temp
+    | Lemma _ | History _ -> env.clauses_learnt
 
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)

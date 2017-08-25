@@ -32,17 +32,17 @@ module type S = sig
   (** A proof can be expanded into a proof node, which show the first step of the proof. *)
   and step =
     | Hypothesis
-      (** The conclusion is a user-provided hypothesis *)
+    (** The conclusion is a user-provided hypothesis *)
     | Assumption
-      (** The conclusion has been locally assumed by the user *)
+    (** The conclusion has been locally assumed by the user *)
     | Lemma of lemma
     (** The conclusion is a tautology provided by the theory, with associated proof *)
     | Duplicate of proof * atom list
     (** The conclusion is obtained by eliminating multiple occurences of the atom in
         the conclusion of the provided proof. *)
     | Resolution of proof * proof * atom
-      (** The conclusion can be deduced by performing a resolution between the conclusions
-          of the two given proofs. The atom on which to perform the resolution is also given. *)
+    (** The conclusion can be deduced by performing a resolution between the conclusions
+        of the two given proofs. The atom on which to perform the resolution is also given. *)
   (** The type of reasoning steps allowed in a proof. *)
 
 

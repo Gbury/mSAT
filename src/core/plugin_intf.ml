@@ -28,7 +28,7 @@ type 'term eval_res =
   | Valued of bool * ('term list) (** The given formula can be evaluated to the given bool.
                                       The list of terms to give is the list of terms that
                                       were effectively used for the evaluation.
-                                      *)
+                                  *)
 (** The type of evaluation results for a given formula.
     For instance, let's suppose we want to evaluate the formula [x * y = 0], the
     following result are correct:
@@ -36,15 +36,15 @@ type 'term eval_res =
     - [Valued (true, [x])] if [x] is assigned to [0]
     - [Valued (true, [y])] if [y] is assigned to [0]
     - [Valued (false, [x; y])] if [x] and [y] are assigned to 1 (or any non-zero number)
-  *)
+*)
 
 type ('formula, 'proof) res =
   | Sat
-    (** The current set of assumptions is satisfiable. *)
+  (** The current set of assumptions is satisfiable. *)
   | Unsat of 'formula list * 'proof
-    (** The current set of assumptions is *NOT* satisfiable, and here is a
-        theory tautology (with its proof), for which every litteral is false
-        under the current assumptions. *)
+  (** The current set of assumptions is *NOT* satisfiable, and here is a
+      theory tautology (with its proof), for which every litteral is false
+      under the current assumptions. *)
 (** Type returned by the theory. Formulas in the unsat clause must come from the
     current set of assumptions, i.e must have been encountered in a slice. *)
 

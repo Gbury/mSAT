@@ -164,8 +164,8 @@ let print ?(sep=", ") pp out v =
   let first = ref true in
   iter
     (fun x ->
-      if !first then first := false else Format.fprintf out "%s@," sep;
-      pp out x)
+       if !first then first := false else Format.fprintf out "%s@," sep;
+       pp out x)
     v
 
 (*

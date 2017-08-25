@@ -122,7 +122,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
     | S.Duplicate (p, l) ->
       print_dot_node fmt (node_id n) "GREY" S.(n.conclusion) "Duplicate" "GREY"
         ((fun fmt () -> (Format.fprintf fmt "%s" (node_id n))) ::
-        List.map (ttify A.print_atom) l);
+         List.map (ttify A.print_atom) l);
       print_edge fmt (node_id n) (node_id (S.expand p))
     | S.Resolution (_, _, a) ->
       print_dot_node fmt (node_id n) "GREY" S.(n.conclusion) "Resolution" "GREY"

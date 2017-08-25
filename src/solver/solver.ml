@@ -50,12 +50,12 @@ module Plugin(E : Formula_intf.S)
       propagate f (Plugin_intf.Consequence (l, proof))
 
   let mk_slice s = {
-      Theory_intf.start = s.Plugin_intf.start;
-      length = s.Plugin_intf.length;
-      get = assume_get s.Plugin_intf.get;
-      push = s.Plugin_intf.push;
-      propagate = assume_propagate s.Plugin_intf.propagate;
-    }
+    Theory_intf.start = s.Plugin_intf.start;
+    length = s.Plugin_intf.length;
+    get = assume_get s.Plugin_intf.get;
+    push = s.Plugin_intf.push;
+    propagate = assume_propagate s.Plugin_intf.propagate;
+  }
 
   let assume s = Th.assume (mk_slice s)
 

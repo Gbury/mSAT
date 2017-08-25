@@ -66,10 +66,10 @@ let rec list_cmp ord l1 l2 =
   | [], _ -> -1
   | _, [] -> 1
   | x1::l1', x2::l2' ->
-      let c = ord x1 x2 in
-      if c = 0
-        then list_cmp ord l1' l2'
-        else c
+    let c = ord x1 x2 in
+    if c = 0
+    then list_cmp ord l1' l2'
+    else c
 
 (* Exceptions *)
 (* ************************************************************************ *)

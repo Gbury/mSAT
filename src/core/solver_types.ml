@@ -196,8 +196,8 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let add_atom lit =
     let var, negated = make_boolean_var lit in
     match negated with
-      | Formula_intf.Negated -> var.na
-      | Formula_intf.Same_sign -> var.pa
+    | Formula_intf.Negated -> var.na
+    | Formula_intf.Same_sign -> var.pa
 
   let make_clause ?tag name ali premise =
     let atoms = Array.of_list ali in

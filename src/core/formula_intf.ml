@@ -29,8 +29,8 @@ module type S = sig
   (** Equality over formulas. *)
 
   val hash : t -> int
-    (** Hashing function for formulas. Should be such that two formulas equal according
-        to {!val:Expr_intf.S.equal} have the same hash. *)
+  (** Hashing function for formulas. Should be such that two formulas equal according
+      to {!val:Expr_intf.S.equal} have the same hash. *)
 
   val print : Format.formatter -> t -> unit
   (** Printing function used among other thing for debugging.  *)

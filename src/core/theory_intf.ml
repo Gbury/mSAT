@@ -25,11 +25,11 @@ Copyright 2016 Simon Cruanes
 
 type ('formula, 'proof) res = ('formula, 'proof) Plugin_intf.res =
   | Sat
-    (** The current set of assumptions is satisfiable. *)
+  (** The current set of assumptions is satisfiable. *)
   | Unsat of 'formula list * 'proof
-    (** The current set of assumptions is *NOT* satisfiable, and here is a
-        theory tautology (with its proof), for which every litteral is false
-        under the current assumptions. *)
+  (** The current set of assumptions is *NOT* satisfiable, and here is a
+      theory tautology (with its proof), for which every litteral is false
+      under the current assumptions. *)
 (** Type returned by the theory. Formulas in the unsat clause must come from the
     current set of assumptions, i.e must have been encountered in a slice. *)
 
@@ -42,9 +42,9 @@ type ('form, 'proof) slice = {
   push : 'form list -> 'proof -> unit;  (** Allows to add to the solver a clause. *)
   propagate : 'form -> 'form list -> 'proof -> unit;
   (** [propagate lit causes proof] informs the solver to propagate [lit], with the reason
-    that the clause [causes => lit] is a theory tautology. It is faster than pushing
-    the associated clause but the clause will not be remembered by the sat solver,
-    i.e it will not be used by the solver to do boolean propagation. *)
+      that the clause [causes => lit] is a theory tautology. It is faster than pushing
+      the associated clause but the clause will not be remembered by the sat solver,
+      i.e it will not be used by the solver to do boolean propagation. *)
 }
 (** The type for a slice. Slices are some kind of view of the current
     propagation queue. They allow to look at the propagated literals,

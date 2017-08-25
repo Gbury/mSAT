@@ -18,7 +18,7 @@ let debugf l format k =
   if l <= !debug_level_
   then
     k (Format.kfprintf
-        (fun fmt -> Format.fprintf fmt "@]@.")
-        !debug_fmt_ format)
+         (fun fmt -> Format.fprintf fmt "@]@.")
+         !debug_fmt_ format)
 
 let debug l msg = debugf l "%s" (fun k->k msg)
