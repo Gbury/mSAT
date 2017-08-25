@@ -95,6 +95,9 @@ module Make
       prove ~assumptions
     | Dolmen.Statement.Prove ->
       prove ~assumptions:[]
+    | Dolmen.Statement.Set_info _
+    | Dolmen.Statement.Set_logic _ -> ()
+    | Dolmen.Statement.Exit -> exit 0
     | _ ->
       Format.printf "Command not supported:@\n%a@."
         Dolmen.Statement.print s
