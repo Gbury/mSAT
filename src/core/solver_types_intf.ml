@@ -119,7 +119,7 @@ module type S = sig
   (** {2 Decisions and propagations} *)
   type t =
     | Lit of lit
-    | Atom of atom
+    | Atom of atom (**)
   (** Either a lit of an atom *)
 
   val of_lit : lit -> t
@@ -130,7 +130,7 @@ module type S = sig
 
   type elt =
     | E_lit of lit
-    | E_var of var
+    | E_var of var (**)
   (** Either a lit of a var *)
 
   val nb_elt : unit -> int

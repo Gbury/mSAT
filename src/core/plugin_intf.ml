@@ -27,8 +27,7 @@ type 'term eval_res =
   | Unknown                       (** The given formula does not have an evaluation *)
   | Valued of bool * ('term list) (** The given formula can be evaluated to the given bool.
                                       The list of terms to give is the list of terms that
-                                      were effectively used for the evaluation.
-                                  *)
+                                      were effectively used for the evaluation. *)
 (** The type of evaluation results for a given formula.
     For instance, let's suppose we want to evaluate the formula [x * y = 0], the
     following result are correct:
@@ -67,8 +66,8 @@ type ('term, 'formula, 'proof) slice = {
                                                   Should only be called on integers [i] s.t.
                                                   [start <= i < start + length] *)
   push : 'formula list -> 'proof -> unit;     (** Add a clause to the solver. *)
-  propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
-                                              (** Propagate a formula, i.e. the theory can
+  propagate : 'formula ->
+    ('term, 'formula, 'proof) reason -> unit; (** Propagate a formula, i.e. the theory can
                                                   evaluate the formula to be true (see the
                                                   definition of {!type:eval_res} *)
 }
