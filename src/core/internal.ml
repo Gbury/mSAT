@@ -617,47 +617,57 @@ module Make
     let cond   = ref true in
     let blevel = ref 0 in
     let seen   = ref [] in
-    let c      = ref c_clause in
+    let c      = ref (Some c_clause) in
     let tr_ind = ref (Vec.size env.elt_queue - 1) in
     let history = ref [] in
     assert (decision_level () > 0);
     let conflict_level =
       Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
     in
+    Log.debugf debug "Analyzing conflict (%d): %a"
+      (fun k -> k conflict_level St.pp_clause c_clause);
     while !cond do
-      begin match !c.cpremise with
-        | History _ -> clause_bump_activity !c
-        | Hyp | Local | Lemma _ -> ()
-      end;
-      history := !c :: !history;
-      (* visit the current predecessors *)
-      for j = 0 to Array.length !c.atoms - 1 do
-        let q = !c.atoms.(j) in
-        assert (q.is_true || q.neg.is_true && q.var.v_level >= 0); (* unsure? *)
-        if q.var.v_level <= 0 then begin
-          assert (q.neg.is_true);
-          match q.var.reason with
-          | Some Bcp cl -> history := cl :: !history
-          | _ -> assert false
-        end;
-        if not (q.var.seen = Both) then begin
-          q.var.seen <- Both;
-          seen := q :: !seen;
-          if q.var.v_level > 0 then begin
-            var_bump_activity q.var;
-            if q.var.v_level >= conflict_level then begin
-              incr pathC;
-            end else begin
-              learnt := q :: !learnt;
-              blevel := max !blevel q.var.v_level
+      begin match !c with
+        | None ->
+          Log.debugf debug "  skipping resolution for semantic propagation" (fun k->k)
+        | Some clause ->
+          Log.debugf debug "  Resolving clause: %a" (fun k->k St.pp_clause clause);
+          begin match clause.cpremise with
+            | History _ -> clause_bump_activity clause
+            | Hyp | Local | Lemma _ -> ()
+          end;
+          history := clause :: !history;
+          (* visit the current predecessors *)
+          for j = 0 to Array.length clause.atoms - 1 do
+            let q = clause.atoms.(j) in
+            assert (q.is_true || q.neg.is_true && q.var.v_level >= 0); (* unsure? *)
+            if q.var.v_level <= 0 then begin
+              assert (q.neg.is_true);
+              match q.var.reason with
+              | Some Bcp cl -> history := cl :: !history
+              | _ -> assert false
+            end;
+            if not (q.var.seen = Both) then begin
+              q.var.seen <- Both;
+              seen := q :: !seen;
+              if q.var.v_level > 0 then begin
+                var_bump_activity q.var;
+                if q.var.v_level >= conflict_level then begin
+                  incr pathC;
+                end else begin
+                  learnt := q :: !learnt;
+                  blevel := max !blevel q.var.v_level
+                end
+              end
             end
-          end
-        end
-      done;
+          done
+      end;
 
       (* look for the next node to expand *)
       while
-        match Vec.get env.elt_queue !tr_ind with
+        let a = Vec.get env.elt_queue !tr_ind in
+        Log.debugf debug "  looking at: %a" (fun k -> k St.pp a);
+        match a with
         | Atom q ->
           (not (q.var.seen = Both)) ||
           (q.var.v_level < conflict_level)
@@ -674,11 +684,12 @@ module Make
         learnt := p.neg :: (List.rev !learnt)
       | n, Some Semantic ->
         assert (n > 0);
-        learnt := p.neg :: !learnt
+        learnt := p.neg :: !learnt;
+        c := None
       | n, Some Bcp cl ->
         assert (n > 0);
         assert (p.var.v_level >= conflict_level);
-        c := cl
+        c := Some cl
       | n, _ -> assert false
     done;
     List.iter (fun q -> clear q.var) !seen;
