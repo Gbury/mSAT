@@ -117,7 +117,7 @@ module type S = sig
   (** {3 Unsafe} *)
 
   module H : Hashtbl.S with type key = clause
-  (** Hashtable over clauses. Uses the details of the internal representation
+  (** Hashtable over proofs. Uses the details of the internal representation
       to achieve the best performances, however hashtables from this module
       become invalid when solving is restarted, so they should only be live
       during inspection of a single proof. *)

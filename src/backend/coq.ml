@@ -81,13 +81,42 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
     (** Prove the goal: intro the axioms, then perform resolution *)
     if Array.length goal.S.St.atoms = 0 then begin
       let m = M.empty in
-      Format.fprintf fmt "exact @[<hov 1>(%a)@].@\n" (resolution_aux m a h1 h2) ()
+      Format.fprintf fmt "exact @[<hov 1>(%a)@].@\n" (resolution_aux m a h1 h2) ();
+      false
     end else begin
       let m = clause_map goal in
       Format.fprintf fmt "pose proof @[<hov>(fun %a=>@ %a)@ as %s.@]@\n"
-        (clause_iter m "%s@ ") goal (resolution_aux m a h1 h2) () (name goal)
+        (clause_iter m "%s@ ") goal (resolution_aux m a h1 h2) () (name goal);
+      true
     end
 
+
+  (* Count uses of hypotheses *)
+  let incr_use h c =
+    let i = try S.H.find h c with Not_found -> 0 in
+    S.H.add h c (i + 1)
+
+  let decr_use h c =
+    let i = S.H.find h c - 1 in
+    assert (i >= 0);
+    let () = S.H.add h c i in
+    i <= 0
+
+  let clear fmt c =
+    Format.fprintf fmt "clear %s." (name c)
+
+  let rec clean_aux fmt = function
+    | [] -> ()
+    | [x] ->
+      Format.fprintf fmt "%a@\n" clear x
+    | x :: ((_ :: _) as r) ->
+      Format.fprintf fmt "%a@ %a" clear x clean_aux r
+
+  let clean h fmt l =
+    match List.filter (decr_use h) l with
+    | [] -> ()
+    | l' ->
+      Format.fprintf fmt "(* Clearing unused clauses *)@\n%a" clean_aux l'
 
   let prove_node t fmt node =
     let clause = node.S.conclusion in
@@ -99,17 +128,29 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
     | S.Lemma _ ->
       A.prove_lemma fmt (name clause) clause
     | S.Duplicate (p, l) ->
-      let c = (S.expand p).S.conclusion in
-      elim_duplicate fmt clause c l
+      let p' = S.expand p in
+      let c = p'.S.conclusion in
+      let () = elim_duplicate fmt clause c l in
+      clean t fmt [c]
     | S.Resolution (p1, p2, a) ->
       let c1 = (S.expand p1).S.conclusion in
       let c2 = (S.expand p2).S.conclusion in
-      resolution fmt clause c1 c2 a
+      if resolution fmt clause c1 c2 a then clean t fmt [c1; c2]
+
+  let count_uses p =
+    let h = S.H.create 4013 in
+    let aux () node =
+      List.iter (fun p' ->
+          incr_use h S.((expand p').conclusion))
+        (S.parents node.S.step)
+    in
+    let () = S.fold aux () p in
+    h
 
   (* Here the main idea is to always try and have exactly
      one goal to prove, i.e False. So each  *)
   let print fmt p =
-    let h = S.H.create 4013 in
+    let h = count_uses p in
     let aux () node =
       Format.fprintf fmt "%a" (prove_node h) node
     in
