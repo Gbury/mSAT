@@ -127,6 +127,8 @@
     \item Minimal impact on proof search (already done to compute
       unsat-core)
     \item Sufficient to rebuild the whole resolution tree
+    \item A proof is a clause and proof nodes are lazily expanded \\
+      $\rightarrow$ no memory issue
     \item Enables various proof output:
       \begin{itemize}[label=$\bullet$]
         \item Dot/Graphviz (see example above)
@@ -137,7 +139,6 @@
 
 \tblock{Performances}
 {
-
   \begin{tabular}{c|@{\,}c@{\,}|@{\,}c@{\,}|c|c}
     solvers & aez & mSAT & \begin{tabular}{c}minisat\\(minisat/sattools)\end{tabular} & \begin{tabular}{c}cryptominisat\\(sattools)\end{tabular} \\ \hline
     uuf100 (1000 pbs) & 0.125 & 0.012 & 0.004 & 0.006 \\ \hline
@@ -148,7 +149,10 @@
     pigeon/hole9 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 8.886 & 0.634 & 4.075 \\ \hline
     pigeon/hole10 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 161.478 & \begin{tabular}{c}9.579 (minisat)\\160.376 (sattools)\end{tabular} & 72.050 \\ \hline
   \end{tabular}
-
+  \\
+  \begin{center}
+    Done using https://github.com/Gbury/sat-bench.
+  \end{center}
 }
 
 \end{multicols}
