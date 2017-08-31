@@ -90,14 +90,18 @@
   \end{itemize}
 }
 
-\tblock{Related work}
+\tblock{Other solvers}
 {
-  \begin{itemize}[label=$\bullet$]
-    \item regstab: binary only
-    \item Minisat, sattools, ocaml-sat-solvers: bindings to C sat solvers (cannot make a SMT)
-    \item Alt-ego, Alt-ergo-zero: Full SMT (no functorized design, cannot change the theory)
-    \item ocamlyices, yices2: SMT bindings (not full ocaml)
-  \end{itemize}
+  \\
+  \begin{center}
+    \begin{tabular}{c@{\quad}|@{\quad}c@{\quad}|@{\quad}c@{\quad}|@{\quad}c}
+    regstab & SAT & binary only & only pure SAT \\ \hline
+    \begin{tabular}{c}minisat\\sattools\\ocaml-sat-solvers\end{tabular} & SAT & C bindings & only pure SAT \\ \hline
+    Alt-ergo & SMT & binary only & Fixed theory \\ \hline
+    Alt-ergo-zero & SMT & OCaml lib & Fixed theory \\ \hline
+    \begin{tabular}{c}ocamlyices\\yices2\end{tabular} & SMT & C bindings & Fixed theory \\ \hline
+  \end{tabular}
+  \end{center}
 }
 
 
@@ -125,15 +129,26 @@
     \item Sufficient to rebuild the whole resolution tree
     \item Enables various proof output:
       \begin{itemize}[label=$\bullet$]
-        \item Dot/Graphviz (see example)
+        \item Dot/Graphviz (see example above)
         \item Coq formal proof
       \end{itemize}
   \end{itemize}
 }
 
-\cblock{Proof interface}
+\tblock{Performances}
 {
-  \lstinputlisting{proof_intf.ml}
+
+  \begin{tabular}{c|@{\,}c@{\,}|@{\,}c@{\,}|c|c}
+    solvers & aez & mSAT & \begin{tabular}{c}minisat\\(minisat/sattools)\end{tabular} & \begin{tabular}{c}cryptominisat\\(sattools)\end{tabular} \\ \hline
+    uuf100 (1000 pbs) & 0.125 & 0.012 & 0.004 & 0.006 \\ \hline
+    uuf125 (100 pbs) & 2.217 & 0.030 & 0.006 & 0.013 \\ \hline
+    pigeon/hole6 & 0.120 & 0.018 & 0.006 & 0.006 \\ \hline
+    pigeon/hole7 & 4.257 & 0.213 & 0.015 & 0.073 \\ \hline
+    pigeon/hole8 & 31.450 & 0.941 & 0.096 & 2.488 \\ \hline
+    pigeon/hole9 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 8.886 & 0.634 & 4.075 \\ \hline
+    pigeon/hole10 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 161.478 & \begin{tabular}{c}9.579 (minisat)\\160.376 (sattools)\end{tabular} & 72.050 \\ \hline
+  \end{tabular}
+
 }
 
 \end{multicols}
