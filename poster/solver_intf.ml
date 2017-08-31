@@ -1,4 +1,4 @@
-module Make(Th: Theory_intf)() : sig
+module Make(Th: Theory_intf.S)() : sig
   type 'f sat_state = { eval : 'f -> bool; ... }
   type ('c,'p) unsat_state =
     { conflict: unit -> 'c; proof : unit -> 'p }

@@ -45,7 +45,7 @@
 
   \msat{}: a SAT solving library in OCaml. Solves the \textbf{satisfibility}
   of propositional clauses. It is \textbf{Modular}: the user provides
-  the theory, and produces \textbf{formal proof}.
+  the theory. And it \textbf{produces formal proofs}.
 }
 
 \tblock{Conflict Driven Clause learning}
@@ -97,14 +97,13 @@
 
 \tblock{Other solvers}
 {
-  \\
   \begin{center}
     \begin{tabular}{c@{\quad}|@{\quad}c@{\quad}|@{\quad}c@{\quad}|@{\quad}c}
     regstab & SAT & binary only & only pure SAT \\ \hline
     \begin{tabular}{c}\textbf{minisat}\\\textbf{sattools}\\ocaml-sat-solvers\end{tabular} & SAT & C bindings & only pure SAT \\ \hline
     Alt-ergo & SMT & binary only & Fixed theory \\ \hline
     \textbf{Alt-ergo-zero} & SMT & OCaml lib & Fixed theory \\ \hline
-    \begin{tabular}{c}ocamlyices\\yices2\end{tabular} & SMT & C bindings & Fixed theory \\ \hline
+    \begin{tabular}{c}ocamlyices\\yices2\end{tabular} & SMT & C bindings & Fixed theory \\
   \end{tabular}
   \end{center}
 }
@@ -158,7 +157,7 @@
     pigeon/hole7 & 4.257 & 0.213 & 0.015 & 0.073 \\ \hline
     pigeon/hole8 & 31.450 & 0.941 & 0.096 & 2.488 \\ \hline
     pigeon/hole9 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 8.886 & 0.634 & 4.075 \\ \hline
-    pigeon/hole10 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 161.478 & \begin{tabular}{c}9.579 (minisat)\\160.376 (sattools)\end{tabular} & 72.050 \\ \hline
+    pigeon/hole10 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 161.478 & \begin{tabular}{c}9.579 (minisat)\\160.376 (sattools)\end{tabular} & 72.050 \\
   \end{tabular}
 }
 
