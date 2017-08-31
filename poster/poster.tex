@@ -43,9 +43,9 @@
 {
   \vspace{0.5cm} % Pour pas se faire manger par le titre
 
-  \msat{} is a SAT solving library written in OCaml. It allows to solve the satisfiability
-  of propositional problems in clausal normal form, and produce either a propositional model,
-  or a resolution proof of the problem's unsatisfiability.
+  \msat{}: a SAT solving library in OCaml. Solves the \textbf{satisfibility}
+  of propositional clauses. It is \textbf{Modular}: the user provides
+  the theory, and produces \textbf{formal proof}.
 }
 
 \tblock{Conflict Driven Clause learning}
@@ -83,7 +83,7 @@
       \end{itemize}
     \item Features
       \begin{itemize}[label=\checkmark]
-        \item Generative functors
+        \item Functorized design, using generative functors
         \item Local assumptions
         \item Model output and Proof output (Coq, dot)
       \end{itemize}
@@ -101,9 +101,9 @@
   \begin{center}
     \begin{tabular}{c@{\quad}|@{\quad}c@{\quad}|@{\quad}c@{\quad}|@{\quad}c}
     regstab & SAT & binary only & only pure SAT \\ \hline
-    \begin{tabular}{c}minisat\\sattools\\ocaml-sat-solvers\end{tabular} & SAT & C bindings & only pure SAT \\ \hline
+    \begin{tabular}{c}\textbf{minisat}\\\textbf{sattools}\\ocaml-sat-solvers\end{tabular} & SAT & C bindings & only pure SAT \\ \hline
     Alt-ergo & SMT & binary only & Fixed theory \\ \hline
-    Alt-ergo-zero & SMT & OCaml lib & Fixed theory \\ \hline
+    \textbf{Alt-ergo-zero} & SMT & OCaml lib & Fixed theory \\ \hline
     \begin{tabular}{c}ocamlyices\\yices2\end{tabular} & SMT & C bindings & Fixed theory \\ \hline
   \end{tabular}
   \end{center}
@@ -132,7 +132,7 @@
 \tblock{Proof generation}
 {
   \begin{itemize}[label=\checkmark]
-    \item Each clause records it "history", that is the clauses
+    \item Each clause records its "history", that is the clauses
       used during analyzing
     \item Minimal impact on proof search (already done to compute
       unsat-core)
