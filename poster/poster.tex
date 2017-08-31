@@ -7,8 +7,10 @@
 \usepackage{verbatim}
 \usepackage{amsfonts, amsmath, amssymb, amsthm, dsfont}
 
-\usepackage{listings}
-\lstset{language=[Objective]Caml}
+%\usepackage{listings}
+%\lstset{language=[Objective]Caml}
+
+\usepackage{minted}
 
 \usepackage{bussproofs}
 \newcommand\typ[2]{\Gamma\vdash#1:#2}
@@ -77,17 +79,20 @@
     \item Imperative design
       \begin{itemize}[label=\checkmark]
         \item 2-watch litteral
-        \item Generative functors
         \item Backtrackable theories (less demanding than immutable theories)
       \end{itemize}
     \item Features
       \begin{itemize}[label=\checkmark]
-        \item Functorized design
+        \item Generative functors
         \item Local assumptions
-        \item Model output
-        \item Proof output (Coq, dot)
+        \item Model output and Proof output (Coq, dot)
       \end{itemize}
   \end{itemize}
+}
+
+\cblock{Solver interface}
+{
+  \inputminted{ocaml}{solver_intf.ml}
 }
 
 \tblock{Other solvers}
@@ -119,6 +124,11 @@
   \includegraphics[height=33cm]{proof}
 }
 
+\cblock{Theory interface}
+{
+  \inputminted{ocaml}{theory_intf.ml}
+}
+
 \tblock{Proof generation}
 {
   \begin{itemize}[label=\checkmark]
@@ -127,7 +137,7 @@
     \item Minimal impact on proof search (already done to compute
       unsat-core)
     \item Sufficient to rebuild the whole resolution tree
-    \item A proof is a clause and proof nodes are lazily expanded \\
+    \item A proof is a clause and proof nodes are expanded on demand\\
       $\rightarrow$ no memory issue
     \item Enables various proof output:
       \begin{itemize}[label=$\bullet$]
@@ -143,22 +153,16 @@
     solvers & aez & mSAT & \begin{tabular}{c}minisat\\(minisat/sattools)\end{tabular} & \begin{tabular}{c}cryptominisat\\(sattools)\end{tabular} \\ \hline
     uuf100 (1000 pbs) & 0.125 & 0.012 & 0.004 & 0.006 \\ \hline
     uuf125 (100 pbs) & 2.217 & 0.030 & 0.006 & 0.013 \\ \hline
+    uuf150 (100 pbs) & TODO & TODO & TODO & TODO \\ \hline
     pigeon/hole6 & 0.120 & 0.018 & 0.006 & 0.006 \\ \hline
     pigeon/hole7 & 4.257 & 0.213 & 0.015 & 0.073 \\ \hline
     pigeon/hole8 & 31.450 & 0.941 & 0.096 & 2.488 \\ \hline
     pigeon/hole9 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 8.886 & 0.634 & 4.075 \\ \hline
     pigeon/hole10 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 161.478 & \begin{tabular}{c}9.579 (minisat)\\160.376 (sattools)\end{tabular} & 72.050 \\ \hline
   \end{tabular}
-  \\
-  \begin{center}
-    Done using https://github.com/Gbury/sat-bench.
-  \end{center}
 }
 
 \end{multicols}
-
-
-\Large \msat{} is available on \opam{} and on github: \texttt{https://github.com/Gbury/mSAT}
 
 \end{center}
 
