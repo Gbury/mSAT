@@ -43,24 +43,24 @@
 {
   \vspace{0.5cm} % Pour pas se faire manger par le titre
 
-  \msat{}: a SAT solving library in OCaml. Solves the \textbf{satisfibility}
+  \msat{}: a SAT solving library in OCaml. It solves the \textbf{satisfibility}
   of propositional clauses. It is \textbf{Modular}: the user provides
   the theory. And it \textbf{produces formal proofs}.
 }
 
-\tblock{Conflict Driven Clause learning}
+\tblock{Conflict Driven Clause Learning}
 {
   \begin{description}
     \item[Propagation] If there exists a clause $C = C' \lor a$, where
       $C'$ is false in the partial model, then add $a \mapsto \top$ to
       the partial model, and record $C$ as the reason for $a$.
-    \item[Decision] Take an atom $a$ which is not yet in the partial model,
+    \item[Decision] Take an atom $a$ that is not yet in the partial model,
       and add $a \mapsto \top$ to the model.
     \item[Conflict] A conflict is a clause $C$ that is false in the current partial
       model.
     \item[Analyze] Perform resolution between the analyzed clause and the reason
       behind the propagation of its most recently assigned litteral, until
-      the analyzed clause is suitable for backumping
+      the analyzed clause is suitable for backumping.
     \item[Backjump] A clause is suitable for backjumping if its most recently
       assigned litteral $a$ is a decision. We can then backtrack to before the
       decision, and add the analyzed clause to the solver, which will then enable
@@ -85,17 +85,17 @@
       \begin{itemize}[label=\checkmark]
         \item Functorized design, using generative functors
         \item Local assumptions
-        \item Model output and Proof output (Coq, dot)
+        \item Model output and proof output (Coq, dot)
       \end{itemize}
   \end{itemize}
 }
 
-\cblock{Solver interface}
+\cblock{Solver Interface}
 {
   \inputminted{ocaml}{solver_intf.ml}
 }
 
-\tblock{Other solvers}
+\tblock{Other Solvers}
 {
   \begin{center}
     \begin{tabular}{c@{\quad}|@{\quad}c@{\quad}|@{\quad}c@{\quad}|@{\quad}c}
@@ -111,19 +111,19 @@
 
 \columnbreak
 
-\tblock{Problem example}
+\tblock{Problem Example}
 {
-  \vspace{.5cm}
+  \vspace{.2cm}
   \[
   \begin{matrix}
-    H1: & a = b   & \quad & H2: & b = c \lor b = d \\
-    H3: & a <> d  & \quad & H4: & a <> c \\
+    \text{Are the following} & \quad & H1: & a = b   & \quad & H2: & b = c \lor b = d \\
+    \text{hypotheses satisfible ?} & \quad & H3: & a <> d  & \quad & H4: & a <> c \\
   \end{matrix}
   \]
   \includegraphics[height=33cm]{proof}
 }
 
-\cblock{Theory interface}
+\cblock{Theory Interface}
 {
   \inputminted{ocaml}{theory_intf.ml}
 }
@@ -131,33 +131,34 @@
 \tblock{Proof generation}
 {
   \begin{itemize}[label=\checkmark]
-    \item Each clause records its "history", that is the clauses
+    \item Each clause records its "history" which is the clauses
       used during analyzing
     \item Minimal impact on proof search (already done to compute
       unsat-core)
     \item Sufficient to rebuild the whole resolution tree
     \item A proof is a clause and proof nodes are expanded on demand\\
       $\rightarrow$ no memory issue
-    \item Enables various proof output:
+    \item Enables various proof outputs:
       \begin{itemize}[label=$\bullet$]
         \item Dot/Graphviz (see example above)
-        \item Coq formal proof
+        \item Coq (and soon dedukti) formal proofs
       \end{itemize}
   \end{itemize}
 }
 
 \tblock{Performances}
 {
+  \\ \\
   \begin{tabular}{c|@{\,}c@{\,}|@{\,}c@{\,}|c|c}
-    solvers & aez & mSAT & \begin{tabular}{c}minisat\\(minisat/sattools)\end{tabular} & \begin{tabular}{c}cryptominisat\\(sattools)\end{tabular} \\ \hline
+    solvers & \begin{tabular}{c}Alt-ergo-zero\\{\small aez}\end{tabular} & \begin{tabular}{c}mSAT\\{\small msat}\end{tabular} & \begin{tabular}{c}minisat\\{\small (minisat/sattools)}\end{tabular} & \begin{tabular}{c}cryptominisat\\{\small (sattools)}\end{tabular} \\ \hline
     uuf100 (1000 pbs) & 0.125 & 0.012 & 0.004 & 0.006 \\ \hline
     uuf125 (100 pbs) & 2.217 & 0.030 & 0.006 & 0.013 \\ \hline
-    uuf150 (100 pbs) & TODO & TODO & TODO & TODO \\ \hline
+    uuf150 (100 pbs) & 67.563 & 0.087 & 0.017 & 0.045 \\ \hline
     pigeon/hole6 & 0.120 & 0.018 & 0.006 & 0.006 \\ \hline
     pigeon/hole7 & 4.257 & 0.213 & 0.015 & 0.073 \\ \hline
     pigeon/hole8 & 31.450 & 0.941 & 0.096 & 2.488 \\ \hline
-    pigeon/hole9 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 8.886 & 0.634 & 4.075 \\ \hline
-    pigeon/hole10 & \begin{tabular}{c}timeout\\(600)\end{tabular} & 161.478 & \begin{tabular}{c}9.579 (minisat)\\160.376 (sattools)\end{tabular} & 72.050 \\
+    pigeon/hole9 & timeout (600) & 8.886 & 0.634 & 4.075 \\ \hline
+      pigeon/hole10 & timeout (600) & 161.478 & \begin{tabular}{c}9.579 {\small (minisat)}\\160.376 {\small (sattools)}\end{tabular} & 72.050 \\
   \end{tabular}
 }
 
