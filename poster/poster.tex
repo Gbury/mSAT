@@ -113,11 +113,11 @@
 
 \tblock{Problem Example}
 {
-  \vspace{.2cm}
+  \vspace{.5cm}
   \[
   \begin{matrix}
     \text{Are the following} & \quad & H1: & a = b   & \quad & H2: & b = c \lor b = d \\
-    \text{hypotheses satisfible ?} & \quad & H3: & a <> d  & \quad & H4: & a <> c \\
+    \text{hypotheses satisfiable ?} & \quad & H3: & a <> d  & \quad & H4: & a <> c \\
   \end{matrix}
   \]
   \includegraphics[height=33cm]{proof}
@@ -128,7 +128,7 @@
   \inputminted{ocaml}{theory_intf.ml}
 }
 
-\tblock{Proof generation}
+\tblock{Proof Generation}
 {
   \begin{itemize}[label=\checkmark]
     \item Each clause records its "history" which is the clauses
@@ -141,7 +141,7 @@
     \item Enables various proof outputs:
       \begin{itemize}[label=$\bullet$]
         \item Dot/Graphviz (see example above)
-        \item Coq (and soon dedukti) formal proofs
+        \item Coq (and soon Dedukti) formal proofs
       \end{itemize}
   \end{itemize}
 }
