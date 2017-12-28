@@ -115,7 +115,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
       let rule, color, l = A.assumption_info S.(n.conclusion) in
       let color = match color with None -> "LIGHTBLUE" | Some c -> c in
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) rule color l
-    | S.Lemma lemma ->
+    | S.Lemma _ ->
       let rule, color, l = A.lemma_info S.(n.conclusion) in
       let color = match color with None -> "YELLOW" | Some c -> c in
       print_dot_node fmt (node_id n) "LIGHTBLUE" S.(n.conclusion) rule color l
