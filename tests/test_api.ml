@@ -10,7 +10,7 @@ open Msat
 open Msat_sat
 
 module F = Sat.Expr
-module T = Msat_solver.Tseitin.Make(F)
+module T = Msat_tseitin.Make(F)
 
 let (|>) x f = f x
 

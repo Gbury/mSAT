@@ -10,7 +10,7 @@ Copyright 2014 Simon Cruanes
 module Id = Dolmen.Id
 module Ast = Dolmen.Term
 module H = Hashtbl.Make(Id)
-module Formula = Msat_solver.Tseitin.Make(Sat.Expr)
+module Formula = Msat_tseitin.Make(Sat.Expr)
 
 (* Exceptions *)
 (* ************************************************************************ *)
