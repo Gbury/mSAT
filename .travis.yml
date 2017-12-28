@@ -23,12 +23,13 @@ before_install:
   - ${HOME}/opam init --compiler=${OCAML_VERSION}
   - eval `${HOME}/opam config env`
   - export OPAMVERBOSE=1
-  # Testing requires the dev version of dolmen
-  - if [ "$OPAMBUILDTEST" = "true" ]; then ${HOME}/opam pin add --dev-repo dolmen; fi
+  - opam init
+  - opam switch ${OCAML_VERSION}
+  - eval `opam config env`
+  - opam install ocamlfind jbuilder
+  - if ${RUN_TEST}; then opam pin add dolmen https://github.com/Gbury/dolmen.git; fi
 install:
-  # Install dependencies
-  - ${HOME}/opam pin add --no-action msat .
-  - ${HOME}/opam install --deps-only msat.dev
+  - make build
 script:
   # Build and launch the tests
   - if [ "$TO_TEST" = "tests" ]; then make lib && make bin && make test; fi
