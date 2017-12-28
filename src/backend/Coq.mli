@@ -8,6 +8,7 @@ Copyright 2015 Guillaume Bury
     This module provides an easy way to produce coq scripts
     corresponding to the resolution proofs output by the
     sat solver. *)
+open Msat
 
 module type S = Backend_intf.S
 (** Interface for exporting proofs. *)

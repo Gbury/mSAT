@@ -106,8 +106,9 @@ module Make(T : Key) = struct
       tag = (match mx.tag, my.tag with
           | Some (z, t1), Some (w, t2) ->
             if not (T.equal t1 t2) then begin
-              Log.debugf 3 "Tag shenanigan : %a (%a) <> %a (%a)" (fun k ->
-                  k T.print t1 T.print z T.print t2 T.print w);
+              Log.debugf 3
+                (fun k -> k "Tag shenanigan : %a (%a) <> %a (%a)" 
+                     T.print t1 T.print z T.print t2 T.print w);
               raise (Equal (z, w))
             end else Some (z, t1)
           | Some t, None | None, Some t -> Some t
@@ -223,7 +224,7 @@ module Make(T : Key) = struct
     | () -> ()
     | exception Equal (a, b) ->
       raise (Unsat (a, b, expl t a b))
-    | exception Same_tag (x, y) ->
+    | exception Same_tag (_, _) ->
       add_eq_aux t i j;
       let res = expl t i j in
       raise (Unsat (i, j, res))

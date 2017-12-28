@@ -45,6 +45,7 @@ module type S = sig
     lid : int;                      (** Unique identifier *)
     term : term;                    (** Wrapped term *)
     mutable l_level : int;          (** Decision level of the assignment *)
+    mutable l_idx: int;             (** index in heap *)
     mutable l_weight : float;       (** Weight (for the heap) *)
     mutable assigned : term option; (** Assignment *)
   }
@@ -57,6 +58,7 @@ module type S = sig
     mutable used : int;         (** Number of attached clause that contain the var *)
     mutable seen : seen;        (** Boolean used during propagation *)
     mutable v_level : int;      (** Level of decision/propagation *)
+    mutable v_idx: int;         (** rank in variable heap *)
     mutable v_weight : float;   (** Variable weight (for the heap) *)
     mutable v_assignable: lit list option;
     (** In mcsat, the list of lits that wraps subterms of the formula wrapped. *)
@@ -144,8 +146,10 @@ module type S = sig
 
   val get_elt_id : elt -> int
   val get_elt_level : elt -> int
+  val get_elt_idx : elt -> int
   val get_elt_weight : elt -> float
   val set_elt_level : elt -> int -> unit
+  val set_elt_idx : elt -> int -> unit
   val set_elt_weight : elt -> float -> unit
   (** Accessors for elements *)
 

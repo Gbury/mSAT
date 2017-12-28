@@ -5,9 +5,9 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make(Dummy:sig end) =
-  Mcsolver.Make(struct
+  Msat_solver.Mcsolver.Make(struct
     type proof = unit
-    module Term = Expr_smt.Term
-    module Formula = Expr_smt.Atom
+    module Term = Msat_smt.Expr_smt.Term
+    module Formula = Msat_smt.Expr_smt.Atom
   end)(Plugin_mcsat)(struct end)
 

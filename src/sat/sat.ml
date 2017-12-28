@@ -78,5 +78,5 @@ module Expr = struct
 end
 
 module Make(Dummy : sig end) =
-  Solver.Make(Expr)(Solver.DummyTheory(Expr))(struct end)
+  Msat_solver.Solver.Make(Expr)(Msat_solver.Solver.DummyTheory(Expr))(struct end)
 

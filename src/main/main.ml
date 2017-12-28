@@ -4,6 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+open Msat
+
 exception Incorrect_model
 exception Out_of_time
 exception Out_of_space
@@ -26,20 +28,20 @@ end
 
 module Make
     (S : External.S)
-    (T : Type.S with type atom := S.atom)
+    (T : Msat_solver.Type.S with type atom := S.atom)
   : sig
     val do_task : Dolmen.Statement.t -> unit
   end = struct
 
-  module D = Dot.Make(S.Proof)(Dot.Default(S.Proof))
+  module D = Msat_backend.Dot.Make(S.Proof)(Msat_backend.Dot.Default(S.Proof))
 
   let hyps = ref []
 
   let check_model state =
     let check_clause c =
       let l = List.map (function a ->
-          Log.debugf 99 "Checking value of %a"
-            (fun k -> k S.St.pp_atom (S.St.add_atom a));
+          Log.debugf 99
+            (fun k -> k "Checking value of %a" S.St.pp_atom (S.St.add_atom a));
           state.Solver_intf.eval a) c in
       List.exists (fun x -> x) l
     in
@@ -47,7 +49,7 @@ module Make
     List.for_all (fun x -> x) l
 
   let prove ~assumptions =
-    let res = S.solve () in
+    let res = S.solve ~assumptions () in
     let t = Sys.time () in
     begin match res with
       | S.Sat state ->
@@ -86,10 +88,10 @@ module Make
       hyps := cnf @ !hyps;
       S.assume cnf
     | Dolmen.Statement.Pack [
-        { Dolmen.Statement.descr = Dolmen.Statement.Push 1; };
-        { Dolmen.Statement.descr = Dolmen.Statement.Antecedent f; };
+        { Dolmen.Statement.descr = Dolmen.Statement.Push 1;_ };
+        { Dolmen.Statement.descr = Dolmen.Statement.Antecedent f;_ };
         { Dolmen.Statement.descr = Dolmen.Statement.Prove []; };
-        { Dolmen.Statement.descr = Dolmen.Statement.Pop 1; };
+        { Dolmen.Statement.descr = Dolmen.Statement.Pop 1;_ };
       ] ->
       let assumptions = T.assumptions f in
       prove ~assumptions
@@ -104,9 +106,9 @@ module Make
         Dolmen.Statement.print s
 end
 
-module Sat = Make(Sat.Make(struct end))(Type_sat)
-module Smt = Make(Smt.Make(struct end))(Type_smt)
-module Mcsat = Make(Mcsat.Make(struct end))(Type_smt)
+module Sat = Make(Msat_sat.Sat.Make(struct end))(Msat_sat.Type_sat)
+module Smt = Make(Msat_smt.Smt.Make(struct end))(Msat_smt.Type_smt)
+module Mcsat = Make(Msat_mcsat.Mcsat.Make(struct end))(Msat_smt.Type_smt)
 
 let solver = ref (module Sat : S)
 let solver_list = [
@@ -225,8 +227,8 @@ let () =
   | Incorrect_model ->
     Format.printf "Internal error : incorrect *sat* model@.";
     exit 4
-  | Type_sat.Typing_error (msg, t)
-  | Type_smt.Typing_error (msg, t) ->
+  | Msat_sat.Type_sat.Typing_error (msg, t)
+  | Msat_smt.Type_smt.Typing_error (msg, t) ->
     let b = Printexc.get_backtrace () in
     let loc = match t.Dolmen.Term.loc with
       | Some l -> l | None -> Dolmen.ParseLocation.mk "<>" 0 0 0 0

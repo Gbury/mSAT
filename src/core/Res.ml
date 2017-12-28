@@ -117,31 +117,30 @@ module Make(St : Solver_types.S) = struct
     assert St.(a.var.v_level >= 0);
     match St.(a.var.reason) with
     | Some St.Bcp c ->
-      Log.debugf debug "Analysing: @[%a@ %a@]"
-        (fun k -> k St.pp_atom a St.pp_clause c);
+      Log.debugf debug (fun k->k "Analysing: @[%a@ %a@]" St.pp_atom a St.pp_clause c);
       if Array.length c.St.atoms = 1 then begin
-        Log.debugf debug "Old reason: @[%a@]" (fun k -> k St.pp_atom a);
+        Log.debugf debug (fun k -> k "Old reason: @[%a@]" St.pp_atom a);
         c
       end else begin
         assert (a.St.neg.St.is_true);
         let r = St.History (c :: (Array.fold_left aux [] c.St.atoms)) in
         let c' = St.make_clause (fresh_pcl_name ()) [a.St.neg] r in
         a.St.var.St.reason <- Some St.(Bcp c');
-        Log.debugf debug "New reason: @[%a@ %a@]"
-          (fun k -> k St.pp_atom a St.pp_clause c');
+        Log.debugf debug
+          (fun k -> k "New reason: @[%a@ %a@]" St.pp_atom a St.pp_clause c');
         c'
       end
     | _ ->
-      Log.debugf error "Error while proving atom %a" (fun k -> k St.pp_atom a);
+      Log.debugf error (fun k -> k "Error while proving atom %a" St.pp_atom a);
       raise (Resolution_error "Cannot prove atom")
 
   let prove_unsat conflict =
     if Array.length conflict.St.atoms = 0 then conflict
     else begin
-      Log.debugf info "Proving unsat from: @[%a@]" (fun k -> k St.pp_clause conflict);
+      Log.debugf info (fun k -> k "Proving unsat from: @[%a@]" St.pp_clause conflict);
       let l = Array.fold_left (fun acc a -> set_atom_proof a :: acc) [] conflict.St.atoms in
       let res = St.make_clause (fresh_pcl_name ()) [] (St.History (conflict :: l)) in
-      Log.debugf info "Proof found: @[%a@]" (fun k -> k St.pp_clause res);
+      Log.debugf info (fun k -> k "Proof found: @[%a@]" St.pp_clause res);
       res
     end
 
@@ -166,8 +165,8 @@ module Make(St : Solver_types.S) = struct
 
   let rec chain_res (c, cl) = function
     | d :: r ->
-      Log.debugf debug "  Resolving clauses : @[%a@\n%a@]"
-        (fun k -> k St.pp_clause c St.pp_clause d);
+      Log.debugf debug
+        (fun k -> k "  Resolving clauses : @[%a@\n%a@]" St.pp_clause c St.pp_clause d);
       let dl = to_list d in
       begin match resolve (merge cl dl) with
         | [ a ], l ->
@@ -179,15 +178,15 @@ module Make(St : Solver_types.S) = struct
               chain_res (new_clause, l) r
           end
         | _ ->
-          Log.debugf error "While resolving clauses:@[<hov>%a@\n%a@]"
-            (fun k -> k St.pp_clause c St.pp_clause d);
+          Log.debugf error
+            (fun k -> k "While resolving clauses:@[<hov>%a@\n%a@]" St.pp_clause c St.pp_clause d);
           raise (Resolution_error "Clause mismatch")
       end
     | _ ->
       raise (Resolution_error "Bad history")
 
   let expand conclusion =
-    Log.debugf debug "Expanding : @[%a@]" (fun k -> k St.pp_clause conclusion);
+    Log.debugf debug (fun k -> k "Expanding : @[%a@]" St.pp_clause conclusion);
     match conclusion.St.cpremise with
     | St.Lemma l ->
       {conclusion; step = Lemma l; }
@@ -196,7 +195,7 @@ module Make(St : Solver_types.S) = struct
     | St.Local ->
       { conclusion; step = Assumption; }
     | St.History [] ->
-      Log.debugf error "Empty history for clause: %a" (fun k -> k St.pp_clause conclusion);
+      Log.debugf error (fun k -> k "Empty history for clause: %a" St.pp_clause conclusion);
       raise (Resolution_error "Empty history")
     | St.History [ c ] ->
       let duplicates, res = analyze (list c) in

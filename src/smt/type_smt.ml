@@ -73,29 +73,29 @@ let find_global name =
 (* Symbol declarations *)
 let decl_ty_cstr id c =
   if H.mem global_env id then
-    Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
-      (fun k -> k Id.print id);
+    Log.debugf 0
+      (fun k -> k "Symbol '%a' has already been defined, overwriting previous definition" Id.print id);
   H.add global_env id (`Ty c);
-  Log.debugf 1 "New type constructor : %a" (fun k -> k Expr.Print.const_ttype c)
+  Log.debugf 1 (fun k -> k "New type constructor : %a" Expr.Print.const_ttype c)
 
 let decl_term id c =
   if H.mem global_env id then
-    Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
-      (fun k -> k Id.print id);
+    Log.debugf 0
+      (fun k -> k "Symbol '%a' has already been defined, overwriting previous definition" Id.print id);
   H.add global_env id (`Term c);
-  Log.debugf 1 "New constant : %a" (fun k -> k Expr.Print.const_ty c)
+  Log.debugf 1 (fun k -> k "New constant : %a" Expr.Print.const_ty c)
 
 (* Symbol definitions *)
 let def_ty id args body =
   if H.mem global_env id then
-    Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
-      (fun k -> k Id.print id);
+    Log.debugf 0
+      (fun k -> k "Symbol '%a' has already been defined, overwriting previous definition" Id.print id);
   H.add global_env id (`Ty_alias (args, body))
 
 let def_term id ty_args args body =
   if H.mem global_env id then
-    Log.debugf 0 "Symbol '%a' has already been defined, overwriting previous definition"
-      (fun k -> k Id.print id);
+    Log.debugf 0
+      (fun k -> k "Symbol '%a' has already been defined, overwriting previous definition" Id.print id);
   H.add global_env id (`Term_alias (ty_args, args, body))
 
 (* Local Environment *)
@@ -126,8 +126,8 @@ let add_type_var env id v =
     else
       v
   in
-  Log.debugf 1 "New binding : %a -> %a"
-    (fun k -> k Id.print id Expr.Print.id_ttype v');
+  Log.debugf 1
+    (fun k -> k "New binding : %a -> %a" Id.print id Expr.Print.id_ttype v');
   v', { env with type_vars = M.add id v' env.type_vars }
 
 let add_type_vars env l =
@@ -143,8 +143,8 @@ let add_term_var env id v =
     else
       v
   in
-  Log.debugf 1 "New binding : %a -> %a"
-    (fun k -> k Id.print id Expr.Print.id_ty v');
+  Log.debugf 1
+    (fun k -> k "New binding : %a -> %a" Id.print id Expr.Print.id_ty v');
   v', { env with term_vars = M.add id v' env.term_vars }
 
 let find_var env name =
@@ -159,13 +159,13 @@ let find_var env name =
 
 (* Add local bound variables to env *)
 let add_let_term env id t =
-  Log.debugf 1 "New let-binding : %s -> %a"
-    (fun k -> k id.Id.name Expr.Print.term t);
+  Log.debugf 1
+    (fun k -> k "New let-binding : %s -> %a" id.Id.name Expr.Print.term t);
   { env with term_lets = M.add id t env.term_lets }
 
 let add_let_prop env id t =
-  Log.debugf 1 "New let-binding : %s -> %a"
-    (fun k -> k id.Id.name Expr.Formula.print t);
+  Log.debugf 1
+    (fun k -> k "New let-binding : %s -> %a" id.Id.name Expr.Formula.print t);
   { env with prop_lets = M.add id t env.prop_lets }
 
 let find_let env name =
@@ -207,13 +207,13 @@ let arity f =
   List.length Expr.(f.id_type.fun_vars) +
   List.length Expr.(f.id_type.fun_args)
 
-let ty_apply env ast f args =
+let ty_apply _env ast f args =
   try
     Expr.Ty.apply f args
   with Expr.Bad_ty_arity _ ->
     _bad_arity Expr.(f.id_name) (arity f) ast
 
-let term_apply env ast f ty_args t_args =
+let term_apply _env ast f ty_args t_args =
   try
     Expr.Term.apply f ty_args t_args
   with
@@ -276,6 +276,8 @@ let infer env s args =
 
 (* Expression parsing *)
 (* ************************************************************************ *)
+
+[@@@ocaml.warning "-9"]
 
 let rec parse_expr (env : env) t =
   match t with
@@ -582,13 +584,15 @@ let rec parse_fun ty_args t_args env = function
       | Formula _ -> _expected "type or term" ast
     end
 
+[@@@ocaml.warning "+9"]
+
 (* High-level parsing functions *)
 (* ************************************************************************ *)
 
 let decl id t =
   let env = empty_env () in
-  Log.debugf 5 "Typing declaration: %s : %a"
-    (fun k -> k id.Id.name Ast.print t);
+  Log.debugf 5
+    (fun k -> k "Typing declaration: %s : %a" id.Id.name Ast.print t);
   begin match parse_sig env t with
     | `Ty_cstr n -> decl_ty_cstr id (Expr.Id.ty_fun id.Id.name n)
     | `Fun_ty (vars, args, ret) ->
@@ -597,8 +601,8 @@ let decl id t =
 
 let def id t =
   let env = empty_env () in
-  Log.debugf 5 "Typing definition: %s = %a"
-    (fun k -> k id.Id.name Ast.print t);
+  Log.debugf 5
+    (fun k -> k "Typing definition: %s = %a" id.Id.name Ast.print t);
   begin match parse_fun [] [] env t with
     | `Ty (ty_args, body) -> def_ty id ty_args body
     | `Term (ty_args, t_args, body) -> def_term id ty_args t_args body
@@ -606,7 +610,7 @@ let def id t =
 
 let formula t =
   let env = empty_env () in
-  Log.debugf 5 "Typing top-level formula: %a" (fun k -> k Ast.print t);
+  Log.debugf 5 (fun k -> k "Typing top-level formula: %a" Ast.print t);
   parse_formula env t
 
 let assumptions t =
