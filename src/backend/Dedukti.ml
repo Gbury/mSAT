@@ -3,6 +3,8 @@ MSAT is free software, using the Apache license, see file LICENSE
 Copyright 2015 Guillaume Bury
 *)
 
+open Msat
+
 module type S = Backend_intf.S
 
 module type Arg = sig

@@ -40,6 +40,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     lid : int;
     term : term;
     mutable l_level : int;
+    mutable l_idx: int;
     mutable l_weight : float;
     mutable assigned : term option;
   }
@@ -51,7 +52,8 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     mutable used : int;
     mutable seen : seen;
     mutable v_level : int;
-    mutable v_weight : float;
+    mutable v_idx: int; (** position in heap *)
+    mutable v_weight : float; (** Weight (for the heap), tracking activity *)
     mutable v_assignable: lit list option;
     mutable reason : reason option;
   }
@@ -101,6 +103,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
       seen = Nope;
       v_level = -1;
       v_weight = -1.;
+      v_idx= -1;
       v_assignable = None;
       reason = None;
     }
@@ -146,6 +149,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
         lid = !cpt_mk_var;
         term = t;
         l_weight = 1.;
+        l_idx= -1;
         l_level = -1;
         assigned = None;
       } in
@@ -168,6 +172,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
             used = 0;
             seen = Nope;
             v_level = -1;
+            v_idx= -1;
             v_weight = 0.;
             v_assignable = None;
             reason = None;
@@ -244,18 +249,22 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let of_atom a = Atom a
 
   (* Elements *)
-  let elt_of_lit l = E_lit l
-  let elt_of_var v = E_var v
+  let[@inline] elt_of_lit l = E_lit l
+  let[@inline] elt_of_var v = E_var v
 
   let get_elt_id = function
     | E_lit l -> l.lid | E_var v ->  v.vid
   let get_elt_level = function
     | E_lit l -> l.l_level | E_var v ->  v.v_level
+  let get_elt_idx = function
+    | E_lit l -> l.l_idx | E_var v ->  v.v_idx
   let get_elt_weight = function
     | E_lit l -> l.l_weight | E_var v ->  v.v_weight
 
   let set_elt_level e lvl = match e with
     | E_lit l -> l.l_level <- lvl | E_var v ->  v.v_level <- lvl
+  let set_elt_idx e i = match e with
+    | E_lit l -> l.l_idx <- i | E_var v ->  v.v_idx <- i
   let set_elt_weight e w = match e with
     | E_lit l -> l.l_weight <- w | E_var v ->  v.v_weight <- w
 
@@ -346,11 +355,11 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let pp_atoms_vec out vec =
     Array.iter (fun a -> Format.fprintf out "%a@ " pp_atom a) vec
 
-  let pp_clause out {name=name; atoms=arr; cpremise=cp; } =
+  let pp_clause out {name=name; atoms=arr; cpremise=cp;_} =
     Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"
       name pp_atoms_vec arr pp_premise cp
 
-  let pp_dimacs fmt { atoms; } =
+  let pp_dimacs fmt {atoms;_} =
     let aux fmt a =
       Array.iter (fun p ->
           Format.fprintf fmt "%s%d "

@@ -9,6 +9,7 @@ Copyright 2014 Simon Cruanes
     This module provides functions to export proofs into the dot graph format.
     Graphs in dot format can be used to generates images using the graphviz tool.
 *)
+open Msat
 
 module type S = Backend_intf.S
 (** Interface for exporting proofs. *)

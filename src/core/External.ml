@@ -31,6 +31,11 @@ type ('clause, 'proof) unsat_state = ('clause, 'proof) Solver_intf.unsat_state =
   (** returns a persistent proof of the empty clause from the Unsat result. *)
 }
 
+type 'clause export = 'clause Solver_intf.export = {
+  hyps: 'clause Vec.t;
+  history: 'clause Vec.t;
+  local: 'clause Vec.t;
+}
 
 module Make
     (St : Solver_types.S)
@@ -56,8 +61,9 @@ module Make
 
   let pp_all lvl status =
     Log.debugf lvl
-      "@[<v>%s - Full resume:@,@[<hov 2>Trail:@\n%a@]@,@[<hov 2>Temp:@\n%a@]@,@[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,@]@."
-      (fun k -> k status
+      (fun k -> k
+        "@[<v>%s - Full resume:@,@[<hov 2>Trail:@\n%a@]@,@[<hov 2>Temp:@\n%a@]@,@[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,@]@."
+          status
           (Vec.print ~sep:"" St.pp) (S.trail ())
           (Vec.print ~sep:"" St.pp_clause) (S.temp ())
           (Vec.print ~sep:"" St.pp_clause) (S.hyps ())
@@ -98,7 +104,7 @@ module Make
 
   let solve ?(assumptions=[]) () =
     try
-      S.pop ();
+      S.pop (); (* FIXME: what?! *)
       S.push ();
       S.local assumptions;
       S.solve ();
@@ -119,19 +125,9 @@ module Make
   let new_lit = S.new_lit
   let new_atom = S.new_atom
 
-  (* Dimacs & iCNF export *)
-  module D = Dimacs.Make(St)(struct end)
-
-  let export_dimacs fmt () =
+  let export () : St.clause export =
     let hyps = S.hyps () in
     let history = S.history () in
     let local = S.temp () in
-    D.export fmt ~hyps ~history ~local
-
-  let export_icnf fmt () =
-    let hyps = S.hyps () in
-    let history = S.history () in
-    let local = S.temp () in
-    D.export_icnf fmt ~hyps ~history ~local
-
+    {hyps; history; local}
 end

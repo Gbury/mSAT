@@ -1,62 +1,68 @@
 # copyright (c) 2014, guillaume bury
+# copyright (c) 2017, simon cruanes
 
-LOG=build.log
-COMP=ocamlbuild -log $(LOG) -use-ocamlfind
-FLAGS=
-DOC=src/msat.docdir/index.html
 BIN=main.native
 TEST_BIN=tests/test_api.native
 
 NAME=msat
+J?=3
+TIMEOUT?=30
+TARGETS=src/bin/main.exe
+OPTS= -j $(J)
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 
 all: lib test
 
-lib:
-	$(COMP) $(FLAGS) $(LIB)
+build:
+	jbuilder build $(OPTS) @install
 
-doc:
-	$(COMP) $(FLAGS) $(DOC)
+build-dev:
+	jbuilder build $(OPTS) @install --dev
 
-bin:
-	$(COMP) $(FLAGS) $(BIN)
-	cp $(BIN) $(NAME) && rm $(BIN)
-
-test_bin:
-	$(COMP) $(FLAGS) $(TEST_BIN)
-
-test: bin test_bin
+test: build
 	@echo "run API tests…"
-	@./test_api.native
+	jbuilder runtest
 	@echo "run benchmarks…"
 	# @/usr/bin/time -f "%e" ./tests/run smt
 	@/usr/bin/time -f "%e" ./tests/run mcsat
 
 enable_log:
-	cd src/util; ln -sf log_real.ml log.ml
+	cd src/core; ln -sf log_real.ml log.ml
 
 disable_log:
-	cd src/util; ln -sf log_dummy.ml log.ml
+	cd src/core; ln -sf log_dummy.ml log.ml
 
 clean:
-	$(COMP) -clean
-	rm -rf $(NAME)
+	jbuilder clean
 
-TO_INSTALL_LIB=$(addsuffix .a, $(NAME)) $(addsuffix .cmi, $(NAME))
-TO_INSTALL=META $(addprefix _build/src/,$(LIB) $(TO_INSTALL_LIB))
-
-install: lib
-	ocamlfind install $(NAME) $(TO_INSTALL)
-	if [ -d "$(NAME).docdir" ]; then \
-		mkdir -p $(DOCDIR) ; \
-		cp -v $(NAME).docdir/*.html $(NAME).docdir/*.css $(DOCDIR) ; \
-	fi
+install: build-install
+	jbuilder install
 
 uninstall:
-	ocamlfind remove $(NAME)
-	rm -rf $(DOCDIR)
+	jbuilder uninstall
+
+doc:
+	jbuilder build $(OPTS) @doc
+
 
 reinstall: | uninstall install
+
+ocp-indent:
+	@which ocp-indent > /dev/null || { \
+	  	echo 'ocp-indent not found; please run `opam install ocp-indent`'; \
+		exit 1 ; \
+	  }
+
+reindent: ocp-indent
+	@find src '(' -name '*.ml' -or -name '*.mli' ')' -print0 | xargs -0 echo "reindenting: "
+	@find src '(' -name '*.ml' -or -name '*.mli' ')' -print0 | xargs -0 ocp-indent -i
+
+WATCH=build-dev
+watch:
+	while find src/ -print0 | xargs -0 inotifywait -e delete_self -e modify ; do \
+		echo "============ at `date` ==========" ; \
+		make $(WATCH); \
+	done
 
 .PHONY: clean doc all bench install uninstall remove reinstall enable_log disable_log bin test

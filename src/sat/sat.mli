@@ -42,6 +42,6 @@ module Expr : sig
 end
 (** The module defining formulas *)
 
-module Make(Dummy : sig end) : Solver.S with type St.formula = Expr.t
+module Make(Dummy : sig end) : Msat_solver.Solver.S with type St.formula = Expr.t
 (** A functor that can generate as many solvers as needed. *)
 

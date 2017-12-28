@@ -6,8 +6,11 @@ Copyright 2014 Simon Cruanes
 
 (* Tests that require the API *)
 
+open Msat
+open Msat_sat
+
 module F = Sat.Expr
-module T = Tseitin.Make(F)
+module T = Msat_solver.Tseitin.Make(F)
 
 let (|>) x f = f x
 

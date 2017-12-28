@@ -1,0 +1,16 @@
+; vim:ft=lisp:
+
+(executable
+  ((name test_api)
+   (libraries (msat msat.backend msat.sat msat.smt msat.mcsat dolmen))
+   (flags (:standard -w +a-4-42-44-48-50-58-32-60@8 -color always -safe-string))
+   (ocamlopt_flags (:standard -O3 -color always
+                    -unbox-closures -unbox-closures-factor 20))
+  ))
+
+(alias
+ ((name    runtest)
+  (deps    (test_api.exe))
+  (action  (run ${<}))))
+
+

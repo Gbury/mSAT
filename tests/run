@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CURDIR=`dirname $0`
-SOLVER="$CURDIR/../msat"
+SOLVER="$CURDIR/../msat.exe"
 
 solvertest () {
     for f in `find -L $1 -type f -name '*.cnf' -o -name '*.smt2'`

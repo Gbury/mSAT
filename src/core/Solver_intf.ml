@@ -38,14 +38,22 @@ type ('clause, 'proof) unsat_state = {
 }
 (** The type of values returned when the solver reaches an UNSAT state. *)
 
+type 'clause export = {
+  hyps: 'clause Vec.t;
+  history: 'clause Vec.t;
+  local: 'clause Vec.t;
+}
+(** Export internal state *)
+
 (** The external interface implemented by safe solvers, such as the one
     created by the {!Solver.Make} and {!Mcsolver.Make} functors. *)
 module type S = sig
-
   (** {2 Internal modules}
       These are the internal modules used, you should probably not use them
       if you're not familiar with the internals of mSAT. *)
 
+  (* TODO: replace {!St} with explicit modules (Expr, Var, Lit, Elt,...)
+     with carefully picked interfaces *)
   module St : Solver_types.S
   (** WARNING: Very dangerous module that expose the internal representation used
       by the solver. *)
@@ -96,14 +104,6 @@ module type S = sig
   val get_tag : St.clause -> int option
   (** Recover tag from a clause, if any *)
 
-  val export_dimacs : Format.formatter -> unit -> unit
-  (** Prints the entire set of clauses in the input problem
-      (including hypothesis, lemmas and local assumptions),
-      in the dimacs format. *)
-
-  val export_icnf : Format.formatter -> unit -> unit
-  (** Export the current problem contents to iCNF format.
-      This function is meant to be used icnrementally, i.e.
-      called for each return value of the solve function. *)
+  val export : unit -> St.clause export
 end
 

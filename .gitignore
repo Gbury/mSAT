@@ -8,5 +8,6 @@ _build/
 *.docdir
 src/util/log.ml
 doc/index.html
-
-msat
+*.exe
+.merlin
+*.install

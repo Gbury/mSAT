@@ -1,6 +1,8 @@
 
 (* Module initialization *)
 
+open Msat_smt
+
 module E = Eclosure.Make(Expr_smt.Term)
 module H = Backtrack.Hashtbl(Expr_smt.Term)
 module M = Hashtbl.Make(Expr_smt.Term)
@@ -63,7 +65,7 @@ let update_job x ((t, watchees) as job) =
   with Not_found ->
     add_job job x;
     begin match t with
-      | { Expr_smt.term = Expr_smt.App (f, tys, l) } ->
+      | { Expr_smt.term = Expr_smt.App (f, tys, l);_ } ->
         let is_prop = Expr_smt.(Ty.equal t.t_type Ty.prop) in
         let t_v = H.find map t in
         let l' = List.map (H.find map) l in
@@ -72,7 +74,7 @@ let update_job x ((t, watchees) as job) =
             let t', u_v = H.find interpretation u in
             if not (Expr_smt.Term.equal t_v u_v) then begin
               match t' with
-              | { Expr_smt.term = Expr_smt.App (_, _, r) } when is_prop ->
+              | { Expr_smt.term = Expr_smt.App (_, _, r); _ } when is_prop ->
                 let eqs = List.map2 (fun a b -> Expr_smt.Atom.neg (Expr_smt.Atom.eq a b)) l r in
                 if Expr_smt.(Term.equal u_v true_) then begin
                   let res = Expr_smt.Atom.pred t ::
@@ -83,7 +85,7 @@ let update_job x ((t, watchees) as job) =
                             Expr_smt.Atom.neg (Expr_smt.Atom.pred t) :: eqs in
                   raise (Absurd res)
                 end
-              | { Expr_smt.term = Expr_smt.App (_, _, r) } ->
+              | { Expr_smt.term = Expr_smt.App (_, _, r); _ } ->
                 let eqs = List.map2 (fun a b -> Expr_smt.Atom.neg (Expr_smt.Atom.eq a b)) l r in
                 let res = Expr_smt.Atom.eq t t' :: eqs in
                 raise (Absurd res)
@@ -117,25 +119,25 @@ let add_assign t v =
 (* Assignemnts *)
 
 let rec iter_aux f = function
-  | { Expr_smt.term = Expr_smt.Var _ } as t ->
-    Log.debugf 10 "Adding %a as assignable" (fun k -> k Expr_smt.Term.print t);
+  | { Expr_smt.term = Expr_smt.Var _; _ } as t ->
+    Log.debugf 10 (fun k -> k "Adding %a as assignable" Expr_smt.Term.print t);
     f t
-  | { Expr_smt.term = Expr_smt.App (_, _, l) } as t ->
+  | { Expr_smt.term = Expr_smt.App (_, _, l); _ } as t ->
     if l <> [] then add_watch t (t :: l);
     List.iter (iter_aux f) l;
-    Log.debugf 10 "Adding %a as assignable" (fun k -> k Expr_smt.Term.print t);
+    Log.debugf 10 (fun k -> k "Adding %a as assignable" Expr_smt.Term.print t);
     f t
 
 let iter_assignable f = function
-  | { Expr_smt.atom = Expr_smt.Pred { Expr_smt.term = Expr_smt.Var _ } } -> ()
-  | { Expr_smt.atom = Expr_smt.Pred ({ Expr_smt.term = Expr_smt.App (_, _, l) } as t) } ->
+  | { Expr_smt.atom = Expr_smt.Pred { Expr_smt.term = Expr_smt.Var _;_ }; _ } -> ()
+  | { Expr_smt.atom = Expr_smt.Pred ({ Expr_smt.term = Expr_smt.App (_, _, l);_} as t); _ } ->
     if l <> [] then add_watch t (t :: l);
     List.iter (iter_aux f) l;
-  | { Expr_smt.atom = Expr_smt.Equal (a, b) } ->
+  | { Expr_smt.atom = Expr_smt.Equal (a, b);_ } ->
     iter_aux f a; iter_aux f b
 
 let eval = function
-  | { Expr_smt.atom = Expr_smt.Pred t } ->
+  | { Expr_smt.atom = Expr_smt.Pred t; _ } ->
     begin try
         let v = H.find map t in
         if Expr_smt.Term.equal v true_ then
@@ -147,7 +149,7 @@ let eval = function
       with Not_found ->
         Plugin_intf.Unknown
     end
-  | { Expr_smt.atom = Expr_smt.Equal (a, b); sign } ->
+  | { Expr_smt.atom = Expr_smt.Equal (a, b); sign; _ } ->
     begin try
         let v_a = H.find map a in
         let v_b = H.find map b in
@@ -164,7 +166,7 @@ let eval = function
 
 let rec chain_eq = function
   | [] | [_] -> []
-  | a :: ((b :: r) as l) -> (Expr_smt.Atom.eq a b) :: chain_eq l
+  | a :: ((b :: _) as l) -> (Expr_smt.Atom.eq a b) :: chain_eq l
 
 let assume s =
   let open Plugin_intf in
@@ -176,11 +178,11 @@ let assume s =
         E.add_tag uf t v
       | Lit f ->
         begin match f with
-          | { Expr_smt.atom = Expr_smt.Equal (u, v); sign = true } ->
+          | { Expr_smt.atom = Expr_smt.Equal (u, v); sign = true;_ } ->
             E.add_eq uf u v
-          | { Expr_smt.atom = Expr_smt.Equal (u, v); sign = false } ->
+          | { Expr_smt.atom = Expr_smt.Equal (u, v); sign = false;_ } ->
             E.add_neq uf u v
-          | { Expr_smt.atom = Expr_smt.Pred p; sign } ->
+          | { Expr_smt.atom = Expr_smt.Pred p; sign;_ } ->
             let v = if sign then true_ else false_ in
             add_assign p v
         end

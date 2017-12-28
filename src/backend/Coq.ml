@@ -2,6 +2,7 @@
 MSAT is free software, using the Apache license, see file LICENSE
 Copyright 2015 Guillaume Bury
 *)
+open Msat
 
 module type S = Backend_intf.S
 
@@ -71,8 +72,8 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
   let resolution fmt goal hyp1 hyp2 atom =
     let a = S.St.(atom.var.pa) in
     let h1, h2 =
-      if Array_util.exists ((==) a) hyp1.S.St.atoms then hyp1, hyp2
-      else (assert (Array_util.exists ((==) a) hyp2.S.St.atoms); hyp2, hyp1)
+      if Array.exists ((==) a) hyp1.S.St.atoms then hyp1, hyp2
+      else (assert (Array.exists ((==) a) hyp2.S.St.atoms); hyp2, hyp1)
     in
     (** Print some debug info *)
     Format.fprintf fmt

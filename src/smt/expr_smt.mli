@@ -322,5 +322,5 @@ module Atom : sig
 
 end
 
-module Formula : Tseitin.S with type atom = atom
+module Formula : Msat_solver.Tseitin.S with type atom = atom
 

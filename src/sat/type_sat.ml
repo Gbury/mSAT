@@ -10,7 +10,7 @@ Copyright 2014 Simon Cruanes
 module Id = Dolmen.Id
 module Ast = Dolmen.Term
 module H = Hashtbl.Make(Id)
-module Formula = Tseitin.Make(Sat.Expr)
+module Formula = Msat_solver.Tseitin.Make(Sat.Expr)
 
 (* Exceptions *)
 (* ************************************************************************ *)
@@ -32,6 +32,8 @@ let find_id id =
 
 (* Actual parsing *)
 (* ************************************************************************ *)
+
+[@@@ocaml.warning "-9"]
 
 let rec parse = function
   | { Ast.term = Ast.Builtin Ast.True } ->
@@ -58,6 +60,8 @@ let rec parse = function
     Formula.make_xor (parse p) (parse q)
   | t ->
     raise (Typing_error ("Term is not a pure proposition", t))
+
+[@@@ocaml.warning "+9"]
 
 (* Exported functions *)
 (* ************************************************************************ *)

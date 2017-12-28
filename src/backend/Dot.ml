@@ -4,6 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+open Msat
+
 (** Output interface for the backend *)
 module type S = Backend_intf.S
 

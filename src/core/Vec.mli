@@ -30,8 +30,7 @@ val from_array : 'a array -> int -> 'a -> 'a t
     to create a vector. [size] is the length of the slice of [data] that is
     used ([size <= Array.length data] must hold) *)
 
-val from_list : 'a list -> int -> 'a -> 'a t
-(** [from_list l n] takes the [n] first elements of list [l] to make a new vector *)
+val from_list : 'a list -> 'a -> 'a t
 
 val to_list : 'a t -> 'a list
 (** Returns the list of elements of the vector *)
@@ -40,6 +39,8 @@ val clear : 'a t -> unit
 (** Set size to 0, doesn't free elements *)
 
 val shrink : 'a t -> int -> unit
+(** [shrink vec sz] resets size of [vec] to [sz].
+    Assumes [sz >=0 && sz <= size vec] *)
 
 val pop : 'a t -> unit
 (** Pop last element
@@ -62,9 +63,16 @@ val is_full : 'a t -> bool
 
 val push : 'a t -> 'a -> unit
 
+val append : 'a t -> 'a t -> unit
+(** [append v1 v2] pushes all elements of [v2] into [v1] *)
+
 val last : 'a t -> 'a
 (** Last element, or
     @raise Invalid_argument if the vector is empty *)
+
+val pop_last : 'a t -> 'a
+(** Combine {!last} and {!pop}: remove last element and return it
+    @raise Invalid_argument if empty *)
 
 val get : 'a t -> int -> 'a
 (** get the element at the given index, or
@@ -87,6 +95,10 @@ val remove : 'a t -> 'a -> unit
 val fast_remove : 'a t -> int -> unit
 (** Remove element at index [i] without preserving order
     (swap with last element) *)
+
+val filter_in_place : ('a -> bool) -> 'a t -> unit
+(** [filter_in_place f v] removes from [v] the elements that do
+    not satisfy [f] *)
 
 val sort : 'a t -> ('a -> 'a -> int) -> unit
 (** Sort in place the array *)

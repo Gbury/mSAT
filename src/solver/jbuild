@@ -1,0 +1,12 @@
+; vim:ft=lisp:
+
+(library
+  ((name msat_solver)
+   (public_name msat.solver)
+   (libraries (msat dolmen))
+   (synopsis "mcsat solver util")
+   (flags (:standard -w +a-4-42-44-48-50-58-32-60@8 -color always -safe-string -open Msat))
+   (ocamlopt_flags (:standard -O3 -bin-annot
+                    -unbox-closures -unbox-closures-factor 20))
+  ))
+
