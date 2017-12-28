@@ -62,7 +62,7 @@ module type S = sig
 end
 
 (** Create a new bitfield type *)
-module Make(X : sig end) : S
+module Make() : S
 
 (**/**)
 val all_bits_ : int -> int -> int

@@ -27,7 +27,7 @@ let () = Var_fields.freeze()
 (* Solver types for McSat Solving *)
 (* ************************************************************************ *)
 
-module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
+module McMake (E : Expr_intf.S)() = struct
 
   (* Flag for Mcsat v.s Pure Sat *)
   let mcsat = true
@@ -375,7 +375,7 @@ end
 (* Solver types for pure SAT Solving *)
 (* ************************************************************************ *)
 
-module SatMake (E : Formula_intf.S)(Dummy : sig end) = struct
+module SatMake (E : Formula_intf.S)() = struct
   include McMake(struct
       include E
       module Term = E

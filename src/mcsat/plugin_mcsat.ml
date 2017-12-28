@@ -1,7 +1,7 @@
 
 (* Module initialization *)
 
-open Msat_smt
+module Expr_smt = Msat_smt.Expr
 
 module E = Eclosure.Make(Expr_smt.Term)
 module H = Backtrack.Hashtbl(Expr_smt.Term)

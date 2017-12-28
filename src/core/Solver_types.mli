@@ -30,11 +30,11 @@ module type S = Solver_types_intf.S
 
 module Var_fields = Solver_types_intf.Var_fields
 
-module McMake (E : Expr_intf.S)(Dummy : sig end):
+module McMake (E : Expr_intf.S)():
     S with type term = E.Term.t and type formula = E.Formula.t and type proof = E.proof
 (** Functor to instantiate the types of clauses for a solver. *)
 
-module SatMake (E : Formula_intf.S)(Dummy : sig end):
+module SatMake (E : Formula_intf.S)():
     S with type term = E.t and type formula = E.t and type proof = E.proof
 (** Functor to instantiate the types of clauses for a solver. *)
 

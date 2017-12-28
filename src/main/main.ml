@@ -106,9 +106,9 @@ module Make
         Dolmen.Statement.print s
 end
 
-module Sat = Make(Msat_sat.Sat.Make(struct end))(Msat_sat.Type_sat)
-module Smt = Make(Msat_smt.Smt.Make(struct end))(Msat_smt.Type_smt)
-module Mcsat = Make(Msat_mcsat.Mcsat.Make(struct end))(Msat_smt.Type_smt)
+module Sat = Make(Msat_sat.Make(struct end))(Msat_sat.Type)
+module Smt = Make(Msat_smt.Make(struct end))(Msat_smt.Type)
+module Mcsat = Make(Msat_mcsat.Make(struct end))(Msat_smt.Type)
 
 let solver = ref (module Sat : S)
 let solver_list = [
@@ -227,8 +227,8 @@ let () =
   | Incorrect_model ->
     Format.printf "Internal error : incorrect *sat* model@.";
     exit 4
-  | Msat_sat.Type_sat.Typing_error (msg, t)
-  | Msat_smt.Type_smt.Typing_error (msg, t) ->
+  | Msat_sat.Type.Typing_error (msg, t)
+  | Msat_smt.Type.Typing_error (msg, t) ->
     let b = Printexc.get_backtrace () in
     let loc = match t.Dolmen.Term.loc with
       | Some l -> l | None -> Dolmen.ParseLocation.mk "<>" 0 0 0 0
