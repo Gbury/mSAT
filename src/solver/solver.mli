@@ -11,7 +11,7 @@ Copyright 2014 Simon Cruanes
     functor in order to create a pure SAT solver.
 *)
 
-module type S = Solver_intf.S
+module type S = Msat.S
 (** The interface of instantiated solvers. *)
 
 module DummyTheory(F : Formula_intf.S) :

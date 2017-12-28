@@ -51,7 +51,7 @@ let mk_solver (): (module BASIC_SOLVER) =
       | Sat _ ->
         R_sat
       | Unsat us ->
-        let p = us.Solver_intf.get_proof () in
+        let p = us.Msat.get_proof () in
         Proof.check p;
         R_unsat
   end

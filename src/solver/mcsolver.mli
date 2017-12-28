@@ -9,7 +9,7 @@ Copyright 2014 Simon Cruanes
     This module provides a functor to create an McSAt solver.
 *)
 
-module type S = Solver_intf.S
+module type S = Msat.S
 (** The interface exposed by the solver. *)
 
 module Make (E : Expr_intf.S)

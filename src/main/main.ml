@@ -27,7 +27,7 @@ module type S = sig
 end
 
 module Make
-    (S : External.S)
+    (S : Msat.S)
     (T : Msat_solver.Type.S with type atom := S.atom)
   : sig
     val do_task : Dolmen.Statement.t -> unit
@@ -42,7 +42,7 @@ module Make
       let l = List.map (function a ->
           Log.debugf 99
             (fun k -> k "Checking value of %a" S.St.pp_atom (S.St.add_atom a));
-          state.Solver_intf.eval a) c in
+          state.Msat.eval a) c in
       List.exists (fun x -> x) l
     in
     let l = List.map check_clause !hyps in
@@ -60,7 +60,7 @@ module Make
         Format.printf "Sat (%f/%f)@." t t'
       | S.Unsat state ->
         if !p_check then begin
-          let p = state.Solver_intf.get_proof () in
+          let p = state.Msat.get_proof () in
           S.Proof.check p;
           if !p_dot_proof <> "" then begin
             let fmt = Format.formatter_of_out_channel (open_out !p_dot_proof) in
