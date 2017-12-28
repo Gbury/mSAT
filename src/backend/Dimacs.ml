@@ -42,12 +42,12 @@ module Make(St : Solver_types.S)(Dummy: sig end) = struct
     Format.fprintf fmt "c Local assumptions@,a %a@," St.pp_dimacs vec
 
   let export_icnf_aux r name map_filter fmt vec =
-    let aux fmt v =
+    let aux fmt _ =
       for i = !r to (Vec.size vec) - 1 do
         let x = Vec.get vec i in
         match map_filter x with
         | None -> ()
-        | Some y -> Format.fprintf fmt "%a@," St.pp_dimacs (Vec.get vec i)
+        | Some _ -> Format.fprintf fmt "%a@," St.pp_dimacs (Vec.get vec i)
       done;
       r := Vec.size vec
     in
@@ -108,7 +108,7 @@ module Make(St : Solver_types.S)(Dummy: sig end) = struct
     let lemmas = history in
     (* Local assertions *)
     let l = List.map (function
-        | {St.cpremise = St.Local; atoms = [| a |] } -> a
+        | {St.cpremise = St.Local; atoms = [| a |];_ } -> a
         | _ -> assert false) (Vec.to_list local) in
     let local = St.make_clause "local (tmp)" l St.Local in
     (* Number of atoms and clauses *)
