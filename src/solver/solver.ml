@@ -10,7 +10,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-module type S = Solver_intf.S
+module type S = Msat.S
 
 module DummyTheory(F : Formula_intf.S) = struct
   (* We don't have anything to do since the SAT Solver already
@@ -77,8 +77,8 @@ end
 module Make (E : Formula_intf.S)
     (Th : Theory_intf.S with type formula = E.t and type proof = E.proof)
     () =
-  External.Make
-    (Solver_types.SatMake(E)(struct end))
+  Msat.Make
+    (Make_smt_expr(E)(struct end))
     (Plugin(E)(Th))
     ()
 
