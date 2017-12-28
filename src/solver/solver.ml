@@ -76,10 +76,10 @@ end
 
 module Make (E : Formula_intf.S)
     (Th : Theory_intf.S with type formula = E.t and type proof = E.proof)
-    (Dummy: sig end) =
+    () =
   External.Make
     (Solver_types.SatMake(E)(struct end))
     (Plugin(E)(Th))
-    (struct end)
+    ()
 
 

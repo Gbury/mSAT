@@ -16,7 +16,7 @@ module Make (E : Expr_intf.S)
     (Th : Plugin_intf.S with type term = E.Term.t
                          and type formula = E.Formula.t
                          and type proof = E.proof)
-    (Dummy: sig end) :
+    () :
   S with type St.term = E.Term.t
      and type St.formula = E.Formula.t
      and type St.proof = E.proof

@@ -22,7 +22,7 @@ Copyright 2016 Simon Cruanes
     used in the core solver.
 *)
 
-module Var_fields = BitField.Make(struct end)
+module Var_fields = BitField.Make()
 
 module type S = sig
   (** The signatures of clauses used in the Solver. *)

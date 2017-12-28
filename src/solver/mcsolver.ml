@@ -10,10 +10,10 @@ module Make (E : Expr_intf.S)
     (Th : Plugin_intf.S with type term = E.Term.t
                          and type formula = E.Formula.t
                          and type proof = E.proof)
-    (Dummy: sig end) =
+    () =
   External.Make
     (Solver_types.McMake(E)(struct end))
     (Th)
-    (struct end)
+    ()
 
 

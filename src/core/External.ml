@@ -42,7 +42,8 @@ module Make
     (Th : Plugin_intf.S with type term = St.term
                          and type formula = St.formula
                          and type proof = St.proof)
-    (Dummy : sig end) = struct
+    ()
+= struct
 
   module St = St
 
