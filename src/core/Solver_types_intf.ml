@@ -22,6 +22,8 @@ Copyright 2016 Simon Cruanes
     used in the core solver.
 *)
 
+module Var_fields = BitField.Make(struct end)
+
 module type S = sig
   (** The signatures of clauses used in the Solver. *)
 
@@ -41,6 +43,10 @@ module type S = sig
     | Positive
     | Negative
 
+  (* TODO: hide these types (from the outside of [Msat]);
+     instead, provide well defined modules [module Lit : sig type t val …]
+     that define their API in Msat itself (not here) *)
+
   type lit = {
     lid : int;                      (** Unique identifier *)
     term : term;                    (** Wrapped term *)
@@ -55,8 +61,7 @@ module type S = sig
     vid : int;  (** Unique identifier *)
     pa : atom;  (** Link for the positive atom *)
     na : atom;  (** Link for the negative atom *)
-    mutable used : int;         (** Number of attached clause that contain the var *)
-    mutable seen : seen;        (** Boolean used during propagation *)
+    mutable v_fields : Var_fields.t; (** bool fields *)
     mutable v_level : int;      (** Level of decision/propagation *)
     mutable v_idx: int;         (** rank in variable heap *)
     mutable v_weight : float;   (** Variable weight (for the heap) *)
@@ -178,8 +183,13 @@ module type S = sig
 
   val mark : atom -> unit
   (** Mark the atom as seen, using the 'seen' field in the variable. *)
+
   val seen : atom -> bool
   (** Returns wether the atom has been marked as seen. *)
+
+  val seen_both : var -> bool
+  (** both atoms have been seen? *)
+
   val clear : var -> unit
   (** Clear the 'seen' field of the variable. *)
 
