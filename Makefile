@@ -12,7 +12,7 @@ OPTS= -j $(J)
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 
-all: lib test
+all: build test
 
 build:
 	jbuilder build $(OPTS) @install
