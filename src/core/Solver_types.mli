@@ -28,6 +28,8 @@ Copyright 2016 Simon Cruanes
 module type S = Solver_types_intf.S
 (** Interface for the internal types. *)
 
+module Var_fields = Solver_types_intf.Var_fields
+
 module McMake (E : Expr_intf.S)(Dummy : sig end):
     S with type term = E.Term.t and type formula = E.Formula.t and type proof = E.proof
 (** Functor to instantiate the types of clauses for a solver. *)

@@ -250,9 +250,6 @@ module Make
 
   let new_atom p =
     let a = atom p in
-    (* This is necessary to ensure that the var will not be dropped
-       during the next backtrack. *)
-    a.var.used <- a.var.used + 1;
     insert_var_order (E_var a.var)
 
   (* Rather than iterate over all the heap when we want to decrease all the
@@ -335,12 +332,11 @@ module Make
         if seen a then duplicates := a :: !duplicates
         else (mark a; res := a :: !res)
       ) clause.atoms;
-    List.iter (fun a ->
-        begin match a.var.seen with
-          | Both -> trivial := true
-          | _ -> ()
-        end;
-        clear a.var) !res;
+    List.iter
+      (fun a ->
+         if seen_both a.var then trivial := true;
+         clear a.var)
+      !res;
     if !trivial then
       raise Trivial
     else if !duplicates = [] then
@@ -417,7 +413,6 @@ module Make
   let attach_clause c =
     assert (not c.attached);
     Log.debugf debug (fun k -> k "Attaching %a" St.pp_clause c);
-    Array.iter (fun a -> a.var.used <- a.var.used + 1) c.atoms;
     Vec.push c.atoms.(0).neg.watched c;
     Vec.push c.atoms.(1).neg.watched c;
     c.attached <- true;
@@ -661,8 +656,9 @@ module Make
               | Some Bcp cl -> history := cl :: !history
               | _ -> assert false
             end;
-            if not (q.var.seen = Both) then begin
-              q.var.seen <- Both;
+            if not (seen_both q.var) then (
+              mark q;
+              mark q.neg;
               seen := q :: !seen;
               if q.var.v_level > 0 then begin
                 var_bump_activity q.var;
@@ -673,7 +669,7 @@ module Make
                   blevel := max !blevel q.var.v_level
                 end
               end
-            end
+            )
           done
       end;
 
@@ -683,7 +679,7 @@ module Make
         Log.debugf debug (fun k -> k "  looking at: %a" St.pp a);
         match a with
         | Atom q ->
-          (not (q.var.seen = Both)) ||
+          (not (seen_both q.var)) ||
           (q.var.v_level < conflict_level)
         | Lit _ -> true
       do

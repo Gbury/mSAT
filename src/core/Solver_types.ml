@@ -18,6 +18,12 @@ Copyright 2016 Simon Cruanes
 
 module type S = Solver_types_intf.S
 
+module Var_fields = Solver_types_intf.Var_fields
+
+let v_field_seen_neg = Var_fields.mk_field()
+let v_field_seen_pos = Var_fields.mk_field()
+let () = Var_fields.freeze()
+
 (* Solver types for McSat Solving *)
 (* ************************************************************************ *)
 
@@ -49,8 +55,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     vid : int;
     pa : atom;
     na : atom;
-    mutable used : int;
-    mutable seen : seen;
+    mutable v_fields : Var_fields.t;
     mutable v_level : int;
     mutable v_idx: int; (** position in heap *)
     mutable v_weight : float; (** Weight (for the heap), tracking activity *)
@@ -99,8 +104,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
     { vid = -101;
       pa = dummy_atom;
       na = dummy_atom;
-      used = 0;
-      seen = Nope;
+      v_fields = Var_fields.empty;
       v_level = -1;
       v_weight = -1.;
       v_idx= -1;
@@ -169,8 +173,7 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
           { vid = !cpt_mk_var;
             pa = pa;
             na = na;
-            used = 0;
-            seen = Nope;
+            v_fields = Var_fields.empty;
             v_level = -1;
             v_idx= -1;
             v_weight = 0.;
@@ -217,28 +220,21 @@ module McMake (E : Expr_intf.S)(Dummy : sig end) = struct
   let empty_clause = make_clause "Empty" [] (History [])
 
   (* Marking helpers *)
-  let clear v = v.seen <- Nope
+  let clear v = v.v_fields <- Var_fields.empty
 
   let seen a =
     let pos = (a == a.var.pa) in
-    match a.var.seen, pos with
-    | Nope, _ -> false
-    | Both, _
-    | Positive, true
-    | Negative, false -> true
-    | Positive, false
-    | Negative, true -> false
+    let field = if pos then v_field_seen_pos else v_field_seen_neg in
+    Var_fields.get field a.var.v_fields
+
+  let seen_both v =
+    Var_fields.get v_field_seen_pos v.v_fields &&
+    Var_fields.get v_field_seen_neg v.v_fields
 
   let mark a =
     let pos = (a == a.var.pa) in
-    match a.var.seen with
-    | Both -> ()
-    | Nope ->
-      a.var.seen <- (if pos then Positive else Negative)
-    | Positive ->
-      if pos then () else a.var.seen <- Both
-    | Negative ->
-      if pos then a.var.seen <- Both else ()
+    let field = if pos then v_field_seen_pos else v_field_seen_neg in
+    a.var.v_fields <- Var_fields.set field true a.var.v_fields
 
   (* Decisions & propagations *)
   type t =
