@@ -4,18 +4,10 @@ license: "Apache"
 version: "dev"
 author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "Guillaume Bury"]
 maintainer: ["guillaume.bury@gmail.com" "simon.cruanes.2007@m4x.org"]
-build: [
-    [make "build"]
-]
-build-doc: [
-    [make "doc"]
-]
-install: [
-    [make "install"]
-]
-remove: [
-    [make "uninstall"]
-]
+build: ["jbuilder" "build" "@install" "-p" name]
+build-doc: ["jbuilder" "build" "@doc" "-p" name]
+install: ["jbuilder" "install" name]
+remove: ["jbuilder" "uninstall" name]
 depends: [
   "ocamlfind" {build}
   "jbuilder" {build}
