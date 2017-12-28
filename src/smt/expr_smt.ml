@@ -521,5 +521,5 @@ module Atom = struct
 
 end
 
-module Formula = Msat_solver.Tseitin.Make(Atom)
+module Formula = Msat_tseitin.Make(Atom)
 

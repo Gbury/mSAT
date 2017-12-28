@@ -201,7 +201,7 @@ module Make(St : Solver_types.S) = struct
       let duplicates, res = analyze (list c) in
       assert (cmp_cl res (list conclusion) = 0);
       { conclusion; step = Duplicate (c, List.concat duplicates) }
-    | St.History ( c :: ([d] as r)) ->
+    | St.History ( c :: ([_] as r)) ->
       let (l, c', d', a) = chain_res (c, to_list c) r in
       assert (cmp_cl l (to_list conclusion) = 0);
       { conclusion; step = Resolution (c', d', a); }

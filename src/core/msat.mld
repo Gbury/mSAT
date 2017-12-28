@@ -21,19 +21,13 @@ The following modules allow to easily create a SAT or SMT solver (remark: a SAT 
 simply an SMT solver with an empty theory).
 
 {!modules:
-Solver
-Solver_intf
-Formula_intf
-Theory_intf
+Msat_solver
 }
 
 The following modules allow the creation of a McSat solver (Model Constructing solver):
 
 {!modules:
-Mcsolver
-Solver_intf
-Expr_intf
-Plugin_intf
+Msat_mcsolver
 }
 
 {4 Useful tools}
@@ -41,14 +35,13 @@ Plugin_intf
 An instanciation of a pure sat solver is also provided:
 
 {!modules:
-Sat
+Msat_sat
 }
 
 Lastly, mSAT also provides an implementation of Tseitin's CNF conversion:
 
 {!modules:
-Tseitin
-Tseitin_intf
+Msat_tseitin
 }
 
 {4 Proof Management}

@@ -12,7 +12,7 @@ OPTS= -j $(J)
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 
-all: build test
+all: build-dev test
 
 build:
 	jbuilder build $(OPTS) @install
@@ -58,7 +58,7 @@ reindent: ocp-indent
 	@find src '(' -name '*.ml' -or -name '*.mli' ')' -print0 | xargs -0 echo "reindenting: "
 	@find src '(' -name '*.ml' -or -name '*.mli' ')' -print0 | xargs -0 ocp-indent -i
 
-WATCH=build-dev
+WATCH=all
 watch:
 	while find src/ -print0 | xargs -0 inotifywait -e delete_self -e modify ; do \
 		echo "============ at `date` ==========" ; \
