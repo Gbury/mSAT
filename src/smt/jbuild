@@ -1,9 +1,9 @@
 ; vim:ft=lisp:
 
 (library
-  ((name msat_smt)
-   (public_name msat.smt)
-   (libraries (msat msat.solver msat.tseitin dolmen))
+  ((name minismt_smt)
+   (public_name minismt.smt)
+   (libraries (msat minismt msat.tseitin dolmen))
    (synopsis "smt interface")
    (flags (:standard -w +a-4-42-44-48-50-58-32-60@8 -color always -safe-string -open Msat))
    (ocamlopt_flags (:standard -O3 -bin-annot

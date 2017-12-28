@@ -28,7 +28,7 @@ end
 
 module Make
     (S : Msat.S)
-    (T : Msat_solver.Type.S with type atom := S.atom)
+    (T : Minismt.Type.S with type atom := S.atom)
   : sig
     val do_task : Dolmen.Statement.t -> unit
   end = struct
@@ -106,9 +106,9 @@ module Make
         Dolmen.Statement.print s
 end
 
-module Sat = Make(Msat_sat.Make(struct end))(Msat_sat.Type)
-module Smt = Make(Msat_smt.Make(struct end))(Msat_smt.Type)
-module Mcsat = Make(Msat_mcsat.Make(struct end))(Msat_smt.Type)
+module Sat = Make(Minismt_sat.Make(struct end))(Minismt_sat.Type)
+module Smt = Make(Minismt_smt.Make(struct end))(Minismt_smt.Type)
+module Mcsat = Make(Minismt_mcsat.Make(struct end))(Minismt_smt.Type)
 
 let solver = ref (module Sat : S)
 let solver_list = [
@@ -227,8 +227,8 @@ let () =
   | Incorrect_model ->
     Format.printf "Internal error : incorrect *sat* model@.";
     exit 4
-  | Msat_sat.Type.Typing_error (msg, t)
-  | Msat_smt.Type.Typing_error (msg, t) ->
+  | Minismt_sat.Type.Typing_error (msg, t)
+  | Minismt_smt.Type.Typing_error (msg, t) ->
     let b = Printexc.get_backtrace () in
     let loc = match t.Dolmen.Term.loc with
       | Some l -> l | None -> Dolmen.ParseLocation.mk "<>" 0 0 0 0

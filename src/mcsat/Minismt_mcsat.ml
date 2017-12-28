@@ -5,9 +5,9 @@ Copyright 2014 Simon Cruanes
 *)
 
 module Make() =
-  Msat_solver.Mcsolver.Make(struct
+  Minismt.Mcsolver.Make(struct
     type proof = unit
-    module Term = Msat_smt.Expr.Term
-    module Formula = Msat_smt.Expr.Atom
+    module Term = Minismt_smt.Expr.Term
+    module Formula = Minismt_smt.Expr.Atom
   end)(Plugin_mcsat)()
 

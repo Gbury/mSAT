@@ -4,5 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-module Make() : Msat_solver.Solver.S with type St.formula = Msat_smt.Expr.atom
+module Expr = Expr_smt
+module Type = Type_smt
+
+module Make() : Minismt.Solver.S with type St.formula = Expr_smt.atom
 
