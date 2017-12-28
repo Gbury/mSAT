@@ -8,7 +8,7 @@ Copyright 2014 Simon Cruanes
 
 open Msat
 
-module F = Msat_sat.Expr
+module F = Minismt_sat.Expr
 module T = Msat_tseitin.Make(F)
 
 let (|>) x f = f x
@@ -46,7 +46,7 @@ end
 
 let mk_solver (): (module BASIC_SOLVER) =
   let module S = struct
-    include Msat_sat.Make(struct end)
+    include Minismt_sat.Make(struct end)
     let solve ?assumptions ()= match solve ?assumptions() with
       | Sat _ ->
         R_sat

@@ -7,5 +7,5 @@ module Expr = Expr_sat
 module Type = Type_sat
 
 module Make() =
-  Msat_solver.Solver.Make(Expr)(Msat_solver.Solver.DummyTheory(Expr))()
+  Minismt.Solver.Make(Expr)(Minismt.Solver.DummyTheory(Expr))()
 

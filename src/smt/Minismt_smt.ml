@@ -7,8 +7,7 @@ Copyright 2014 Simon Cruanes
 module Expr = Expr_smt
 module Type = Type_smt
 
-module Th = Msat_solver.Solver.DummyTheory(Expr_smt.Atom)
+module Th = Minismt.Solver.DummyTheory(Expr.Atom)
 
-module Make() =
-  Msat_solver.Solver.Make(Expr_smt.Atom)(Th)()
+module Make() = Minismt.Solver.Make(Expr.Atom)(Th)()
 
