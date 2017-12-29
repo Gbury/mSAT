@@ -35,8 +35,7 @@ module type S = sig
   type t
   (** State for creating new terms, literals, clauses *)
 
-  (* TODO: add size hint *)
-  val create: unit -> t
+  val create: ?size:[`Tiny|`Small|`Big] -> unit -> t
 
   (** {2 Type definitions} *)
 

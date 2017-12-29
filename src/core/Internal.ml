@@ -134,7 +134,7 @@ module Make
   }
 
   (* Starting environment. *)
-  let create ?(st=St.create()) () : t = {
+  let create_ ~st ~size_trail ~size_lvl () : t = {
     st;
     unsat_conflict = None;
     next_decision = None;
@@ -149,10 +149,10 @@ module Make
     th_head = 0;
     elt_head = 0;
 
-    trail = Vec.make 601 (Trail_elt.of_atom Atom.dummy);
-    elt_levels = Vec.make 601 (-1);
-    th_levels = Vec.make 100 Plugin.dummy;
-    user_levels = Vec.make 10 (-1);
+    trail = Vec.make size_trail (Trail_elt.of_atom Atom.dummy);
+    elt_levels = Vec.make size_lvl (-1);
+    th_levels = Vec.make size_lvl Plugin.dummy;
+    user_levels = Vec.make 0 (-1);
 
     order = H.create();
 
@@ -180,6 +180,14 @@ module Make
     learnts_literals = 0;
     nb_init_clauses = 0;
   }
+
+  let create ?(size=`Big) ?st () : t =
+    let st = match st with Some s -> s | None -> St.create ~size () in
+    let size_trail, size_lvl = match size with
+      | `Tiny -> 0, 0
+      | `Small -> 32, 16
+      | `Big -> 600, 50
+    in create_ ~st ~size_trail ~size_lvl ()
 
   (* Misc functions *)
   let to_float = float_of_int

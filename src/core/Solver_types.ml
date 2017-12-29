@@ -148,15 +148,21 @@ module McMake (E : Expr_intf.S) = struct
 
   type state = t
 
-  let create() : t = {
-    f_map = MF.create 4096;
-    t_map = MT.create 4096;
-    vars = Vec.make 107 (E_var dummy_var);
+  let create_ size_map size_vars () : t = {
+    f_map = MF.create size_map;
+    t_map = MT.create size_map;
+    vars = Vec.make size_vars (E_var dummy_var);
     cpt_mk_var = 0;
     cpt_mk_clause = 0;
   }
 
-  (* TODO: embed a state `t` with these inside *)
+  let create ?(size=`Big) () : t =
+    let size_map, size_vars = match size with
+      | `Tiny -> 8, 0
+      | `Small -> 16, 10
+      | `Big -> 4096, 128
+    in
+    create_ size_map size_vars ()
 
   let nb_elt st = Vec.size st.vars
   let get_elt st i = Vec.get st.vars i

@@ -27,7 +27,7 @@ module Make
   type t
   (** Solver *)
 
-  val create : ?st:St.t -> unit -> t
+  val create : ?size:[`Tiny|`Small|`Big] -> ?st:St.t -> unit -> t
 
   val st : t -> St.t
   (** Underlying state *)
