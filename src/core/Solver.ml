@@ -13,12 +13,11 @@ module Make
     (Th : Plugin_intf.S with type term = St.term
                          and type formula = St.formula
                          and type proof = St.proof)
-    ()
 = struct
 
   module St = St
 
-  module S = Internal.Make(St)(Th)(struct end)
+  module S = Internal.Make(St)(Th)
 
   module Proof = S.Proof
 
@@ -26,25 +25,30 @@ module Make
 
   type atom = St.formula
 
+  type t = S.t
+
+  let create = S.create
+
   (* Result type *)
   type res =
     | Sat of (St.term,St.formula) sat_state
     | Unsat of (St.clause,Proof.proof) unsat_state
 
-  let pp_all lvl status =
+  let pp_all st lvl status =
     Log.debugf lvl
       (fun k -> k
-        "@[<v>%s - Full resume:@,@[<hov 2>Trail:@\n%a@]@,@[<hov 2>Temp:@\n%a@]@,@[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,@]@."
+          "@[<v>%s - Full resume:@,@[<hov 2>Trail:@\n%a@]@,\
+           @[<hov 2>Temp:@\n%a@]@,@[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,@]@."
           status
-          (Vec.print ~sep:"" St.Trail_elt.debug) (S.trail ())
-          (Vec.print ~sep:"" St.Clause.debug) (S.temp ())
-          (Vec.print ~sep:"" St.Clause.debug) (S.hyps ())
-          (Vec.print ~sep:"" St.Clause.debug) (S.history ())
+          (Vec.print ~sep:"" St.Trail_elt.debug) (S.trail st)
+          (Vec.print ~sep:"" St.Clause.debug) (S.temp st)
+          (Vec.print ~sep:"" St.Clause.debug) (S.hyps st)
+          (Vec.print ~sep:"" St.Clause.debug) (S.history st)
       )
 
-  let mk_sat () : (_,_) sat_state =
-    pp_all 99 "SAT";
-    let t = S.trail () in
+  let mk_sat (st:S.t) : (_,_) sat_state =
+    pp_all st 99 "SAT";
+    let t = S.trail st in
     let iter f f' =
       Vec.iter (function
           | St.Atom a -> f a.St.lit
@@ -52,16 +56,16 @@ module Make
         t
     in
     {
-      eval = S.eval;
-      eval_level = S.eval_level;
+      eval = S.eval st;
+      eval_level = S.eval_level st;
       iter_trail = iter;
-      model = S.model;
+      model = (fun () -> S.model st);
     }
 
-  let mk_unsat () : (_,_) unsat_state =
-    pp_all 99 "UNSAT";
+  let mk_unsat (st:S.t) : (_,_) unsat_state =
+    pp_all st 99 "UNSAT";
     let unsat_conflict () =
-      match S.unsat_conflict () with
+      match S.unsat_conflict st with
       | None -> assert false
       | Some c -> c
     in
@@ -74,21 +78,21 @@ module Make
   (* Wrappers around internal functions*)
   let assume = S.assume
 
-  let solve ?(assumptions=[]) () =
+  let solve (st:t) ?(assumptions=[]) () =
     try
-      S.pop (); (* FIXME: what?! *)
-      S.push ();
-      S.local assumptions;
-      S.solve ();
-      Sat (mk_sat())
+      S.pop st; (* FIXME: what?! *)
+      S.push st;
+      S.local st assumptions;
+      S.solve st;
+      Sat (mk_sat st)
     with S.Unsat ->
-      Unsat (mk_unsat())
+      Unsat (mk_unsat st)
 
   let unsat_core = S.Proof.unsat_core
 
-  let true_at_level0 a =
+  let true_at_level0 st a =
     try
-      let b, lev = S.eval_level a in
+      let b, lev = S.eval_level st a in
       b && lev = 0
     with S.UndecidedLit -> false
 
@@ -97,9 +101,9 @@ module Make
   let new_lit = S.new_lit
   let new_atom = S.new_atom
 
-  let export () : St.clause export =
-    let hyps = S.hyps () in
-    let history = S.history () in
-    let local = S.temp () in
+  let export (st:t) : St.clause export =
+    let hyps = S.hyps st in
+    let history = S.history st in
+    let local = S.temp st in
     {hyps; history; local}
 end

@@ -32,6 +32,12 @@ module type S = sig
   val mcsat : bool
   (** TODO:deprecate. *)
 
+  type t
+  (** State for creating new terms, literals, clauses *)
+
+  (* TODO: add size hint *)
+  val create: unit -> t
+
   (** {2 Type definitions} *)
 
   type term
@@ -138,17 +144,19 @@ module type S = sig
     | E_var of var (**)
   (** Either a lit of a var *)
 
-  val nb_elt : unit -> int
-  val get_elt : int -> elt
-  val iter_elt : (elt -> unit) -> unit
+  val nb_elt : t -> int
+  val get_elt : t -> int -> elt
+  val iter_elt : t -> (elt -> unit) -> unit
   (** Read access to the vector of variables created *)
 
   (** {2 Variables, Literals & Clauses } *)
 
+  type state = t
+
   module Lit : sig
     type t = lit
     val term : t -> term
-    val make : term -> t
+    val make : state -> term -> t
     (** Returns the variable associated with the term *)
 
     val level : t -> int
@@ -167,7 +175,6 @@ module type S = sig
     type t = var
     val dummy : t
 
-
     val pos : t -> atom
     val neg : t -> atom
 
@@ -180,7 +187,7 @@ module type S = sig
     val weight : t -> float
     val set_weight : t -> float -> unit
 
-    val make : formula -> t * Formula_intf.negated
+    val make : state -> formula -> t * Formula_intf.negated
     (** Returns the variable linked with the given formula,
         and whether the atom associated with the formula
         is [var.pa] or [var.na] *)
@@ -207,7 +214,7 @@ module type S = sig
     val is_true : t -> bool
     val is_false : t -> bool
 
-    val make : formula -> t
+    val make : state -> formula -> t
     (** Returns the atom associated with the given formula *)
 
     val mark : t -> unit
@@ -273,6 +280,20 @@ module type S = sig
     val of_atom : Atom.t -> t
     (** Constructors and destructors *)
     val debug : t printer
+  end
+
+  module Term : sig
+    type t = term
+    val equal : t -> t -> bool
+    val hash : t -> int
+    val pp : t printer
+  end
+
+  module Formula : sig
+    type t = formula
+    val equal : t -> t -> bool
+    val hash : t -> int
+    val pp : t printer
   end
 end
 

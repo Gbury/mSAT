@@ -37,19 +37,21 @@ module Make
 
   let hyps = ref []
 
-  let check_model state =
+  let st = S.create()
+
+  let check_model sat =
     let check_clause c =
       let l = List.map (function a ->
           Log.debugf 99
-            (fun k -> k "Checking value of %a" S.St.Atom.debug (S.St.Atom.make a));
-          state.Msat.eval a) c in
+            (fun k -> k "Checking value of %a" S.St.Formula.pp a);
+          sat.Msat.eval a) c in
       List.exists (fun x -> x) l
     in
     let l = List.map check_clause !hyps in
     List.for_all (fun x -> x) l
 
-  let prove ~assumptions =
-    let res = S.solve ~assumptions () in
+  let prove ~assumptions () =
+    let res = S.solve st ~assumptions () in
     let t = Sys.time () in
     begin match res with
       | S.Sat state ->
@@ -78,26 +80,26 @@ module Make
     | Dolmen.Statement.Clause l ->
       let cnf = T.antecedent (Dolmen.Term.or_ l) in
       hyps := cnf @ !hyps;
-      S.assume cnf
+      S.assume st cnf
     | Dolmen.Statement.Consequent t ->
       let cnf = T.consequent t in
       hyps := cnf @ !hyps;
-      S.assume cnf
+      S.assume st cnf
     | Dolmen.Statement.Antecedent t ->
       let cnf = T.antecedent t in
       hyps := cnf @ !hyps;
-      S.assume cnf
+      S.assume st cnf
     | Dolmen.Statement.Pack [
         { Dolmen.Statement.descr = Dolmen.Statement.Push 1;_ };
         { Dolmen.Statement.descr = Dolmen.Statement.Antecedent f;_ };
-        { Dolmen.Statement.descr = Dolmen.Statement.Prove []; };
+        { Dolmen.Statement.descr = Dolmen.Statement.Prove [];_ };
         { Dolmen.Statement.descr = Dolmen.Statement.Pop 1;_ };
       ] ->
       let assumptions = T.assumptions f in
-      prove ~assumptions
+      prove ~assumptions ()
     | Dolmen.Statement.Prove l ->
-      let assumptions = List.map T.assumptions l in
-      prove ~assumptions
+      let assumptions = List.map T.assumptions l |> List.flatten in
+      prove ~assumptions ()
     | Dolmen.Statement.Set_info _
     | Dolmen.Statement.Set_logic _ -> ()
     | Dolmen.Statement.Exit -> exit 0
@@ -106,9 +108,9 @@ module Make
         Dolmen.Statement.print s
 end
 
-module Sat = Make(Minismt_sat.Make(struct end))(Minismt_sat.Type)
-module Smt = Make(Minismt_smt.Make(struct end))(Minismt_smt.Type)
-module Mcsat = Make(Minismt_mcsat.Make(struct end))(Minismt_smt.Type)
+module Sat = Make(Minismt_sat)(Minismt_sat.Type)
+module Smt = Make(Minismt_smt)(Minismt_smt.Type)
+module Mcsat = Make(Minismt_mcsat)(Minismt_smt.Type)
 
 let solver = ref (module Sat : S)
 let solver_list = [

@@ -76,10 +76,6 @@ end
 
 module Make (E : Formula_intf.S)
     (Th : Theory_intf.S with type formula = E.t and type proof = E.proof)
-    () =
-  Msat.Make
-    (Make_smt_expr(E)(struct end))
-    (Plugin(E)(Th))
-    ()
+    = Msat.Make (Make_smt_expr(E)) (Plugin(E)(Th))
 
 

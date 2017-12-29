@@ -40,14 +40,18 @@ type solver_res =
 exception Incorrect_model
 
 module type BASIC_SOLVER = sig
-  val solve : ?assumptions:F.t list -> unit -> solver_res
-  val assume : ?tag:int -> F.t list list -> unit
+  type t
+  val create : unit -> t
+  val solve : t -> ?assumptions:F.t list -> unit -> solver_res
+  val assume : t -> ?tag:int -> F.t list list -> unit
 end
 
 let mk_solver (): (module BASIC_SOLVER) =
   let module S = struct
-    include Minismt_sat.Make(struct end)
-    let solve ?assumptions ()= match solve ?assumptions() with
+    include Minismt_sat
+    let create() = create()
+    let solve st ?assumptions () =
+      match solve st ?assumptions() with
       | Sat _ ->
         R_sat
       | Unsat us ->
@@ -86,13 +90,14 @@ module Test = struct
   let run (t:t): result =
   (* Interesting stuff happening *)
     let (module S: BASIC_SOLVER) = mk_solver () in
+    let st = S.create() in
     try
       List.iter
         (function
           | A_assume cs ->
-            S.assume cs
+            S.assume st cs
           | A_solve (assumptions, expect) ->
-            match S.solve ~assumptions (), expect with
+            match S.solve st ~assumptions (), expect with
               | R_sat, `Expect_sat
               | R_unsat, `Expect_unsat -> ()
               | R_unsat, `Expect_sat ->

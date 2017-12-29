@@ -10,10 +10,6 @@ module Make (E : Expr_intf.S)
     (Th : Plugin_intf.S with type term = E.Term.t
                          and type formula = E.Formula.t
                          and type proof = E.proof)
-    () =
-  Msat.Make
-    (Make_mcsat_expr(E)())
-    (Th)
-    ()
+    = Msat.Make (Make_mcsat_expr(E)) (Th)
 
 
