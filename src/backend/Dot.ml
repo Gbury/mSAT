@@ -31,20 +31,22 @@ module type Arg = sig
 end
 
 module Default(S : Res.S) = struct
+  module Atom = S.St.Atom
+  module Clause = S.St.Clause
 
-  let print_atom = S.St.print_atom
+  let print_atom = Atom.pp
 
   let hyp_info c =
     "hypothesis", Some "LIGHTBLUE",
-    [ fun fmt () -> Format.fprintf fmt "%s" c.S.St.name]
+    [ fun fmt () -> Format.fprintf fmt "%s" @@ Clause.name c]
 
   let lemma_info c =
     "lemma", Some "BLUE",
-    [ fun fmt () -> Format.fprintf fmt "%s" c.S.St.name]
+    [ fun fmt () -> Format.fprintf fmt "%s" @@ Clause.name c]
 
   let assumption_info c =
     "assumption", Some "PURPLE",
-    [ fun fmt () -> Format.fprintf fmt "%s" c.S.St.name]
+    [ fun fmt () -> Format.fprintf fmt "%s" @@ Clause.name c]
 
 end
 
@@ -53,15 +55,17 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
                                 and type hyp := S.clause
                                 and type lemma := S.clause
                                 and type assumption := S.clause) = struct
+  module Atom = S.St.Atom
+  module Clause = S.St.Clause
 
-  let node_id n = n.S.conclusion.S.St.name
+  let node_id n = Clause.name n.S.conclusion
 
   let res_node_id n = (node_id n) ^ "_res"
 
   let proof_id p = node_id (S.expand p)
 
   let print_clause fmt c =
-    let v = c.S.St.atoms in
+    let v = Clause.atoms c in
     if Array.length v = 0 then
       Format.fprintf fmt "⊥"
     else
@@ -149,9 +153,11 @@ module Simple(S : Res.S)
               and type lemma := S.lemma
               and type assumption = S.St.formula) =
   Make(S)(struct
+    module Atom = S.St.Atom
+    module Clause = S.St.Clause
 
     (* Some helpers *)
-    let lit a = a.S.St.lit
+    let lit = Atom.lit
 
     let get_assumption c =
       match S.to_list c with
@@ -159,13 +165,13 @@ module Simple(S : Res.S)
       | _ -> assert false
 
     let get_lemma c =
-      match c.S.St.cpremise with
+      match Clause.premise c with
       | S.St.Lemma p -> p
       | _ -> assert false
 
     (* Actual functions *)
     let print_atom fmt a =
-      A.print_atom fmt a.S.St.lit
+      A.print_atom fmt (Atom.lit a)
 
     let hyp_info c =
       A.hyp_info (List.map lit (S.to_list c))

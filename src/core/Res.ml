@@ -24,11 +24,10 @@ module Make(St : Solver_types.S) = struct
   let info = 10
   let debug = 80
 
-  (* Misc functions *)
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
   let compare_atoms a b = Pervasives.compare St.(a.aid) St.(b.aid)
 
-  let print_clause = St.pp_clause
+  let print_clause = St.Clause.pp
 
   let merge = List.merge compare_atoms
 
@@ -52,19 +51,19 @@ module Make(St : Solver_types.S) = struct
     resolved, List.rev new_clause
 
   (* Compute the set of doublons of a clause *)
-  let list c = List.sort compare_atoms (Array.to_list St.(c.atoms))
+  let list c = List.sort St.Atom.compare (Array.to_list St.(c.atoms))
 
   let analyze cl =
     let rec aux duplicates free = function
       | [] -> duplicates, free
       | [ x ] -> duplicates, x :: free
       | x :: ((y :: r) as l) ->
-        if equal_atoms x y then
+        if x == y then
           count duplicates (x :: free) x [y] r
         else
           aux duplicates (x :: free) l
     and count duplicates free x acc = function
-      | (y :: r) when equal_atoms x y ->
+      | (y :: r) when x == y ->
         count duplicates free x (y :: acc) r
       | l ->
         aux (acc :: duplicates) free l
@@ -96,7 +95,8 @@ module Make(St : Solver_types.S) = struct
   let cmp_cl c d =
     let rec aux = function
       | [], [] -> 0
-      | a :: r, a' :: r' -> begin match compare_atoms a a' with
+      | a :: r, a' :: r' ->
+        begin match compare_atoms a a' with
           | 0 -> aux (r, r')
           | x -> x
         end
@@ -117,32 +117,32 @@ module Make(St : Solver_types.S) = struct
     assert St.(a.var.v_level >= 0);
     match St.(a.var.reason) with
     | Some St.Bcp c ->
-      Log.debugf debug (fun k->k "Analysing: @[%a@ %a@]" St.pp_atom a St.pp_clause c);
-      if Array.length c.St.atoms = 1 then begin
-        Log.debugf debug (fun k -> k "Old reason: @[%a@]" St.pp_atom a);
+      Log.debugf debug (fun k->k "Analysing: @[%a@ %a@]" St.Atom.debug a St.Clause.debug c);
+      if Array.length c.St.atoms = 1 then (
+        Log.debugf debug (fun k -> k "Old reason: @[%a@]" St.Atom.debug a);
         c
-      end else begin
+      ) else (
         assert (a.St.neg.St.is_true);
         let r = St.History (c :: (Array.fold_left aux [] c.St.atoms)) in
-        let c' = St.make_clause (fresh_pcl_name ()) [a.St.neg] r in
+        let c' = St.Clause.make [a.St.neg] r in
         a.St.var.St.reason <- Some St.(Bcp c');
         Log.debugf debug
-          (fun k -> k "New reason: @[%a@ %a@]" St.pp_atom a St.pp_clause c');
+          (fun k -> k "New reason: @[%a@ %a@]" St.Atom.debug a St.Clause.debug c');
         c'
-      end
+      )
     | _ ->
-      Log.debugf error (fun k -> k "Error while proving atom %a" St.pp_atom a);
+      Log.debugf error (fun k -> k "Error while proving atom %a" St.Atom.debug a);
       raise (Resolution_error "Cannot prove atom")
 
   let prove_unsat conflict =
     if Array.length conflict.St.atoms = 0 then conflict
-    else begin
-      Log.debugf info (fun k -> k "Proving unsat from: @[%a@]" St.pp_clause conflict);
+    else (
+      Log.debugf info (fun k -> k "Proving unsat from: @[%a@]" St.Clause.debug conflict);
       let l = Array.fold_left (fun acc a -> set_atom_proof a :: acc) [] conflict.St.atoms in
-      let res = St.make_clause (fresh_pcl_name ()) [] (St.History (conflict :: l)) in
-      Log.debugf info (fun k -> k "Proof found: @[%a@]" St.pp_clause res);
+      let res = St.Clause.make [] (St.History (conflict :: l)) in
+      Log.debugf info (fun k -> k "Proof found: @[%a@]" St.Clause.debug res);
       res
-    end
+    )
 
   let prove_atom a =
     if St.(a.is_true && a.var.v_level = 0) then
@@ -166,27 +166,26 @@ module Make(St : Solver_types.S) = struct
   let rec chain_res (c, cl) = function
     | d :: r ->
       Log.debugf debug
-        (fun k -> k "  Resolving clauses : @[%a@\n%a@]" St.pp_clause c St.pp_clause d);
+        (fun k -> k "  Resolving clauses : @[%a@\n%a@]" St.Clause.debug c St.Clause.debug d);
       let dl = to_list d in
       begin match resolve (merge cl dl) with
         | [ a ], l ->
           begin match r with
             | [] -> (l, c, d, a)
             | _ ->
-              let new_clause = St.make_clause (fresh_pcl_name ())
-                  l (St.History [c; d]) in
+              let new_clause = St.Clause.make l (St.History [c; d]) in
               chain_res (new_clause, l) r
           end
         | _ ->
           Log.debugf error
-            (fun k -> k "While resolving clauses:@[<hov>%a@\n%a@]" St.pp_clause c St.pp_clause d);
+            (fun k -> k "While resolving clauses:@[<hov>%a@\n%a@]" St.Clause.debug c St.Clause.debug d);
           raise (Resolution_error "Clause mismatch")
       end
     | _ ->
       raise (Resolution_error "Bad history")
 
   let expand conclusion =
-    Log.debugf debug (fun k -> k "Expanding : @[%a@]" St.pp_clause conclusion);
+    Log.debugf debug (fun k -> k "Expanding : @[%a@]" St.Clause.debug conclusion);
     match conclusion.St.cpremise with
     | St.Lemma l ->
       {conclusion; step = Lemma l; }
@@ -195,7 +194,7 @@ module Make(St : Solver_types.S) = struct
     | St.Local ->
       { conclusion; step = Assumption; }
     | St.History [] ->
-      Log.debugf error (fun k -> k "Empty history for clause: %a" St.pp_clause conclusion);
+      Log.debugf error (fun k -> k "Empty history for clause: %a" St.Clause.debug conclusion);
       raise (Resolution_error "Empty history")
     | St.History [ c ] ->
       let duplicates, res = analyze (list c) in
@@ -240,7 +239,7 @@ module Make(St : Solver_types.S) = struct
     let rec aux res acc = function
       | [] -> res, acc
       | c :: r ->
-        if not c.St.visited then begin
+        if not c.St.visited then (
           c.St.visited <- true;
           match c.St.cpremise with
           | St.Hyp | St.Local | St.Lemma _ -> aux (c :: res) acc r
@@ -248,8 +247,9 @@ module Make(St : Solver_types.S) = struct
             let l = List.fold_left (fun acc c ->
                 if not c.St.visited then c :: acc else acc) r h in
             aux res (c :: acc) l
-        end else
+        ) else (
           aux res acc r
+        )
     in
     let res, tmp = aux [] [] [proof] in
     List.iter (fun c -> c.St.visited <- false) res;

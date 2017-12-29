@@ -41,7 +41,7 @@ module Make
     let check_clause c =
       let l = List.map (function a ->
           Log.debugf 99
-            (fun k -> k "Checking value of %a" S.St.pp_atom (S.St.add_atom a));
+            (fun k -> k "Checking value of %a" S.St.Atom.debug (S.St.Atom.make a));
           state.Msat.eval a) c in
       List.exists (fun x -> x) l
     in

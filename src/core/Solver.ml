@@ -6,36 +6,7 @@ Copyright 2016 Simon Cruanes
 
 module type S = Solver_intf.S
 
-type ('term, 'form) sat_state = ('term, 'form) Solver_intf.sat_state = {
-  eval: 'form -> bool;
-  (** Returns the valuation of a formula in the current state
-      of the sat solver.
-      @raise UndecidedLit if the literal is not decided *)
-  eval_level: 'form -> bool * int;
-  (** Return the current assignement of the literals, as well as its
-      decision level. If the level is 0, then it is necessary for
-      the atom to have this value; otherwise it is due to choices
-      that can potentially be backtracked.
-      @raise UndecidedLit if the literal is not decided *)
-  iter_trail : ('form -> unit) -> ('term -> unit) -> unit;
-  (** Iter thorugh the formulas and terms in order of decision/propagation
-      (starting from the first propagation, to the last propagation). *)
-  model: unit -> ('term * 'term) list;
-  (** Returns the model found if the formula is satisfiable. *)
-}
-
-type ('clause, 'proof) unsat_state = ('clause, 'proof) Solver_intf.unsat_state = {
-  unsat_conflict : unit -> 'clause;
-  (** Returns the unsat clause found at the toplevel *)
-  get_proof : unit -> 'proof;
-  (** returns a persistent proof of the empty clause from the Unsat result. *)
-}
-
-type 'clause export = 'clause Solver_intf.export = {
-  hyps: 'clause Vec.t;
-  history: 'clause Vec.t;
-  local: 'clause Vec.t;
-}
+open Solver_intf
 
 module Make
     (St : Solver_types.S)
@@ -65,10 +36,10 @@ module Make
       (fun k -> k
         "@[<v>%s - Full resume:@,@[<hov 2>Trail:@\n%a@]@,@[<hov 2>Temp:@\n%a@]@,@[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,@]@."
           status
-          (Vec.print ~sep:"" St.pp) (S.trail ())
-          (Vec.print ~sep:"" St.pp_clause) (S.temp ())
-          (Vec.print ~sep:"" St.pp_clause) (S.hyps ())
-          (Vec.print ~sep:"" St.pp_clause) (S.history ())
+          (Vec.print ~sep:"" St.Trail_elt.debug) (S.trail ())
+          (Vec.print ~sep:"" St.Clause.debug) (S.temp ())
+          (Vec.print ~sep:"" St.Clause.debug) (S.hyps ())
+          (Vec.print ~sep:"" St.Clause.debug) (S.history ())
       )
 
   let mk_sat () : (_,_) sat_state =
@@ -77,8 +48,8 @@ module Make
     let iter f f' =
       Vec.iter (function
           | St.Atom a -> f a.St.lit
-          | St.Lit l -> f' l.St.term
-        ) t
+          | St.Lit l -> f' l.St.term)
+        t
     in
     {
       eval = S.eval;
