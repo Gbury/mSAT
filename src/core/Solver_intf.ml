@@ -115,6 +115,14 @@ module type S = sig
   val get_tag : clause -> int option
   (** Recover tag from a clause, if any *)
 
+  val push : t -> unit
+  (** Push a new save point *)
+
+  val pop : t -> unit
+  (** Return to last save point *)
+
+  val pop : t -> unit
+
   val export : t -> clause export
 
   (** {2 Re-export some functions} *)

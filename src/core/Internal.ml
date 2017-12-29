@@ -115,6 +115,10 @@ module Make
     mutable learntsize_factor : float;
     (* initial limit for the number of learnt clauses, 1/3 of initial
         number of clauses by default *)
+
+    mutable dirty: bool;
+    (* is there a [pop()] on top of the stack for examining
+       current model/proof? *)
   }
 
   (* Starting environment. *)
@@ -146,6 +150,7 @@ module Make
     restart_first = 100;
 
     learntsize_factor = 1. /. 3. ;
+    dirty=false;
   }
 
   let create ?(size=`Big) ?st () : t =

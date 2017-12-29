@@ -79,20 +79,40 @@ module Make
     in
     { unsat_conflict; get_proof; }
 
-  (* Wrappers around internal functions*)
-  let assume = S.assume
+  (* clean local state *)
+  let[@inline] cleanup_ (st:t) : unit =
+    if st.S.dirty then (
+      S.pop st; (* reset *)
+      st.S.dirty <- false;
+    )
 
-  let add_clause = S.add_clause
+  (* Wrappers around internal functions*)
+  let[@inline] assume st ?tag cls : unit =
+    cleanup_ st;
+    S.assume st ?tag cls
+
+  let[@inline] add_clause st c : unit =
+    cleanup_ st;
+    S.add_clause st c
 
   let solve (st:t) ?(assumptions=[]) () =
+    cleanup_ st;
     try
-      S.pop st; (* FIXME: what?! *)
       S.push st;
+      st.S.dirty <- true; (* to call [pop] before any other action *)
       S.local st assumptions;
       S.solve st;
       Sat (mk_sat st)
     with S.Unsat ->
       Unsat (mk_unsat st)
+
+  let[@inline] push st =
+    cleanup_ st;
+    S.push st
+
+  let[@inline] pop st =
+    cleanup_ st;
+    S.pop st
 
   let unsat_core = S.Proof.unsat_core
 
@@ -104,8 +124,13 @@ module Make
 
   let get_tag cl = St.(cl.tag)
 
-  let new_lit = S.new_lit
-  let new_atom = S.new_atom
+  let[@inline] new_lit st t =
+    cleanup_ st;
+    S.new_lit st t
+
+  let[@inline] new_atom st a =
+    cleanup_ st;
+    S.new_atom st a
 
   let export (st:t) : St.clause export =
     let hyps = S.hyps st in
