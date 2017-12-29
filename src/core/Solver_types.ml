@@ -178,13 +178,8 @@ module McMake (E : Expr_intf.S) = struct
     type t = lit
     let[@inline] term l = l.term
     let[@inline] level l = l.l_level
-    let[@inline] set_level l lvl = l.l_level <- lvl
-
     let[@inline] assigned l = l.assigned
-    let[@inline] set_assigned l t = l.assigned <- t
-
     let[@inline] weight l = l.l_weight
-    let[@inline] set_weight l w = l.l_weight <- w
 
     let make (st:state) (t:term) : t =
       try MT.find st.t_map t
@@ -219,15 +214,11 @@ module McMake (E : Expr_intf.S) = struct
     type t = var
     let dummy = dummy_var
     let[@inline] level v = v.v_level
-    let[@inline] set_level v lvl = v.v_level <- lvl
     let[@inline] pos v = v.pa
     let[@inline] neg v = v.na
     let[@inline] reason v = v.reason
-    let[@inline] set_reason v r = v.reason <- r
     let[@inline] assignable v = v.v_assignable
-    let[@inline] set_assignable v x = v.v_assignable <- x
     let[@inline] weight v = v.v_weight
-    let[@inline] set_weight v w = v.v_weight <- w
 
     let make (st:state) (t:formula) : var * Expr_intf.negated =
       let lit, negated = E.Formula.norm t in

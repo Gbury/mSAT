@@ -159,12 +159,8 @@ module type S = sig
     (** Returns the variable associated with the term *)
 
     val level : t -> int
-    val set_level : t -> int -> unit
-
     val assigned : t -> term option
-    val set_assigned : t -> term option -> unit
     val weight : t -> float
-    val set_weight : t -> float -> unit
 
     val pp : t printer
     val debug : t printer
@@ -178,13 +174,9 @@ module type S = sig
     val neg : t -> atom
 
     val level : t -> int
-    val set_level : t -> int -> unit
     val reason : t -> reason option
-    val set_reason : t -> reason option -> unit
     val assignable : t -> lit list option
-    val set_assignable : t -> lit list option -> unit
     val weight : t -> float
-    val set_weight : t -> float -> unit
 
     val make : state -> formula -> t * Formula_intf.negated
     (** Returns the variable linked with the given formula,
@@ -255,14 +247,6 @@ module type S = sig
     val atoms : t -> Atom.t array
     val tag : t -> int option
     val premise : t -> premise
-    val set_premise : t -> premise -> unit
-
-    val visited : t -> bool
-    val set_visited : t -> bool -> unit
-    val attached : t -> bool
-    val set_attached : t -> bool -> unit
-    val activity : t -> float
-    val set_activity : t -> float -> unit
 
     val empty : t
     (** The empty clause *)
