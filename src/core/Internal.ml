@@ -16,11 +16,11 @@ module Make
   open St
 
   module H = Heap.Make(struct
-    type t = St.elt
-    let[@inline] cmp i j = get_elt_weight j < get_elt_weight i (* comparison by weight *)
-    let dummy = elt_of_var St.dummy_var
-    let idx = get_elt_idx
-    let set_idx = set_elt_idx
+    type t = St.Elt.t
+    let[@inline] cmp i j = Elt.weight j < Elt.weight i (* comparison by weight *)
+    let dummy = Elt.of_var St.Var.dummy
+    let idx = Elt.idx
+    let set_idx = Elt.set_idx
   end)
 
   exception Sat
@@ -61,9 +61,8 @@ module Make
     mutable next_decision : atom option;
     (* When the last conflict was a semantic one, this stores the next decision to make *)
 
-    elt_queue : t Vec.t;
-    (* decision stack + propagated elements (atoms or assignments).
-       Also called "trail" in some solvers. *)
+    trail : trail_elt Vec.t;
+    (* decision stack + propagated elements (atoms or assignments). *)
 
     elt_levels : int Vec.t;
     (* decision levels in [trail]  *)
@@ -74,19 +73,19 @@ module Make
     (* user levels in [clauses_temp] *)
 
     mutable th_head : int;
-    (* Start offset in the queue {!elt_queue} of
+    (* Start offset in the queue {!trail} of
        unit facts not yet seen by the theory. *)
     mutable elt_head : int;
-    (* Start offset in the queue {!elt_queue} of
+    (* Start offset in the queue {!trail} of
        unit facts to propagate, within the trail *)
 
     (* invariant:
        - during propagation, th_head <= elt_head
-       - then, once elt_head reaches length elt_queue, Th.assume is
+       - then, once elt_head reaches length trail, Th.assume is
          called so that th_head can catch up with elt_head
        - this is repeated until a fixpoint is reached;
        - before a decision (and after the fixpoint),
-         th_head = elt_head = length elt_queue
+         th_head = elt_head = length trail
     *)
 
 
@@ -139,9 +138,9 @@ module Make
     unsat_conflict = None;
     next_decision = None;
 
-    clauses_hyps = Vec.make 0 dummy_clause;
-    clauses_learnt = Vec.make 0 dummy_clause;
-    clauses_temp = Vec.make 0 dummy_clause;
+    clauses_hyps = Vec.make 0 Clause.dummy;
+    clauses_learnt = Vec.make 0 Clause.dummy;
+    clauses_temp = Vec.make 0 Clause.dummy;
 
     clauses_root = Stack.create ();
     clauses_to_add = Stack.create ();
@@ -149,7 +148,7 @@ module Make
     th_head = 0;
     elt_head = 0;
 
-    elt_queue = Vec.make 601 (of_atom dummy_atom);
+    trail = Vec.make 601 (Trail_elt.of_atom Atom.dummy);
     elt_levels = Vec.make 601 (-1);
     th_levels = Vec.make 100 Plugin.dummy;
     user_levels = Vec.make 10 (-1);
@@ -212,15 +211,18 @@ module Make
   (* When we have a new literal,
      we need to first create the list of its subterms. *)
   let atom (f:St.formula) : atom =
-    let res = add_atom f in
-    if St.mcsat then
+    let res = Atom.make f in
+    if St.mcsat then (
       begin match res.var.v_assignable with
         | Some _ -> ()
         | None ->
           let l = ref [] in
-          Plugin.iter_assignable (fun t -> l := add_term t :: !l) res.var.pa.lit;
+          Plugin.iter_assignable
+            (fun t -> l := Lit.make t :: !l)
+            res.var.pa.lit;
           res.var.v_assignable <- Some !l;
       end;
+    );
     res
 
   (* Variable and literal activity.
@@ -238,14 +240,14 @@ module Make
     end
 
   and insert_subterms_order (v:St.var) : unit =
-    iter_sub (fun t -> insert_var_order (elt_of_lit t)) v
+    iter_sub (fun t -> insert_var_order (Elt.of_lit t)) v
 
   (* Add new litterals/atoms on which to decide on, even if there is no
      clause that constrains it.
      We could maybe check if they have already has been decided before
      inserting them into the heap, if it appears that it helps performance. *)
   let new_lit t =
-    let l = add_term t in
+    let l = Lit.make t in
     insert_var_order (E_lit l)
 
   let new_atom p =
@@ -264,13 +266,13 @@ module Make
   (* increase activity of [v] *)
   let var_bump_activity_aux v =
     v.v_weight <- v.v_weight +. env.var_incr;
-    if v.v_weight > 1e100 then begin
+    if v.v_weight > 1e100 then (
       for i = 0 to (St.nb_elt ()) - 1 do
-        set_elt_weight (St.get_elt i) ((get_elt_weight (St.get_elt i)) *. 1e-100)
+        Elt.set_weight (St.get_elt i) ((Elt.weight (St.get_elt i)) *. 1e-100)
       done;
       env.var_incr <- env.var_incr *. 1e-100;
-    end;
-    let elt = elt_of_var v in
+    );
+    let elt = Elt.of_var v in
     if H.in_heap elt then (
       H.decrease env.order elt
     )
@@ -278,13 +280,13 @@ module Make
   (* increase activity of literal [l] *)
   let lit_bump_activity_aux (l:lit): unit =
     l.l_weight <- l.l_weight +. env.var_incr;
-    if l.l_weight > 1e100 then begin
+    if l.l_weight > 1e100 then (
       for i = 0 to (St.nb_elt ()) - 1 do
-        set_elt_weight (St.get_elt i) ((get_elt_weight (St.get_elt i)) *. 1e-100)
+        Elt.set_weight (St.get_elt i) ((Elt.weight (St.get_elt i)) *. 1e-100)
       done;
       env.var_incr <- env.var_incr *. 1e-100;
-    end;
-    let elt = elt_of_lit l in
+    );
+    let elt = Elt.of_lit l in
     if H.in_heap elt then (
       H.decrease env.order elt
     )
@@ -297,13 +299,13 @@ module Make
   (* increase activity of clause [c] *)
   let clause_bump_activity (c:clause) : unit =
     c.activity <- c.activity +. env.clause_incr;
-    if c.activity > 1e20 then begin
+    if c.activity > 1e20 then (
       for i = 0 to (Vec.size env.clauses_learnt) - 1 do
         (Vec.get env.clauses_learnt i).activity <-
           (Vec.get env.clauses_learnt i).activity *. 1e-20;
       done;
       env.clause_incr <- env.clause_incr *. 1e-20
-    end
+    )
 
   (* Simplification of clauses.
 
@@ -329,20 +331,23 @@ module Make
     let duplicates = ref [] in
     let res = ref [] in
     Array.iter (fun a ->
-        if seen a then duplicates := a :: !duplicates
-        else (mark a; res := a :: !res)
-      ) clause.atoms;
+        if Atom.seen a then duplicates := a :: !duplicates
+        else (
+          Atom.mark a;
+          res := a :: !res
+        ))
+      clause.atoms;
     List.iter
       (fun a ->
-         if seen_both a.var then trivial := true;
-         clear a.var)
+         if Var.seen_both a.var then trivial := true;
+         Var.clear a.var)
       !res;
     if !trivial then
       raise Trivial
     else if !duplicates = [] then
       clause
     else
-      make_clause (fresh_lname ()) !res (History [clause])
+      Clause.make !res (History [clause])
 
   (* Partition literals for new clauses, into:
      - true literals (maybe makes the clause trivial if the lit is proved true at level 0)
@@ -353,20 +358,20 @@ module Make
   *)
   let partition atoms : atom list * clause list =
     let rec partition_aux trues unassigned falses history i =
-      if i >= Array.length atoms then
+      if i >= Array.length atoms then (
         trues @ unassigned @ falses, history
-      else begin
+      ) else (
         let a = atoms.(i) in
-        if a.is_true then
+        if a.is_true then (
           let l = a.var.v_level in
           if l = 0 then
             raise Trivial (* A var true at level 0 gives a trivially true clause *)
           else
             (a :: trues) @ unassigned @ falses @
             (arr_to_list atoms (i + 1)), history
-        else if a.neg.is_true then
+        ) else if a.neg.is_true then (
           let l = a.var.v_level in
-          if l = 0 then begin
+          if l = 0 then (
             match a.var.reason with
             | Some (Bcp cl) ->
               partition_aux trues unassigned falses (cl :: history) (i + 1)
@@ -381,11 +386,13 @@ module Make
             | None | Some Decision -> assert false
             (* The var must have a reason, and it cannot be a decision/assumption,
                since its level is 0. *)
-          end else
+          ) else (
             partition_aux trues unassigned (a::falses) history (i + 1)
-        else
+          )
+        ) else (
           partition_aux trues (a::unassigned) falses history (i + 1)
-      end
+        )
+      )
     in
     partition_aux [] [] [] [] 0
 
@@ -398,9 +405,9 @@ module Make
      i.e we have indeed reached a propagation fixpoint before making
      a new decision *)
   let new_decision_level() =
-    assert (env.th_head = Vec.size env.elt_queue);
-    assert (env.elt_head = Vec.size env.elt_queue);
-    Vec.push env.elt_levels (Vec.size env.elt_queue);
+    assert (env.th_head = Vec.size env.trail);
+    assert (env.elt_head = Vec.size env.trail);
+    Vec.push env.elt_levels (Vec.size env.trail);
     Vec.push env.th_levels (Plugin.current_level ()); (* save the current theory state *)
     ()
 
@@ -411,11 +418,11 @@ module Make
 
   *)
   let attach_clause c =
-    assert (not c.attached);
-    Log.debugf debug (fun k -> k "Attaching %a" St.pp_clause c);
+    assert (not @@ Clause.attached c);
+    Log.debugf debug (fun k -> k "Attaching %a" Clause.debug c);
     Vec.push c.atoms.(0).neg.watched c;
     Vec.push c.atoms.(1).neg.watched c;
-    c.attached <- true;
+    Clause.set_attached c true;
     ()
 
   (* Backtracking.
@@ -425,9 +432,9 @@ module Make
   let cancel_until lvl =
     assert (lvl >= base_level ());
     (* Nothing to do if we try to backtrack to a non-existent level. *)
-    if decision_level () <= lvl then
+    if decision_level () <= lvl then (
       Log.debugf debug (fun k -> k "Already at level <= %d" lvl)
-    else begin
+    ) else (
       Log.debugf info (fun k -> k "Backtracking to lvl %d" lvl);
       (* We set the head of the solver and theory queue to what it was. *)
       let head = ref (Vec.get env.elt_levels lvl) in
@@ -435,29 +442,29 @@ module Make
       env.th_head <- !head;
       (* Now we need to cleanup the vars that are not valid anymore
          (i.e to the right of elt_head in the queue. *)
-      for c = env.elt_head to Vec.size env.elt_queue - 1 do
-        match (Vec.get env.elt_queue c) with
+      for c = env.elt_head to Vec.size env.trail - 1 do
+        match (Vec.get env.trail c) with
         (* A literal is unassigned, we nedd to add it back to
            the heap of potentially assignable literals, unless it has
            a level lower than [lvl], in which case we just move it back. *)
         | Lit l ->
-          if l.l_level <= lvl then begin
-            Vec.set env.elt_queue !head (of_lit l);
+          if l.l_level <= lvl then (
+            Vec.set env.trail !head (Trail_elt.of_lit l);
             head := !head + 1
-          end else begin
+          ) else (
             l.assigned <- None;
             l.l_level <- -1;
-            insert_var_order (elt_of_lit l)
-          end
+            insert_var_order (Elt.of_lit l)
+          )
         (* A variable is not true/false anymore, one of two things can happen: *)
         | Atom a ->
-          if a.var.v_level <= lvl then begin
+          if a.var.v_level <= lvl then (
             (* It is a late propagation, which has a level
                lower than where we backtrack, so we just move it to the head
                of the queue, to be propagated again. *)
-            Vec.set env.elt_queue !head (of_atom a);
+            Vec.set env.trail !head (Trail_elt.of_atom a);
             head := !head + 1
-          end else begin
+          ) else (
             (* it is a result of bolean propagation, or a semantic propagation
                with a level higher than the level to which we backtrack,
                in that case, we simply unset its value and reinsert it into the heap. *)
@@ -465,23 +472,23 @@ module Make
             a.neg.is_true <- false;
             a.var.v_level <- -1;
             a.var.reason <- None;
-            insert_var_order (elt_of_var a.var)
-          end
+            insert_var_order (Elt.of_var a.var)
+          )
       done;
       (* Recover the right theory state. *)
       Plugin.backtrack (Vec.get env.th_levels lvl);
       (* Resize the vectors according to their new size. *)
-      Vec.shrink env.elt_queue !head;
+      Vec.shrink env.trail !head;
       Vec.shrink env.elt_levels lvl;
       Vec.shrink env.th_levels lvl;
-    end;
+    );
     assert (Vec.size env.elt_levels = Vec.size env.th_levels);
     ()
 
   (* Unsatisfiability is signaled through an exception, since it can happen
      in multiple places (adding new clauses, or solving for instance). *)
   let report_unsat confl : _ =
-    Log.debugf info (fun k -> k "@[Unsat conflict: %a@]" St.pp_clause confl);
+    Log.debugf info (fun k -> k "@[Unsat conflict: %a@]" Clause.debug confl);
     env.unsat_conflict <- Some confl;
     raise Unsat
 
@@ -505,18 +512,18 @@ module Make
                with only one formula (which is [a]). So we explicitly create that clause
                and set it as the cause for the propagation of [a], that way we can
                rebuild the whole resolution tree when we want to prove [a]. *)
-            let c' = make_clause (fresh_lname ()) l (History (cl :: history)) in
+            let c' = Clause.make l (History (cl :: history)) in
             Log.debugf debug
-              (fun k -> k "Simplified reason: @[<v>%a@,%a@]" St.pp_clause cl St.pp_clause c');
+              (fun k -> k "Simplified reason: @[<v>%a@,%a@]" Clause.debug cl Clause.debug c');
             Bcp c'
           )
         | _ ->
           Log.debugf error
             (fun k ->
                k "@[<v 2>Failed at reason simplification:@,%a@,%a@]"
-                 (Vec.print ~sep:"" St.pp_atom)
-                 (Vec.from_list l St.dummy_atom)
-                 St.pp_clause cl);
+                 (Vec.print ~sep:"" Atom.debug)
+                 (Vec.from_list l Atom.dummy)
+                 Clause.debug cl);
           assert false
       end
     | r -> r
@@ -524,10 +531,10 @@ module Make
   (* Boolean propagation.
      Wrapper function for adding a new propagated formula. *)
   let enqueue_bool a ~level:lvl reason : unit =
-    if a.neg.is_true then begin
-      Log.debugf error (fun k->k "Trying to enqueue a false literal: %a" St.pp_atom a);
+    if a.neg.is_true then (
+      Log.debugf error (fun k->k "Trying to enqueue a false literal: %a" Atom.debug a);
       assert false
-    end;
+    );
     assert (not a.is_true && a.var.v_level < 0 &&
             a.var.reason = None && lvl >= 0);
     let reason =
@@ -537,34 +544,35 @@ module Make
     a.is_true <- true;
     a.var.v_level <- lvl;
     a.var.reason <- Some reason;
-    Vec.push env.elt_queue (of_atom a);
+    Vec.push env.trail (Trail_elt.of_atom a);
     Log.debugf debug
-      (fun k->k "Enqueue (%d): %a" (Vec.size env.elt_queue) pp_atom a)
+      (fun k->k "Enqueue (%d): %a" (Vec.size env.trail) Atom.debug a);
+    ()
 
   let enqueue_semantic a terms =
-    if a.is_true then ()
-    else begin
-      let l = List.map St.add_term terms in
+    if not a.is_true then (
+      let l = List.map Lit.make terms in
       let lvl = List.fold_left (fun acc {l_level; _} ->
           assert (l_level > 0); max acc l_level) 0 l in
       H.grow_to_at_least env.order (St.nb_elt ());
       enqueue_bool a ~level:lvl Semantic
-    end
+    )
 
   (* MCsat semantic assignment *)
   let enqueue_assign l value lvl =
     match l.assigned with
     | Some _ ->
       Log.debugf error
-        (fun k -> k "Trying to assign an already assigned literal: %a" St.pp_lit l);
+        (fun k -> k "Trying to assign an already assigned literal: %a" Lit.debug l);
       assert false
     | None ->
       assert (l.l_level < 0);
       l.assigned <- Some value;
       l.l_level <- lvl;
-      Vec.push env.elt_queue (of_lit l);
+      Vec.push env.trail (Trail_elt.of_lit l);
       Log.debugf debug
-        (fun k -> k "Enqueue (%d): %a" (Vec.size env.elt_queue) pp_lit l)
+        (fun k -> k "Enqueue (%d): %a" (Vec.size env.trail) Lit.debug l);
+      ()
 
   (* swap elements of array *)
   let[@inline] swap_arr a i j =
@@ -574,11 +582,17 @@ module Make
       a.(j) <- tmp;
     )
 
+  let[@inline] put_high_level_atoms_first (arr:atom array) : unit =
+    Array.sort
+      (fun a b -> compare b.var.v_level a.var.v_level)
+      arr
+
+  (* FIXME
   (* move atoms assigned at high levels first *)
   let[@inline] put_high_level_atoms_first (arr:atom array) : unit =
     Array.iteri
       (fun i a ->
-         if i>0 && a.var.v_level > arr.(0).var.v_level then (
+         if i>0 && Atom.level a > Atom.level arr.(0) then (
            (* move first to second, [i]-th to first, second to [i] *)
            if i=1 then (
              swap_arr arr 0 1;
@@ -588,10 +602,11 @@ module Make
              arr.(0) <- arr.(i);
              arr.(i) <- tmp;
            );
-         ) else if i>1 && a.var.v_level > arr.(1).var.v_level then (
+         ) else if i>1 && Atom.level a > Atom.level arr.(1) then (
            swap_arr arr 1 i;
          ))
       arr
+     *)
 
   (* evaluate an atom for MCsat, if it's not assigned
      by boolean propagation/decision *)
@@ -640,7 +655,7 @@ module Make
   }
 
   let get_atom i =
-    match Vec.get env.elt_queue i with
+    match Vec.get env.trail i with
     | Lit _ -> assert false | Atom x -> x
 
   (* conflict analysis for SAT
@@ -654,20 +669,20 @@ module Make
     let blevel = ref 0 in
     let seen   = ref [] in
     let c      = ref (Some c_clause) in
-    let tr_ind = ref (Vec.size env.elt_queue - 1) in
+    let tr_ind = ref (Vec.size env.trail - 1) in
     let history = ref [] in
     assert (decision_level () > 0);
     let conflict_level =
       Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
     in
     Log.debugf debug
-      (fun k -> k "Analyzing conflict (%d): %a" conflict_level St.pp_clause c_clause);
+      (fun k -> k "Analyzing conflict (%d): %a" conflict_level Clause.debug c_clause);
     while !cond do
       begin match !c with
         | None ->
           Log.debug debug "  skipping resolution for semantic propagation"
         | Some clause ->
-          Log.debugf debug (fun k->k"  Resolving clause: %a"  St.pp_clause clause);
+          Log.debugf debug (fun k->k"  Resolving clause: %a"  Clause.debug clause);
           begin match clause.cpremise with
             | History _ -> clause_bump_activity clause
             | Hyp | Local | Lemma _ -> ()
@@ -677,36 +692,36 @@ module Make
           for j = 0 to Array.length clause.atoms - 1 do
             let q = clause.atoms.(j) in
             assert (q.is_true || q.neg.is_true && q.var.v_level >= 0); (* unsure? *)
-            if q.var.v_level <= 0 then begin
+            if q.var.v_level <= 0 then (
               assert (q.neg.is_true);
               match q.var.reason with
               | Some Bcp cl -> history := cl :: !history
               | _ -> assert false
-            end;
-            if not (seen_both q.var) then (
-              mark q;
-              mark q.neg;
+            );
+            if not (Var.seen_both q.var) then (
+              Atom.mark q;
+              Atom.mark q.neg;
               seen := q :: !seen;
-              if q.var.v_level > 0 then begin
+              if q.var.v_level > 0 then (
                 var_bump_activity q.var;
-                if q.var.v_level >= conflict_level then begin
+                if q.var.v_level >= conflict_level then (
                   incr pathC;
-                end else begin
+                ) else (
                   learnt := q :: !learnt;
                   blevel := max !blevel q.var.v_level
-                end
-              end
+                )
+              )
             )
           done
       end;
 
       (* look for the next node to expand *)
       while
-        let a = Vec.get env.elt_queue !tr_ind in
-        Log.debugf debug (fun k -> k "  looking at: %a" St.pp a);
+        let a = Vec.get env.trail !tr_ind in
+        Log.debugf debug (fun k -> k "  looking at: %a" Trail_elt.debug a);
         match a with
         | Atom q ->
-          (not (seen_both q.var)) ||
+          (not (Var.seen_both q.var)) ||
           (q.var.v_level < conflict_level)
         | Lit _ -> true
       do
@@ -729,7 +744,7 @@ module Make
         c := Some cl
       | _ -> assert false
     done;
-    List.iter (fun q -> clear q.var) !seen;
+    List.iter (fun q -> Var.clear q.var) !seen;
     let l = List.fast_sort (fun p q -> compare q.var.v_level p.var.v_level) !learnt in
     let level, is_uip = backtrack_lvl l in
     { cr_backtrack_lvl = level;
@@ -752,26 +767,24 @@ module Make
       | [] -> assert false
       | [fuip] ->
         assert (cr.cr_backtrack_lvl = 0);
-        if fuip.neg.is_true then
+        if fuip.neg.is_true then (
           report_unsat confl
-        else begin
-          let name = fresh_lname () in
-          let uclause = make_clause name cr.cr_learnt (History cr.cr_history) in
+        ) else (
+          let uclause = Clause.make cr.cr_learnt (History cr.cr_history) in
           Vec.push env.clauses_learnt uclause;
           (* no need to attach [uclause], it is true at level 0 *)
           enqueue_bool fuip ~level:0 (Bcp uclause)
-        end
+        )
       | fuip :: _ ->
-        let name = fresh_lname () in
-        let lclause = make_clause name cr.cr_learnt (History cr.cr_history) in
+        let lclause = Clause.make cr.cr_learnt (History cr.cr_history) in
         Vec.push env.clauses_learnt lclause;
         attach_clause lclause;
         clause_bump_activity lclause;
-        if cr.cr_is_uip then
+        if cr.cr_is_uip then (
           enqueue_bool fuip ~level:cr.cr_backtrack_lvl (Bcp lclause)
-        else begin
+        ) else (
           env.next_decision <- Some fuip.neg
-        end
+        )
     end;
     var_decay_activity ();
     clause_decay_activity ()
@@ -782,7 +795,7 @@ module Make
      - report unsat if conflict at level 0
   *)
   let add_boolean_conflict (confl:clause): unit =
-    Log.debugf info (fun k -> k "Boolean conflict: %a" St.pp_clause confl);
+    Log.debugf info (fun k -> k "Boolean conflict: %a" Clause.debug confl);
     env.next_decision <- None;
     env.conflicts <- env.conflicts + 1;
     assert (decision_level() >= base_level ());
@@ -803,14 +816,14 @@ module Make
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
   let add_clause (init:clause) : unit =
-    Log.debugf debug (fun k -> k "Adding clause: @[<hov>%a@]" St.pp_clause init);
+    Log.debugf debug (fun k -> k "Adding clause: @[<hov>%a@]" Clause.debug init);
     (* Insertion of new lits is done before simplification. Indeed, else a lit in a
        trivial clause could end up being not decided on, which is a bug. *)
-    Array.iter (fun x -> insert_var_order (elt_of_var x.var)) init.atoms;
+    Array.iter (fun x -> insert_var_order (Elt.of_var x.var)) init.atoms;
     let vec = clause_vector init in
     try
       let c = eliminate_doublons init in
-      Log.debugf debug (fun k -> k "Doublons eliminated: %a" St.pp_clause c);
+      Log.debugf debug (fun k -> k "Doublons eliminated: %a" Clause.debug c);
       let atoms, history = partition c.atoms in
       let clause =
         if history = []
@@ -819,9 +832,9 @@ module Make
           List.iteri (fun i a -> c.atoms.(i) <- a) atoms;
           c
         )
-        else make_clause (fresh_name ()) atoms (History (c :: history))
+        else Clause.make atoms (History (c :: history))
       in
-      Log.debugf info (fun k->k "New clause: @[<hov>%a@]" St.pp_clause clause);
+      Log.debugf info (fun k->k "New clause: @[<hov>%a@]" Clause.debug clause);
       match atoms with
       | [] ->
         (* Report_unsat will raise, and the current clause will be lost if we do not
@@ -831,14 +844,14 @@ module Make
         report_unsat clause
       | [a]   ->
         cancel_until (base_level ());
-        if a.neg.is_true then begin
+        if a.neg.is_true then (
           (* Since we cannot propagate the atom [a], in order to not lose
              the information that [a] must be true, we add clause to the list
              of clauses to add, so that it will be e-examined later. *)
           Log.debug debug "Unit clause, adding to clauses to add";
           Stack.push clause env.clauses_to_add;
           report_unsat clause
-        end else if a.is_true then begin
+        ) else if a.is_true then (
           (* If the atom is already true, then it should be because of a local hyp.
              However it means we can't propagate it at level 0. In order to not lose
              that information, we store the clause in a stack of clauses that we will
@@ -847,30 +860,30 @@ module Make
           assert (0 < a.var.v_level && a.var.v_level <= base_level ());
           Stack.push clause env.clauses_root;
           ()
-        end else begin
-          Log.debugf debug (fun k->k "Unit clause, propagating: %a" St.pp_atom a);
+        ) else (
+          Log.debugf debug (fun k->k "Unit clause, propagating: %a" Atom.debug a);
           Vec.push vec clause;
           enqueue_bool a ~level:0 (Bcp clause)
-        end
+        )
       | a::b::_ ->
         Vec.push vec clause;
-        if a.neg.is_true then begin
+        if a.neg.is_true then (
           (* Atoms need to be sorted in decreasing order of decision level,
              or we might watch the wrong literals. *)
           put_high_level_atoms_first clause.atoms;
           attach_clause clause;
           add_boolean_conflict clause
-        end else begin
+        ) else (
           attach_clause clause;
-          if b.neg.is_true && not a.is_true && not a.neg.is_true then begin
+          if b.neg.is_true && not a.is_true && not a.neg.is_true then (
             let lvl = List.fold_left (fun m a -> max m a.var.v_level) 0 atoms in
             cancel_until (max lvl (base_level ()));
             enqueue_bool a ~level:lvl (Bcp clause)
-          end
-        end
+          )
+        )
     with Trivial ->
       Vec.push vec init;
-      Log.debugf info (fun k->k "Trivial clause ignored : @[%a@]" St.pp_clause init)
+      Log.debugf info (fun k->k "Trivial clause ignored : @[%a@]" Clause.debug init)
 
   let flush_clauses () =
     if not (Stack.is_empty env.clauses_to_add) then begin
@@ -904,13 +917,13 @@ module Make
       atoms.(1) <- first
     ) else assert (a.neg == atoms.(1));
     let first = atoms.(0) in
-    if first.is_true
+    if Atom.is_true first
     then Watch_kept (* true clause, keep it in watched *)
     else (
       try (* look for another watch lit *)
         for k = 2 to Array.length atoms - 1 do
           let ak = atoms.(k) in
-          if not (ak.neg.is_true) then begin
+          if not (ak.neg.is_true) then (
             (* watch lit found: update and exit *)
             atoms.(1) <- ak;
             atoms.(k) <- a.neg;
@@ -919,22 +932,22 @@ module Make
             assert (Vec.get a.watched i == c);
             Vec.fast_remove a.watched i;
             raise Exit
-          end
+          )
         done;
         (* no watch lit found *)
-        if first.neg.is_true then begin
+        if first.neg.is_true then (
           (* clause is false *)
-          env.elt_head <- Vec.size env.elt_queue;
+          env.elt_head <- Vec.size env.trail;
           raise (Conflict c)
-        end else begin
+        ) else (
           match th_eval first with
           | None -> (* clause is unit, keep the same watches, but propagate *)
             enqueue_bool first ~level:(decision_level ()) (Bcp c)
           | Some true -> ()
           | Some false ->
-            env.elt_head <- Vec.size env.elt_queue;
+            env.elt_head <- Vec.size env.trail;
             raise (Conflict c)
-        end;
+        );
         Watch_kept
       with Exit ->
         Watch_removed
@@ -952,7 +965,7 @@ module Make
           if i >= Vec.size watched then ()
           else (
             let c = Vec.get watched i in
-            assert c.attached;
+            assert (Clause.attached c);
             let j = match propagate_in_clause a c i with
               | Watch_kept -> i+1
               | Watch_removed -> i (* clause at this index changed *)
@@ -974,7 +987,7 @@ module Make
     a
 
   let slice_get i =
-    match Vec.get env.elt_queue i with
+    match Vec.get env.trail i with
     | Atom a ->
       Plugin_intf.Lit a.lit
     | Lit {term; assigned = Some v; _} ->
@@ -983,8 +996,8 @@ module Make
 
   let slice_push (l:formula list) (lemma:proof): unit =
     let atoms = List.rev_map create_atom l in
-    let c = make_clause (fresh_tname ()) atoms (Lemma lemma) in
-    Log.debugf info (fun k->k "Pushing clause %a" St.pp_clause c);
+    let c = Clause.make atoms (Lemma lemma) in
+    Log.debugf info (fun k->k "Pushing clause %a" Clause.debug c);
     Stack.push c env.clauses_to_add
 
   let slice_propagate f = function
@@ -993,25 +1006,25 @@ module Make
       enqueue_semantic a l
     | Plugin_intf.Consequence (causes, proof) ->
       let l = List.rev_map atom causes in
-      if List.for_all (fun a -> a.is_true) l then
+      if List.for_all (fun a -> a.is_true) l then (
         let p = atom f in
-        let c = make_clause (fresh_tname ())
-            (p :: List.map (fun a -> a.neg) l) (Lemma proof) in
+        let c = Clause.make (p :: List.map Atom.neg l) (Lemma proof) in
         if p.is_true then ()
-        else if p.neg.is_true then
+        else if p.neg.is_true then (
           Stack.push c env.clauses_to_add
-        else begin
+        ) else (
           H.grow_to_at_least env.order (St.nb_elt ());
           insert_subterms_order p.var;
           let lvl = List.fold_left (fun acc a -> max acc a.var.v_level) 0 l in
           enqueue_bool p ~level:lvl (Bcp c)
-        end
-      else
-        raise (Invalid_argument "Msat.Internal.slice_propagate")
+        )
+      ) else (
+        invalid_arg "Msat.Internal.slice_propagate"
+      )
 
   let current_slice (): (_,_,_) Plugin_intf.slice = {
     Plugin_intf.start = env.th_head;
-    length = (Vec.size env.elt_queue) - env.th_head;
+    length = (Vec.size env.trail) - env.th_head;
     get = slice_get;
     push = slice_push;
     propagate = slice_propagate;
@@ -1020,7 +1033,7 @@ module Make
   (* full slice, for [if_sat] final check *)
   let full_slice () : (_,_,_) Plugin_intf.slice = {
     Plugin_intf.start = 0;
-    length = Vec.size env.elt_queue;
+    length = Vec.size env.trail;
     get = slice_get;
     push = slice_push;
     propagate = (fun _ -> assert false);
@@ -1030,11 +1043,11 @@ module Make
      need to inform the theory of those assumptions, so it can do its job.
      @return the conflict clause, if the theory detects unsatisfiability *)
   let rec theory_propagate (): clause option =
-    assert (env.elt_head = Vec.size env.elt_queue);
+    assert (env.elt_head = Vec.size env.trail);
     assert (env.th_head <= env.elt_head);
-    if env.th_head = env.elt_head then
+    if env.th_head = env.elt_head then (
       None (* fixpoint/no propagation *)
-    else begin
+    ) else (
       let slice = current_slice () in
       env.th_head <- env.elt_head; (* catch up *)
       match Plugin.assume slice with
@@ -1049,11 +1062,11 @@ module Make
         );
         (* Insert elements for decision (and ensure the heap is big enough) *)
         H.grow_to_at_least env.order (St.nb_elt ());
-        List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
+        List.iter (fun a -> insert_var_order (Elt.of_var a.var)) l;
         (* Create the clause and return it. *)
-        let c = St.make_clause (St.fresh_tname ()) l (Lemma p) in
+        let c = St.Clause.make l (Lemma p) in
         Some c
-    end
+    )
 
   (* fixpoint between boolean propagation and theory propagation
      @return a conflict clause, if any *)
@@ -1061,14 +1074,14 @@ module Make
     (* First, treat the stack of lemmas added by the theory, if any *)
     flush_clauses ();
     (* Now, check that the situation is sane *)
-    assert (env.elt_head <= Vec.size env.elt_queue);
-    if env.elt_head = Vec.size env.elt_queue then
+    assert (env.elt_head <= Vec.size env.trail);
+    if env.elt_head = Vec.size env.trail then
       theory_propagate ()
     else begin
       let num_props = ref 0 in
       let res = ref None in
-      while env.elt_head < Vec.size env.elt_queue do
-        begin match Vec.get env.elt_queue env.elt_head with
+      while env.elt_head < Vec.size env.trail do
+        begin match Vec.get env.trail env.elt_head with
           | Lit _ -> ()
           | Atom a ->
             incr num_props;
@@ -1091,10 +1104,10 @@ module Make
   (* Decide on a new literal, and enqueue it into the trail *)
   let rec pick_branch_aux atom: unit =
     let v = atom.var in
-    if v.v_level >= 0 then begin
+    if v.v_level >= 0 then (
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit ()
-    end else match Plugin.eval atom.lit with
+    ) else match Plugin.eval atom.lit with
       | Plugin_intf.Unknown ->
         env.decisions <- env.decisions + 1;
         new_decision_level();
@@ -1110,22 +1123,20 @@ module Make
       env.next_decision <- None;
       pick_branch_aux atom
     | None ->
-      begin try
-          begin match H.remove_min env.order with
-            | E_lit l ->
-              if l.l_level >= 0 then
-                pick_branch_lit ()
-              else begin
-                let value = Plugin.assign l.term in
-                env.decisions <- env.decisions + 1;
-                new_decision_level();
-                let current_level = decision_level () in
-                enqueue_assign l value current_level
-              end
-            | E_var v ->
-              pick_branch_aux v.pa
-          end
-        with Not_found -> raise Sat
+      begin match H.remove_min env.order with
+        | E_lit l ->
+          if Lit.level l >= 0 then
+            pick_branch_lit ()
+          else (
+            let value = Plugin.assign l.term in
+            env.decisions <- env.decisions + 1;
+            new_decision_level();
+            let current_level = decision_level () in
+            enqueue_assign l value current_level
+          )
+        | E_var v ->
+          pick_branch_aux v.pa
+        | exception Not_found -> raise Sat
       end
 
   (* do some amount of search, until the number of conflicts or clause learnt
@@ -1141,32 +1152,32 @@ module Make
            might 'forget' the initial conflict clause, and only add the
            analyzed backtrack clause. So in those case, we use add_clause
            to make sure the initial conflict clause is also added. *)
-        if confl.attached then
+        if Clause.attached confl then
           add_boolean_conflict confl
         else
           add_clause confl
 
       | None -> (* No Conflict *)
-        assert (env.elt_head = Vec.size env.elt_queue);
+        assert (env.elt_head = Vec.size env.trail);
         assert (env.elt_head = env.th_head);
-        if Vec.size env.elt_queue = St.nb_elt ()
+        if Vec.size env.trail = St.nb_elt ()
         then raise Sat;
-        if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then begin
+        if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then (
           Log.debug info "Restarting...";
           cancel_until (base_level ());
           raise Restart
-        end;
+        );
         (* if decision_level() = 0 then simplify (); *)
 
         if n_of_learnts >= 0 &&
-           Vec.size env.clauses_learnt - Vec.size env.elt_queue >= n_of_learnts
+           Vec.size env.clauses_learnt - Vec.size env.trail >= n_of_learnts
         then reduce_db();
 
         pick_branch_lit ()
     done
 
   let eval_level lit =
-    let var, negated = make_boolean_var lit in
+    let var, negated = Var.make lit in
     if not var.pa.is_true && not var.na.is_true
     then raise UndecidedLit
     else assert (var.v_level >= 0);
@@ -1187,7 +1198,7 @@ module Make
       (fun acc e -> match e with
          | Lit v -> (v.term, opt v.assigned)  :: acc
          | Atom _ -> acc)
-      [] env.elt_queue
+      [] env.trail
 
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)
@@ -1205,13 +1216,13 @@ module Make
             n_of_conflicts := !n_of_conflicts *. env.restart_inc;
             n_of_learnts   := !n_of_learnts *. env.learntsize_inc
           | Sat ->
-            assert (env.elt_head = Vec.size env.elt_queue);
+            assert (env.elt_head = Vec.size env.trail);
             begin match Plugin.if_sat (full_slice ()) with
               | Plugin_intf.Sat -> ()
               | Plugin_intf.Unsat (l, p) ->
                 let atoms = List.rev_map create_atom l in
-                let c = make_clause (fresh_tname ()) atoms (Lemma p) in
-                Log.debugf info (fun k -> k "Theory conflict clause: %a" St.pp_clause c);
+                let c = Clause.make atoms (Lemma p) in
+                Log.debugf info (fun k -> k "Theory conflict clause: %a" Clause.debug c);
                 Stack.push c env.clauses_to_add
             end;
             if Stack.is_empty env.clauses_to_add then raise Sat
@@ -1223,8 +1234,8 @@ module Make
     List.iter
       (fun l ->
          let atoms = List.rev_map atom l in
-         let c = make_clause ?tag (fresh_hname ()) atoms Hyp in
-         Log.debugf debug (fun k -> k "Assuming clause: @[<hov 2>%a@]" pp_clause c);
+         let c = Clause.make ?tag atoms Hyp in
+         Log.debugf debug (fun k -> k "Assuming clause: @[<hov 2>%a@]" Clause.debug c);
          Stack.push c env.clauses_to_add)
       cnf
 
@@ -1237,13 +1248,14 @@ module Make
       cancel_until (base_level ());
       Log.debugf debug
         (fun k -> k "@[<v>Status:@,@[<hov 2>trail: %d - %d@,%a@]"
-            env.elt_head env.th_head (Vec.print ~sep:"" St.pp) env.elt_queue);
+            env.elt_head env.th_head (Vec.print ~sep:"" Trail_elt.debug) env.trail);
       begin match propagate () with
         | Some confl ->
           report_unsat confl
         | None ->
           Log.debugf debug
-            (fun k -> k "@[<v>Current trail:@,@[<hov>%a@]@]" (Vec.print ~sep:"" St.pp) env.elt_queue);
+            (fun k -> k "@[<v>Current trail:@,@[<hov>%a@]@]"
+                (Vec.print ~sep:"" Trail_elt.debug) env.trail);
           Log.debug info "Creating new user level";
           new_decision_level ();
           Vec.push env.user_levels (Vec.size env.clauses_temp);
@@ -1274,24 +1286,24 @@ module Make
   let local l =
     let aux lit =
       let a = atom lit in
-      Log.debugf info (fun k-> k "Local assumption: @[%a@]" pp_atom a);
+      Log.debugf info (fun k-> k "Local assumption: @[%a@]" Atom.debug a);
       assert (decision_level () = base_level ());
-      if a.is_true then ()
-      else
-        let c = make_clause (fresh_hname ()) [a] Local in
-        Log.debugf debug (fun k -> k "Temp clause: @[%a@]" pp_clause c);
+      if not a.is_true then (
+        let c = Clause.make [a] Local in
+        Log.debugf debug (fun k -> k "Temp clause: @[%a@]" Clause.debug c);
         Vec.push env.clauses_temp c;
-        if a.neg.is_true then begin
+        if a.neg.is_true then (
           (* conflict between assumptions: UNSAT *)
           report_unsat c;
-        end else begin
+        ) else (
           (* Grow the heap, because when the lit is backtracked,
              it will be added to the heap. *)
           H.grow_to_at_least env.order (St.nb_elt ());
           (* make a decision, propagate *)
           let level = decision_level() in
           enqueue_bool a ~level (Bcp c);
-        end
+        )
+      )
     in
     assert (base_level () > 0);
     match env.unsat_conflict with
@@ -1309,11 +1321,11 @@ module Make
         else if a.neg.is_true then false
         else raise UndecidedLit) c.atoms in
     let res = Array.exists (fun x -> x) tmp in
-    if not res then begin
+    if not res then (
       Log.debugf debug
-        (fun k -> k "Clause not satisfied: @[<hov>%a@]" St.pp_clause c);
+        (fun k -> k "Clause not satisfied: @[<hov>%a@]" Clause.debug c);
       false
-    end else
+    ) else
       true
 
   let check_vec v =
@@ -1341,7 +1353,7 @@ module Make
 
   let temp () = env.clauses_temp
 
-  let trail () = env.elt_queue
+  let trail () = env.trail
 
 end
 

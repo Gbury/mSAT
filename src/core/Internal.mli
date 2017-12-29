@@ -92,7 +92,7 @@ module Make
       These functions expose some internal data stored by the solver, as such
       great care should be taken to ensure not to mess with the values returned. *)
 
-  val trail : unit -> St.t Vec.t
+  val trail : unit -> St.trail_elt Vec.t
   (** Returns the current trail.
       *DO NOT MUTATE* *)
 

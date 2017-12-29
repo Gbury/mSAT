@@ -36,10 +36,10 @@ module Make(St : Solver_types_intf.S)(Dummy: sig end) = struct
 
   (* Dimacs & iCNF export *)
   let export_vec name fmt vec =
-    Format.fprintf fmt "c %s@,%a@," name (Vec.print ~sep:"" St.pp_dimacs) vec
+    Format.fprintf fmt "c %s@,%a@," name (Vec.print ~sep:"" St.Clause.pp_dimacs) vec
 
   let export_assumption fmt vec =
-    Format.fprintf fmt "c Local assumptions@,a %a@," St.pp_dimacs vec
+    Format.fprintf fmt "c Local assumptions@,a %a@," St.Clause.pp_dimacs vec
 
   let export_icnf_aux r name map_filter fmt vec =
     let aux fmt _ =
@@ -47,28 +47,28 @@ module Make(St : Solver_types_intf.S)(Dummy: sig end) = struct
         let x = Vec.get vec i in
         match map_filter x with
         | None -> ()
-        | Some _ -> Format.fprintf fmt "%a@," St.pp_dimacs (Vec.get vec i)
+        | Some _ -> Format.fprintf fmt "%a@," St.Clause.pp_dimacs (Vec.get vec i)
       done;
       r := Vec.size vec
     in
     Format.fprintf fmt "c %s@,%a" name aux vec
 
   let map_filter_learnt c =
-    match c.St.cpremise with
+    match St.Clause.premise c with
     | St.Hyp | St.Local -> assert false
     | St.Lemma _ -> Some c
     | St.History l ->
       begin match l with
         | [] -> assert false
         | d :: _ ->
-          begin match d.St.cpremise with
+          begin match St.Clause.premise d with
             | St.Lemma _ -> Some d
             | St.Hyp | St.Local | St.History _ -> None
           end
       end
 
   let filter_vec learnt =
-    let lemmas = Vec.make (Vec.size learnt) St.dummy_clause in
+    let lemmas = Vec.make (Vec.size learnt) St.Clause.dummy in
     Vec.iter (fun c ->
         match map_filter_learnt c with
         | None -> ()
@@ -77,17 +77,13 @@ module Make(St : Solver_types_intf.S)(Dummy: sig end) = struct
     lemmas
 
   let export fmt ~hyps ~history ~local =
-    assert (Vec.for_all (function
-        | { St.cpremise = St.Hyp; _} -> true | _ -> false
-      ) hyps);
+    assert (Vec.for_all (fun c -> St.Clause.premise c = St.Hyp) hyps);
     (* Learnt clauses, then filtered to only keep only
        the theory lemmas; all other learnt clauses should be logical
        consequences of the rest. *)
     let lemmas = filter_vec history in
     (* Local assertions *)
-    assert (Vec.for_all (function
-        | { St.cpremise = St.Local; _} -> true | _ -> false
-      ) local);
+    assert (Vec.for_all (fun c -> St.Local = St.Clause.premise c) local);
     (* Number of atoms and clauses *)
     let n = St.nb_elt () in
     let m = Vec.size local + Vec.size hyps + Vec.size lemmas in
@@ -102,15 +98,16 @@ module Make(St : Solver_types_intf.S)(Dummy: sig end) = struct
   let icnf_lemmas = ref 0
 
   let export_icnf fmt ~hyps ~history ~local =
-    assert (Vec.for_all (function
-        | { St.cpremise = St.Hyp; _} -> true | _ -> false
-      ) hyps);
+    assert (Vec.for_all (fun c -> St.Clause.premise c = St.Hyp) hyps);
     let lemmas = history in
     (* Local assertions *)
-    let l = List.map (function
-        | {St.cpremise = St.Local; atoms = [| a |];_ } -> a
-        | _ -> assert false) (Vec.to_list local) in
-    let local = St.make_clause "local (tmp)" l St.Local in
+    let l = List.map
+        (fun c -> match St.Clause.premise c, St.Clause.atoms c with
+             | St.Local, [| a |] -> a
+             | _ -> assert false)
+        (Vec.to_list local)
+    in
+    let local = St.Clause.make l St.Local in
     (* Number of atoms and clauses *)
     Format.fprintf fmt
       "@[<v>%s@,%a%a%a@]@."

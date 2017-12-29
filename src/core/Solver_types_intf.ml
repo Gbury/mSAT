@@ -24,6 +24,8 @@ Copyright 2016 Simon Cruanes
 
 module Var_fields = BitField.Make()
 
+type 'a printer = Format.formatter -> 'a -> unit
+
 module type S = sig
   (** The signatures of clauses used in the Solver. *)
 
@@ -86,7 +88,7 @@ module type S = sig
       [a.neg] wraps the theory negation of [f]. *)
 
   and clause = {
-    name : string;              (** Clause name, mainly for printing, unique. *)
+    name : int;                 (** Clause name, mainly for printing, unique. *)
     tag : int option;           (** User-provided tag for clauses. *)
     atoms : atom array;         (** The atoms that constitute the clause.*)
     mutable cpremise : premise; (** The premise of the clause, i.e. the justification
@@ -124,14 +126,10 @@ module type S = sig
       satisfied by the solver. *)
 
   (** {2 Decisions and propagations} *)
-  type t =
+  type trail_elt =
     | Lit of lit
     | Atom of atom (**)
   (** Either a lit of an atom *)
-
-  val of_lit : lit -> t
-  val of_atom : atom -> t
-  (** Constructors and destructors *)
 
   (** {2 Elements} *)
 
@@ -145,77 +143,136 @@ module type S = sig
   val iter_elt : (elt -> unit) -> unit
   (** Read access to the vector of variables created *)
 
-  val elt_of_lit : lit -> elt
-  val elt_of_var : var -> elt
-  (** Constructors & destructor for elements *)
+  (** {2 Variables, Literals & Clauses } *)
 
-  val get_elt_id : elt -> int
-  val get_elt_level : elt -> int
-  val get_elt_idx : elt -> int
-  val get_elt_weight : elt -> float
-  val set_elt_level : elt -> int -> unit
-  val set_elt_idx : elt -> int -> unit
-  val set_elt_weight : elt -> float -> unit
-  (** Accessors for elements *)
+  module Lit : sig
+    type t = lit
+    val term : t -> term
+    val make : term -> t
+    (** Returns the variable associated with the term *)
 
-  (** {2 Variables, Litterals & Clauses } *)
+    val level : t -> int
+    val set_level : t -> int -> unit
 
-  val dummy_var : var
-  val dummy_atom : atom
-  val dummy_clause : clause
-  (** Dummy values for use in vector dummys *)
+    val assigned : t -> term option
+    val set_assigned : t -> term option -> unit
+    val weight : t -> float
+    val set_weight : t -> float -> unit
 
-  val add_term : term -> lit
-  (** Returns the variable associated with the term *)
-  val add_atom : formula -> atom
-  (** Returns the atom associated with the given formula *)
-  val make_boolean_var : formula -> var * Formula_intf.negated
-  (** Returns the variable linked with the given formula, and whether the atom associated with the formula
-      is [var.pa] or [var.na] *)
+    val pp : t printer
+    val debug : t printer
+  end
 
-  val empty_clause : clause
-  (** The empty clause *)
-  val make_clause : ?tag:int -> string -> atom list -> premise -> clause
-  (** [make_clause name atoms size premise] creates a clause with the given attributes. *)
+  module Var : sig
+    type t = var
+    val dummy : t
 
 
-  (** {2 Helpers} *)
+    val pos : t -> atom
+    val neg : t -> atom
 
-  val mark : atom -> unit
-  (** Mark the atom as seen, using the 'seen' field in the variable. *)
+    val level : t -> int
+    val set_level : t -> int -> unit
+    val reason : t -> reason option
+    val set_reason : t -> reason option -> unit
+    val assignable : t -> lit list option
+    val set_assignable : t -> lit list option -> unit
+    val weight : t -> float
+    val set_weight : t -> float -> unit
 
-  val seen : atom -> bool
-  (** Returns wether the atom has been marked as seen. *)
+    val make : formula -> t * Formula_intf.negated
+    (** Returns the variable linked with the given formula,
+        and whether the atom associated with the formula
+        is [var.pa] or [var.na] *)
 
-  val seen_both : var -> bool
-  (** both atoms have been seen? *)
+    val seen_both : t -> bool
+    (** both atoms have been seen? *)
 
-  val clear : var -> unit
-  (** Clear the 'seen' field of the variable. *)
+    val clear : t -> unit
+    (** Clear the 'seen' field of the variable. *)
+  end
 
+  module Atom : sig
+    type t = atom
+    val dummy : t
+    val level : t -> int
+    val reason : t -> reason option
+    val lit : t -> formula
+    val equal : t -> t -> bool
+    val compare : t -> t -> int
+    val var : t -> Var.t
+    val abs : t -> t (** positive atom *)
+    val neg : t -> t
+    val id : t -> int
+    val is_true : t -> bool
+    val is_false : t -> bool
 
-  (** {2 Clause names} *)
+    val make : formula -> t
+    (** Returns the atom associated with the given formula *)
 
-  val fresh_name : unit -> string
-  val fresh_lname : unit -> string
-  val fresh_tname : unit -> string
-  val fresh_hname : unit -> string
-  (** Fresh names for clauses *)
+    val mark : t -> unit
+    (** Mark the atom as seen, using the 'seen' field in the variable. *)
 
-  (** {2 Printing} *)
+    val seen : t -> bool
+    (** Returns wether the atom has been marked as seen. *)
 
-  val print_lit : Format.formatter -> lit -> unit
-  val print_atom : Format.formatter -> atom -> unit
-  val print_clause : Format.formatter -> clause -> unit
-  (** Pretty printing functions for atoms and clauses *)
+    val pp : t printer
+    val pp_a : t array printer
+    val debug : t printer
+    val debug_a : t array printer
+  end
 
-  val pp : Format.formatter -> t -> unit
-  val pp_lit : Format.formatter -> lit -> unit
-  val pp_atom : Format.formatter -> atom -> unit
-  val pp_clause : Format.formatter -> clause -> unit
-  val pp_dimacs : Format.formatter -> clause -> unit
-  val pp_reason : Format.formatter -> (int * reason option) -> unit
-  (** Debug function for atoms and clauses (very verbose) *)
+  module Elt : sig
+    type t = elt
 
+    val of_lit : Lit.t -> t
+    val of_var : Var.t -> t
+
+    val id : t -> int
+    val level : t -> int
+    val idx : t -> int
+    val weight : t -> float
+
+    val set_level : t -> int -> unit
+    val set_idx : t -> int -> unit
+    val set_weight : t -> float -> unit
+  end
+
+  module Clause : sig
+    type t = clause
+    val dummy : t
+
+    val name : t -> string
+    val atoms : t -> Atom.t array
+    val tag : t -> int option
+    val premise : t -> premise
+    val set_premise : t -> premise -> unit
+
+    val visited : t -> bool
+    val set_visited : t -> bool -> unit
+    val attached : t -> bool
+    val set_attached : t -> bool -> unit
+    val activity : t -> float
+    val set_activity : t -> float -> unit
+
+    val empty : t
+    (** The empty clause *)
+
+    val make : ?tag:int -> Atom.t list -> premise -> clause
+    (** [make_clause name atoms size premise] creates a clause with the given attributes. *)
+
+    val pp : t printer
+    val pp_dimacs : t printer
+    val debug : t printer
+  end
+
+  module Trail_elt : sig
+    type t = trail_elt
+
+    val of_lit : Lit.t -> t
+    val of_atom : Atom.t -> t
+    (** Constructors and destructors *)
+    val debug : t printer
+  end
 end
 

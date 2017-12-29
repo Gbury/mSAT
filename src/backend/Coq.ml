@@ -22,12 +22,11 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
                                 and type lemma := S.clause
                                 and type assumption := S.clause) = struct
 
-  module M = Map.Make(struct
-      type t = S.St.atom
-      let compare a b = compare a.S.St.aid b.S.St.aid
-    end)
+  module Atom = S.St.Atom
+  module Clause = S.St.Clause
+  module M = Map.Make(S.St.Atom)
 
-  let name c = c.S.St.name
+  let name = S.St.Clause.name
 
   let clause_map c =
     let rec aux acc a i =
@@ -70,27 +69,26 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
          )) h1.S.St.atoms
 
   let resolution fmt goal hyp1 hyp2 atom =
-    let a = S.St.(atom.var.pa) in
+    let a = Atom.abs atom in
     let h1, h2 =
-      if Array.exists ((==) a) hyp1.S.St.atoms then hyp1, hyp2
-      else (assert (Array.exists ((==) a) hyp2.S.St.atoms); hyp2, hyp1)
+      if Array.exists (Atom.equal a) hyp1.S.St.atoms then hyp1, hyp2
+      else (assert (Array.exists (Atom.equal a) hyp2.S.St.atoms); hyp2, hyp1)
     in
     (** Print some debug info *)
     Format.fprintf fmt
       "(* Clausal resolution. Goal : %s ; Hyps : %s, %s *)@\n"
       (name goal) (name h1) (name h2);
     (** Prove the goal: intro the axioms, then perform resolution *)
-    if Array.length goal.S.St.atoms = 0 then begin
+    if Array.length goal.S.St.atoms = 0 then (
       let m = M.empty in
       Format.fprintf fmt "exact @[<hov 1>(%a)@].@\n" (resolution_aux m a h1 h2) ();
       false
-    end else begin
+    ) else (
       let m = clause_map goal in
       Format.fprintf fmt "pose proof @[<hov>(fun %a=>@ %a)@ as %s.@]@\n"
         (clause_iter m "%s@ ") goal (resolution_aux m a h1 h2) () (name goal);
       true
-    end
-
+    )
 
   (* Count uses of hypotheses *)
   let incr_use h c =
