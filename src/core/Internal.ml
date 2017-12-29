@@ -396,11 +396,11 @@ module Make
 
   *)
   let attach_clause c =
-    assert (not @@ Clause.attached c);
+    assert (not c.attached);
     Log.debugf debug (fun k -> k "Attaching %a" Clause.debug c);
     Vec.push c.atoms.(0).neg.watched c;
     Vec.push c.atoms.(1).neg.watched c;
-    Clause.set_attached c true;
+    c.attached <- true;
     ()
 
   (* Backtracking.
@@ -892,7 +892,7 @@ module Make
       atoms.(1) <- first
     ) else assert (a.neg == atoms.(1));
     let first = atoms.(0) in
-    if Atom.is_true first
+    if first.is_true
     then Watch_kept (* true clause, keep it in watched *)
     else (
       try (* look for another watch lit *)
@@ -940,7 +940,7 @@ module Make
           if i >= Vec.size watched then ()
           else (
             let c = Vec.get watched i in
-            assert (Clause.attached c);
+            assert c.attached;
             let j = match propagate_in_clause st a c i with
               | Watch_kept -> i+1
               | Watch_removed -> i (* clause at this index changed *)
@@ -999,7 +999,7 @@ module Make
 
   let current_slice st : (_,_,_) Plugin_intf.slice = {
     Plugin_intf.start = st.th_head;
-    length = (Vec.size st.trail) - st.th_head;
+    length = Vec.size st.trail - st.th_head;
     get = slice_get st;
     push = slice_push st;
     propagate = slice_propagate st;
@@ -1121,7 +1121,7 @@ module Make
            might 'forget' the initial conflict clause, and only add the
            analyzed backtrack clause. So in those case, we use add_clause
            to make sure the initial conflict clause is also added. *)
-        if Clause.attached confl then
+        if confl.attached then
           add_boolean_conflict st confl
         else
           add_clause st confl
