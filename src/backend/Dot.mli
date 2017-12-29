@@ -61,10 +61,10 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
                                 and type assumption := S.clause) : S with type t := S.proof
 (** Functor for making a module to export proofs to the DOT format. *)
 
-module Simple(S : Res.S)(A : Arg with type atom := S.St.formula
-                                  and type hyp = S.St.formula list
+module Simple(S : Res.S)(A : Arg with type atom := S.formula
+                                  and type hyp = S.formula list
                                   and type lemma := S.lemma
-                                  and type assumption = S.St.formula) : S with type t := S.proof
+                                  and type assumption = S.formula) : S with type t := S.proof
 (** Functor for making a module to export proofs to the DOT format.
     The substitution of the hyp type is non-destructive due to a restriction
     of destructive substitutions on earlier versions of ocaml. *)

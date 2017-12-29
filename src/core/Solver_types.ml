@@ -283,6 +283,7 @@ module McMake (E : Expr_intf.S) = struct
     let[@inline] abs a = a.var.pa
     let[@inline] lit a = a.lit
     let[@inline] equal a b = a == b
+    let[@inline] is_pos a = a == abs a
     let[@inline] compare a b = Pervasives.compare a.aid b.aid
     let[@inline] reason a = Var.reason a.var
     let[@inline] id a = a.aid
@@ -408,8 +409,10 @@ module McMake (E : Expr_intf.S) = struct
 
     let empty = make [] (History [])
     let name = name_of_clause
+    let[@inline] equal c1 c2 = c1==c2
     let[@inline] atoms c = c.atoms
     let[@inline] tag c = c.tag
+    let hash cl = Array.fold_left (fun i a -> Hashtbl.hash (a.aid, i)) 0 cl.atoms
 
     let[@inline] premise c = c.cpremise
     let[@inline] set_premise c p = c.cpremise <- p
@@ -422,6 +425,12 @@ module McMake (E : Expr_intf.S) = struct
 
     let[@inline] activity c = c.activity
     let[@inline] set_activity c w = c.activity <- w
+
+    module Tbl = Hashtbl.Make(struct
+        type t = clause
+        let hash = hash
+        let equal = equal
+      end)
 
     let pp fmt c =
       Format.fprintf fmt "%s : %a" (name c) Atom.pp_a c.atoms

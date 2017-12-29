@@ -12,6 +12,6 @@ Copyright 2016 Guillaume Bury
 module Expr = Expr_sat
 module Type = Type_sat
 
-include Minismt.Solver.S with type St.formula = Expr.t
+include Minismt.Solver.S with type formula = Expr.t
 (** A functor that can generate as many solvers as needed. *)
 

@@ -228,7 +228,7 @@ module Make
     let l = Lit.make st.st t in
     insert_var_order st (E_lit l)
 
-  let new_atom st p =
+  let new_atom st (p:formula) : unit =
     let a = mk_atom st p in
     insert_var_order st (E_var a.var)
 
@@ -294,7 +294,7 @@ module Make
      literals (which are the first two lits of the clause) are appropriate.
      Indeed, it is better to watch true literals, and then unassigned literals.
      Watching false literals should be a last resort, and come with constraints
-     (see add_clause).
+     (see {!add_clause}).
   *)
   exception Trivial
 

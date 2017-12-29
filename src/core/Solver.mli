@@ -18,7 +18,10 @@ module Make
     (Th : Plugin_intf.S with type term = St.term
                          and type formula = St.formula
                          and type proof = St.proof)
-  : S with module St = St
+  : S with type term = St.term
+       and type formula = St.formula
+       and type clause = St.clause
+       and type Proof.lemma = St.proof
 (** Functor to make a safe external interface. *)
 
 
