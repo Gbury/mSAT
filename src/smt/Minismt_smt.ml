@@ -9,5 +9,5 @@ module Type = Type_smt
 
 module Th = Minismt.Solver.DummyTheory(Expr.Atom)
 
-module Make() = Minismt.Solver.Make(Expr.Atom)(Th)()
+include Minismt.Solver.Make(Expr.Atom)(Th)
 

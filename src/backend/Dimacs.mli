@@ -13,11 +13,13 @@ Copyright 2014 Simon Cruanes
 open Msat
 
 module type S = sig
+  type st
 
   type clause
   (** The type of clauses *)
 
   val export :
+    st ->
     Format.formatter ->
     hyps:clause Vec.t ->
     history:clause Vec.t ->
@@ -42,6 +44,6 @@ module type S = sig
 
 end
 
-module Make(St: Solver_types_intf.S)(Dummy: sig end) : S with type clause := St.clause
+module Make(St: Solver_types_intf.S) : S with type clause := St.clause and type st = St.t
 (** Functor to create a module for exporting probems to the dimacs (& iCNF) formats. *)
 

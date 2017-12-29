@@ -7,18 +7,18 @@ Copyright 2014 Simon Cruanes
 open Msat
 
 module type S = sig
+  type st
 
   type clause
+  (** The type of clauses *)
 
   val export :
+    st ->
     Format.formatter ->
     hyps:clause Vec.t ->
     history:clause Vec.t ->
     local:clause Vec.t ->
     unit
-  (** Export the given clause vectors to the dimacs format.
-      The arguments should be transmitted directly from the corresponding
-      function of the {Internal} module. *)
 
   val export_icnf :
     Format.formatter ->
@@ -26,13 +26,11 @@ module type S = sig
     history:clause Vec.t ->
     local:clause Vec.t ->
     unit
-  (** Export the given clause vectors to the dimacs format.
-      The arguments should be transmitted directly from the corresponding
-      function of the {Internal} module. *)
 
 end
 
-module Make(St : Solver_types_intf.S)(Dummy: sig end) = struct
+module Make(St : Solver_types_intf.S) = struct
+  type st = St.t
 
   (* Dimacs & iCNF export *)
   let export_vec name fmt vec =
@@ -76,7 +74,7 @@ module Make(St : Solver_types_intf.S)(Dummy: sig end) = struct
       ) learnt;
     lemmas
 
-  let export fmt ~hyps ~history ~local =
+  let export st fmt ~hyps ~history ~local =
     assert (Vec.for_all (fun c -> St.Clause.premise c = St.Hyp) hyps);
     (* Learnt clauses, then filtered to only keep only
        the theory lemmas; all other learnt clauses should be logical
@@ -85,7 +83,7 @@ module Make(St : Solver_types_intf.S)(Dummy: sig end) = struct
     (* Local assertions *)
     assert (Vec.for_all (fun c -> St.Local = St.Clause.premise c) local);
     (* Number of atoms and clauses *)
-    let n = St.nb_elt () in
+    let n = St.nb_elt st in
     let m = Vec.size local + Vec.size hyps + Vec.size lemmas in
     Format.fprintf fmt
       "@[<v>p cnf %d %d@,%a%a%a@]@." n m

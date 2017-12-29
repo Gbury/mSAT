@@ -6,6 +6,5 @@ Copyright 2016 Guillaume Bury
 module Expr = Expr_sat
 module Type = Type_sat
 
-module Make() =
-  Minismt.Solver.Make(Expr)(Minismt.Solver.DummyTheory(Expr))()
+include Minismt.Solver.Make(Expr)(Minismt.Solver.DummyTheory(Expr))
 

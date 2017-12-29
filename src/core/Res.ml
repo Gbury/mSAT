@@ -178,11 +178,14 @@ module Make(St : Solver_types.S) = struct
           end
         | _ ->
           Log.debugf error
-            (fun k -> k "While resolving clauses:@[<hov>%a@\n%a@]" St.Clause.debug c St.Clause.debug d);
+            (fun k -> k "While resolving clauses:@[<hov>%a@\n%a@]"
+                St.Clause.debug c St.Clause.debug d);
           raise (Resolution_error "Clause mismatch")
       end
     | _ ->
       raise (Resolution_error "Bad history")
+
+  let[@inline] conclusion (p:proof) : clause = p
 
   let expand conclusion =
     Log.debugf debug (fun k -> k "Expanding : @[%a@]" St.Clause.debug conclusion);

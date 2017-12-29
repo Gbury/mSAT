@@ -7,5 +7,5 @@ Copyright 2014 Simon Cruanes
 module Expr = Expr_smt
 module Type = Type_smt
 
-module Make() : Minismt.Solver.S with type St.formula = Expr_smt.atom
+include Minismt.Solver.S with type St.formula = Expr_smt.atom
 

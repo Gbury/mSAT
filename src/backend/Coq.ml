@@ -127,21 +127,18 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
     | S.Lemma _ ->
       A.prove_lemma fmt (name clause) clause
     | S.Duplicate (p, l) ->
-      let p' = S.expand p in
-      let c = p'.S.conclusion in
+      let c = S.conclusion p in
       let () = elim_duplicate fmt clause c l in
       clean t fmt [c]
     | S.Resolution (p1, p2, a) ->
-      let c1 = (S.expand p1).S.conclusion in
-      let c2 = (S.expand p2).S.conclusion in
+      let c1 = S.conclusion p1 in
+      let c2 = S.conclusion p2 in
       if resolution fmt clause c1 c2 a then clean t fmt [c1; c2]
 
   let count_uses p =
     let h = S.H.create 4013 in
     let aux () node =
-      List.iter (fun p' ->
-          incr_use h S.((expand p').conclusion))
-        (S.parents node.S.step)
+      List.iter (fun p' -> incr_use h S.(conclusion p')) (S.parents node.S.step)
     in
     let () = S.fold aux () p in
     h

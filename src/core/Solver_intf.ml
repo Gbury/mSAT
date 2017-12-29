@@ -61,6 +61,13 @@ module type S = sig
   module Proof : Res.S with module St = St
   (** A module to manipulate proofs. *)
 
+  type t
+  (** Main solver type, containing all state *)
+
+  val create : ?st:St.t -> unit -> t
+  (** Create new solver *)
+  (* TODO: add size hint, callbacks, etc. *)
+
   (** {2 Types} *)
 
   type atom = St.formula
@@ -77,19 +84,19 @@ module type S = sig
 
   (** {2 Base operations} *)
 
-  val assume : ?tag:int -> atom list list -> unit
+  val assume : t -> ?tag:int -> atom list list -> unit
   (** Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place. *)
 
-  val solve : ?assumptions:atom list -> unit -> res
+  val solve : t -> ?assumptions:atom list -> unit -> res
   (** Try and solves the current set of assumptions. *)
 
-  val new_lit : St.term -> unit
+  val new_lit : t -> St.term -> unit
   (** Add a new litteral (i.e term) to the solver. This term will
       be decided on at some point during solving, wether it appears
       in clauses or not. *)
 
-  val new_atom : atom -> unit
+  val new_atom : t -> atom -> unit
   (** Add a new atom (i.e propositional formula) to the solver.
       This formula will be decided on at some point during solving,
       wether it appears in clauses or not. *)
@@ -97,13 +104,13 @@ module type S = sig
   val unsat_core : Proof.proof -> St.clause list
   (** Returns the unsat core of a given proof. *)
 
-  val true_at_level0 : atom -> bool
+  val true_at_level0 : t -> atom -> bool
   (** [true_at_level0 a] returns [true] if [a] was proved at level0, i.e.
       it must hold in all models *)
 
   val get_tag : St.clause -> int option
   (** Recover tag from a clause, if any *)
 
-  val export : unit -> St.clause export
+  val export : t -> St.clause export
 end
 

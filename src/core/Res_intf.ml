@@ -95,6 +95,8 @@ module type S = sig
   val expand : proof -> proof_node
   (** Return the proof step at the root of a given proof. *)
 
+  val conclusion : proof -> clause
+
   val fold : ('a -> proof_node -> 'a) -> 'a -> proof -> 'a
   (** [fold f acc p], fold [f] over the proof [p] and all its node. It is guaranteed that
       [f] is executed exactly once on each proof node in the tree, and that the execution of
