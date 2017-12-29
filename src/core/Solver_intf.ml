@@ -64,7 +64,7 @@ module type S = sig
   type t
   (** Main solver type, containing all state *)
 
-  val create : ?st:St.t -> unit -> t
+  val create : ?size:[`Tiny|`Small|`Big] -> ?st:St.t -> unit -> t
   (** Create new solver *)
   (* TODO: add size hint, callbacks, etc. *)
 

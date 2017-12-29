@@ -37,7 +37,7 @@ module Make
 
   let hyps = ref []
 
-  let st = S.create()
+  let st = S.create ~size:`Big ()
 
   let check_model sat =
     let check_clause c =
