@@ -34,6 +34,18 @@ module Make
   let info = 5
   let debug = 50
 
+  let var_decay : float = 1. /. 0.95
+  (* inverse of the activity factor for variables. Default 1/0.999 *)
+
+  let clause_decay : float = 1. /. 0.999
+  (* inverse of the activity factor for clauses. Default 1/0.95 *)
+
+  let restart_inc : float = 1.5
+  (* multiplicative factor for restart limit, default 1.5 *)
+
+  let learntsize_inc : float = 1.1
+  (* multiplicative factor for [learntsize_factor] at each restart, default 1.1 *)
+
   (* Singleton type containing the current state *)
   type t = {
     st : St.t;
@@ -88,49 +100,21 @@ module Make
          th_head = elt_head = length trail
     *)
 
-
-    mutable simpDB_props : int;
-    (* remaining number of propagations before the next call to [simplify ()] *)
-    mutable simpDB_assigns : int;
-    (* number of toplevel assignments since last call to [simplify ()] *)
-
-
     order : H.t;
     (* Heap ordered by variable activity *)
 
-    var_decay : float;
-    (* inverse of the activity factor for variables. Default 1/0.999 *)
-    clause_decay : float;
-    (* inverse of the activity factor for clauses. Default 1/0.95 *)
-
     mutable var_incr : float;
     (* increment for variables' activity *)
+
     mutable clause_incr : float;
     (* increment for clauses' activity *)
 
-    remove_satisfied : bool;
-    (* Wether to remove satisfied learnt clauses when simplifying *)
-
-
-    restart_inc : float;
-    (* multiplicative factor for restart limit, default 1.5 *)
     mutable restart_first : int;
     (* intial restart limit, default 100 *)
 
-
-    learntsize_inc : float;
-    (* multiplicative factor for [learntsize_factor] at each restart, default 1.1 *)
     mutable learntsize_factor : float;
     (* initial limit for the number of learnt clauses, 1/3 of initial
         number of clauses by default *)
-
-    mutable starts : int;
-    mutable decisions : int;
-    mutable propagations : int;
-    mutable conflicts : int;
-    mutable clauses_literals : int;
-    mutable learnts_literals : int;
-    mutable nb_init_clauses : int;
   }
 
   (* Starting environment. *)
@@ -158,27 +142,10 @@ module Make
 
     var_incr = 1.;
     clause_incr = 1.;
-    var_decay = 1. /. 0.95;
-    clause_decay = 1. /. 0.999;
 
-    simpDB_assigns = -1;
-    simpDB_props = 0;
-
-    remove_satisfied = false;
-
-    restart_inc = 1.5;
     restart_first = 100;
 
     learntsize_factor = 1. /. 3. ;
-    learntsize_inc = 1.1;
-
-    starts = 0;
-    decisions = 0;
-    propagations = 0;
-    conflicts = 0;
-    clauses_literals = 0;
-    learnts_literals = 0;
-    nb_init_clauses = 0;
   }
 
   let create ?(size=`Big) ?st () : t =
@@ -268,11 +235,11 @@ module Make
   (* Rather than iterate over all the heap when we want to decrease all the
      variables/literals activity, we instead increase the value by which
      we increase the activity of 'interesting' var/lits. *)
-  let var_decay_activity st =
-    st.var_incr <- st.var_incr *. st.var_decay
+  let[@inline] var_decay_activity st =
+    st.var_incr <- st.var_incr *. var_decay
 
-  let clause_decay_activity st =
-    st.clause_incr <- st.clause_incr *. st.clause_decay
+  let[@inline] clause_decay_activity st =
+    st.clause_incr <- st.clause_incr *. clause_decay
 
   (* increase activity of [v] *)
   let var_bump_activity_aux st v =
@@ -808,7 +775,6 @@ module Make
   let add_boolean_conflict st (confl:clause): unit =
     Log.debugf info (fun k -> k "Boolean conflict: %a" Clause.debug confl);
     st.next_decision <- None;
-    st.conflicts <- st.conflicts + 1;
     assert (decision_level st >= base_level st);
     if decision_level st = base_level st ||
        Array.for_all (fun a -> a.var.v_level <= base_level st) confl.atoms then (
@@ -899,18 +865,14 @@ module Make
       Log.debugf info (fun k->k "Trivial clause ignored : @[%a@]" Clause.debug init)
 
   let flush_clauses st =
-    if not (Stack.is_empty st.clauses_to_add) then begin
+    if not (Stack.is_empty st.clauses_to_add) then (
       let nbv = St.nb_elt st.st in
-      let nbc = st.nb_init_clauses + Stack.length st.clauses_to_add in
       H.grow_to_at_least st.order nbv;
-      Vec.grow_to_at_least st.clauses_hyps nbc;
-      Vec.grow_to_at_least st.clauses_learnt nbc;
-      st.nb_init_clauses <- nbc;
       while not (Stack.is_empty st.clauses_to_add) do
         let c = Stack.pop st.clauses_to_add in
         add_clause st c
       done
-    end
+    )
 
   type watch_res =
     | Watch_kept
@@ -1101,8 +1063,6 @@ module Make
         end;
         st.elt_head <- st.elt_head + 1;
       done;
-      st.propagations <- st.propagations + !num_props;
-      st.simpDB_props <- st.simpDB_props - !num_props;
       match !res with
       | None -> theory_propagate st
       | _ -> !res
@@ -1121,7 +1081,6 @@ module Make
       pick_branch_lit st
     ) else match Plugin.eval atom.lit with
       | Plugin_intf.Unknown ->
-        st.decisions <- st.decisions + 1;
         new_decision_level st;
         let current_level = decision_level st in
         enqueue_bool st atom ~level:current_level Decision
@@ -1141,7 +1100,6 @@ module Make
             pick_branch_lit st
           else (
             let value = Plugin.assign l.term in
-            st.decisions <- st.decisions + 1;
             new_decision_level st;
             let current_level = decision_level st in
             enqueue_assign st l value current_level
@@ -1155,7 +1113,6 @@ module Make
      reaches the given parameters *)
   let search (st:t) n_of_conflicts n_of_learnts : unit =
     let conflictC = ref 0 in
-    st.starts <- st.starts + 1;
     while true do
       match propagate st with
       | Some confl -> (* Conflict *)
@@ -1225,8 +1182,8 @@ module Make
             search st (to_int !n_of_conflicts) (to_int !n_of_learnts)
           with
           | Restart ->
-            n_of_conflicts := !n_of_conflicts *. st.restart_inc;
-            n_of_learnts   := !n_of_learnts *. st.learntsize_inc
+            n_of_conflicts := !n_of_conflicts *. restart_inc;
+            n_of_learnts   := !n_of_learnts *. learntsize_inc
           | Sat ->
             assert (st.elt_head = Vec.size st.trail);
             begin match Plugin.if_sat (full_slice st) with
