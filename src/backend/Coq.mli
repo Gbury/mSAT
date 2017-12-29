@@ -40,8 +40,8 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
 (** Base functor to output Coq proofs *)
 
 
-module Simple(S : Res.S)(A : Arg with type hyp = S.St.formula list
+module Simple(S : Res.S)(A : Arg with type hyp = S.formula list
                                   and type lemma := S.lemma
-                                  and type assumption := S.St.formula) : S with type t := S.proof
+                                  and type assumption := S.formula) : S with type t := S.proof
 (** Simple functo to output Coq proofs *)
 

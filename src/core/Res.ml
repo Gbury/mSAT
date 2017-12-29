@@ -5,12 +5,13 @@ Copyright 2014 Simon Cruanes
 *)
 
 module type S = Res_intf.S
+module type FULL = Res_intf.FULL
 
 module Make(St : Solver_types.S) = struct
 
   module St = St
 
-  (* Type definitions *)
+  type formula = St.formula
   type lemma = St.proof
   type clause = St.clause
   type atom = St.atom
@@ -27,7 +28,8 @@ module Make(St : Solver_types.S) = struct
   let equal_atoms a b = St.(a.aid) = St.(b.aid)
   let compare_atoms a b = Pervasives.compare St.(a.aid) St.(b.aid)
 
-  let print_clause = St.Clause.pp
+  module Clause = St.Clause
+  module Atom = St.Atom
 
   let merge = List.merge compare_atoms
 
@@ -105,7 +107,7 @@ module Make(St : Solver_types.S) = struct
     in
     aux (c, d)
 
-  let prove conclusion =
+  let[@inline] prove conclusion =
     assert St.(conclusion.cpremise <> History []);
     conclusion
 
@@ -259,13 +261,7 @@ module Make(St : Solver_types.S) = struct
     List.iter (fun c -> c.St.visited <- false) tmp;
     res
 
-  (* Iter on proofs *)
-  module H = Hashtbl.Make(struct
-      type t = clause
-      let hash cl =
-        Array.fold_left (fun i a -> Hashtbl.hash St.(a.aid, i)) 0 cl.St.atoms
-      let equal = (==)
-    end)
+  module Tbl = Clause.Tbl
 
   type task =
     | Enter of proof
@@ -277,10 +273,10 @@ module Make(St : Solver_types.S) = struct
     match spop s with
     | None -> acc
     | Some (Leaving c) ->
-      H.add h c true;
+      Tbl.add h c true;
       fold_aux s h f (f acc (expand c))
     | Some (Enter c) ->
-      if not (H.mem h c) then begin
+      if not (Tbl.mem h c) then begin
         Stack.push (Leaving c) s;
         let node = expand c in
         begin match node.step with
@@ -295,7 +291,7 @@ module Make(St : Solver_types.S) = struct
       fold_aux s h f acc
 
   let fold f acc p =
-    let h = H.create 42 in
+    let h = Tbl.create 42 in
     let s = Stack.create () in
     Stack.push (Enter p) s;
     fold_aux s h f acc

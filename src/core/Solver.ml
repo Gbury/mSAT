@@ -23,11 +23,15 @@ module Make
 
   exception UndecidedLit = S.UndecidedLit
 
+  type formula = St.formula
+  type term = St.term
   type atom = St.formula
+  type clause = St.clause
 
   type t = S.t
+  type solver = t
 
-  let create = S.create
+  let[@inline] create ?size () = S.create ?size ()
 
   (* Result type *)
   type res =
@@ -78,6 +82,8 @@ module Make
   (* Wrappers around internal functions*)
   let assume = S.assume
 
+  let add_clause = S.add_clause
+
   let solve (st:t) ?(assumptions=[]) () =
     try
       S.pop st; (* FIXME: what?! *)
@@ -106,4 +112,17 @@ module Make
     let history = S.history st in
     let local = S.temp st in
     {hyps; history; local}
+
+  module Clause = struct
+    include St.Clause
+
+    let atoms c = St.Clause.atoms c |> Array.map (fun a -> a.St.lit)
+
+    let make st ?tag l =
+      let l = List.map (S.mk_atom st) l in
+      St.Clause.make ?tag l St.Hyp
+  end
+
+  module Formula = St.Formula
+  module Term = St.Term
 end

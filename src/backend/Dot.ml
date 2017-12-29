@@ -31,8 +31,8 @@ module type Arg = sig
 end
 
 module Default(S : Res.S) = struct
-  module Atom = S.St.Atom
-  module Clause = S.St.Clause
+  module Atom = S.Atom
+  module Clause = S.Clause
 
   let print_atom = Atom.pp
 
@@ -55,8 +55,8 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
                                 and type hyp := S.clause
                                 and type lemma := S.clause
                                 and type assumption := S.clause) = struct
-  module Atom = S.St.Atom
-  module Clause = S.St.Clause
+  module Atom = S.Atom
+  module Clause = S.Clause
 
   let node_id n = Clause.name n.S.conclusion
 
@@ -148,13 +148,13 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
 end
 
 module Simple(S : Res.S)
-    (A : Arg with type atom := S.St.formula
-              and type hyp = S.St.formula list
+    (A : Arg with type atom := S.formula
+              and type hyp = S.formula list
               and type lemma := S.lemma
-              and type assumption = S.St.formula) =
+              and type assumption = S.formula) =
   Make(S)(struct
-    module Atom = S.St.Atom
-    module Clause = S.St.Clause
+    module Atom = S.Atom
+    module Clause = S.Clause
 
     (* Some helpers *)
     let lit = Atom.lit
@@ -165,8 +165,8 @@ module Simple(S : Res.S)
       | _ -> assert false
 
     let get_lemma c =
-      match Clause.premise c with
-      | S.St.Lemma p -> p
+      match S.expand (S.prove c) with
+      | {S.step=S.Lemma p;_} -> p
       | _ -> assert false
 
     (* Actual functions *)

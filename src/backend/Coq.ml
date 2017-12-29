@@ -22,11 +22,12 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
                                 and type lemma := S.clause
                                 and type assumption := S.clause) = struct
 
-  module Atom = S.St.Atom
-  module Clause = S.St.Clause
-  module M = Map.Make(S.St.Atom)
+  module Atom = S.Atom
+  module Clause = S.Clause
+  module M = Map.Make(S.Atom)
+  module C_tbl = S.Clause.Tbl
 
-  let name = S.St.Clause.name
+  let name = Clause.name
 
   let clause_map c =
     let rec aux acc a i =
@@ -36,11 +37,11 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
         aux (M.add a.(i) name acc) a (i + 1)
       end
     in
-    aux M.empty c.S.St.atoms 0
+    aux M.empty (Clause.atoms c) 0
 
   let clause_iter m format fmt clause =
     let aux atom = Format.fprintf fmt format (M.find atom m) in
-    Array.iter aux clause.S.St.atoms
+    Array.iter aux (Clause.atoms clause)
 
   let elim_duplicate fmt goal hyp _ =
     (** Printing info comment in coq *)
@@ -59,27 +60,30 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
            if b == a then begin
              Format.fprintf fmt "@ (fun p =>@ %s%a)"
                (name h2) (fun fmt -> (Array.iter (fun c ->
-                   if c == a.S.St.neg then
+                   if Atom.equal c (Atom.neg a) then
                      Format.fprintf fmt "@ (fun np => np p)"
                    else
                      Format.fprintf fmt "@ %s" (M.find c m)))
-                 ) h2.S.St.atoms
+                 ) (Clause.atoms h2)
            end else
              Format.fprintf fmt "@ %s" (M.find b m)
-         )) h1.S.St.atoms
+         )) (Clause.atoms h1)
 
   let resolution fmt goal hyp1 hyp2 atom =
     let a = Atom.abs atom in
     let h1, h2 =
-      if Array.exists (Atom.equal a) hyp1.S.St.atoms then hyp1, hyp2
-      else (assert (Array.exists (Atom.equal a) hyp2.S.St.atoms); hyp2, hyp1)
+      if Array.exists (Atom.equal a) (Clause.atoms hyp1) then hyp1, hyp2
+      else (
+        assert (Array.exists (Atom.equal a) (Clause.atoms hyp2));
+        hyp2, hyp1
+      )
     in
     (** Print some debug info *)
     Format.fprintf fmt
       "(* Clausal resolution. Goal : %s ; Hyps : %s, %s *)@\n"
       (name goal) (name h1) (name h2);
     (** Prove the goal: intro the axioms, then perform resolution *)
-    if Array.length goal.S.St.atoms = 0 then (
+    if Array.length (Clause.atoms goal) = 0 then (
       let m = M.empty in
       Format.fprintf fmt "exact @[<hov 1>(%a)@].@\n" (resolution_aux m a h1 h2) ();
       false
@@ -92,13 +96,13 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
 
   (* Count uses of hypotheses *)
   let incr_use h c =
-    let i = try S.H.find h c with Not_found -> 0 in
-    S.H.add h c (i + 1)
+    let i = try C_tbl.find h c with Not_found -> 0 in
+    C_tbl.add h c (i + 1)
 
   let decr_use h c =
-    let i = S.H.find h c - 1 in
+    let i = C_tbl.find h c - 1 in
     assert (i >= 0);
-    let () = S.H.add h c i in
+    let () = C_tbl.add h c i in
     i <= 0
 
   let clear fmt c =
@@ -136,7 +140,7 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
       if resolution fmt clause c1 c2 a then clean t fmt [c1; c2]
 
   let count_uses p =
-    let h = S.H.create 4013 in
+    let h = C_tbl.create 128 in
     let aux () node =
       List.iter (fun p' -> incr_use h S.(conclusion p')) (S.parents node.S.step)
     in
@@ -157,13 +161,13 @@ end
 
 
 module Simple(S : Res.S)
-    (A : Arg with type hyp = S.St.formula list
+    (A : Arg with type hyp = S.formula list
               and type lemma := S.lemma
-              and type assumption := S.St.formula) =
+              and type assumption := S.formula) =
   Make(S)(struct
 
     (* Some helpers *)
-    let lit a = a.S.St.lit
+    let lit = S.Atom.lit
 
     let get_assumption c =
       match S.to_list c with
@@ -171,8 +175,8 @@ module Simple(S : Res.S)
       | _ -> assert false
 
     let get_lemma c =
-      match c.S.St.cpremise with
-      | S.St.Lemma p -> p
+      match S.expand (S.prove c) with
+      | {S.step=S.Lemma p; _} -> p
       | _ -> assert false
 
     let prove_hyp fmt name c =

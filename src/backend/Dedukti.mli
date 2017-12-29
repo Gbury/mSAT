@@ -27,7 +27,7 @@ end
 module Make :
   functor(S : Res.S) ->
   functor(A : Arg
-          with type formula := S.St.formula
+          with type formula := S.formula
            and type lemma := S.lemma
            and type proof := S.proof) ->
     S with type t := S.proof

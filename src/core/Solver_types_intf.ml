@@ -210,6 +210,7 @@ module type S = sig
     val abs : t -> t (** positive atom *)
     val neg : t -> t
     val id : t -> int
+    val is_pos : t -> bool (* positive atom? *)
     val is_true : t -> bool
     val is_false : t -> bool
 
@@ -249,6 +250,8 @@ module type S = sig
     val dummy : t
 
     val name : t -> string
+    val equal : t -> t -> bool
+    val hash : t -> int
     val atoms : t -> Atom.t array
     val tag : t -> int option
     val premise : t -> premise
@@ -270,6 +273,8 @@ module type S = sig
     val pp : t printer
     val pp_dimacs : t printer
     val debug : t printer
+
+    module Tbl : Hashtbl.S with type key = t
   end
 
   module Trail_elt : sig

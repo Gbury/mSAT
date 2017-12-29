@@ -12,6 +12,8 @@ Copyright 2014 Simon Cruanes
 module type S = Res_intf.S
 (** Interface for a module manipulating resolution proofs. *)
 
-module Make : functor (St : Solver_types.S) -> S with module St = St
+module type FULL = Res_intf.FULL
+
+module Make : functor (St : Solver_types.S) -> FULL with module St = St
 (** Functor to create a module building proofs from a sat-solver unsat trace. *)
 

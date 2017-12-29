@@ -45,6 +45,8 @@ type 'clause export = {
 }
 (** Export internal state *)
 
+type 'a printer = Format.formatter -> 'a -> unit
+
 (** The external interface implemented by safe solvers, such as the one
     created by the {!Solver.Make} and {!Mcsolver.Make} functors. *)
 module type S = sig
@@ -52,30 +54,29 @@ module type S = sig
       These are the internal modules used, you should probably not use them
       if you're not familiar with the internals of mSAT. *)
 
-  (* TODO: replace {!St} with explicit modules (Expr, Var, Lit, Elt,...)
-     with carefully picked interfaces *)
-  module St : Solver_types.S
-  (** WARNING: Very dangerous module that expose the internal representation used
-      by the solver. *)
+  type term (** user terms *)
 
-  module Proof : Res.S with module St = St
+  type formula (** user formulas *)
+
+  type clause
+
+  module Proof : Res.S with type clause = clause
   (** A module to manipulate proofs. *)
 
   type t
   (** Main solver type, containing all state *)
 
-  val create : ?size:[`Tiny|`Small|`Big] -> ?st:St.t -> unit -> t
+  val create : ?size:[`Tiny|`Small|`Big] -> unit -> t
   (** Create new solver *)
-  (* TODO: add size hint, callbacks, etc. *)
 
   (** {2 Types} *)
 
-  type atom = St.formula
+  type atom = formula
   (** The type of atoms given by the module argument for formulas *)
 
   type res =
-    | Sat of (St.term,St.formula) sat_state         (** Returned when the solver reaches SAT *)
-    | Unsat of (St.clause,Proof.proof) unsat_state  (** Returned when the solver reaches UNSAT *)
+    | Sat of (term,formula) sat_state         (** Returned when the solver reaches SAT *)
+    | Unsat of (clause,Proof.proof) unsat_state  (** Returned when the solver reaches UNSAT *)
   (** Result type for the solver *)
 
   exception UndecidedLit
@@ -88,10 +89,13 @@ module type S = sig
   (** Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place. *)
 
+  val add_clause : t -> clause -> unit
+  (** Lower level addition of clauses *)
+
   val solve : t -> ?assumptions:atom list -> unit -> res
   (** Try and solves the current set of assumptions. *)
 
-  val new_lit : t -> St.term -> unit
+  val new_lit : t -> term -> unit
   (** Add a new litteral (i.e term) to the solver. This term will
       be decided on at some point during solving, wether it appears
       in clauses or not. *)
@@ -101,16 +105,42 @@ module type S = sig
       This formula will be decided on at some point during solving,
       wether it appears in clauses or not. *)
 
-  val unsat_core : Proof.proof -> St.clause list
+  val unsat_core : Proof.proof -> clause list
   (** Returns the unsat core of a given proof. *)
 
   val true_at_level0 : t -> atom -> bool
   (** [true_at_level0 a] returns [true] if [a] was proved at level0, i.e.
       it must hold in all models *)
 
-  val get_tag : St.clause -> int option
+  val get_tag : clause -> int option
   (** Recover tag from a clause, if any *)
 
-  val export : t -> St.clause export
+  val export : t -> clause export
+
+  (** {2 Re-export some functions} *)
+
+  type solver = t
+
+  module Clause : sig
+    type t = clause
+
+    val atoms : t -> atom array
+    val tag : t -> int option
+    val equal : t -> t -> bool
+
+    val make : solver -> ?tag:int -> atom list -> t
+
+    val pp : t printer
+  end
+
+  module Formula : sig
+    type t = formula
+    val pp : t printer
+  end
+
+  module Term : sig
+    type t = term
+    val pp : t printer
+  end
 end
 
