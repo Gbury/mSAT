@@ -566,6 +566,33 @@ module Make
       Log.debugf debug
         (fun k -> k "Enqueue (%d): %a" (Vec.size env.elt_queue) pp_lit l)
 
+  (* swap elements of array *)
+  let[@inline] swap_arr a i j =
+    if i<>j then (
+      let tmp = a.(i) in
+      a.(i) <- a.(j);
+      a.(j) <- tmp;
+    )
+
+  (* move atoms assigned at high levels first *)
+  let[@inline] put_high_level_atoms_first (arr:atom array) : unit =
+    Array.iteri
+      (fun i a ->
+         if i>0 && a.var.v_level > arr.(0).var.v_level then (
+           (* move first to second, [i]-th to first, second to [i] *)
+           if i=1 then (
+             swap_arr arr 0 1;
+           ) else (
+             let tmp = arr.(1) in
+             arr.(1) <- arr.(0);
+             arr.(0) <- arr.(i);
+             arr.(i) <- tmp;
+           );
+         ) else if i>1 && a.var.v_level > arr.(1).var.v_level then (
+           swap_arr arr 1 i;
+         ))
+      arr
+
   (* evaluate an atom for MCsat, if it's not assigned
      by boolean propagation/decision *)
   let th_eval a : bool option =
@@ -830,9 +857,7 @@ module Make
         if a.neg.is_true then begin
           (* Atoms need to be sorted in decreasing order of decision level,
              or we might watch the wrong literals. *)
-          Array.sort
-            (fun a b -> compare b.var.v_level a.var.v_level)
-            clause.atoms;
+          put_high_level_atoms_first clause.atoms;
           attach_clause clause;
           add_boolean_conflict clause
         end else begin
