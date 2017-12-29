@@ -198,10 +198,10 @@ let check () =
 let main () =
   (* Administrative duties *)
   Arg.parse argspec input_file usage;
-  if !file = "" then begin
+  if !file = "" then (
     Arg.usage argspec usage;
     exit 2
-  end;
+  );
   let al = Gc.create_alarm check in
 
   (* Interesting stuff happening *)
