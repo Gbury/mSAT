@@ -560,14 +560,8 @@ module Make
       a.(j) <- tmp;
     )
 
-  let[@inline] put_high_level_atoms_first (arr:atom array) : unit =
-    Array.sort
-      (fun a b -> compare b.var.v_level a.var.v_level)
-      arr
-
-  (* FIXME
   (* move atoms assigned at high levels first *)
-  let[@inline] put_high_level_atoms_first (arr:atom array) : unit =
+  let put_high_level_atoms_first (arr:atom array) : unit =
     Array.iteri
       (fun i a ->
          if i>0 && Atom.level a > Atom.level arr.(0) then (
@@ -584,7 +578,6 @@ module Make
            swap_arr arr 1 i;
          ))
       arr
-     *)
 
   (* evaluate an atom for MCsat, if it's not assigned
      by boolean propagation/decision *)
