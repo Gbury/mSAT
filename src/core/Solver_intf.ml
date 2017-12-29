@@ -121,8 +121,6 @@ module type S = sig
   val pop : t -> unit
   (** Return to last save point *)
 
-  val pop : t -> unit
-
   val export : t -> clause export
 
   (** {2 Re-export some functions} *)
