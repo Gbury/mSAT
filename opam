@@ -12,10 +12,10 @@ build-doc: [
     [make "doc"]
 ]
 install: [
-    [make "DOCDIR=%{msat:doc}%" "install"]
+    [make "DOCDIR=%{doc}%" "install"]
 ]
 remove: [
-    [make "DOCDIR=%{msat:doc}%" "uninstall"]
+    [make "DOCDIR=%{doc}%" "uninstall"]
 ]
 depends: [
   "ocamlfind" {build}
