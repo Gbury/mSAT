@@ -160,7 +160,7 @@ module Simple(S : Res.S)
     let lit = Atom.lit
 
     let get_assumption c =
-      match S.to_list c with
+      match S.Clause.atoms_l c with
       | [ x ] -> x
       | _ -> assert false
 
@@ -174,7 +174,7 @@ module Simple(S : Res.S)
       A.print_atom fmt (Atom.lit a)
 
     let hyp_info c =
-      A.hyp_info (List.map lit (S.to_list c))
+      A.hyp_info (List.map lit (S.Clause.atoms_l c))
 
     let lemma_info c =
       A.lemma_info (get_lemma c)

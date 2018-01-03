@@ -402,6 +402,7 @@ module McMake (E : Expr_intf.S) = struct
     let name = name_of_clause
     let[@inline] equal c1 c2 = c1==c2
     let[@inline] atoms c = c.atoms
+    let[@inline] atoms_l c = Array.to_list c.atoms
     let[@inline] tag c = c.tag
     let hash cl = Array.fold_left (fun i a -> Hashtbl.hash (a.aid, i)) 0 cl.atoms
 

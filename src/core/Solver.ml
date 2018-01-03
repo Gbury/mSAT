@@ -142,6 +142,7 @@ module Make
     include St.Clause
 
     let atoms c = St.Clause.atoms c |> Array.map (fun a -> a.St.lit)
+    let atoms_l c = St.Clause.atoms_l c |> List.map (fun a -> a.St.lit)
 
     let make st ?tag l =
       let l = List.map (S.mk_atom st) l in

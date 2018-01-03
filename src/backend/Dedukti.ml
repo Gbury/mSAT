@@ -40,7 +40,7 @@ module Make(S : Res.S)(A : Arg with type formula := S.formula
         fprintf fmt "%s _b %a ->@ %a"
           (if pos then "_pos" else "_neg") A.print f aux r
     in
-    fprintf fmt "_b : Prop ->@ %a ->@ _proof _b" aux (S.to_list c)
+    fprintf fmt "_b : Prop ->@ %a ->@ _proof _b" aux (S.Clause.atoms_l c)
 
   let context fmt p =
     fprintf fmt "(; Embedding ;)";

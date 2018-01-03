@@ -170,7 +170,7 @@ module Simple(S : Res.S)
     let lit = S.Atom.lit
 
     let get_assumption c =
-      match S.to_list c with
+      match S.Clause.atoms_l c with
       | [ x ] -> x
       | _ -> assert false
 
@@ -180,7 +180,7 @@ module Simple(S : Res.S)
       | _ -> assert false
 
     let prove_hyp fmt name c =
-      A.prove_hyp fmt name (List.map lit (S.to_list c))
+      A.prove_hyp fmt name (List.map lit (S.Clause.atoms_l c))
 
     let prove_lemma fmt name c =
       A.prove_lemma fmt name (get_lemma c)
