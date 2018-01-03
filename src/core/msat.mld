@@ -59,8 +59,8 @@ leafs of the tree are either hypotheses, or tautologies (i.e. conflicts returned
 the theory).
 
 {!modules:
-Res
-Res_intf
+Msat__Res
+Msat__Res_intf
 }
 
 Backends for exporting proofs to different formats:

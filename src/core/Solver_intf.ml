@@ -64,20 +64,24 @@ module type S = sig
   (** A module to manipulate proofs. *)
 
   type t
-  (** Main solver type, containing all state *)
+  (** Main solver type, containing all state for solving. *)
 
   val create : ?size:[`Tiny|`Small|`Big] -> unit -> t
-  (** Create new solver *)
+  (** Create new solver
+      @param size the initial size of internal data structures. The bigger,
+        the faster, but also the more RAM it uses. *)
 
   (** {2 Types} *)
 
   type atom = formula
-  (** The type of atoms given by the module argument for formulas *)
+  (** The type of atoms given by the module argument for formulas.
+      An atom is a user-defined atomic formula whose truth value is
+      picked by Msat. *)
 
-  type res =
-    | Sat of (term,formula) sat_state         (** Returned when the solver reaches SAT *)
-    | Unsat of (clause,Proof.proof) unsat_state  (** Returned when the solver reaches UNSAT *)
   (** Result type for the solver *)
+  type res =
+    | Sat of (term,formula) sat_state (** Returned when the solver reaches SAT, with a model *)
+    | Unsat of (clause,Proof.proof) unsat_state (** Returned when the solver reaches UNSAT, with a proof *)
 
   exception UndecidedLit
   (** Exception raised by the evaluating functions when a literal
@@ -93,7 +97,10 @@ module type S = sig
   (** Lower level addition of clauses *)
 
   val solve : t -> ?assumptions:atom list -> unit -> res
-  (** Try and solves the current set of assumptions. *)
+  (** Try and solves the current set of clauses.
+      @param assumptions additional atomic assumptions to be temporarily added.
+        The assumptions are just used for this call to [solve], they are
+        not saved in the solver's state. *)
 
   val new_lit : t -> term -> unit
   (** Add a new litteral (i.e term) to the solver. This term will
@@ -106,7 +113,8 @@ module type S = sig
       wether it appears in clauses or not. *)
 
   val unsat_core : Proof.proof -> clause list
-  (** Returns the unsat core of a given proof. *)
+  (** Returns the unsat core of a given proof, ie a subset of all the added
+      clauses that is sufficient to establish unsatisfiability. *)
 
   val true_at_level0 : t -> atom -> bool
   (** [true_at_level0 a] returns [true] if [a] was proved at level0, i.e.
@@ -116,10 +124,13 @@ module type S = sig
   (** Recover tag from a clause, if any *)
 
   val push : t -> unit
-  (** Push a new save point *)
+  (** Push a new save point. Clauses added after this call to [push] will
+      be added as normal, but the corresponding call to [pop] will
+      remove these clauses. *)
 
   val pop : t -> unit
-  (** Return to last save point *)
+  (** Return to last save point, discarding clauses added since last
+      call to [push] *)
 
   val export : t -> clause export
 
