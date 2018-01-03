@@ -31,6 +31,8 @@ module type S = sig
     step : step;          (** The reasoning step used to prove the conclusion *)
   }
   (** A proof can be expanded into a proof node, which show the first step of the proof. *)
+
+  (** The type of reasoning steps allowed in a proof. *)
   and step =
     | Hypothesis
     (** The conclusion is a user-provided hypothesis *)
@@ -44,21 +46,6 @@ module type S = sig
     | Resolution of proof * proof * atom
     (** The conclusion can be deduced by performing a resolution between the conclusions
         of the two given proofs. The atom on which to perform the resolution is also given. *)
-  (** The type of reasoning steps allowed in a proof. *)
-
-  (** {3 Resolution helpers} *)
-
-  val to_list : clause -> atom list
-  (** Returns the sorted list of atoms of a clause. *)
-
-  val merge : atom list -> atom list -> atom list
-  (** Merge two sorted atom list using a suitable comparison function. *)
-
-  val resolve : atom list -> atom list * atom list
-  (** Performs a "resolution step" on a sorted list of atoms.
-      [resolve (List.merge l1 l2)] where [l1] and [l2] are sorted atom lists should return the pair
-      [\[a\], l'], where [l'] is the result of the resolution of [l1] and [l2] over [a]. *)
-
 
   (** {3 Proof building functions} *)
 
@@ -71,7 +58,7 @@ module type S = sig
       @raise Insuficient_hyps if it does not succeed. *)
 
   val prove_atom : atom -> proof option
-  (** Given an atom [a], returns a proof of the clause [\[a\]] if [a] is true at level 0 *)
+  (** Given an atom [a], returns a proof of the clause [[a]] if [a] is true at level 0 *)
 
   (** {3 Proof Nodes} *)
 
@@ -95,6 +82,7 @@ module type S = sig
   (** Return the proof step at the root of a given proof. *)
 
   val conclusion : proof -> clause
+  (** What is proved at the root of the clause *)
 
   val fold : ('a -> proof_node -> 'a) -> 'a -> proof -> 'a
   (** [fold f acc p], fold [f] over the proof [p] and all its node. It is guaranteed that
@@ -116,6 +104,7 @@ module type S = sig
     type t = clause
     val name : t -> string
     val atoms : t -> atom array
+    val atoms_l : t -> atom list
     val pp : t printer
     (** A nice looking printer for clauses, which sort the atoms before printing. *)
 

@@ -142,6 +142,7 @@ module type S = sig
     type t = clause
 
     val atoms : t -> atom array
+    val atoms_l : t -> atom list
     val tag : t -> int option
     val equal : t -> t -> bool
 

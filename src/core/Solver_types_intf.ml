@@ -245,6 +245,7 @@ module type S = sig
     val equal : t -> t -> bool
     val hash : t -> int
     val atoms : t -> Atom.t array
+    val atoms_l : t -> Atom.t list
     val tag : t -> int option
     val premise : t -> premise
 
