@@ -1,29 +1,47 @@
 language: c
 env:
-  - RUN_TEST=false OCAML_VERSION=4.00.1
-  - RUN_TEST=false OCAML_VERSION=4.01.0
-  - RUN_TEST=true OCAML_VERSION=4.02.3
-  - RUN_TEST=true OCAML_VERSION=4.03.0
-  - RUN_TEST=true OCAML_VERSION=4.03.0+flambda
-  - RUN_TEST=true OCAML_VERSION=4.04.0
-  - RUN_TEST=true OCAML_VERSION=4.04.0+flambda
-addons:
-  apt:
-    sources:
-      - avsm
-    packages:
-      - opam
-      - time
+  # Check that funarith installs correctly with and without its test dependencies using opam
+  - TO_TEST=install OPAMBUILDTEST=false OCAML_VERSION=4.03.0
+  - TO_TEST=install OPAMBUILDTEST=true OCAML_VERSION=4.03.0
+  # Check build and unit tests
+  # NOTE: testing needs OPAMBUILDTEST=true so that test deps are installed
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.03.0
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.03.0+flambda
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.04.2
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.04.2+flambda
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.05.0
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.05.0+flambda
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.06.0
+  - TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.06.0+flambda
+#matrix:
+#  allow_failures:
+#    # opam-installer fails on these versions (will probably be fixed before the official opam2 release
+#    - env: TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.06.0
+#    - env: TO_TEST=tests OPAMBUILDTEST=true OCAML_VERSION=4.06.0+flambda
+# Caching may take a lot of space with so many ocaml versions
+#cache:
+#  directories:
+#    - $HOME/.opam
 before_install:
+  # Download and use opam2
+  - wget -O ${HOME}/opam https://github.com/ocaml/opam/releases/download/2.0.0-beta6/opam-2.0.0-beta6-x86_64-linux
+  - chmod +x ${HOME}/opam
+  # Some opam boilerplate
   - export OPAMYES=1
+  - export OPAMJOBS=2
+  # Init opam, and the default switch with the right ocaml version
+  - ${HOME}/opam init --compiler=${OCAML_VERSION}
+  - eval `${HOME}/opam config env`
   - export OPAMVERBOSE=1
-  - opam init
-  - opam switch ${OCAML_VERSION}
-  - eval `opam config env`
-  - opam install ocamlfind ocamlbuild
-  - if ${RUN_TEST}; then opam pin add dolmen https://github.com/Gbury/dolmen.git; fi
+  # Testing requires the dev version of dolmen
+  - if [ "$TO_TEST" = "tests" ]; then ${HOME}/opam pin add --dev-repo dolmen; fi
 install:
-  - make lib
-  - if ${RUN_TEST}; then make bin; fi
+  # Install dependencies
+  - ${HOME}/opam pin add --no-action msat .
+  - ${HOME}/opam install --deps-only msat
 script:
-  - if ${RUN_TEST}; then make test; fi
+  # Build and launch the tests
+  - if [ "$TO_TEST" = "tests" ]; then make lib && make bin && make test; fi
+  # Try and install the package with opam
+  - if [ "$TO_TEST" = "install" ]; then ${HOME}/opam install msat; fi
+

@@ -20,6 +20,7 @@ remove: [
 depends: [
   "ocamlfind" {build}
   "ocamlbuild" {build}
+  "dolmen" {test && = "dev" }
 ]
 available: [
   ocaml-version >= "4.00.1"
