@@ -1,10 +1,10 @@
 # MSAT  [![Build Status](https://travis-ci.org/Gbury/mSAT.svg?branch=master)](https://travis-ci.org/Gbury/mSAT)
 
 MSAT is an OCaml library that features a modular SAT-solver and some
-extensions (including SMT).
+extensions (including SMT), derived from [Alt-Ergo Zero](http://cubicle.lri.fr/alt-ergo-zero).
 
-
-It derives from [Alt-Ergo Zero](http://cubicle.lri.fr/alt-ergo-zero).
+It was presented at [ICFP 2017](https://icfp17.sigplan.org/event/ocaml-2017-papers-msat-an-ocaml-sat-solver),
+using a [poster](https://github.com/Gbury/mSAT/blob/master/articles/icfp_2017.pdf)
 
 
 ## COPYRIGHT
