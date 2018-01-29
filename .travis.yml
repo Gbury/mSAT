@@ -1,6 +1,6 @@
 language: c
 env:
-  # Check that funarith installs correctly with and without its test dependencies using opam
+  # Check that the package installs correctly with and without its test dependencies using opam
   - TO_TEST=install OPAMBUILDTEST=false OCAML_VERSION=4.03.0
   - TO_TEST=install OPAMBUILDTEST=true OCAML_VERSION=4.03.0
   # Check build and unit tests
