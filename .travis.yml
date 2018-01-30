@@ -38,10 +38,10 @@ before_install:
 install:
   # Install dependencies
   - ${HOME}/opam pin add --no-action msat .
-  - ${HOME}/opam install --deps-only msat
+  - ${HOME}/opam install --deps-only msat.dev
 script:
   # Build and launch the tests
   - if [ "$TO_TEST" = "tests" ]; then make lib && make bin && make test; fi
   # Try and install the package with opam
-  - if [ "$TO_TEST" = "install" ]; then ${HOME}/opam install msat; fi
+  - if [ "$TO_TEST" = "install" ]; then ${HOME}/opam install msat.dev; fi
 
