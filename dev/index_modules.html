@@ -26,6 +26,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Index of modules</title>
@@ -41,10 +42,22 @@
 Backend interface
 </div>
 </td></tr>
+<tr><td align="left"><br>C</td></tr>
+<tr><td><a href="Coq.html">Coq</a> </td>
+<td><div class="info">
+Coq Backend
+</div>
+</td></tr>
 <tr><td align="left"><br>D</td></tr>
 <tr><td><a href="Dedukti.html">Dedukti</a> </td>
 <td><div class="info">
 Deduki backend for proofs
+</div>
+</td></tr>
+<tr><td><a href="Dot.Default.html">Default</a> [<a href="Dot.html">Dot</a>]</td>
+<td><div class="info">
+Provides a reasonnable default to instantiate the <code class="code">Make</code> functor, assuming
+    the original printing functions are compatible with DOT html labels.
 </div>
 </td></tr>
 <tr><td><a href="Dot.html">Dot</a> </td>
@@ -82,6 +95,12 @@ mSAT safe interface
 SMT formulas
 </div>
 </td></tr>
+<tr><td align="left"><br>H</td></tr>
+<tr><td><a href="Res_intf.S.H.html">H</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Hashtable over proofs.
+</div>
+</td></tr>
 <tr><td align="left"><br>I</td></tr>
 <tr><td><a href="Internal.html">Internal</a> </td>
 <td><div class="info">
@@ -103,6 +122,11 @@ A functor that can generate as many solvers as needed.
 <tr><td><a href="Dedukti.Make.html">Make</a> [<a href="Dedukti.html">Dedukti</a>]</td>
 <td><div class="info">
 Functor to generate a backend to output proofs for the dedukti type checker.
+</div>
+</td></tr>
+<tr><td><a href="Coq.Make.html">Make</a> [<a href="Coq.html">Coq</a>]</td>
+<td><div class="info">
+Base functor to output Coq proofs
 </div>
 </td></tr>
 <tr><td><a href="Dot.Make.html">Make</a> [<a href="Dot.html">Dot</a>]</td>
@@ -181,6 +205,11 @@ Sat solver
 <tr><td><a href="Solver_types.SatMake.html">SatMake</a> [<a href="Solver_types.html">Solver_types</a>]</td>
 <td><div class="info">
 Functor to instantiate the types of clauses for a solver.
+</div>
+</td></tr>
+<tr><td><a href="Coq.Simple.html">Simple</a> [<a href="Coq.html">Coq</a>]</td>
+<td><div class="info">
+Simple functo to output Coq proofs
 </div>
 </td></tr>
 <tr><td><a href="Dot.Simple.html">Simple</a> [<a href="Dot.html">Dot</a>]</td>

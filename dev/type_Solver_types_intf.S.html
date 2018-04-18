@@ -25,6 +25,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Solver_types_intf.S</title>
@@ -35,6 +36,7 @@
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;term<br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;formula<br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;proof<br>
+&nbsp;&nbsp;<span class="keyword">type</span>&nbsp;seen&nbsp;=&nbsp;<span class="constructor">Nope</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Both</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Positive</span>&nbsp;<span class="keywordsign">|</span>&nbsp;<span class="constructor">Negative</span><br>
 &nbsp;&nbsp;<span class="keyword">type</span>&nbsp;lit&nbsp;=&nbsp;{<br>
 &nbsp;&nbsp;&nbsp;&nbsp;lid&nbsp;:&nbsp;int;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;term&nbsp;:&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.term;<br>
@@ -47,7 +49,7 @@
 &nbsp;&nbsp;&nbsp;&nbsp;pa&nbsp;:&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.atom;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;na&nbsp;:&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.atom;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">mutable</span>&nbsp;used&nbsp;:&nbsp;int;<br>
-&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">mutable</span>&nbsp;seen&nbsp;:&nbsp;bool;<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">mutable</span>&nbsp;seen&nbsp;:&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.seen;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">mutable</span>&nbsp;v_level&nbsp;:&nbsp;int;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">mutable</span>&nbsp;v_weight&nbsp;:&nbsp;float;<br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">mutable</span>&nbsp;v_assignable&nbsp;:&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.lit&nbsp;list&nbsp;option;<br>
@@ -106,6 +108,9 @@
 &nbsp;&nbsp;&nbsp;&nbsp;string&nbsp;<span class="keywordsign">-&gt;</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.atom&nbsp;list&nbsp;<span class="keywordsign">-&gt;</span><br>
 &nbsp;&nbsp;&nbsp;&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.premise&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.clause<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;mark&nbsp;:&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;seen&nbsp;:&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.atom&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;bool<br>
+&nbsp;&nbsp;<span class="keyword">val</span>&nbsp;clear&nbsp;:&nbsp;<span class="constructor">Solver_types_intf</span>.<span class="constructor">S</span>.var&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;unit<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fresh_name&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fresh_lname&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string<br>
 &nbsp;&nbsp;<span class="keyword">val</span>&nbsp;fresh_tname&nbsp;:&nbsp;unit&nbsp;<span class="keywordsign">-&gt;</span>&nbsp;string<br>

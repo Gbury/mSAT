@@ -29,13 +29,16 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><link title="Type declarations" rel="Section" href="#3_Typedeclarations">
 <link title="Resolution helpers" rel="Section" href="#3_Resolutionhelpers">
 <link title="Proof building functions" rel="Section" href="#3_Proofbuildingfunctions">
+<link title="Proof Nodes" rel="Section" href="#3_ProofNodes">
 <link title="Proof Manipulation" rel="Section" href="#3_ProofManipulation">
 <link title="Misc" rel="Section" href="#3_Misc">
+<link title="Unsafe" rel="Section" href="#3_Unsafe">
 <title>mSAT doc : Solver_intf.S.Proof</title>
 </head>
 <body>
@@ -65,10 +68,10 @@ Raised when a complete resolution derivation cannot be found using the current h
 <pre><span id="TYPEatom"><span class="keyword">type</span> <code class="type"></code>atom</span> = <code class="type">St.atom</code> </pre>
 
 
-<pre><span id="TYPEclause"><span class="keyword">type</span> <code class="type"></code>clause</span> = <code class="type">St.clause</code> </pre>
-
-
 <pre><span id="TYPElemma"><span class="keyword">type</span> <code class="type"></code>lemma</span> = <code class="type">St.proof</code> </pre>
+
+
+<pre><span id="TYPEclause"><span class="keyword">type</span> <code class="type"></code>clause</span> = <code class="type">St.clause</code> </pre>
 <div class="info ">
 Abstract types for atoms, clauses and theory-specific lemmas<br>
 </div>
@@ -158,7 +161,7 @@ The conclusion is obtained by eliminating multiple occurences of the atom in
 <code><span id="TYPEELTstep.Resolution"><span class="constructor">Resolution</span></span> <span class="keyword">of</span> <code class="type"><a href="Res_intf.S.html#TYPEproof">proof</a> * <a href="Res_intf.S.html#TYPEproof">proof</a> * <a href="Res_intf.S.html#TYPEatom">atom</a></code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 The conclusion can be deduced by performing a resolution between the conclusions
-          of the two given proofs. The atom on which to perform the resolution is also given.<br>
+        of the two given proofs. The atom on which to perform the resolution is also given.<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -200,6 +203,24 @@ Given a conflict clause <code class="code">c</code>, returns a proof of the empt
 Given an atom <code class="code">a</code>, returns a proof of the clause <code class="code">[a]</code> if <code class="code">a</code> is true at level 0<br>
 </div>
 <br>
+<h3 id="3_ProofNodes">Proof Nodes</h3><br>
+
+<pre><span id="VALparents"><span class="keyword">val</span> parents</span> : <code class="type"><a href="Res_intf.S.html#TYPEstep">step</a> -> <a href="Res_intf.S.html#TYPEproof">proof</a> list</code></pre><div class="info ">
+Returns the parents of a proof node.<br>
+</div>
+
+<pre><span id="VALis_leaf"><span class="keyword">val</span> is_leaf</span> : <code class="type"><a href="Res_intf.S.html#TYPEstep">step</a> -> bool</code></pre><div class="info ">
+Returns wether the the proof node is a leaf, i.e. an hypothesis,
+      an assumption, or a lemma.
+      <code class="code">true</code> if and only if <a href="Res_intf.S.html#VALparents"><code class="code">Res_intf.S.parents</code></a> returns the empty list.<br>
+</div>
+
+<pre><span id="VALexpl"><span class="keyword">val</span> expl</span> : <code class="type"><a href="Res_intf.S.html#TYPEstep">step</a> -> string</code></pre><div class="info ">
+Returns a short string description for the proof step; for instance
+      <code class="code">"hypothesis"</code> for a <code class="code">Hypothesis</code>
+      (it currently returns the variant name in lowercase).<br>
+</div>
+<br>
 <h3 id="3_ProofManipulation">Proof Manipulation</h3><br>
 
 <pre><span id="VALexpand"><span class="keyword">val</span> expand</span> : <code class="type"><a href="Res_intf.S.html#TYPEproof">proof</a> -> <a href="Res_intf.S.html#TYPEproof_node">proof_node</a></code></pre><div class="info ">
@@ -208,8 +229,8 @@ Return the proof step at the root of a given proof.<br>
 
 <pre><span id="VALfold"><span class="keyword">val</span> fold</span> : <code class="type">('a -> <a href="Res_intf.S.html#TYPEproof_node">proof_node</a> -> 'a) -> 'a -> <a href="Res_intf.S.html#TYPEproof">proof</a> -> 'a</code></pre><div class="info ">
 <code class="code">fold f acc p</code>, fold <code class="code">f</code> over the proof <code class="code">p</code> and all its node. It is guaranteed that
-      <code class="code">f</code> is executed exactly once on each proof ndoe in the tree, and that the execution of
-      <code class="code">f</code> on a proof node happens after the execution on the children of the nodes.<br>
+      <code class="code">f</code> is executed exactly once on each proof node in the tree, and that the execution of
+      <code class="code">f</code> on a proof node happens after the execution on the parents of the nodes.<br>
 </div>
 
 <pre><span id="VALunsat_core"><span class="keyword">val</span> unsat_core</span> : <code class="type"><a href="Res_intf.S.html#TYPEproof">proof</a> -> <a href="Res_intf.S.html#TYPEclause">clause</a> list</code></pre><div class="info ">
@@ -225,5 +246,11 @@ Check the contents of a proof. Mainly for internal use<br>
 
 <pre><span id="VALprint_clause"><span class="keyword">val</span> print_clause</span> : <code class="type">Format.formatter -> <a href="Res_intf.S.html#TYPEclause">clause</a> -> unit</code></pre><div class="info ">
 A nice looking printer for clauses, which sort the atoms before printing.<br>
+</div>
+<br>
+<h3 id="3_Unsafe">Unsafe</h3><br>
+
+<pre><span class="keyword">module</span> <a href="Res_intf.S.H.html">H</a>: <code class="type">Hashtbl.S</code><code class="type">  with type key = clause</code></pre><div class="info">
+Hashtable over proofs.
 </div>
 </body></html>

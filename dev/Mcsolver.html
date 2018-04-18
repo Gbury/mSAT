@@ -30,6 +30,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Mcsolver</title>
@@ -55,7 +56,7 @@ The interface exposed by the solver.
 
 <pre><span class="keyword">module</span> <a href="Mcsolver.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">E</code><code class="code"> : </code><code class="type"><a href="Expr_intf.S.html">Expr_intf.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Th</code><code class="code"> : </code><code class="type"><a href="Plugin_intf.S.html">Plugin_intf.S</a></code><code class="type">  with type term = E.Term.t
                          and type formula = E.Formula.t
-                         and type proof = E.proof</code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Mcsolver.S.html">S</a></code><code class="type">  with type St.term = E.Term.t
+                         and type proof = E.proof</code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code></pre><div class="sig_block"></div><pre><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Mcsolver.S.html">S</a></code><code class="type">  with type St.term = E.Term.t
      and type St.formula = E.Formula.t
      and type St.proof = E.proof</code></div></div></div></pre><div class="info">
 Functor to create a solver parametrised by the atomic formulas and a theory.

@@ -29,11 +29,13 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><link title="Type definitions" rel="Section" href="#2_Typedefinitions">
 <link title="Elements" rel="Section" href="#2_Elements">
 <link title="Variables, Litterals & Clauses " rel="Section" href="#2_VariablesLitteralsClauses">
+<link title="Helpers" rel="Section" href="#2_Helpers">
 <link title="Clause names" rel="Section" href="#2_Clausenames">
 <link title="Printing" rel="Section" href="#2_Printing">
 <title>mSAT doc : Solver_intf.S.St</title>
@@ -68,6 +70,38 @@ TODO:deprecate.<br>
 <div class="info ">
 The types of terms, formulas and proofs. All of these are user-provided.<br>
 </div>
+
+
+<pre><code><span id="TYPEseen"><span class="keyword">type</span> <code class="type"></code>seen</span> = </code></pre><table class="typetable">
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTseen.Nope"><span class="constructor">Nope</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTseen.Both"><span class="constructor">Both</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTseen.Positive"><span class="constructor">Positive</span></span></code></td>
+
+</tr>
+<tr>
+<td align="left" valign="top" >
+<code><span class="keyword">|</span></code></td>
+<td align="left" valign="top" >
+<code><span id="TYPEELTseen.Negative"><span class="constructor">Negative</span></span></code></td>
+
+</tr></table>
+
 
 
 <pre><code><span id="TYPElit"><span class="keyword">type</span> <code class="type"></code>lit</span> = {</code></pre><table class="typetable">
@@ -173,7 +207,7 @@ Number of attached clause that contain the var<br>
 <td align="left" valign="top" >
 <code>&nbsp;&nbsp;</code></td>
 <td align="left" valign="top" >
-<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTvar.seen">seen</span>&nbsp;: <code class="type">bool</code>;</code></td>
+<code><span class="keyword">mutable&nbsp;</span><span id="TYPEELTvar.seen">seen</span>&nbsp;: <code class="type"><a href="Solver_types_intf.S.html#TYPEseen">seen</a></code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 Boolean used during propagation<br>
 </div>
@@ -484,14 +518,13 @@ Premises for clauses. Indeed each clause generated during a run of the solver
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTt.Atom"><span class="constructor">Atom</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a></code></code></td>
-<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Either a lit of an atom<br>
-</div>
-</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+
 </tr></table>
 
 <div class="info ">
-<h2 id="2_Decisionsandpropagations">Decisions and propagations</h2><br>
+<h2 id="2_Decisionsandpropagations">Decisions and propagations</h2>
+<p>
+Either a lit of an atom<br>
 </div>
 
 
@@ -515,12 +548,12 @@ Constructors and destructors<br>
 <code><span class="keyword">|</span></code></td>
 <td align="left" valign="top" >
 <code><span id="TYPEELTelt.E_var"><span class="constructor">E_var</span></span> <span class="keyword">of</span> <code class="type"><a href="Solver_types_intf.S.html#TYPEvar">var</a></code></code></td>
-<td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
-Either a lit of a var<br>
-</div>
-</td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
+
 </tr></table>
 
+<div class="info ">
+Either a lit of a var<br>
+</div>
 
 
 <pre><span id="VALnb_elt"><span class="keyword">val</span> nb_elt</span> : <code class="type">unit -> int</code></pre>
@@ -569,6 +602,20 @@ The empty clause<br>
 
 <pre><span id="VALmake_clause"><span class="keyword">val</span> make_clause</span> : <code class="type">?tag:int -><br>       string -><br>       <a href="Solver_types_intf.S.html#TYPEatom">atom</a> list -><br>       <a href="Solver_types_intf.S.html#TYPEpremise">premise</a> -> <a href="Solver_types_intf.S.html#TYPEclause">clause</a></code></pre><div class="info ">
 <code class="code">make_clause name atoms size premise</code> creates a clause with the given attributes.<br>
+</div>
+<br>
+<h2 id="2_Helpers">Helpers</h2><br>
+
+<pre><span id="VALmark"><span class="keyword">val</span> mark</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a> -> unit</code></pre><div class="info ">
+Mark the atom as seen, using the 'seen' field in the variable.<br>
+</div>
+
+<pre><span id="VALseen"><span class="keyword">val</span> seen</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEatom">atom</a> -> bool</code></pre><div class="info ">
+Returns wether the atom has been marked as seen.<br>
+</div>
+
+<pre><span id="VALclear"><span class="keyword">val</span> clear</span> : <code class="type"><a href="Solver_types_intf.S.html#TYPEvar">var</a> -> unit</code></pre><div class="info ">
+Clear the 'seen' field of the variable.<br>
 </div>
 <br>
 <h2 id="2_Clausenames">Clause names</h2><br>

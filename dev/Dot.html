@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
 <link rel="previous" href="Tseitin.html">
-<link rel="next" href="Dedukti.html">
+<link rel="next" href="Coq.html">
 <link rel="Up" href="index.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
 <link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
@@ -30,6 +30,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Dot</title>
@@ -37,7 +38,7 @@
 <body>
 <div class="navbar"><a class="pre" href="Tseitin.html" title="Tseitin">Previous</a>
 &nbsp;<a class="up" href="index.html" title="Index">Up</a>
-&nbsp;<a class="post" href="Dedukti.html" title="Dedukti">Next</a>
+&nbsp;<a class="post" href="Coq.html" title="Coq">Next</a>
 </div>
 <h1>Module <a href="type_Dot.html">Dot</a></h1>
 
@@ -45,7 +46,7 @@
 Dot backend for proofs
 <p>
 
-    This modules provides functions to export proofs into the dot graph format.
+    This module provides functions to export proofs into the dot graph format.
     Graphs in dot format can be used to generates images using the graphviz tool.<br>
 </div>
 <hr width="100%">
@@ -55,11 +56,25 @@ Interface for exporting proofs.
 </div>
 
 <pre><span class="keyword">module type</span> <a href="Dot.Arg.html">Arg</a> = <code class="code">sig</code> <a href="Dot.Arg.html">..</a> <code class="code">end</code></pre>
-<pre><span class="keyword">module</span> <a href="Dot.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.atom and type lemma := S.lemma</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info">
+<pre><span class="keyword">module</span> <a href="Dot.Default.html">Default</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.atom
+                                 and type hyp := S.clause
+                                 and type lemma := S.clause
+                                 and type assumption := S.clause</code></div></pre><div class="info">
+Provides a reasonnable default to instantiate the <code class="code">Make</code> functor, assuming
+    the original printing functions are compatible with DOT html labels.
+</div>
+
+<pre><span class="keyword">module</span> <a href="Dot.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.atom
+                                and type hyp := S.clause
+                                and type lemma := S.clause
+                                and type assumption := S.clause</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info">
 Functor for making a module to export proofs to the DOT format.
 </div>
 
-<pre><span class="keyword">module</span> <a href="Dot.Simple.html">Simple</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.St.formula and type lemma := S.lemma</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info">
+<pre><span class="keyword">module</span> <a href="Dot.Simple.html">Simple</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.St.formula
+                                  and type hyp = S.St.formula list
+                                  and type lemma := S.lemma
+                                  and type assumption = S.St.formula</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info">
 Functor for making a module to export proofs to the DOT format.
 </div>
 </body></html>

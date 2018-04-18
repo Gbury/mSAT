@@ -5,6 +5,7 @@
 <meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="Start" href="index.html">
+<link rel="previous" href="Dot.Default.html">
 <link rel="next" href="Dot.Simple.html">
 <link rel="Up" href="Dot.html">
 <link title="Index of types" rel=Appendix href="index_types.html">
@@ -29,17 +30,22 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Dot.Make</title>
 </head>
 <body>
-<div class="navbar">&nbsp;<a class="up" href="Dot.html" title="Dot">Up</a>
+<div class="navbar"><a class="pre" href="Dot.Default.html" title="Dot.Default">Previous</a>
+&nbsp;<a class="up" href="Dot.html" title="Dot">Up</a>
 &nbsp;<a class="post" href="Dot.Simple.html" title="Dot.Simple">Next</a>
 </div>
 <h1>Functor <a href="type_Dot.Make.html">Dot.Make</a></h1>
 
-<pre><span class="keyword">module</span> Make: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.atom and type lemma := S.lemma</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info module top">
+<pre><span class="keyword">module</span> Make: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.atom
+                                and type hyp := S.clause
+                                and type lemma := S.clause
+                                and type assumption := S.clause</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info module top">
 Functor for making a module to export proofs to the DOT format.<br>
 </div>
 <table border="0" cellpadding="3" width="100%">
@@ -56,7 +62,10 @@ Functor for making a module to export proofs to the DOT format.<br>
 <td align="center" valign="top" width="15%">
 <code>A</code></td>
 <td align="center" valign="top">:</td>
-<td><code class="type">Arg with type atom := S.atom and type lemma := S.lemma</code>
+<td><code class="type">Arg with type atom := S.atom
+                                and type hyp := S.clause
+                                and type lemma := S.clause
+                                and type assumption := S.clause</code>
 </table>
 </td>
 </tr>

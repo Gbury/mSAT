@@ -26,6 +26,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Index of types</title>
@@ -36,6 +37,16 @@
 <h1>Index of types</h1>
 <table>
 <tr><td align="left"><br>A</td></tr>
+<tr><td><a href="Coq.Arg.html#TYPEassumption">assumption</a> [<a href="Coq.Arg.html">Coq.Arg</a>]</td>
+<td><div class="info">
+The types of hypotheses, lemmas, and assumptions
+</div>
+</td></tr>
+<tr><td><a href="Dot.Arg.html#TYPEassumption">assumption</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
+<td><div class="info">
+The type of theory-specifi proofs (also called lemmas).
+</div>
+</td></tr>
 <tr><td><a href="Plugin_intf.html#TYPEassumption">assumption</a> [<a href="Plugin_intf.html">Plugin_intf</a>]</td>
 <td><div class="info">
 Asusmptions made by the core SAT solver.
@@ -70,10 +81,16 @@ The type of clauses.
 </div>
 </td></tr>
 <tr><td><a href="Res_intf.S.html#TYPEclause">clause</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Abstract types for atoms, clauses and theory-specific lemmas
+</div>
+</td></tr>
 <tr><td align="left"><br>E</td></tr>
 <tr><td><a href="Solver_types_intf.S.html#TYPEelt">elt</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
-<td></td></tr>
+<td><div class="info">
+Either a lit of a var
+</div>
+</td></tr>
 <tr><td><a href="Plugin_intf.html#TYPEeval_res">eval_res</a> [<a href="Plugin_intf.html">Plugin_intf</a>]</td>
 <td><div class="info">
 The type of evaluation results for a given formula.
@@ -94,19 +111,20 @@ The type of formulas.
 The type of formulas.
 </div>
 </td></tr>
+<tr><td align="left"><br>H</td></tr>
+<tr><td><a href="Coq.Arg.html#TYPEhyp">hyp</a> [<a href="Coq.Arg.html">Coq.Arg</a>]</td>
+<td></td></tr>
+<tr><td><a href="Dot.Arg.html#TYPEhyp">hyp</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
+<td></td></tr>
 <tr><td align="left"><br>L</td></tr>
 <tr><td><a href="Dedukti.Arg.html#TYPElemma">lemma</a> [<a href="Dedukti.Arg.html">Dedukti.Arg</a>]</td>
 <td></td></tr>
+<tr><td><a href="Coq.Arg.html#TYPElemma">lemma</a> [<a href="Coq.Arg.html">Coq.Arg</a>]</td>
+<td></td></tr>
 <tr><td><a href="Dot.Arg.html#TYPElemma">lemma</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
-<td><div class="info">
-The type of theory-specifi proofs (also called lemmas).
-</div>
-</td></tr>
+<td></td></tr>
 <tr><td><a href="Res_intf.S.html#TYPElemma">lemma</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
-<td><div class="info">
-Abstract types for atoms, clauses and theory-specific lemmas
-</div>
-</td></tr>
+<td></td></tr>
 <tr><td><a href="Plugin_intf.S.html#TYPElevel">level</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
 <td><div class="info">
 The type for levels to allow backtracking.
@@ -208,6 +226,8 @@ Type returned by the theory.
 The type of values returned when the solver reaches a SAT state.
 </div>
 </td></tr>
+<tr><td><a href="Solver_types_intf.S.html#TYPEseen">seen</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td></td></tr>
 <tr><td><a href="Plugin_intf.html#TYPEslice">slice</a> [<a href="Plugin_intf.html">Plugin_intf</a>]</td>
 <td><div class="info">
 The type for a slice of assertions to assume/propagate in the theory.

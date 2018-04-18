@@ -29,6 +29,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Dot.Simple</title>
@@ -39,8 +40,13 @@
 &nbsp;</div>
 <h1>Functor <a href="type_Dot.Simple.html">Dot.Simple</a></h1>
 
-<pre><span class="keyword">module</span> Simple: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.St.formula and type lemma := S.lemma</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info module top">
-Functor for making a module to export proofs to the DOT format.<br>
+<pre><span class="keyword">module</span> Simple: <div class="sig_block"><code class="code">functor (</code><code class="code">S</code><code class="code"> : </code><code class="type"><a href="Res.S.html">Res.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">A</code><code class="code"> : </code><code class="type"><a href="Dot.Arg.html">Arg</a></code><code class="type">  with type atom := S.St.formula
+                                  and type hyp = S.St.formula list
+                                  and type lemma := S.lemma
+                                  and type assumption = S.St.formula</code><code class="code">) -&gt; </code><code class="type"><a href="Dot.S.html">S</a></code><code class="type">  with type t := S.proof</code></div></div></pre><div class="info module top">
+Functor for making a module to export proofs to the DOT format.
+    The substitution of the hyp type is non-destructive due to a restriction
+    of destructive substitutions on earlier versions of ocaml.<br>
 </div>
 <table border="0" cellpadding="3" width="100%">
 <tr>
@@ -56,7 +62,10 @@ Functor for making a module to export proofs to the DOT format.<br>
 <td align="center" valign="top" width="15%">
 <code>A</code></td>
 <td align="center" valign="top">:</td>
-<td><code class="type">Arg with type atom := S.St.formula and type lemma := S.lemma</code>
+<td><code class="type">Arg with type atom := S.St.formula
+                                  and type hyp = S.St.formula list
+                                  and type lemma := S.lemma
+                                  and type assumption = S.St.formula</code>
 </table>
 </td>
 </tr>

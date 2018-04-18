@@ -28,6 +28,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><link title="Internal modules" rel="Section" href="#2_Internalmodules">
@@ -42,7 +43,7 @@
 
 <pre><span class="keyword">module</span> Make: <div class="sig_block"><code class="code">functor (</code><code class="code">St</code><code class="code"> : </code><code class="type"><a href="Solver_types.S.html">Solver_types.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Th</code><code class="code"> : </code><code class="type"><a href="Plugin_intf.S.html">Plugin_intf.S</a></code><code class="type">  with type term = St.term
                          and type formula = St.formula
-                         and type proof = St.proof</code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="External.S.html">S</a></code><code class="type">  with module St = St</code></div></div></div></pre><div class="info module top">
+                         and type proof = St.proof</code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code></pre><div class="sig_block"></div><pre><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="External.S.html">S</a></code><code class="type">  with module St = St</code></div></div></div></pre><div class="info module top">
 Functor to make a safe external interface.<br>
 </div>
 <table border="0" cellpadding="3" width="100%">

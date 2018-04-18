@@ -29,6 +29,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Dot.Arg</title>
@@ -53,7 +54,13 @@ The type of atomic formuals<br>
 </div>
 
 
+<pre><span id="TYPEhyp"><span class="keyword">type</span> <code class="type"></code>hyp</span> </pre>
+
+
 <pre><span id="TYPElemma"><span class="keyword">type</span> <code class="type"></code>lemma</span> </pre>
+
+
+<pre><span id="TYPEassumption"><span class="keyword">type</span> <code class="type"></code>assumption</span> </pre>
 <div class="info ">
 The type of theory-specifi proofs (also called lemmas).<br>
 </div>
@@ -65,11 +72,12 @@ Print the contents of the given atomic formulas.
       reserved characters for the dot format (such as quotes and so on).<br>
 </div>
 
-<pre><span id="VALlemma_info"><span class="keyword">val</span> lemma_info</span> : <code class="type"><a href="Dot.Arg.html#TYPElemma">lemma</a> -><br>       string * string option * (Format.formatter -> unit -> unit) list</code></pre><div class="info ">
-Generate some information about a theory specific lemmas. This backend does not
-      support printing of proper proofs in DOT format, so all proofs are printed as leafs
-      of the resolution tree. This function should return a triplet <code class="code">(rule, color, l)</code>,
-      such that:<ul>
+<pre><span id="VALhyp_info"><span class="keyword">val</span> hyp_info</span> : <code class="type"><a href="Dot.Arg.html#TYPEhyp">hyp</a> -><br>       string * string option * (Format.formatter -> unit -> unit) list</code></pre>
+<pre><span id="VALlemma_info"><span class="keyword">val</span> lemma_info</span> : <code class="type"><a href="Dot.Arg.html#TYPElemma">lemma</a> -><br>       string * string option * (Format.formatter -> unit -> unit) list</code></pre>
+<pre><span id="VALassumption_info"><span class="keyword">val</span> assumption_info</span> : <code class="type"><a href="Dot.Arg.html#TYPEassumption">assumption</a> -><br>       string * string option * (Format.formatter -> unit -> unit) list</code></pre><div class="info ">
+Generate some information about the leafs of the proof tree. Currently this backend
+      print each lemma/assumption/hypothesis as a single leaf of the proof tree.
+      These function should return a triplet <code class="code">(rule, color, l)</code>, such that:<ul>
 <li><code class="code">rule</code> is a name for the proof (arbitrary, does not need to be unique, but
         should rather be descriptive)</li>
 <li><code class="code">color</code> is a color name (optional) understood by DOT</li>

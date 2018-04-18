@@ -26,6 +26,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Index of values</title>
@@ -79,6 +80,11 @@ Assume the formulas in the slice, possibly pushing new formulas to be propagated
       and returns the result of the new assumptions.
 </div>
 </td></tr>
+<tr><td><a href="Dot.Arg.html#VALassumption_info">assumption_info</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
+<td><div class="info">
+Generate some information about the leafs of the proof tree.
+</div>
+</td></tr>
 <tr><td align="left"><br>B</td></tr>
 <tr><td><a href="Plugin_intf.S.html#VALbacktrack">backtrack</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
 <td><div class="info">
@@ -99,6 +105,11 @@ Check the satisfiability of the current model.
 <tr><td><a href="Res_intf.S.html#VALcheck">check</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
 <td><div class="info">
 Check the contents of a proof.
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALclear">clear</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Clear the 'seen' field of the variable.
 </div>
 </td></tr>
 <tr><td><a href="Sat.Expr.html#VALcompare">compare</a> [<a href="Sat.Expr.html">Sat.Expr</a>]</td>
@@ -210,6 +221,13 @@ Return the current assignement of the literals, as well as its
 Return the proof step at the root of a given proof.
 </div>
 </td></tr>
+<tr><td><a href="Res_intf.S.html#VALexpl">expl</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Returns a short string description for the proof step; for instance
+      <code class="code">"hypothesis"</code> for a <code class="code">Hypothesis</code>
+      (it currently returns the variant name in lowercase).
+</div>
+</td></tr>
 <tr><td><a href="Solver_intf.S.html#VALexport_dimacs">export_dimacs</a> [<a href="Solver_intf.S.html">Solver_intf.S</a>]</td>
 <td><div class="info">
 Prints the entire set of clauses in the input problem
@@ -304,6 +322,8 @@ Hashing function for formulas.
 Returns the history of learnt clauses, with no guarantees on order.
 </div>
 </td></tr>
+<tr><td><a href="Dot.Arg.html#VALhyp_info">hyp_info</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
+<td></td></tr>
 <tr><td><a href="Internal.Make.html#VALhyps">hyps</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
 <td><div class="info">
 Returns the vector of assumptions used by the solver.
@@ -320,6 +340,11 @@ Called at the end of the search in case a model has been found.
 Called at the end of the search in case a model has been found.
 </div>
 </td></tr>
+<tr><td><a href="Res_intf.S.html#VALis_leaf">is_leaf</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Returns wether the the proof node is a leaf, i.e.
+</div>
+</td></tr>
 <tr><td><a href="Plugin_intf.S.html#VALiter_assignable">iter_assignable</a> [<a href="Plugin_intf.S.html">Plugin_intf.S</a>]</td>
 <td><div class="info">
 An iterator over the subterms of a formula that should be assigned a value (usually the poure subterms)
@@ -332,10 +357,7 @@ Read access to the vector of variables created
 </td></tr>
 <tr><td align="left"><br>L</td></tr>
 <tr><td><a href="Dot.Arg.html#VALlemma_info">lemma_info</a> [<a href="Dot.Arg.html">Dot.Arg</a>]</td>
-<td><div class="info">
-Generate some information about a theory specific lemmas.
-</div>
-</td></tr>
+<td></td></tr>
 <tr><td><a href="Internal.Make.html#VALlocal">local</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
 <td><div class="info">
 Add local assumptions
@@ -398,6 +420,11 @@ Creates the disjunction of a list of formulas.
 <tr><td><a href="Tseitin_intf.S.html#VALmake_xor">make_xor</a> [<a href="Tseitin_intf.S.html">Tseitin_intf.S</a>]</td>
 <td><div class="info">
 <code class="code">make_xor p q</code> creates the boolean formula "<code class="code">p</code> xor <code class="code">q</code>".
+</div>
+</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALmark">mark</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Mark the atom as seen, using the 'seen' field in the variable.
 </div>
 </td></tr>
 <tr><td><a href="Solver_types_intf.S.html#VALmcsat">mcsat</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
@@ -474,6 +501,11 @@ Constructors and destructors
 <tr><td><a href="Solver_types_intf.S.html#VALof_lit">of_lit</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
 <td></td></tr>
 <tr><td align="left"><br>P</td></tr>
+<tr><td><a href="Res_intf.S.html#VALparents">parents</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
+<td><div class="info">
+Returns the parents of a proof node.
+</div>
+</td></tr>
 <tr><td><a href="Internal.Make.html#VALpop">pop</a> [<a href="Internal.Make.html">Internal.Make</a>]</td>
 <td><div class="info">
 Pop a decision level for local assumptions.
@@ -552,11 +584,20 @@ A nice looking printer for clauses, which sort the atoms before printing.
 Given a clause, return a proof of that clause.
 </div>
 </td></tr>
+<tr><td><a href="Coq.Arg.html#VALprove_assumption">prove_assumption</a> [<a href="Coq.Arg.html">Coq.Arg</a>]</td>
+<td><div class="info">
+Proving function for hypotheses, lemmas and assumptions.
+</div>
+</td></tr>
 <tr><td><a href="Res_intf.S.html#VALprove_atom">prove_atom</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
 <td><div class="info">
 Given an atom <code class="code">a</code>, returns a proof of the clause <code class="code">[a]</code> if <code class="code">a</code> is true at level 0
 </div>
 </td></tr>
+<tr><td><a href="Coq.Arg.html#VALprove_hyp">prove_hyp</a> [<a href="Coq.Arg.html">Coq.Arg</a>]</td>
+<td></td></tr>
+<tr><td><a href="Coq.Arg.html#VALprove_lemma">prove_lemma</a> [<a href="Coq.Arg.html">Coq.Arg</a>]</td>
+<td></td></tr>
 <tr><td><a href="Res_intf.S.html#VALprove_unsat">prove_unsat</a> [<a href="Res_intf.S.html">Res_intf.S</a>]</td>
 <td><div class="info">
 Given a conflict clause <code class="code">c</code>, returns a proof of the empty clause.
@@ -574,6 +615,11 @@ Performs a "resolution step" on a sorted list of atoms.
 </div>
 </td></tr>
 <tr><td align="left"><br>S</td></tr>
+<tr><td><a href="Solver_types_intf.S.html#VALseen">seen</a> [<a href="Solver_types_intf.S.html">Solver_types_intf.S</a>]</td>
+<td><div class="info">
+Returns wether the atom has been marked as seen.
+</div>
+</td></tr>
 <tr><td><a href="Log.html#VALset_debug">set_debug</a> [<a href="Log.html">Log</a>]</td>
 <td><div class="info">
 Set debug level

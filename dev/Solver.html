@@ -30,6 +30,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Solver</title>
@@ -62,7 +63,7 @@ Simple case where the theory is empty and
 </div>
 
 <pre><span class="keyword">module</span> <a href="Solver.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">F</code><code class="code"> : </code><code class="type"><a href="Formula_intf.S.html">Formula_intf.S</a></code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Th</code><code class="code"> : </code><code class="type"><a href="Theory_intf.S.html">Theory_intf.S</a></code><code class="type">  with type formula = F.t
-                         and type proof = F.proof</code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Solver.S.html">S</a></code><code class="type">  with type St.formula = F.t
+                         and type proof = F.proof</code><code class="code">) -&gt; </code><div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code></pre><div class="sig_block"></div><pre><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Solver.S.html">S</a></code><code class="type">  with type St.formula = F.t
      and type St.proof = F.proof</code></div></div></div></pre><div class="info">
 Functor to create a SMT Solver parametrised by the atomic
     formulas and a theory.

@@ -29,6 +29,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Sat</title>
@@ -52,7 +53,7 @@ Sat solver
 The module defining formulas
 </div>
 
-<pre><span class="keyword">module</span> <a href="Sat.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code><div class="sig_block"></div><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Solver.S.html">Solver.S</a></code><code class="type">  with type St.formula = Expr.t</code></div></pre><div class="info">
+<pre><span class="keyword">module</span> <a href="Sat.Make.html">Make</a>: <div class="sig_block"><code class="code">functor (</code><code class="code">Dummy</code><code class="code"> : </code><code class="code">sig</code></pre><div class="sig_block"></div><pre><code class="code">end</code><code class="code">) -&gt; </code><code class="type"><a href="Solver.S.html">Solver.S</a></code><code class="type">  with type St.formula = Expr.t</code></div></pre><div class="info">
 A functor that can generate as many solvers as needed.
 </div>
 </body></html>

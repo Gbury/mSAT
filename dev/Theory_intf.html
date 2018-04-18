@@ -30,6 +30,7 @@
 <link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
 <link title="Tseitin" rel="Chapter" href="Tseitin.html">
 <link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
 <link title="Dedukti" rel="Chapter" href="Dedukti.html">
 <link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
 <link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Theory_intf</title>
@@ -68,8 +69,8 @@ The current set of assumptions is satisfiable.<br>
 <code><span id="TYPEELTres.Unsat"><span class="constructor">Unsat</span></span> <span class="keyword">of</span> <code class="type">'formula list * 'proof</code></code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 The current set of assumptions is *NOT* satisfiable, and here is a
-        theory tautology (with its proof), for which every litteral is false
-        under the current assumptions.<br>
+      theory tautology (with its proof), for which every litteral is false
+      under the current assumptions.<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
@@ -130,9 +131,9 @@ Allows to add to the solver a clause.<br>
 <code><span id="TYPEELTslice.propagate">propagate</span>&nbsp;: <code class="type">'form -> 'form list -> 'proof -> unit</code>;</code></td>
 <td class="typefieldcomment" align="left" valign="top" ><code>(*</code></td><td class="typefieldcomment" align="left" valign="top" ><div class="info ">
 <code class="code">propagate lit causes proof</code> informs the solver to propagate <code class="code">lit</code>, with the reason
-    that the clause <code class="code">causes =&gt; lit</code> is a theory tautology. It is faster than pushing
-    the associated clause but the clause will not be remembered by the sat solver,
-    i.e it will not be used by the solver to do boolean propagation.<br>
+      that the clause <code class="code">causes =&gt; lit</code> is a theory tautology. It is faster than pushing
+      the associated clause but the clause will not be remembered by the sat solver,
+      i.e it will not be used by the solver to do boolean propagation.<br>
 </div>
 </td><td class="typefieldcomment" align="left" valign="bottom" ><code>*)</code></td>
 </tr></table>
