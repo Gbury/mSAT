@@ -76,18 +76,18 @@ module type S = sig
 
   (** {3 Proof Nodes} *)
 
+  val parents : step -> proof list
+  (** Returns the parents of a proof node. *)
+
   val is_leaf : step -> bool
   (** Returns wether the the proof node is a leaf, i.e. an hypothesis,
       an assumption, or a lemma.
-      [true] if and only if {parents} returns the empty list. *)
+      [true] if and only if {!parents} returns the empty list. *)
 
   val expl : step -> string
   (** Returns a short string description for the proof step; for instance
       ["hypothesis"] for a [Hypothesis]
       (it currently returns the variant name in lowercase). *)
-
-  val parents : step -> proof list
-  (** Returns the parents of a proof node. *)
 
 
   (** {3 Proof Manipulation} *)
