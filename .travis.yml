@@ -23,7 +23,6 @@ before_install:
   - ${HOME}/opam init --compiler=${OCAML_VERSION}
   - eval `${HOME}/opam config env`
   - export OPAMVERBOSE=1
-  - opam init
   - opam switch ${OCAML_VERSION}
   - eval `opam config env`
   - opam install ocamlfind jbuilder
