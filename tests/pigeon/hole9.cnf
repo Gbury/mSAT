@@ -2,8 +2,8 @@ c File:  hole9.cnf
 c
 c SOURCE: John Hooker (jh38+@andrew.cmu.edu)
 c
-c DESCRIPTION: Pigeon hole problem of placing n (for file holen) pigeons
-c              in n+1 holes without placing 2 pigeons in the same hole
+c DESCRIPTION: Pigeon hole problem of placing n+1 (for file holen) pigeons
+c              in n holes without placing 2 pigeons in the same hole
 c
 c NOTE: Part of the collection at the Forschungsinstitut fuer 
 c       anwendungsorientierte Wissensverarbeitung in Ulm Germany.
