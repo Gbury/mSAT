@@ -968,7 +968,8 @@ module Make
         else begin
           Iheap.grow_to_at_least env.order (St.nb_elt ());
           insert_subterms_order p.var;
-          enqueue_bool p (decision_level ()) (Bcp c)
+          let lvl = List.fold_left (fun acc a -> max acc a.var.v_level) 0 l in
+          enqueue_bool p lvl (Bcp c)
         end
       else
         raise (Invalid_argument "Msat.Internal.slice_propagate")
