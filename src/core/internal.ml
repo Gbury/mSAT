@@ -1007,8 +1007,13 @@ module Make
       | Plugin_intf.Unsat (l, p) ->
         (* conflict *)
         let l = List.rev_map create_atom l in
+        (* Assert that the conflcit is indeeed a conflict *)
+        if not @@ List.for_all (fun a -> a.neg.is_true) l then
+          raise (Invalid_argument "msat:core/internal: invalid conflict");
+        (* Insert elements for decision (and ensure the heap is big enough) *)
         Iheap.grow_to_at_least env.order (St.nb_elt ());
         List.iter (fun a -> insert_var_order (elt_of_var a.var)) l;
+        (* Create the clause and return it. *)
         let c = St.make_clause (St.fresh_tname ()) l (Lemma p) in
         Some c
     end
