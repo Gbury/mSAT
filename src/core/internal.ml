@@ -568,6 +568,10 @@ module Make
     else match Plugin.eval a.lit with
       | Plugin_intf.Unknown -> None
       | Plugin_intf.Valued (b, l) ->
+        if l = [] then
+          raise (Invalid_argument (
+              Format.asprintf "msat:core/internal.ml: %s"
+                "semantic propagation at level 0 are currently forbidden"));
         let atom = if b then a else a.neg in
         enqueue_semantic atom l;
         Some b
