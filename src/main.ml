@@ -88,13 +88,14 @@ module Make
     | Dolmen.Statement.Pack [
         { Dolmen.Statement.descr = Dolmen.Statement.Push 1; };
         { Dolmen.Statement.descr = Dolmen.Statement.Antecedent f; };
-        { Dolmen.Statement.descr = Dolmen.Statement.Prove; };
+        { Dolmen.Statement.descr = Dolmen.Statement.Prove []; };
         { Dolmen.Statement.descr = Dolmen.Statement.Pop 1; };
       ] ->
       let assumptions = T.assumptions f in
       prove ~assumptions
-    | Dolmen.Statement.Prove ->
-      prove ~assumptions:[]
+    | Dolmen.Statement.Prove l ->
+      let assumptions = List.map T.assumptions l in
+      prove ~assumptions
     | Dolmen.Statement.Set_info _
     | Dolmen.Statement.Set_logic _ -> ()
     | Dolmen.Statement.Exit -> exit 0
@@ -205,7 +206,7 @@ let main () =
   List.iter S.do_task input;
   (* Small hack for dimacs, which do not output a "Prove" statement *)
   begin match lang with
-    | P.Dimacs -> S.do_task @@ Dolmen.Statement.check_sat ()
+    | P.Dimacs -> S.do_task @@ Dolmen.Statement.check_sat []
     | _ -> ()
   end;
   Gc.delete_alarm al;
