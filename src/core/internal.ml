@@ -1199,25 +1199,28 @@ module Make
   (* create a factice decision level for local assumptions *)
   let push (): unit =
     Log.debugf debug "Pushing a new user level" (fun k -> k);
-    cancel_until (base_level ());
-    Log.debugf debug "@[<v>Status:@,@[<hov 2>trail: %d - %d@,%a@]"
-      (fun k -> k env.elt_head env.th_head (Vec.print ~sep:"" St.pp) env.elt_queue);
-    begin match propagate () with
-      | Some confl ->
-        report_unsat confl
-      | None ->
-        Log.debugf debug "@[<v>Current trail:@,@[<hov>%a@]@]"
-          (fun k -> k (Vec.print ~sep:"" St.pp) env.elt_queue);
-        Log.debugf info "Creating new user level" (fun k -> k);
-        new_decision_level ();
-        Vec.push env.user_levels (Vec.size env.clauses_temp);
-        assert (decision_level () = base_level ())
-    end
+    match env.unsat_conflict with
+    | Some confl -> raise Unsat
+    | None ->
+      cancel_until (base_level ());
+      Log.debugf debug "@[<v>Status:@,@[<hov 2>trail: %d - %d@]@,%a@]"
+        (fun k -> k env.elt_head env.th_head (Vec.print ~sep:"" St.pp) env.elt_queue);
+      begin match propagate () with
+        | Some confl ->
+          report_unsat confl
+        | None ->
+          Log.debugf debug "@[<v>Current trail:@,@[<hov>%a@]@]"
+            (fun k -> k (Vec.print ~sep:"" St.pp) env.elt_queue);
+          Log.debugf info "Creating new user level" (fun k -> k);
+          new_decision_level ();
+          Vec.push env.user_levels (Vec.size env.clauses_temp);
+          assert (decision_level () = base_level ())
+      end
 
   (* pop the last factice decision level *)
   let pop (): unit =
     if base_level () = 0 then
-      Log.debugf warn "Cannot pop (already at level 0)" (fun k -> k)
+      Log.debugf warn "Cannot pop (already at user level 0)" (fun k -> k)
     else begin
       Log.debugf info "Popping user level" (fun k -> k);
       assert (base_level () > 0);
