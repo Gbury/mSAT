@@ -12,6 +12,7 @@ let file = ref ""
 let p_cnf = ref false
 let p_check = ref false
 let p_dot_proof = ref ""
+let p_drat_proof = ref ""
 let p_proof_print = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
@@ -63,7 +64,11 @@ module Make
           if !p_dot_proof <> "" then begin
             let fmt = Format.formatter_of_out_channel (open_out !p_dot_proof) in
             D.print fmt p
-          end
+          end;
+          if !p_drat_proof <> "" then begin
+            let fmt = Format.formatter_of_out_channel (open_out !p_drat_proof) in
+            S.export_drat fmt ()
+          end;
         end;
         let t' = Sys.time () -. t in
         Format.printf "Unsat (%f/%f)@." t t'
@@ -167,7 +172,9 @@ let argspec = Arg.align [
     "-check", Arg.Set p_check,
     " Build, check and print the proof (if output is set), if unsat";
     "-dot", Arg.Set_string p_dot_proof,
-    " If provided, print the dot proof in the given file";
+    "<file> If provided, print the dot proof in the given file";
+    "-drat", Arg.Set_string p_drat_proof,
+    "<file> If provided, print the drat proof in the given file";
     "-gc", Arg.Unit setup_gc_stat,
     " Outputs statistics about the GC";
     "-s", Arg.String set_solver,

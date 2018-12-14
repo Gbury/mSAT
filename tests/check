@@ -1,0 +1,16 @@
+#!/bin/bash
+
+CURDIR=`dirname $0`
+SOLVER="$CURDIR/../msat"
+CHECKER="$CURDIR/../../drup-trim/drup-trim"
+
+echo "Checking file $1"
+
+# run msat and get the drat proof
+echo "Running solver ... "
+"$SOLVER" -s sat -time 30s -size 1G -check -drat proof.tmp $1
+
+# CHeck the proof with drat-trim
+echo "Checking proof ..."
+"$CHECKER" $1 proof.tmp
+

@@ -25,6 +25,10 @@ module type S = sig
       The arguments should be transmitted directly from the corresponding
       function of the {Internal} module. *)
 
+  val export_drat :
+    ?unsat:bool -> Format.formatter -> clause Vec.t -> unit
+  (** Export a DRAT proof. *)
+
   val export_icnf :
     Format.formatter ->
     hyps:clause Vec.t ->

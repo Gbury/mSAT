@@ -18,6 +18,13 @@ module type S = sig
       The arguments should be transmitted directly from the corresponding
       function of the {Internal} module. *)
 
+  val export_drat :
+    ?unsat: bool ->
+    Format.formatter ->
+    clause Vec.t ->
+    unit
+  (** Export a DRAT proof. *)
+
   val export_icnf :
     Format.formatter ->
     hyps:clause Vec.t ->
@@ -94,6 +101,23 @@ module Make(St : Solver_types.S)(Dummy: sig end) = struct
       (export_vec "Local assumptions") local
       (export_vec "Hypotheses") hyps
       (export_vec "Lemmas") lemmas
+
+  (* small utility function to print the empty clause in dimacs,
+     in order to close/ensure a proof proves UNSAT *)
+  let export_drat_unsat fmt () =
+    Format.fprintf fmt "0@."
+
+  (* Export DRAT proofs
+     when usnat is true, ensure that the proof tries to prove UNSAT,
+     i.e. that it ends with the empty clause (or add it if it's not the case). *)
+  let export_drat ?(unsat=true) fmt v =
+    Format.fprintf fmt "@[<v>%a@]" (export_vec "Learnt clauses") v;
+    if unsat then
+      match Vec.last v with
+      | exception Invalid_argument _ -> export_drat_unsat fmt ()
+      | { St.atoms = [| |] ; _ } -> ()
+      | _ -> export_drat_unsat fmt ()
+
 
   (* Refs to remember what portion of a problem has been printed *)
   let icnf_hyp = ref 0

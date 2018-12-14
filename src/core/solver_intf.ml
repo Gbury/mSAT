@@ -105,5 +105,11 @@ module type S = sig
   (** Export the current problem contents to iCNF format.
       This function is meant to be used icnrementally, i.e.
       called for each return value of the solve function. *)
+
+  val export_drat : Format.formatter -> unit -> unit
+  (** Export the currentl
+      NOTE: only use in the context of an unsat result,
+            particularly before another call to the {! solve} function *)
+
 end
 

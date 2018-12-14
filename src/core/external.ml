@@ -134,4 +134,9 @@ module Make
     let local = S.temp () in
     D.export_icnf fmt ~hyps ~history ~local
 
+  (* TODO: filter out learnt clauses that are not actually used in the proof ? *)
+  let export_drat fmt p =
+    let history = S.history () in
+    D.export_drat ~unsat:true fmt history
+
 end
