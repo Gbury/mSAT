@@ -7,23 +7,24 @@ author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "G
 build: [
     [make "disable_log"]
     [make "doc"] { with-doc }
+    [make "test"] { with-test }
     [make "lib"]
 ]
 install: [
-    [make "DOCDIR=%{doc}%" "install"]
+    [make "DOCDIR=%{msat:doc}%" "install"]
 ]
 remove: [
-    [make "DOCDIR=%{doc}%" "uninstall"]
+    [make "DOCDIR=%{msat:doc}%" "uninstall"]
 ]
 depends: [
   "ocaml" { >= "4.00.1" }
   "ocamlfind" {build}
   "ocamlbuild" {build}
-  "dolmen" {test & >= "0.4" }
+  "dolmen" {with-test & >= "0.4" }
 ]
 tags: [ "sat" "smt" ]
 homepage: "https://github.com/Gbury/mSAT"
-dev-repo: "https://github.com/Gbury/mSAT.git"
+dev-repo: "git+https://github.com/Gbury/mSAT.git"
 bug-reports: "https://github.com/Gbury/mSAT/issues/"
 synopsis: "A library to create SAT/SMT/McSat solvers"
 description:
