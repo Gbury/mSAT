@@ -1,4 +1,4 @@
-opam-version: "1.2"
+opam-version: "2.0"
 name: "msat"
 license: "Apache"
 version: "0.7"
@@ -6,10 +6,8 @@ maintainer: ["guillaume.bury@gmail.com" "simon.cruanes@inria.fr"]
 author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "Guillaume Bury"]
 build: [
     [make "disable_log"]
+    [make "doc"] { with-doc }
     [make "lib"]
-]
-build-doc: [
-    [make "doc"]
 ]
 install: [
     [make "DOCDIR=%{doc}%" "install"]
@@ -18,12 +16,10 @@ remove: [
     [make "DOCDIR=%{doc}%" "uninstall"]
 ]
 depends: [
+  "ocaml" { >= "4.00.1" }
   "ocamlfind" {build}
   "ocamlbuild" {build}
   "dolmen" {test & >= "0.4" }
-]
-available: [
-  ocaml-version >= "4.00.1"
 ]
 tags: [ "sat" "smt" ]
 homepage: "https://github.com/Gbury/mSAT"
