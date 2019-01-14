@@ -1,9 +1,9 @@
 opam-version: "1.2"
 name: "msat"
 license: "Apache"
-version: "dev"
-author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "Guillaume Bury"]
+version: "0.7"
 maintainer: ["guillaume.bury@gmail.com" "simon.cruanes@inria.fr"]
+author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "Guillaume Bury"]
 build: [
     [make "disable_log"]
     [make "lib"]
@@ -20,7 +20,7 @@ remove: [
 depends: [
   "ocamlfind" {build}
   "ocamlbuild" {build}
-  "dolmen" {test & = "dev" }
+  "dolmen" {test & >= "0.4" }
 ]
 available: [
   ocaml-version >= "4.00.1"
@@ -29,4 +29,15 @@ tags: [ "sat" "smt" ]
 homepage: "https://github.com/Gbury/mSAT"
 dev-repo: "https://github.com/Gbury/mSAT.git"
 bug-reports: "https://github.com/Gbury/mSAT/issues/"
+synopsis: "A library to create SAT/SMT/McSat solvers"
+description:
+"mSAT is a library intended to make creating new SMT/McSat solvers easier.
 
+mSAT implements a SAT solver core functorized over a theory. It thus provides
+functors that take an arbitrary theory (either for SMT or McSat), and returns
+a functionning SMT or McSat solver.
+
+mSAT solvers support arbitrarily nested local assumptions. Solvers creates
+using mSAT functors can adidtionally provide formal proofs whenever the
+solver answers UNSAT on a problem.
+"
