@@ -37,13 +37,13 @@ module Make
 
   let check_model state =
     let check_clause c =
-      let l = List.map (function a ->
+      let l = List.rev_map (function a ->
           Log.debugf 99 "Checking value of %a"
             (fun k -> k S.St.pp_atom (S.St.add_atom a));
           state.Solver_intf.eval a) c in
       List.exists (fun x -> x) l
     in
-    let l = List.map check_clause !hyps in
+    let l = List.rev_map check_clause !hyps in
     List.for_all (fun x -> x) l
 
   let prove ~assumptions =
