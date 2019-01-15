@@ -29,9 +29,13 @@ test_bin:
 test: bin test_bin
 	@echo "run API tests…"
 	@./test_api.native
-	@echo "run benchmarks…"
+	@echo "run bin tests…"
+	./tests/run mcsat
+
+bench:
 	# @/usr/bin/time -f "%e" ./tests/run smt
 	@/usr/bin/time -f "%e" ./tests/run mcsat
+
 
 enable_log:
 	cd src/util; ln -sf log_real.ml log.ml
