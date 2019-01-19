@@ -1550,7 +1550,7 @@ module Make(Plugin : PLUGIN)
         if first.neg.is_true then (
           (* clause is false *)
           st.elt_head <- Vec.size st.trail;
-          raise (Conflict c)
+          raise_notrace (Conflict c)
         ) else (
           match th_eval st first with
           | None -> (* clause is unit, keep the same watches, but propagate *)
@@ -1558,7 +1558,7 @@ module Make(Plugin : PLUGIN)
           | Some true -> ()
           | Some false ->
             st.elt_head <- Vec.size st.trail;
-            raise (Conflict c)
+            raise_notrace (Conflict c)
         );
         Watch_kept
       with Exit ->
@@ -1569,28 +1569,21 @@ module Make(Plugin : PLUGIN)
      clause watching [a] to see if the clause is false, unit, or has
      other possible watches
      @param res the optional conflict clause that the propagation might trigger *)
-  let propagate_atom st a (res:clause option ref) : unit =
+  let propagate_atom st a : unit =
     let watched = a.watched in
-    begin
-      try
-        let rec aux i =
-          if i >= Vec.size watched then ()
-          else (
-            let c = Vec.get watched i in
-            assert c.attached;
-            let j = match propagate_in_clause st a c i with
-              | Watch_kept -> i+1
-              | Watch_removed -> i (* clause at this index changed *)
-            in
-            aux j
-          )
+    let rec aux i =
+      if i >= Vec.size watched then ()
+      else (
+        let c = Vec.get watched i in
+        assert c.attached;
+        let j = match propagate_in_clause st a c i with
+          | Watch_kept -> i+1
+          | Watch_removed -> i (* clause at this index changed *)
         in
-        aux 0
-      with Conflict c ->
-        assert (!res = None);
-        res := Some c
-    end;
-    ()
+        aux j
+      )
+    in
+    aux 0
 
   (* Propagation (boolean and theory) *)
   let create_atom st f =
@@ -1684,23 +1677,23 @@ module Make(Plugin : PLUGIN)
     flush_clauses st;
     (* Now, check that the situation is sane *)
     assert (st.elt_head <= Vec.size st.trail);
-    if st.elt_head = Vec.size st.trail then
+    if st.elt_head = Vec.size st.trail then (
       theory_propagate st
-    else (
+    ) else (
       let num_props = ref 0 in
-      let res = ref None in
-      while st.elt_head < Vec.size st.trail do
-        begin match Vec.get st.trail st.elt_head with
-          | Lit _ -> ()
-          | Atom a ->
-            incr num_props;
-            propagate_atom st a res
-        end;
-        st.elt_head <- st.elt_head + 1;
-      done;
-      match !res with
-      | None -> theory_propagate st
-      | _ -> !res
+      match
+        while st.elt_head < Vec.size st.trail do
+          begin match Vec.get st.trail st.elt_head with
+            | Lit _ -> ()
+            | Atom a ->
+              incr num_props;
+              propagate_atom st a
+          end;
+          st.elt_head <- st.elt_head + 1;
+        done;
+      with
+      | () -> theory_propagate st
+      | exception Conflict c -> Some c
     )
 
   (* remove some learnt clauses
