@@ -156,7 +156,6 @@ module type S = sig
 
   module Var : sig
     type t = var
-    val dummy : t
 
     val pos : t -> atom
     val neg : t -> atom
@@ -180,7 +179,6 @@ module type S = sig
 
   module Atom : sig
     type t = atom
-    val dummy : t
     val level : t -> int
     val reason : t -> reason option
     val lit : t -> formula
@@ -227,7 +225,6 @@ module type S = sig
 
   module Clause : sig
     type t = clause
-    val dummy : t
 
     val name : t -> string
     val equal : t -> t -> bool

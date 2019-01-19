@@ -24,8 +24,6 @@ module McMake (E : Expr_intf.S) = struct
   type formula = E.Formula.t
   type proof = E.proof
 
-  let pp_form = E.Formula.dummy
-
   type seen =
     | Nope
     | Both
@@ -91,37 +89,6 @@ module McMake (E : Expr_intf.S) = struct
     | Lit of lit
     | Atom of atom
 
-  let rec dummy_var =
-    { vid = -101;
-      pa = dummy_atom;
-      na = dummy_atom;
-      v_fields = Var_fields.empty;
-      v_level = -1;
-      v_weight = -1.;
-      v_idx= -1;
-      v_assignable = None;
-      reason = None;
-    }
-  and dummy_atom =
-    { var = dummy_var;
-      lit = E.Formula.dummy;
-      watched = Obj.magic 0;
-      (* should be [Vec.make_empty dummy_clause]
-         but we have to break the cycle *)
-      neg = dummy_atom;
-      is_true = false;
-      aid = -102 }
-  let dummy_clause =
-    { name = -1;
-      tag = None;
-      atoms = [| |];
-      activity = -1.;
-      attached = false;
-      visited = false;
-      cpremise = History [] }
-
-  let () = dummy_atom.watched <- Vec.make_empty dummy_clause
-
   (* Constructors *)
   module MF = Hashtbl.Make(E.Formula)
   module MT = Hashtbl.Make(E.Term)
@@ -136,21 +103,21 @@ module McMake (E : Expr_intf.S) = struct
 
   type state = t
 
-  let create_ size_map size_vars () : t = {
+  let create_ size_map () : t = {
     f_map = MF.create size_map;
     t_map = MT.create size_map;
-    vars = Vec.make size_vars (E_var dummy_var);
+    vars = Vec.create();
     cpt_mk_var = 0;
     cpt_mk_clause = 0;
   }
 
   let create ?(size=`Big) () : t =
-    let size_map, size_vars = match size with
-      | `Tiny -> 8, 0
-      | `Small -> 16, 10
-      | `Big -> 4096, 128
+    let size_map = match size with
+      | `Tiny -> 8
+      | `Small -> 16
+      | `Big -> 4096
     in
-    create_ size_map size_vars ()
+    create_ size_map ()
 
   let nb_elt st = Vec.size st.vars
   let get_elt st i = Vec.get st.vars i
@@ -200,7 +167,6 @@ module McMake (E : Expr_intf.S) = struct
 
   module Var = struct
     type t = var
-    let dummy = dummy_var
     let[@inline] level v = v.v_level
     let[@inline] pos v = v.pa
     let[@inline] neg v = v.na
@@ -228,14 +194,14 @@ module McMake (E : Expr_intf.S) = struct
         and pa =
           { var = var;
             lit = lit;
-            watched = Vec.make 10 dummy_clause;
+            watched = Vec.create();
             neg = na;
             is_true = false;
             aid = cpt_double (* aid = vid*2 *) }
         and na =
           { var = var;
             lit = E.Formula.neg lit;
-            watched = Vec.make 10 dummy_clause;
+            watched = Vec.create();
             neg = pa;
             is_true = false;
             aid = cpt_double + 1 (* aid = vid*2+1 *) } in
@@ -255,7 +221,6 @@ module McMake (E : Expr_intf.S) = struct
 
   module Atom = struct
     type t = atom
-    let dummy = dummy_atom
     let[@inline] level a = a.var.v_level
     let[@inline] var a = a.var
     let[@inline] neg a = a.neg
@@ -370,7 +335,6 @@ module McMake (E : Expr_intf.S) = struct
 
   module Clause = struct
     type t = clause
-    let dummy = dummy_clause
 
     let make =
       let n = ref 0 in

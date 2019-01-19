@@ -49,9 +49,6 @@ module type S = sig
   type level
   (** The type for levels to allow backtracking. *)
 
-  val dummy : level
-  (** A dummy level. *)
-
   val current_level : unit -> level
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
@@ -76,7 +73,6 @@ module Dummy(F: Formula_intf.S)
   type formula = F.t
   type proof = unit
   type level = unit
-  let dummy = ()
   let current_level () = ()
   let assume _ = Sat
   let if_sat _ = Sat

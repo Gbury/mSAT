@@ -34,7 +34,7 @@ module Make(St : Solver_types_intf.S) = struct
 
   (* Dimacs & iCNF export *)
   let export_vec name fmt vec =
-    Format.fprintf fmt "c %s@,%a@," name (Vec.print ~sep:"" St.Clause.pp_dimacs) vec
+    Format.fprintf fmt "c %s@,%a@," name (Vec.pp ~sep:"" St.Clause.pp_dimacs) vec
 
   let export_assumption fmt vec =
     Format.fprintf fmt "c Local assumptions@,a %a@," St.Clause.pp_dimacs vec
@@ -66,7 +66,7 @@ module Make(St : Solver_types_intf.S) = struct
       end
 
   let filter_vec learnt =
-    let lemmas = Vec.make (Vec.size learnt) St.Clause.dummy in
+    let lemmas = Vec.create() in
     Vec.iter (fun c ->
         match map_filter_learnt c with
         | None -> ()

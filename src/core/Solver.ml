@@ -31,7 +31,7 @@ module Make
   type t = S.t
   type solver = t
 
-  let[@inline] create ?size () = S.create ?size ()
+  let create = S.create
 
   (* Result type *)
   type res =
@@ -44,10 +44,10 @@ module Make
           "@[<v>%s - Full resume:@,@[<hov 2>Trail:@\n%a@]@,\
            @[<hov 2>Temp:@\n%a@]@,@[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,@]@."
           status
-          (Vec.print ~sep:"" St.Trail_elt.debug) (S.trail st)
-          (Vec.print ~sep:"" St.Clause.debug) (S.temp st)
-          (Vec.print ~sep:"" St.Clause.debug) (S.hyps st)
-          (Vec.print ~sep:"" St.Clause.debug) (S.history st)
+          (Vec.pp ~sep:"" St.Trail_elt.debug) (S.trail st)
+          (Vec.pp ~sep:"" St.Clause.debug) (S.temp st)
+          (Vec.pp ~sep:"" St.Clause.debug) (S.hyps st)
+          (Vec.pp ~sep:"" St.Clause.debug) (S.history st)
       )
 
   let mk_sat (st:S.t) : (_,_) sat_state =

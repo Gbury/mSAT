@@ -17,7 +17,6 @@ module Make
   module H = Heap.Make(struct
     type t = St.Elt.t
     let[@inline] cmp i j = Elt.weight j < Elt.weight i (* comparison by weight *)
-    let dummy = Elt.of_var St.Var.dummy
     let idx = Elt.idx
     let set_idx = Elt.set_idx
   end)
@@ -122,14 +121,14 @@ module Make
   }
 
   (* Starting environment. *)
-  let create_ ~st ~size_trail ~size_lvl () : t = {
+  let create_ ~st () : t = {
     st;
     unsat_conflict = None;
     next_decision = None;
 
-    clauses_hyps = Vec.make 0 Clause.dummy;
-    clauses_learnt = Vec.make 0 Clause.dummy;
-    clauses_temp = Vec.make 0 Clause.dummy;
+    clauses_hyps = Vec.create();
+    clauses_learnt = Vec.create();
+    clauses_temp = Vec.create();
 
     clauses_root = Stack.create ();
     clauses_to_add = Stack.create ();
@@ -137,10 +136,10 @@ module Make
     th_head = 0;
     elt_head = 0;
 
-    trail = Vec.make size_trail (Trail_elt.of_atom Atom.dummy);
-    elt_levels = Vec.make size_lvl (-1);
-    th_levels = Vec.make size_lvl Plugin.dummy;
-    user_levels = Vec.make 0 (-1);
+    trail = Vec.create ();
+    elt_levels = Vec.create();
+    th_levels = Vec.create();
+    user_levels = Vec.create();
 
     order = H.create();
 
@@ -153,13 +152,9 @@ module Make
     dirty=false;
   }
 
-  let create ?(size=`Big) ?st () : t =
-    let st = match st with Some s -> s | None -> St.create ~size () in
-    let size_trail, size_lvl = match size with
-      | `Tiny -> 0, 0
-      | `Small -> 32, 16
-      | `Big -> 600, 50
-    in create_ ~st ~size_trail ~size_lvl ()
+  let create ?(size=`Big) () : t =
+    let st = St.create ~size () in
+    create_ ~st ()
 
   (* Misc functions *)
   let to_float = float_of_int
@@ -504,8 +499,8 @@ module Make
           Log.debugf error
             (fun k ->
                k "@[<v 2>Failed at reason simplification:@,%a@,%a@]"
-                 (Vec.print ~sep:"" Atom.debug)
-                 (Vec.from_list l Atom.dummy)
+                 (Vec.pp ~sep:"" Atom.debug)
+                 (Vec.of_list l)
                  Clause.debug cl);
           assert false
       end
@@ -537,7 +532,6 @@ module Make
       let l = List.map (Lit.make st.st) terms in
       let lvl = List.fold_left (fun acc {l_level; _} ->
           assert (l_level > 0); max acc l_level) 0 l in
-      H.grow_to_at_least st.order (St.nb_elt st.st);
       enqueue_bool st a ~level:lvl Semantic
     )
 
@@ -864,8 +858,6 @@ module Make
 
   let flush_clauses st =
     if not (Stack.is_empty st.clauses_to_add) then (
-      let nbv = St.nb_elt st.st in
-      H.grow_to_at_least st.order nbv;
       while not (Stack.is_empty st.clauses_to_add) do
         let c = Stack.pop st.clauses_to_add in
         add_clause st c
@@ -986,7 +978,6 @@ module Make
         else if p.neg.is_true then (
           Stack.push c st.clauses_to_add
         ) else (
-          H.grow_to_at_least st.order (St.nb_elt st.st);
           insert_subterms_order st p.var;
           let level = List.fold_left (fun acc a -> max acc a.var.v_level) 0 l in
           enqueue_bool st p ~level (Bcp c)
@@ -1033,7 +1024,6 @@ module Make
         if not @@ List.for_all (fun a -> a.neg.is_true) l then (
           raise (Invalid_argument "msat:core/internal: invalid conflict");
         );
-        H.grow_to_at_least st.order (St.nb_elt st.st);
         List.iter (fun a -> insert_var_order st (Elt.of_var a.var)) l;
         (* Create the clause and return it. *)
         let c = St.Clause.make l (Lemma p) in
@@ -1215,14 +1205,14 @@ module Make
       cancel_until st (base_level st);
       Log.debugf debug
         (fun k -> k "@[<v>Status:@,@[<hov 2>trail: %d - %d@,%a@]"
-            st.elt_head st.th_head (Vec.print ~sep:"" Trail_elt.debug) st.trail);
+            st.elt_head st.th_head (Vec.pp ~sep:"" Trail_elt.debug) st.trail);
       begin match propagate st with
         | Some confl ->
           report_unsat st confl
         | None ->
           Log.debugf debug
             (fun k -> k "@[<v>Current trail:@,@[<hov>%a@]@]"
-                (Vec.print ~sep:"" Trail_elt.debug) st.trail);
+                (Vec.pp ~sep:"" Trail_elt.debug) st.trail);
           Log.debug info "Creating new user level";
           new_decision_level st;
           Vec.push st.user_levels (Vec.size st.clauses_temp);
@@ -1237,8 +1227,7 @@ module Make
       Log.debug info "Popping user level";
       assert (base_level st > 0);
       st.unsat_conflict <- None;
-      let n = Vec.last st.user_levels in
-      Vec.pop st.user_levels; (* before the [cancel_until]! *)
+      let n = Vec.pop st.user_levels in (* before the [cancel_until]! *)
       (* Add the root clauses to the clauses to add *)
       Stack.iter (fun c -> Stack.push c st.clauses_to_add) st.clauses_root;
       Stack.clear st.clauses_root;
@@ -1263,9 +1252,6 @@ module Make
           (* conflict between assumptions: UNSAT *)
           report_unsat st c;
         ) else (
-          (* Grow the heap, because when the lit is backtracked,
-             it will be added to the heap. *)
-          H.grow_to_at_least st.order (St.nb_elt st.st);
           (* make a decision, propagate *)
           let level = decision_level st in
           enqueue_bool st a ~level (Bcp c);
