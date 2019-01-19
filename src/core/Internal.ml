@@ -331,10 +331,9 @@ module Make(Plugin : PLUGIN)
   module Clause = struct
     type t = clause
 
-    let make =
+    let make_a =
       let n = ref 0 in
-      fun ?tag ali premise ->
-        let atoms = Array.of_list ali in
+      fun ?tag atoms premise ->
         let name = !n in
         incr n;
         { name;
@@ -344,6 +343,8 @@ module Make(Plugin : PLUGIN)
           attached = false;
           activity = 0.;
           cpremise = premise}
+
+    let make ?tag l premise = make_a ?tag (Array.of_list l) premise
 
     let empty = make [] (History [])
     let name = name_of_clause
@@ -2008,6 +2009,10 @@ module Make(Plugin : PLUGIN)
   let[@inline] assume st ?tag cls : unit =
     cleanup_ st;
     assume st ?tag cls
+
+  let[@inline] add_clause_a st c : unit =
+    let c = Clause.make_a c Hyp in
+    add_clause st c
 
   let[@inline] add_clause st ?tag c : unit =
     cleanup_ st;

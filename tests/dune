@@ -12,4 +12,8 @@
  (deps    test_api.exe)
  (action  (run %{deps})))
 
+(alias
+ (name    runtest)
+ (deps    ./icnf-solve/icnf_solve.exe Makefile (source_tree regression))
+ (action  (run make test-icnf)))
 

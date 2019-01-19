@@ -23,6 +23,8 @@ let _make i =
   end else
     raise Bad_atom
 
+let to_int i = i
+
 (** *)
 let neg a = - a
 

@@ -94,6 +94,7 @@ let exists p t = Sequence.exists p @@ to_seq t
 let for_all p t = Sequence.for_all p @@ to_seq t
 let fold f acc a = Sequence.fold f acc @@ to_seq a
 let to_list a = Sequence.to_list @@ to_seq a
+let to_array a = Array.sub a.data 0 a.sz
 
 let of_list l : _ t =
   match l with
