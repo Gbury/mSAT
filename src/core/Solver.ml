@@ -27,6 +27,7 @@ module Make
   type term = St.term
   type atom = St.formula
   type clause = St.clause
+  type theory = Th.t
 
   type t = S.t
   type solver = t

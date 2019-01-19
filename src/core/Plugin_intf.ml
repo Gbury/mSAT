@@ -60,8 +60,11 @@ type ('term, 'formula, 'proof) slice = {
 }
 (** The type for a slice of assertions to assume/propagate in the theory. *)
 
+(** Signature for theories to be given to the Model Constructing Solver. *)
 module type S = sig
-  (** Signature for theories to be given to the Model Constructing Solver. *)
+
+  type t
+  (** The plugin state itself *)
 
   type term
   (** The type of terms. Should be compatible with Expr_intf.Term.t*)
@@ -75,33 +78,30 @@ module type S = sig
   type level
   (** The type for levels to allow backtracking. *)
 
-  val dummy : level
-  (** A dummy level. *)
-
-  val current_level : unit -> level
+  val current_level : t -> level
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
 
-  val assume : (term, formula, proof) slice -> (formula, proof) res
+  val assume : t -> (term, formula, proof) slice -> (formula, proof) res
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
       and returns the result of the new assumptions. *)
 
-  val if_sat : (term, formula, proof) slice -> (formula, proof) res
+  val if_sat : t -> (term, formula, proof) slice -> (formula, proof) res
   (** Called at the end of the search in case a model has been found. If no new clause is
       pushed and the function returns [Sat], then proof search ends and 'sat' is returned,
       else search is resumed. *)
 
-  val backtrack : level -> unit
+  val backtrack : t -> level -> unit
   (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
       same state as when it returned the value [l], *)
 
-  val assign : term -> term
+  val assign : t -> term -> term
   (** Returns an assignment value for the given term. *)
 
-  val iter_assignable : (term -> unit) -> formula -> unit
+  val iter_assignable : t -> (term -> unit) -> formula -> unit
   (** An iterator over the subterms of a formula that should be assigned a value (usually the poure subterms) *)
 
-  val eval : formula -> term eval_res
+  val eval : t -> formula -> term eval_res
   (** Returns the evaluation of the formula in the current assignment *)
 
 end
@@ -110,18 +110,19 @@ module Dummy(F: Solver_types.S)
   : S with type formula = F.formula
        and type term = F.term
        and type proof = F.proof
+       and type t = unit
 = struct
+  type t = unit
   type formula = F.formula
   type term = F.term
   type proof = F.proof
   type level = unit
-  let dummy = ()
   let current_level () = ()
-  let assume _ = Sat
-  let if_sat _ = Sat
-  let backtrack _ = ()
-  let eval _ = Unknown
-  let assign t = t
+  let assume () _ = Sat
+  let if_sat () _ = Sat
+  let backtrack () _ = ()
+  let eval () _ = Unknown
+  let assign () t = t
   let mcsat = false
-  let iter_assignable _ _ = ()
+  let iter_assignable () _ _ = ()
 end

@@ -37,8 +37,10 @@ type ('form, 'proof) slice = {
     propagation queue. They allow to look at the propagated literals,
     and to add new clauses to the solver. *)
 
+(** Signature for theories to be given to the Solver. *)
 module type S = sig
-  (** Signature for theories to be given to the Solver. *)
+  type t
+  (** The state of the theory itself *)
 
   type formula
   (** The type of formulas. Should be compatble with Formula_intf.S *)
@@ -49,32 +51,33 @@ module type S = sig
   type level
   (** The type for levels to allow backtracking. *)
 
-  val current_level : unit -> level
+  val current_level : t -> level
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
 
-  val assume : (formula, proof) slice -> (formula, proof) res
+  val assume : t -> (formula, proof) slice -> (formula, proof) res
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
       and returns the result of the new assumptions. *)
 
-  val if_sat : (formula, proof) slice -> (formula, proof) res
+  val if_sat : t -> (formula, proof) slice -> (formula, proof) res
   (** Called at the end of the search in case a model has been found. If no new clause is
       pushed, then 'sat' is returned, else search is resumed. *)
 
-  val backtrack : level -> unit
+  val backtrack : t -> level -> unit
   (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
       same state as when it returned the value [l], *)
 
 end
 
 module Dummy(F: Formula_intf.S)
-  : S with type formula = F.t
+  : S with type formula = F.t and type t = unit
 = struct
+  type t = unit
   type formula = F.t
   type proof = unit
   type level = unit
   let current_level () = ()
-  let assume _ = Sat
-  let if_sat _ = Sat
-  let backtrack _ = ()
+  let assume () _ = Sat
+  let if_sat () _ = Sat
+  let backtrack () _ = ()
 end
