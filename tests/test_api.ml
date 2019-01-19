@@ -6,7 +6,7 @@ Copyright 2014 Simon Cruanes
 
 (* Tests that require the API *)
 
-module F = Msat_sat.Expr
+module F = Msat_sat.Int_lit
 module S = Msat_sat
 
 let (|>) x f = f x
