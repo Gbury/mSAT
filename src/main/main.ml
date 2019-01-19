@@ -52,7 +52,7 @@ module Process = struct
           S.Proof.check p;
           if !p_dot_proof <> "" then begin
             let fmt = Format.formatter_of_out_channel (open_out !p_dot_proof) in
-            D.print fmt p
+            D.pp fmt p
           end
         end;
         let t' = Sys.time () -. t in

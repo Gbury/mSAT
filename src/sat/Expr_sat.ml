@@ -60,7 +60,7 @@ let iter: (t -> unit) -> unit = fun f ->
   done
 *)
 
-let print fmt a =
+let pp fmt a =
   Format.fprintf fmt "%s%s%d"
     (if a < 0 then "~" else "")
     (if a mod 2 = 0 then "v" else "f")

@@ -20,7 +20,7 @@ module type S = sig
   type t
   (** The type of proofs. *)
 
-  val print : Format.formatter -> t -> unit
+  val pp : Format.formatter -> t -> unit
   (** A function for printing proofs in the desired format. *)
 
 end

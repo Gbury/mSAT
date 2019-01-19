@@ -149,7 +149,7 @@ module Make(S : Res.S)(A : Arg with type hyp := S.clause
 
   (* Here the main idea is to always try and have exactly
      one goal to prove, i.e False. So each  *)
-  let print fmt p =
+  let pp fmt p =
     let h = count_uses p in
     let aux () node =
       Format.fprintf fmt "%a" (prove_node h) node

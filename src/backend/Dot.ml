@@ -140,7 +140,7 @@ module Make(S : Res.S)(A : Arg with type atom := S.atom
     print_contents fmt n;
     print_edges fmt n
 
-  let print fmt p =
+  let pp fmt p =
     Format.fprintf fmt "digraph proof {@\n";
     S.fold (fun () -> print_node fmt) () p;
     Format.fprintf fmt "}@."

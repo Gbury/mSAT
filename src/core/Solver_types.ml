@@ -151,12 +151,12 @@ module McMake (E : Expr_intf.S) = struct
       | None ->
         Format.fprintf fmt ""
       | Some t ->
-        Format.fprintf fmt "@[<hov>@@%d->@ %a@]" v.l_level E.Term.print t
+        Format.fprintf fmt "@[<hov>@@%d->@ %a@]" v.l_level E.Term.pp t
 
-    let pp out v = E.Term.print out v.term
+    let pp out v = E.Term.pp out v.term
     let debug out v =
       Format.fprintf out "%d[%a][lit:@[<hov>%a@]]"
-        (v.lid+1) debug_assign v E.Term.print v.term
+        (v.lid+1) debug_assign v E.Term.pp v.term
   end
 
   let seen_pos = 0b1
@@ -251,7 +251,7 @@ module McMake (E : Expr_intf.S) = struct
       | Formula_intf.Negated -> var.na
       | Formula_intf.Same_sign -> var.pa
 
-    let pp fmt a = E.Formula.print fmt a.lit
+    let pp fmt a = E.Formula.pp fmt a.lit
 
     let pp_a fmt v =
       if Array.length v = 0 then (
@@ -293,7 +293,7 @@ module McMake (E : Expr_intf.S) = struct
 
     let debug out a =
       Format.fprintf out "%s%d[%a][atom:@[<hov>%a@]]"
-        (sign a) (a.var.vid+1) debug_value a E.Formula.print a.lit
+        (sign a) (a.var.vid+1) debug_value a E.Formula.pp a.lit
 
     let debug_a out vec =
       Array.iter (fun a -> Format.fprintf out "%a@ " debug a) vec
@@ -400,15 +400,8 @@ module McMake (E : Expr_intf.S) = struct
       Format.fprintf fmt "%a0" aux atoms
   end
 
-  module Term = struct
-    include E.Term
-    let pp = print
-  end
-
-  module Formula = struct
-    include E.Formula
-    let pp = print
-  end
+  module Term = E.Term
+  module Formula = E.Formula
 end[@@inline]
 
 

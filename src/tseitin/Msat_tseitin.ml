@@ -25,21 +25,21 @@ module Make (F : Tseitin_intf.Arg) = struct
     | Lit of atom
     | Comb of combinator * t list
 
-  let rec print fmt phi =
+  let rec pp fmt phi =
     match phi with
     | True -> Format.fprintf fmt "true"
-    | Lit a -> F.print fmt a
+    | Lit a -> F.pp fmt a
     | Comb (Not, [f]) ->
-      Format.fprintf fmt "not (%a)" print f
-    | Comb (And, l) -> Format.fprintf fmt "(%a)" (print_list "and") l
-    | Comb (Or, l) ->  Format.fprintf fmt "(%a)" (print_list "or") l
+      Format.fprintf fmt "not (%a)" pp f
+    | Comb (And, l) -> Format.fprintf fmt "(%a)" (pp_list "and") l
+    | Comb (Or, l) ->  Format.fprintf fmt "(%a)" (pp_list "or") l
     | Comb (Imp, [f1; f2]) ->
-      Format.fprintf fmt "(%a => %a)" print f1 print f2
+      Format.fprintf fmt "(%a => %a)" pp f1 pp f2
     | _ -> assert false
-  and print_list sep fmt = function
+  and pp_list sep fmt = function
     | [] -> ()
-    | [f] -> print fmt f
-    | f::l -> Format.fprintf fmt "%a %s %a" print f sep (print_list sep) l
+    | [f] -> pp fmt f
+    | f::l -> Format.fprintf fmt "%a %s %a" pp f sep (pp_list sep) l
 
   let make comb l = Comb (comb, l)
 
