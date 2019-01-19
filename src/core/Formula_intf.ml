@@ -35,9 +35,6 @@ module type S = sig
   val print : Format.formatter -> t -> unit
   (** Printing function used among other thing for debugging.  *)
 
-  val dummy : t
-  (** Formula constant. A valid formula should never be physically equal to [dummy] *)
-
   val neg : t -> t
   (** Formula negation. Should be an involution, i.e. [equal a (neg neg a)] should
       always hold. *)

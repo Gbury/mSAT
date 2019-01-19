@@ -8,12 +8,12 @@ module Make(Elt : RANKED) = struct
 
   type t = {
     heap : elt Vec.t;
-  }
+  } [@@unboxed]
 
   let _absent_index = -1
 
   let create () =
-    { heap = Vec.make_empty Elt.dummy; }
+    { heap = Vec.create(); }
 
   let[@inline] left i = (i lsl 1) + 1 (* i*2 + 1 *)
   let[@inline] right i = (i + 1) lsl 1 (* (i+1)*2 *)
@@ -109,9 +109,6 @@ module Make(Elt : RANKED) = struct
       percolate_up s elt;
     )
 
-  let[@inline] grow_to_at_least s sz =
-    Vec.grow_to_at_least s.heap sz
-
   (*
   let update cmp s n =
     assert (heap_property cmp s);
@@ -130,10 +127,9 @@ module Make(Elt : RANKED) = struct
     if Vec.size heap=0 then raise Not_found;
     let x = Vec.get heap 0 in
     Elt.set_idx x _absent_index;
-    let new_hd = Vec.last heap in (* heap.last() *)
+    let new_hd = Vec.pop heap in (* new head *)
     Vec.set heap 0 new_hd;
     Elt.set_idx new_hd 0;
-    Vec.pop heap; (* remove last *)
     (* enforce heap property again *)
     if Vec.size heap > 1 then (
       percolate_down s new_hd;

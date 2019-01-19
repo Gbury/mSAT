@@ -3,7 +3,6 @@ module type RANKED = sig
   type t
   val idx: t -> int (** Index in heap. return -1 if never set *)
   val set_idx : t -> int -> unit (** Update index in heap *)
-  val dummy : t
   val cmp : t -> t -> bool
 end
 
@@ -35,10 +34,6 @@ module type S = sig
 
   val insert : t -> elt -> unit
   (** Insert a new element into the heap *)
-
-  val grow_to_at_least: t -> int -> unit
-  (** Hint: augment the internal capacity of the heap until it reaches at
-      least the given integer *)
 
   (*val update : (int -> int -> bool) -> t -> int -> unit*)
 

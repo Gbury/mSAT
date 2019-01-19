@@ -26,9 +26,6 @@ let _make i =
   end else
     raise Bad_atom
 
-(** A dummy atom *)
-let dummy = 0
-
 (** *)
 let neg a = - a
 
