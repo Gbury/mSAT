@@ -10,8 +10,6 @@ Copyright 2016 Simon Cruanes
     used in the core solver.
 *)
 
-module Var_fields = BitField.Make()
-
 type 'a printer = Format.formatter -> 'a -> unit
 
 module type S = sig
@@ -56,7 +54,7 @@ module type S = sig
     vid : int;  (** Unique identifier *)
     pa : atom;  (** Link for the positive atom *)
     na : atom;  (** Link for the negative atom *)
-    mutable v_fields : Var_fields.t; (** bool fields *)
+    mutable v_fields : int; (** bool fields *)
     mutable v_level : int;      (** Level of decision/propagation *)
     mutable v_idx: int;         (** rank in variable heap *)
     mutable v_weight : float;   (** Variable weight (for the heap) *)
