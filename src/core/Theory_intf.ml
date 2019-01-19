@@ -83,3 +83,15 @@ module type S = sig
 
 end
 
+module Dummy(F: Formula_intf.S)
+  : S with type formula = F.t
+= struct
+  type formula = F.t
+  type proof = unit
+  type level = unit
+  let dummy = ()
+  let current_level () = ()
+  let assume _ = Sat
+  let if_sat _ = Sat
+  let backtrack _ = ()
+end

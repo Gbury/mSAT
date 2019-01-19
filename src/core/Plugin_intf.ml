@@ -119,3 +119,22 @@ module type S = sig
 
 end
 
+module Dummy(F: Solver_types.S)
+  : S with type formula = F.formula
+       and type term = F.term
+       and type proof = F.proof
+= struct
+  type formula = F.formula
+  type term = F.term
+  type proof = F.proof
+  type level = unit
+  let dummy = ()
+  let current_level () = ()
+  let assume _ = Sat
+  let if_sat _ = Sat
+  let backtrack _ = ()
+  let eval _ = Unknown
+  let assign t = t
+  let mcsat = false
+  let iter_assignable _ _ = ()
+end

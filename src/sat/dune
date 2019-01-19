@@ -1,12 +1,10 @@
 
 (library
-  (name minismt_sat)
-  (public_name minismt.sat)
-  (libraries msat msat.tseitin minismt dolmen)
-  (synopsis "sat interface")
+  (name msat_sat)
+  ; private
+  (libraries msat)
   (flags :standard -w +a-4-42-44-48-50-58-32-60@8 -color always -safe-string -open Msat)
-  (ocamlopt_flags :standard -O3 -bin-annot
+  (ocamlopt_flags :standard -O3 -color always
                   -unbox-closures -unbox-closures-factor 20)
   )
-
 
