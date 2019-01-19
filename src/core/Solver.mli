@@ -22,6 +22,7 @@ module Make
        and type formula = St.formula
        and type clause = St.clause
        and type Proof.lemma = St.proof
+       and type theory = Th.t
 (** Functor to make a safe external interface. *)
 
 

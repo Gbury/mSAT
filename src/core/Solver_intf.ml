@@ -60,14 +60,17 @@ module type S = sig
 
   type clause
 
+  type theory
+
   module Proof : Res.S with type clause = clause
   (** A module to manipulate proofs. *)
 
   type t
   (** Main solver type, containing all state for solving. *)
 
-  val create : ?size:[`Tiny|`Small|`Big] -> unit -> t
+  val create : ?size:[`Tiny|`Small|`Big] -> theory -> t
   (** Create new solver
+      @param theory the theory
       @param size the initial size of internal data structures. The bigger,
         the faster, but also the more RAM it uses. *)
 

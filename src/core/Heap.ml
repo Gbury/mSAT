@@ -136,4 +136,4 @@ module Make(Elt : RANKED) = struct
     );
     x
 
-end
+end [@@inline]

@@ -4,6 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
+(* TODO: move solver types here *)
+
 module Make
     (St : Solver_types.S)
     (Plugin : Plugin_intf.S with type term = St.term
@@ -13,8 +15,9 @@ module Make
   module Proof = Res.Make(St)
 
   open St
+  type theory = Plugin.t
 
-  module H = Heap.Make(struct
+  module H = (Heap.Make [@specialise]) (struct
     type t = St.Elt.t
     let[@inline] cmp i j = Elt.weight j < Elt.weight i (* comparison by weight *)
     let idx = Elt.idx
@@ -48,6 +51,8 @@ module Make
   (* Singleton type containing the current state *)
   type t = {
     st : St.t;
+
+    th: Plugin.t;
 
     (* Clauses are simplified for eficiency purposes. In the following
        vectors, the comments actually refer to the original non-simplified
@@ -121,8 +126,8 @@ module Make
   }
 
   (* Starting environment. *)
-  let create_ ~st () : t = {
-    st;
+  let create_ ~st (th:theory) : t = {
+    st; th;
     unsat_conflict = None;
     next_decision = None;
 
@@ -152,9 +157,9 @@ module Make
     dirty=false;
   }
 
-  let create ?(size=`Big) () : t =
+  let create ?(size=`Big) (th:theory) : t =
     let st = St.create ~size () in
-    create_ ~st ()
+    create_ ~st th
 
   (* Misc functions *)
   let to_float = float_of_int
@@ -195,7 +200,7 @@ module Make
         | Some _ -> ()
         | None ->
           let l = ref [] in
-          Plugin.iter_assignable
+          Plugin.iter_assignable st.th
             (fun t -> l := Lit.make st.st t :: !l)
             res.var.pa.lit;
           res.var.v_assignable <- Some !l;
@@ -386,7 +391,7 @@ module Make
     assert (st.th_head = Vec.size st.trail);
     assert (st.elt_head = Vec.size st.trail);
     Vec.push st.elt_levels (Vec.size st.trail);
-    Vec.push st.th_levels (Plugin.current_level ()); (* save the current theory state *)
+    Vec.push st.th_levels (Plugin.current_level st.th); (* save the current theory state *)
     ()
 
   (* Attach/Detach a clause.
@@ -454,7 +459,7 @@ module Make
           )
       done;
       (* Recover the right theory state. *)
-      Plugin.backtrack (Vec.get st.th_levels lvl);
+      Plugin.backtrack st.th (Vec.get st.th_levels lvl);
       (* Resize the vectors according to their new size. *)
       Vec.shrink st.trail !head;
       Vec.shrink st.elt_levels lvl;
@@ -582,7 +587,7 @@ module Make
      by boolean propagation/decision *)
   let th_eval st a : bool option =
     if a.is_true || a.neg.is_true then None
-    else match Plugin.eval a.lit with
+    else match Plugin.eval st.th a.lit with
       | Plugin_intf.Unknown -> None
       | Plugin_intf.Valued (b, l) ->
         if l = [] then
@@ -1014,7 +1019,7 @@ module Make
     ) else (
       let slice = current_slice st in
       st.th_head <- st.elt_head; (* catch up *)
-      match Plugin.assume slice with
+      match Plugin.assume st.th slice with
       | Plugin_intf.Sat ->
         propagate st
       | Plugin_intf.Unsat (l, p) ->
@@ -1067,7 +1072,7 @@ module Make
     if v.v_level >= 0 then (
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit st
-    ) else match Plugin.eval atom.lit with
+    ) else match Plugin.eval st.th atom.lit with
       | Plugin_intf.Unknown ->
         new_decision_level st;
         let current_level = decision_level st in
@@ -1087,7 +1092,7 @@ module Make
           if Lit.level l >= 0 then
             pick_branch_lit st
           else (
-            let value = Plugin.assign l.term in
+            let value = Plugin.assign st.th l.term in
             new_decision_level st;
             let current_level = decision_level st in
             enqueue_assign st l value current_level
@@ -1174,7 +1179,7 @@ module Make
             n_of_learnts   := !n_of_learnts *. learntsize_inc
           | Sat ->
             assert (st.elt_head = Vec.size st.trail);
-            begin match Plugin.if_sat (full_slice st) with
+            begin match Plugin.if_sat st.th (full_slice st) with
               | Plugin_intf.Sat -> ()
               | Plugin_intf.Unsat (l, p) ->
                 let atoms = List.rev_map (create_atom st) l in

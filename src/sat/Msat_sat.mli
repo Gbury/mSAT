@@ -11,6 +11,6 @@ Copyright 2016 Guillaume Bury
 
 module Expr = Expr_sat
 
-include Msat.S with type formula = Expr.t
+include Msat.S with type formula = Expr.t and type theory = unit
 (** A functor that can generate as many solvers as needed. *)
 
