@@ -1950,6 +1950,7 @@ module Make(Plugin : PLUGIN)
     add_clause_ st c
 
   let solve (st:t) ?(assumptions=[]) () =
+    cancel_until st 0;
     Vec.clear st.assumptions;
     List.iter (Vec.push st.assumptions) assumptions;
     try
