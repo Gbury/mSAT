@@ -58,7 +58,7 @@ end = struct
 end
 
 module Solver = struct
-  module F = Msat_sat.Expr
+  module F = Msat_sat.Int_lit
   module S = Msat_sat
   type t = S.t
 
@@ -85,6 +85,7 @@ let solve_with_solver ~debug file : unit =
     | Parse.Add_clause c ->
       if debug then (
         Printf.printf "add_clause %a\n%!" pp_arr c;
+        Msat.Log.set_debug 5;
       );
       let r = Solver.add_clause s c in
       if r then process_problem()

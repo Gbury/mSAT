@@ -59,7 +59,7 @@ module Process = struct
         Format.printf "Unsat (%f/%f)@." t t'
     end
 
-  let conv_c c = List.rev_map S.Expr.make c
+  let conv_c c = List.rev_map S.Int_lit.make c
 
   let add_clauses cs =
     S.assume st @@ CCList.map conv_c cs

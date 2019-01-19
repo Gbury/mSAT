@@ -1,5 +1,5 @@
 
-(** The module defining formulas *)
+(** {1 The module defining formulas} *)
 
 (** SAT Formulas
 
