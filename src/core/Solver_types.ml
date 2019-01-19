@@ -6,12 +6,6 @@ Copyright 2016 Simon Cruanes
 
 module type S = Solver_types_intf.S
 
-module Var_fields = Solver_types_intf.Var_fields
-
-let v_field_seen_neg = Var_fields.mk_field()
-let v_field_seen_pos = Var_fields.mk_field()
-let () = Var_fields.freeze()
-
 (* Solver types for McSat Solving *)
 (* ************************************************************************ *)
 
@@ -43,7 +37,7 @@ module McMake (E : Expr_intf.S) = struct
     vid : int;
     pa : atom;
     na : atom;
-    mutable v_fields : Var_fields.t;
+    mutable v_fields : int;
     mutable v_level : int;
     mutable v_idx: int; (** position in heap *)
     mutable v_weight : float; (** Weight (for the heap), tracking activity *)
@@ -165,6 +159,9 @@ module McMake (E : Expr_intf.S) = struct
         (v.lid+1) debug_assign v E.Term.print v.term
   end
 
+  let seen_pos = 0b1
+  let seen_neg = 0b10
+
   module Var = struct
     type t = var
     let[@inline] level v = v.v_level
@@ -184,7 +181,7 @@ module McMake (E : Expr_intf.S) = struct
           { vid = st.cpt_mk_var;
             pa = pa;
             na = na;
-            v_fields = Var_fields.empty;
+            v_fields = 0;
             v_level = -1;
             v_idx= -1;
             v_weight = 0.;
@@ -212,11 +209,11 @@ module McMake (E : Expr_intf.S) = struct
 
     (* Marking helpers *)
     let[@inline] clear v =
-      v.v_fields <- Var_fields.empty
+      v.v_fields <- 0
 
     let[@inline] seen_both v =
-      Var_fields.get v_field_seen_pos v.v_fields &&
-      Var_fields.get v_field_seen_neg v.v_fields
+      (seen_pos land v.v_fields <> 0) &&
+      (seen_neg land v.v_fields <> 0)
   end
 
   module Atom = struct
@@ -237,14 +234,16 @@ module McMake (E : Expr_intf.S) = struct
     let[@inline] seen a =
       let pos = equal a (abs a) in
       if pos
-      then Var_fields.get v_field_seen_pos a.var.v_fields
-      else Var_fields.get v_field_seen_neg a.var.v_fields
+      then (seen_pos land a.var.v_fields <> 0)
+      else (seen_neg land a.var.v_fields <> 0)
 
     let[@inline] mark a =
       let pos = equal a (abs a) in
-      if pos
-      then a.var.v_fields <- Var_fields.set v_field_seen_pos true a.var.v_fields
-      else a.var.v_fields <- Var_fields.set v_field_seen_neg true a.var.v_fields
+      if pos then (
+        a.var.v_fields <- seen_pos lor a.var.v_fields
+      ) else (
+        a.var.v_fields <- seen_neg lor a.var.v_fields
+      )
 
     let[@inline] make st lit =
       let var, negated = Var.make st lit in
