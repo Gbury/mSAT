@@ -28,7 +28,7 @@ module type Arg = sig
   val fresh : unit -> t
   (** Generate fresh formulas (that are different from any other). *)
 
-  val print : Format.formatter -> t -> unit
+  val pp : Format.formatter -> t -> unit
   (** Print the given formula. *)
 
 end
@@ -80,7 +80,7 @@ module type S = sig
       list (which is a conjunction) of lists (which are disjunctions) of
       atomic formulas. *)
 
-  val print : Format.formatter -> t -> unit
+  val pp : Format.formatter -> t -> unit
   (** [print fmt f] prints the formula on the formatter [fmt].*)
 
 end

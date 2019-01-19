@@ -32,7 +32,7 @@ module type S = sig
   (** Hashing function for formulas. Should be such that two formulas equal according
       to {!val:Expr_intf.S.equal} have the same hash. *)
 
-  val print : Format.formatter -> t -> unit
+  val pp : Format.formatter -> t -> unit
   (** Printing function used among other thing for debugging.  *)
 
   val neg : t -> t

@@ -19,7 +19,7 @@ module type Arg = sig
   type proof
   type formula
 
-  val print : Format.formatter -> formula -> unit
+  val pp : Format.formatter -> formula -> unit
   val prove : Format.formatter -> lemma -> unit
   val context : Format.formatter -> proof -> unit
 end
