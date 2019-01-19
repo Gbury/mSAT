@@ -9,8 +9,6 @@ Copyright 2014 Simon Cruanes
     Work in progress...
 *)
 
-open Msat
-
 module type S = Backend_intf.S
 
 module type Arg = sig
@@ -25,7 +23,7 @@ module type Arg = sig
 end
 
 module Make :
-  functor(S : Res.S) ->
+  functor(S : Msat.S) ->
   functor(A : Arg
           with type formula := S.formula
            and type lemma := S.lemma

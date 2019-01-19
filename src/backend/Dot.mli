@@ -9,7 +9,6 @@ Copyright 2014 Simon Cruanes
     This module provides functions to export proofs into the dot graph format.
     Graphs in dot format can be used to generates images using the graphviz tool.
 *)
-open Msat
 
 module type S = Backend_intf.S
 (** Interface for exporting proofs. *)
@@ -48,20 +47,20 @@ module type Arg = sig
 
 end
 
-module Default(S : Res.S) : Arg with type atom := S.atom
+module Default(S : Msat.S) : Arg with type atom := S.atom
                                  and type hyp := S.clause
                                  and type lemma := S.clause
                                  and type assumption := S.clause
 (** Provides a reasonnable default to instantiate the [Make] functor, assuming
     the original printing functions are compatible with DOT html labels. *)
 
-module Make(S : Res.S)(A : Arg with type atom := S.atom
+module Make(S : Msat.S)(A : Arg with type atom := S.atom
                                 and type hyp := S.clause
                                 and type lemma := S.clause
                                 and type assumption := S.clause) : S with type t := S.proof
 (** Functor for making a module to export proofs to the DOT format. *)
 
-module Simple(S : Res.S)(A : Arg with type atom := S.formula
+module Simple(S : Msat.S)(A : Arg with type atom := S.formula
                                   and type hyp = S.formula list
                                   and type lemma := S.lemma
                                   and type assumption = S.formula) : S with type t := S.proof

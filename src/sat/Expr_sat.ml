@@ -2,9 +2,6 @@
 exception Bad_atom
 (** Exception raised if an atom cannot be created *)
 
-type proof
-(** A empty type for proofs *)
-
 type t = int
 (** Atoms are represented as integers. [-i] begin the negation of [i].
     Additionally, since we nee dot be able to create fresh atoms, we
@@ -31,9 +28,9 @@ let neg a = - a
 
 let norm a =
   abs a, if a < 0 then
-    Formula_intf.Negated
+    Solver_intf.Negated
   else
-    Formula_intf.Same_sign
+    Solver_intf.Same_sign
 
 let abs = abs
 

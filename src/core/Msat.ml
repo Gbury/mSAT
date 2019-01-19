@@ -1,15 +1,15 @@
 
 (** Main API *)
 
-module Formula_intf = Formula_intf
-module Plugin_intf = Plugin_intf
-module Theory_intf = Theory_intf
-module Expr_intf = Expr_intf
-module Solver_types_intf = Solver_types_intf
 
-module Res = Res
+module Solver_intf = Solver_intf
 
 module type S = Solver_intf.S
+module type FORMULA = Solver_intf.FORMULA
+module type EXPR = Solver_intf.EXPR
+module type PLUGIN_CDCL_T = Solver_intf.PLUGIN_CDCL_T
+module type PLUGIN_MCSAT = Solver_intf.PLUGIN_MCSAT
+module type PROOF = Solver_intf.PROOF
 
 type ('term, 'form) sat_state = ('term, 'form) Solver_intf.sat_state = {
   eval : 'form -> bool;
@@ -27,13 +27,15 @@ type 'clause export = 'clause Solver_intf.export = {
   history : 'clause Vec.t;
   local : 'clause Vec.t;
 }
+type ('formula, 'proof) th_res = ('formula, 'proof) Solver_intf.th_res =
+  | Th_sat
+  | Th_unsat of 'formula list * 'proof
 
-module Make_smt_expr(E : Formula_intf.S) = Solver_types.SatMake(E)
-module Make_mcsat_expr(E : Expr_intf.S) = Solver_types.McMake(E)
+type negated = Solver_intf.negated = Negated | Same_sign
 
-module Make = Solver.Make
-
-module Make_dummy = Plugin_intf.Dummy
+module Make_mcsat = Solver.Make_mcsat
+module Make_cdcl_t = Solver.Make_cdcl_t
+module Make_pure_sat = Solver.Make_pure_sat
 
 (**/**)
 module Vec = Vec

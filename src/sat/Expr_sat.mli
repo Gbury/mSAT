@@ -8,7 +8,7 @@
     near optimal efficiency (both in terms of space and time).
 *)
 
-include Formula_intf.S
+include Solver_intf.FORMULA
 (** This modules implements the requirements for implementing an SAT Solver. *)
 
 val make : int -> t

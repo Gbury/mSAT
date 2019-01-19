@@ -7,6 +7,7 @@ Copyright 2014 Simon Cruanes
 (* Tests that require the API *)
 
 module F = Msat_sat.Expr
+module S = Msat_sat
 
 let (|>) x f = f x
 
@@ -36,27 +37,7 @@ type solver_res =
 
 exception Incorrect_model
 
-module type BASIC_SOLVER = sig
-  type t
-  val create : unit -> t
-  val solve : t -> ?assumptions:F.t list -> unit -> solver_res
-  val assume : t -> ?tag:int -> F.t list list -> unit
-end
-
-let mk_solver (): (module BASIC_SOLVER) =
-  let module S = struct
-    include Msat_sat
-    let create() = create()
-    let solve st ?assumptions () =
-      match solve st ?assumptions() with
-      | Sat _ ->
-        R_sat
-      | Unsat us ->
-        let p = us.Msat.get_proof () in
-        Proof.check p;
-        R_unsat
-  end
-  in (module S)
+let mk_solver () : S.t = S.create ~size:`Big ()
 
 exception Error of string
 
@@ -86,20 +67,22 @@ module Test = struct
 
   let run (t:t): result =
   (* Interesting stuff happening *)
-    let (module S: BASIC_SOLVER) = mk_solver () in
-    let st = S.create() in
+    let st = mk_solver() in
     try
       List.iter
         (function
           | A_assume cs ->
             S.assume st cs
           | A_solve (assumptions, expect) ->
+            let assumptions = List.map (S.make_atom st) assumptions in
             match S.solve st ~assumptions (), expect with
-              | R_sat, `Expect_sat
-              | R_unsat, `Expect_unsat -> ()
-              | R_unsat, `Expect_sat ->
+              | S.Sat _, `Expect_sat -> ()
+              | S.Unsat us, `Expect_unsat ->
+                let p = us.Msat.get_proof () in
+                S.Proof.check p;
+              | S.Unsat _, `Expect_sat ->
                 error "expect sat, got unsat"
-              | R_sat, `Expect_unsat ->
+              | S.Sat _, `Expect_unsat ->
                 error "expect unsat, got sat"
         )
         t.actions;
