@@ -12,6 +12,8 @@ val create : unit -> 'a t
 val to_list : 'a t -> 'a list
 (** Returns the list of elements of the vector *)
 
+val to_array : 'a t -> 'a array
+
 val of_list : 'a list -> 'a t
 
 val to_seq : 'a t -> 'a Sequence.t

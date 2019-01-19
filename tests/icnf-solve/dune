@@ -1,0 +1,6 @@
+(executable
+  (name icnf_solve)
+  (modes native)
+  (libraries containers msat msat_sat))
+
+(ocamllex (modules lexer))

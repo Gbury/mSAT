@@ -21,8 +21,10 @@ build-dev:
 	@dune build $(OPTS) @install
 
 test:
-	@echo "run API tests…"
+	@echo "run tests…"
 	@dune runtest
+
+test-full: test
 	@echo "run benchmarks…"
 	@/usr/bin/time -f "%e" ./tests/run sat
 

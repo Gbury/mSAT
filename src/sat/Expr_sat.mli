@@ -14,6 +14,8 @@ include Solver_intf.FORMULA
 val make : int -> t
 (** Make a proposition from an integer. *)
 
+val to_int : t -> int
+
 val fresh : unit -> t
 (** Make a fresh atom *)
 
