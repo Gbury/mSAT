@@ -151,8 +151,9 @@ module Make(Plugin : PLUGIN)
         (v.lid+1) debug_assign v Term.pp v.term
   end
 
-  let seen_pos = 0b1
-  let seen_neg = 0b10
+  let seen_var = 0b1
+  let seen_pos = 0b10
+  let seen_neg = 0b100
 
   module Var = struct
     type t = var
@@ -162,6 +163,9 @@ module Make(Plugin : PLUGIN)
     let[@inline] reason v = v.reason
     let[@inline] assignable v = v.v_assignable
     let[@inline] weight v = v.v_weight
+    let[@inline] mark v = v.v_fields <- v.v_fields lor seen_var
+    let[@inline] unmark v = v.v_fields <- v.v_fields land (lnot seen_var)
+    let[@inline] marked v = (v.v_fields land seen_var) <> 0
 
     let make (st:st) (t:formula) : var * Solver_intf.negated =
       let lit, negated = Formula.norm t in
@@ -706,7 +710,8 @@ module Make(Plugin : PLUGIN)
     (* conflict at level 0, if any *)
 
     mutable next_decision : atom option;
-    (* When the last conflict was a semantic one, this stores the next decision to make *)
+    (* When the last conflict was a semantic one (mcsat),
+       this stores the next decision to make *)
 
     trail : trail_elt Vec.t;
     (* decision stack + propagated elements (atoms or assignments). *)
@@ -786,14 +791,8 @@ module Make(Plugin : PLUGIN)
     let st = create_st ~size () in
     create_ ~st th
 
-  (* Misc functions *)
-  let to_float = float_of_int
-  let to_int = int_of_float
-
   let[@inline] st t = t.st
   let[@inline] nb_clauses st = Vec.size st.clauses_hyps
-  (* let nb_vars    () = St.nb_elt () *)
-
   let[@inline] decision_level st = Vec.size st.elt_levels
 
   (* Do we have a level-0 empty clause? *)
@@ -856,11 +855,17 @@ module Make(Plugin : PLUGIN)
      inserting them into the heap, if it appears that it helps performance. *)
   let new_lit st t =
     let l = Lit.make st.st t in
-    insert_var_order st (E_lit l)
+    if l.l_level < 0 then (
+      insert_var_order st (E_lit l)
+    )
 
   let make_atom st (p:formula) : atom =
     let a = mk_atom st p in
-    insert_var_order st (E_var a.var);
+    if a.var.v_level < 0 then (
+      insert_var_order st (E_var a.var);
+    ) else (
+      assert (a.is_true || a.neg.is_true);
+    );
     a
 
   (* Rather than iterate over all the heap when we want to decrease all the
@@ -1278,7 +1283,7 @@ module Make(Plugin : PLUGIN)
     let learnt = ref [] in
     let cond   = ref true in
     let blevel = ref 0 in
-    let seen   = ref [] in
+    let seen   = ref [] in (* for cleanup *)
     let c      = ref (Some c_clause) in
     let tr_ind = ref (Vec.size st.trail - 1) in
     let history = ref [] in
@@ -1395,6 +1400,7 @@ module Make(Plugin : PLUGIN)
         if cr.cr_is_uip then (
           enqueue_bool st fuip ~level:cr.cr_backtrack_lvl (Bcp lclause)
         ) else (
+          assert Plugin.mcsat;
           st.next_decision <- Some fuip.neg
         )
     end;
@@ -1675,6 +1681,39 @@ module Make(Plugin : PLUGIN)
       | exception Conflict c -> Some c
     )
 
+  (* compute unsat core from assumption [a] *)
+  let analyze_final (self:t) (a:atom) : atom list =
+    Log.debugf 5 (fun k->k "(@[sat.analyze-final@ :lit %a@])" Atom.debug a);
+    assert (Atom.is_false a);
+    let core = ref [a.neg] in
+    let idx = ref (Vec.size self.trail - 1) in
+    Var.mark a.var;
+    let seen = ref [a.var] in
+    while !idx >= 0 do
+      begin match Vec.get self.trail !idx with
+        | Lit _ -> () (* semantic decision, ignore *)
+        | Atom a' ->
+          if Var.marked a'.var then (
+            match Atom.reason a' with
+            | Some Semantic -> ()
+            | Some Decision -> core := a' :: !core
+            | Some (Bcp c) ->
+              Array.iter
+                (fun a ->
+                   let v = a.var in
+                   if not @@ Var.marked v then (
+                     seen := v :: !seen;
+                     Var.mark v;
+                   ))
+                c.atoms
+            | _ -> ()
+          );
+      end;
+      decr idx
+    done;
+    List.iter Var.unmark !seen;
+    !core
+
   (* remove some learnt clauses
      NOTE: so far we do not forget learnt clauses. We could, as long as
      lemmas from the theory itself are kept. *)
@@ -1701,18 +1740,31 @@ module Make(Plugin : PLUGIN)
       enqueue_bool st atom ~level:current_level Decision
     )
 
-  (* FIXME: add assumptions first, add analyze_final *)
   and pick_branch_lit st =
     match st.next_decision with
     | Some atom ->
+      assert Plugin.mcsat;
       st.next_decision <- None;
       pick_branch_aux st atom
+    | None when decision_level st < Vec.size st.assumptions ->
+      (* use an assumption *)
+      let a = Vec.get st.assumptions (decision_level st) in
+      if Atom.is_true a then (
+        new_decision_level st; (* pseudo decision level, [a] is already true *)
+        pick_branch_lit st
+      ) else if Atom.is_false a then (
+        (* root conflict, find unsat core *)
+        let core = analyze_final st a in
+        raise (E_unsat (US_local {core}))
+      ) else (
+        pick_branch_aux st a
+      )
     | None ->
       begin match H.remove_min st.order with
         | E_lit l ->
-          if Lit.level l >= 0 then
+          if Lit.level l >= 0 then (
             pick_branch_lit st
-          else (
+          ) else (
             let value = Plugin.assign st.th l.term in
             new_decision_level st;
             let current_level = decision_level st in
@@ -1735,10 +1787,11 @@ module Make(Plugin : PLUGIN)
            might 'forget' the initial conflict clause, and only add the
            analyzed backtrack clause. So in those case, we use add_clause
            to make sure the initial conflict clause is also added. *)
-        if confl.attached then
+        if confl.attached then (
           add_boolean_conflict st confl
-        else
+        ) else (
           add_clause_ st confl
+        );
 
       | None -> (* No Conflict *)
         assert (st.elt_head = Vec.size st.trail);
@@ -1785,14 +1838,14 @@ module Make(Plugin : PLUGIN)
   (* fixpoint of propagation and decisions until a model is found, or a
      conflict is reached *)
   let solve_ (st:t) : unit =
-    Log.debug 5 "solve";
+    Log.debugf 5 (fun k->k "(@[sat.solve :assms %d@])" (Vec.size st.assumptions));
     check_unsat_ st;
-    let n_of_conflicts = ref (to_float st.restart_first) in
-    let n_of_learnts = ref ((to_float (nb_clauses st)) *. st.learntsize_factor) in
+    let n_of_conflicts = ref (float_of_int st.restart_first) in
+    let n_of_learnts = ref ((float_of_int (nb_clauses st)) *. st.learntsize_factor) in
     try
       while true do
         begin try
-            search st (to_int !n_of_conflicts) (to_int !n_of_learnts)
+            search st (int_of_float !n_of_conflicts) (int_of_float !n_of_learnts)
           with
           | Restart ->
             n_of_conflicts := !n_of_conflicts *. restart_inc;
@@ -1820,36 +1873,6 @@ module Make(Plugin : PLUGIN)
          Log.debugf debug (fun k -> k "Assuming clause: @[<hov 2>%a@]" Clause.debug c);
          Stack.push c st.clauses_to_add)
       cnf
-
-  (* TODO: remove
-  (* Add local hyps to the current decision level *)
-  let local (st:t) (l:atom list) : unit =
-    let aux a =
-      Log.debugf info (fun k-> k "Local assumption: @[%a@]" Atom.debug a);
-      assert (decision_level st = st);
-      if not a.is_true then (
-        let c = Clause.make [a] Local in
-        Log.debugf debug (fun k -> k "Temp clause: @[%a@]" Clause.debug c);
-        Vec.push st.clauses_temp c;
-        if a.neg.is_true then (
-          (* conflict between assumptions: UNSAT *)
-          report_unsat st c;
-        ) else (
-          (* make a decision, propagate *)
-          let level = decision_level st in
-          enqueue_bool st a ~level (Bcp c);
-        )
-      )
-    in
-    assert (base_level st > 0);
-    match st.unsat_conflict with
-    | None ->
-      Log.debug info "Adding local assumption";
-      cancel_until st (base_level st);
-      List.iter aux l
-    | Some _ ->
-      Log.debug warn "Cannot add local assumption (already unsat)"
-     *)
 
   (* Check satisfiability *)
   let check_clause c =
