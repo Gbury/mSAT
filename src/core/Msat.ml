@@ -18,14 +18,14 @@ type ('term, 'form) sat_state = ('term, 'form) Solver_intf.sat_state = {
   model : unit -> ('term * 'term) list;
 }
 
-type ('clause, 'proof) unsat_state = ('clause, 'proof) Solver_intf.unsat_state = {
+type ('atom,'clause, 'proof) unsat_state = ('atom,'clause, 'proof) Solver_intf.unsat_state = {
   unsat_conflict : unit -> 'clause;
   get_proof : unit -> 'proof;
+  unsat_assumptions: unit -> 'atom list;
 }
 type 'clause export = 'clause Solver_intf.export = {
   hyps : 'clause Vec.t;
   history : 'clause Vec.t;
-  local : 'clause Vec.t;
 }
 type ('formula, 'proof) th_res = ('formula, 'proof) Solver_intf.th_res =
   | Th_sat

@@ -32,18 +32,19 @@ type ('term, 'form) sat_state = {
 }
 (** The type of values returned when the solver reaches a SAT state. *)
 
-type ('clause, 'proof) unsat_state = {
+type ('atom, 'clause, 'proof) unsat_state = {
   unsat_conflict : unit -> 'clause;
   (** Returns the unsat clause found at the toplevel *)
   get_proof : unit -> 'proof;
   (** returns a persistent proof of the empty clause from the Unsat result. *)
+  unsat_assumptions: unit -> 'atom list;
+  (** Subset of assumptions responsible for "unsat" *)
 }
 (** The type of values returned when the solver reaches an UNSAT state. *)
 
 type 'clause export = {
   hyps: 'clause Vec.t;
   history: 'clause Vec.t;
-  local: 'clause Vec.t;
 }
 (** Export internal state *)
 
@@ -365,7 +366,6 @@ module type S = sig
 
     val atoms : t -> atom array
     val atoms_l : t -> atom list
-    val tag : t -> int option
     val equal : t -> t -> bool
     val name : t -> string
 
@@ -396,7 +396,7 @@ module type S = sig
   (** Result type for the solver *)
   type res =
     | Sat of (term,atom) sat_state (** Returned when the solver reaches SAT, with a model *)
-    | Unsat of (clause,Proof.t) unsat_state (** Returned when the solver reaches UNSAT, with a proof *)
+    | Unsat of (atom,clause,Proof.t) unsat_state (** Returned when the solver reaches UNSAT, with a proof *)
 
   exception UndecidedLit
   (** Exception raised by the evaluating functions when a literal
@@ -404,11 +404,11 @@ module type S = sig
 
   (** {2 Base operations} *)
 
-  val assume : t -> ?tag:int -> formula list list -> unit
+  val assume : t -> formula list list -> unit
   (** Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place. *)
 
-  val add_clause : t -> ?tag:int -> atom list -> unit
+  val add_clause : t -> atom list -> unit
   (** Lower level addition of clauses *)
 
   val add_clause_a : t -> atom array -> unit
@@ -430,25 +430,9 @@ module type S = sig
       This formula will be decided on at some point during solving,
       wether it appears in clauses or not. *)
 
-  val unsat_core : Proof.t -> clause list
-  (** Returns the unsat core of a given proof, ie a subset of all the added
-      clauses that is sufficient to establish unsatisfiability. *)
-
   val true_at_level0 : t -> atom -> bool
   (** [true_at_level0 a] returns [true] if [a] was proved at level0, i.e.
       it must hold in all models *)
-
-  val get_tag : clause -> int option
-  (** Recover tag from a clause, if any *)
-
-  val push : t -> unit
-  (** Push a new save point. Clauses added after this call to [push] will
-      be added as normal, but the corresponding call to [pop] will
-      remove these clauses. *)
-
-  val pop : t -> unit
-  (** Return to last save point, discarding clauses added since last
-      call to [push] *)
 
   val export : t -> clause export
 end
