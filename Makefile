@@ -12,17 +12,17 @@ OPTS= -j $(J)
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 
-all: build-dev test
+dev: build-dev test
 
 build:
-	jbuilder build $(OPTS) @install
+	@dune build $(OPTS) @install --profile=release
 
 build-dev:
-	jbuilder build $(OPTS) @install --dev
+	@dune build $(OPTS) @install
 
 test: build
 	@echo "run API tests…"
-	jbuilder runtest
+	@dune runtest
 	@echo "run benchmarks…"
 	# @/usr/bin/time -f "%e" ./tests/run smt
 	@/usr/bin/time -f "%e" ./tests/run mcsat
@@ -34,16 +34,16 @@ disable_log:
 	cd src/core; ln -sf log_dummy.ml log.ml
 
 clean:
-	jbuilder clean
+	@dune clean
 
 install: build-install
-	jbuilder install
+	@dune install
 
 uninstall:
-	jbuilder uninstall
+	@dune uninstall
 
 doc:
-	jbuilder build $(OPTS) @doc
+	@dune build $(OPTS) @doc
 
 
 reinstall: | uninstall install
@@ -60,9 +60,6 @@ reindent: ocp-indent
 
 WATCH=all
 watch:
-	while find src/ tests/ -print0 | xargs -0 inotifywait -e delete_self -e modify ; do \
-		echo "============ at `date` ==========" ; \
-		make $(WATCH); \
-	done
+	@dune build @all -w
 
 .PHONY: clean doc all bench install uninstall remove reinstall enable_log disable_log bin test
