@@ -1,23 +1,22 @@
-opam-version: "1.2"
+opam-version: "2.0"
 name: "msat"
+synopsis: "Library containing a SAT solver that can be parametrized by a theory"
 license: "Apache"
 version: "dev"
-author: ["Sylvain Conchon" "Alain Mebsout" "Stephane Lecuyer" "Simon Cruanes" "Guillaume Bury"]
+author: ["Simon Cruanes" "Guillaume Bury"]
 maintainer: ["guillaume.bury@gmail.com" "simon.cruanes.2007@m4x.org"]
-build: ["jbuilder" "build" "@install" "-p" name]
-build-doc: ["jbuilder" "build" "@doc" "-p" name]
-install: ["jbuilder" "install" name]
-remove: ["jbuilder" "uninstall" name]
-depends: [
-  "ocamlfind" {build}
-  "jbuilder" {build}
-  "dolmen" {test & = "dev" }
+build: [
+  ["dune" "build" "@install" "-p" name "-j" jobs]
+  ["dune" "build" "@doc" "-p" name] {with-doc}
+  ["dune" "runtest" "-p" name] {with-test}
 ]
-available: [
-  ocaml-version >= "4.03.0"
+depends: [
+  "ocaml" { >= "4.03" }
+  "dune" {build}
+  "dolmen" {with-test & = "dev" }
 ]
 tags: [ "sat" "smt" ]
 homepage: "https://github.com/Gbury/mSAT"
-dev-repo: "https://github.com/Gbury/mSAT.git"
+dev-repo: "git+https://github.com/Gbury/mSAT.git"
 bug-reports: "https://github.com/Gbury/mSAT/issues/"
 
