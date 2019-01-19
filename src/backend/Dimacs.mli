@@ -12,6 +12,11 @@ Copyright 2014 Simon Cruanes
 
 open Msat
 
+module type ARG = sig
+  type clause
+  val lits : clause -> int list
+end
+
 module type S = sig
   type st
 
@@ -44,6 +49,7 @@ module type S = sig
 
 end
 
-module Make(St: Solver_types_intf.S) : S with type clause := St.clause and type st = St.t
+module Make(St: Msat.S)(A: ARG with type clause = St.clause)
+  : S with type clause := St.clause and type st = St.t
 (** Functor to create a module for exporting probems to the dimacs (& iCNF) formats. *)
 

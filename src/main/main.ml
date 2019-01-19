@@ -19,7 +19,7 @@ let size_limit = ref 1000_000_000.
 module S = Msat_sat
 
 module Process = struct
-  module D = Msat_backend.Dot.Make(S.Proof)(Msat_backend.Dot.Default(S.Proof))
+  module D = Msat_backend.Dot.Make(S)(Msat_backend.Dot.Default(S))
 
   let hyps = ref []
 
@@ -29,7 +29,7 @@ module Process = struct
     let check_clause c =
       let l = List.map (function a ->
           Log.debugf 99
-            (fun k -> k "Checking value of %a" S.Formula.pp a);
+            (fun k -> k "Checking value of %a" S.Atom.pp a);
           sat.Msat.eval a) c in
       List.exists (fun x -> x) l
     in

@@ -4,28 +4,665 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-(* TODO: move solver types here *)
+module type PLUGIN = sig
+  val mcsat : bool
+  (** Is this a mcsat plugin? *)
 
-module Make
-    (St : Solver_types.S)
-    (Plugin : Plugin_intf.S with type term = St.term
-                             and type formula = St.formula
-                             and type proof = St.proof)
+  include Solver_intf.PLUGIN_MCSAT
+end
+
+module Make(Plugin : PLUGIN)
 = struct
-  module Proof = Res.Make(St)
+  module Term = Plugin.Term
+  module Formula = Plugin.Formula
 
-  open St
+  type term = Term.t
+  type formula = Formula.t
   type theory = Plugin.t
+  type lemma = Plugin.proof
+
+  (* MCSAT literal *)
+  type lit = {
+    lid : int;
+    term : term;
+    mutable l_level : int;
+    mutable l_idx: int;
+    mutable l_weight : float;
+    mutable assigned : term option;
+  }
+
+  type var = {
+    vid : int;
+    pa : atom;
+    na : atom;
+    mutable v_fields : int;
+    mutable v_level : int;
+    mutable v_idx: int; (** position in heap *)
+    mutable v_weight : float; (** Weight (for the heap), tracking activity *)
+    mutable v_assignable: lit list option;
+    mutable reason : reason option;
+  }
+
+  and atom = {
+    aid : int;
+    var : var;
+    neg : atom;
+    lit : formula;
+    mutable is_true : bool;
+    watched : clause Vec.t;
+  }
+
+  and clause = {
+    name : int;
+    tag : int option; (* TODO remove *)
+    atoms : atom array;
+    mutable cpremise : premise;
+    mutable activity : float;
+    mutable attached : bool; (* TODO: use an int field *)
+    mutable visited : bool;
+  }
+
+  and reason =
+    | Decision
+    | Bcp of clause
+    | Semantic
+
+  (* TODO: remove, replace with user-provided proof trackng device?
+     for pure SAT, [reason] is sufficient *)
+  and premise =
+    | Hyp
+    | Local
+    | Lemma of lemma
+    | History of clause list
+
+  type elt =
+    | E_lit of lit
+    | E_var of var
+
+  type trail_elt =
+    | Lit of lit
+    | Atom of atom
+
+  (* Constructors *)
+  module MF = Hashtbl.Make(Formula)
+  module MT = Hashtbl.Make(Term)
+
+  type st = {
+    t_map: lit MT.t;
+    f_map: var MF.t;
+    vars: elt Vec.t;
+    mutable cpt_mk_var: int;
+    mutable cpt_mk_clause: int;
+  }
+
+  let create_st ?(size=`Big) () : st =
+    let size_map = match size with
+      | `Tiny -> 8
+      | `Small -> 16
+      | `Big -> 4096
+    in
+    { f_map = MF.create size_map;
+      t_map = MT.create size_map;
+      vars = Vec.create();
+      cpt_mk_var = 0;
+      cpt_mk_clause = 0;
+    }
+
+  let nb_elt st = Vec.size st.vars
+  let get_elt st i = Vec.get st.vars i
+  let iter_elt st f = Vec.iter f st.vars
+
+  let name_of_clause c = match c.cpremise with
+    | Hyp -> "H" ^ string_of_int c.name
+    | Local -> "L" ^ string_of_int c.name
+    | Lemma _ -> "T" ^ string_of_int c.name
+    | History _ -> "C" ^ string_of_int c.name
+
+  module Lit = struct
+    type t = lit
+    let[@inline] term l = l.term
+    let[@inline] level l = l.l_level
+    let[@inline] assigned l = l.assigned
+    let[@inline] weight l = l.l_weight
+
+    let make (st:st) (t:term) : t =
+      try MT.find st.t_map t
+      with Not_found ->
+        let res = {
+          lid = st.cpt_mk_var;
+          term = t;
+          l_weight = 1.;
+          l_idx= -1;
+          l_level = -1;
+          assigned = None;
+        } in
+        st.cpt_mk_var <- st.cpt_mk_var + 1;
+        MT.add st.t_map t res;
+        Vec.push st.vars (E_lit res);
+        res
+
+    let debug_assign fmt v =
+      match v.assigned with
+      | None ->
+        Format.fprintf fmt ""
+      | Some t ->
+        Format.fprintf fmt "@[<hov>@@%d->@ %a@]" v.l_level Term.pp t
+
+    let pp out v = Term.pp out v.term
+    let debug out v =
+      Format.fprintf out "%d[%a][lit:@[<hov>%a@]]"
+        (v.lid+1) debug_assign v Term.pp v.term
+  end
+
+  let seen_pos = 0b1
+  let seen_neg = 0b10
+
+  module Var = struct
+    type t = var
+    let[@inline] level v = v.v_level
+    let[@inline] pos v = v.pa
+    let[@inline] neg v = v.na
+    let[@inline] reason v = v.reason
+    let[@inline] assignable v = v.v_assignable
+    let[@inline] weight v = v.v_weight
+
+    let make (st:st) (t:formula) : var * Solver_intf.negated =
+      let lit, negated = Formula.norm t in
+      try
+        MF.find st.f_map lit, negated
+      with Not_found ->
+        let cpt_double = st.cpt_mk_var lsl 1 in
+        let rec var  =
+          { vid = st.cpt_mk_var;
+            pa = pa;
+            na = na;
+            v_fields = 0;
+            v_level = -1;
+            v_idx= -1;
+            v_weight = 0.;
+            v_assignable = None;
+            reason = None;
+          }
+        and pa =
+          { var = var;
+            lit = lit;
+            watched = Vec.create();
+            neg = na;
+            is_true = false;
+            aid = cpt_double (* aid = vid*2 *) }
+        and na =
+          { var = var;
+            lit = Formula.neg lit;
+            watched = Vec.create();
+            neg = pa;
+            is_true = false;
+            aid = cpt_double + 1 (* aid = vid*2+1 *) } in
+        MF.add st.f_map lit var;
+        st.cpt_mk_var <- st.cpt_mk_var + 1;
+        Vec.push st.vars (E_var var);
+        var, negated
+
+    (* Marking helpers *)
+    let[@inline] clear v =
+      v.v_fields <- 0
+
+    let[@inline] seen_both v =
+      (seen_pos land v.v_fields <> 0) &&
+      (seen_neg land v.v_fields <> 0)
+  end
+
+  module Atom = struct
+    type t = atom
+    let[@inline] level a = a.var.v_level
+    let[@inline] var a = a.var
+    let[@inline] neg a = a.neg
+    let[@inline] abs a = a.var.pa
+    let[@inline] formula a = a.lit
+    let[@inline] equal a b = a == b
+    let[@inline] sign a = a == abs a
+    let[@inline] hash a = Hashtbl.hash a.aid
+    let[@inline] compare a b = Pervasives.compare a.aid b.aid
+    let[@inline] reason a = Var.reason a.var
+    let[@inline] id a = a.aid
+    let[@inline] is_true a = a.is_true
+    let[@inline] is_false a = a.neg.is_true
+
+    let[@inline] seen a =
+      let pos = equal a (abs a) in
+      if pos
+      then (seen_pos land a.var.v_fields <> 0)
+      else (seen_neg land a.var.v_fields <> 0)
+
+    let[@inline] mark a =
+      let pos = equal a (abs a) in
+      if pos then (
+        a.var.v_fields <- seen_pos lor a.var.v_fields
+      ) else (
+        a.var.v_fields <- seen_neg lor a.var.v_fields
+      )
+
+    let[@inline] make st lit =
+      let var, negated = Var.make st lit in
+      match negated with
+      | Solver_intf.Negated -> var.na
+      | Solver_intf.Same_sign -> var.pa
+
+    let pp fmt a = Formula.pp fmt a.lit
+
+    let pp_a fmt v =
+      if Array.length v = 0 then (
+        Format.fprintf fmt "∅"
+      ) else (
+        pp fmt v.(0);
+        if (Array.length v) > 1 then begin
+          for i = 1 to (Array.length v) - 1 do
+            Format.fprintf fmt " ∨ %a" pp v.(i)
+          done
+        end
+      )
+
+    (* Complete debug printing *)
+    let pp_sign a = if a == a.var.pa then "+" else "-"
+
+    let debug_reason fmt = function
+      | n, _ when n < 0 ->
+        Format.fprintf fmt "%%"
+      | n, None ->
+        Format.fprintf fmt "%d" n
+      | n, Some Decision ->
+        Format.fprintf fmt "@@%d" n
+      | n, Some Bcp c ->
+        Format.fprintf fmt "->%d/%s" n (name_of_clause c)
+      | n, Some Semantic ->
+        Format.fprintf fmt "::%d" n
+
+    let pp_level fmt a =
+      debug_reason fmt (a.var.v_level, a.var.reason)
+
+    let debug_value fmt a =
+      if a.is_true then
+        Format.fprintf fmt "T%a" pp_level a
+      else if a.neg.is_true then
+        Format.fprintf fmt "F%a" pp_level a
+      else
+        Format.fprintf fmt ""
+
+    let debug out a =
+      Format.fprintf out "%s%d[%a][atom:@[<hov>%a@]]"
+        (pp_sign a) (a.var.vid+1) debug_value a Formula.pp a.lit
+
+    let debug_a out vec =
+      Array.iter (fun a -> Format.fprintf out "%a@ " debug a) vec
+  end
+
+  (* Elements *)
+  module Elt = struct
+    type t = elt
+    let[@inline] of_lit l = E_lit l
+    let[@inline] of_var v = E_var v
+
+    let[@inline] id = function
+      | E_lit l -> l.lid | E_var v ->  v.vid
+    let[@inline] level = function
+      | E_lit l -> l.l_level | E_var v ->  v.v_level
+    let[@inline] idx = function
+      | E_lit l -> l.l_idx | E_var v ->  v.v_idx
+    let[@inline] weight = function
+      | E_lit l -> l.l_weight | E_var v ->  v.v_weight
+
+    let[@inline] set_level e lvl = match e with
+      | E_lit l -> l.l_level <- lvl | E_var v ->  v.v_level <- lvl
+    let[@inline] set_idx e i = match e with
+      | E_lit l -> l.l_idx <- i | E_var v ->  v.v_idx <- i
+    let[@inline] set_weight e w = match e with
+      | E_lit l -> l.l_weight <- w | E_var v ->  v.v_weight <- w
+  end
+
+  module Trail_elt = struct
+    type t = trail_elt
+    let[@inline] of_lit l = Lit l
+    let[@inline] of_atom a = Atom a
+
+    let debug fmt = function
+      | Lit l -> Lit.debug fmt l
+      | Atom a -> Atom.debug fmt a
+  end
+
+  module Clause = struct
+    type t = clause
+
+    let make =
+      let n = ref 0 in
+      fun ?tag ali premise ->
+        let atoms = Array.of_list ali in
+        let name = !n in
+        incr n;
+        { name;
+          tag = tag;
+          atoms = atoms;
+          visited = false;
+          attached = false;
+          activity = 0.;
+          cpremise = premise}
+
+    let empty = make [] (History [])
+    let name = name_of_clause
+    let[@inline] equal c1 c2 = c1==c2
+    let[@inline] atoms c = c.atoms
+    let[@inline] atoms_l c = Array.to_list c.atoms
+    let[@inline] tag c = c.tag
+    let hash cl = Array.fold_left (fun i a -> Hashtbl.hash (a.aid, i)) 0 cl.atoms
+
+    let[@inline] premise c = c.cpremise
+    let[@inline] set_premise c p = c.cpremise <- p
+
+    let[@inline] visited c = c.visited
+    let[@inline] set_visited c b = c.visited <- b
+
+    let[@inline] attached c = c.attached
+    let[@inline] set_attached c b = c.attached <- b
+
+    let[@inline] activity c = c.activity
+    let[@inline] set_activity c w = c.activity <- w
+
+    module Tbl = Hashtbl.Make(struct
+        type t = clause
+        let hash = hash
+        let equal = equal
+      end)
+
+    let pp fmt c =
+      Format.fprintf fmt "%s : %a" (name c) Atom.pp_a c.atoms
+
+    let debug_premise out = function
+      | Hyp -> Format.fprintf out "hyp"
+      | Local -> Format.fprintf out "local"
+      | Lemma _ -> Format.fprintf out "th_lemma"
+      | History v ->
+        List.iter (fun c -> Format.fprintf out "%s,@ " (name_of_clause c)) v
+
+    let debug out ({atoms=arr; cpremise=cp;_}as c) =
+      Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"
+        (name c) Atom.debug_a arr debug_premise cp
+  end
+
+  module Proof =  struct
+    exception Insuficient_hyps
+    exception Resolution_error of string
+
+    type atom = Atom.t
+    type clause = Clause.t
+    type formula = Formula.t
+    type lemma = Plugin.proof
+
+    let merge = List.merge Atom.compare
+
+    let _c = ref 0
+    let fresh_pcl_name () = incr _c; "R" ^ (string_of_int !_c)
+
+    (* Compute resolution of 2 clauses *)
+    let resolve l =
+      let rec aux resolved acc = function
+        | [] -> resolved, acc
+        | [a] -> resolved, a :: acc
+        | a :: b :: r ->
+          if Atom.equal a b then
+            aux resolved (a :: acc) r
+          else if Atom.equal a.neg b then
+            aux (a.var.pa :: resolved) acc r
+          else
+            aux resolved (a :: acc) (b :: r)
+      in
+      let resolved, new_clause = aux [] [] l in
+      resolved, List.rev new_clause
+
+    (* Compute the set of doublons of a clause *)
+    let list c = List.sort Atom.compare (Array.to_list c.atoms)
+
+    let analyze cl =
+      let rec aux duplicates free = function
+        | [] -> duplicates, free
+        | [ x ] -> duplicates, x :: free
+        | x :: ((y :: r) as l) ->
+          if x == y then
+            count duplicates (x :: free) x [y] r
+          else
+            aux duplicates (x :: free) l
+      and count duplicates free x acc = function
+        | (y :: r) when x == y ->
+          count duplicates free x (y :: acc) r
+        | l ->
+          aux (acc :: duplicates) free l
+      in
+      let doublons, acc = aux [] [] cl in
+      doublons, List.rev acc
+
+    let to_list c =
+      let cl = list c in
+      let doublons, l = analyze cl in
+      let conflicts, _ = resolve l in
+      if doublons <> [] then
+        Log.debug 3 "Input clause has redundancies";
+      if conflicts <> [] then
+        Log.debug 3 "Input clause is a tautology";
+      cl
+
+    (* Comparison of clauses *)
+    let cmp_cl c d =
+      let rec aux = function
+        | [], [] -> 0
+        | a :: r, a' :: r' ->
+          begin match Atom.compare a a' with
+            | 0 -> aux (r, r')
+            | x -> x
+          end
+        | _ :: _ , [] -> -1
+        | [], _ :: _ -> 1
+      in
+      aux (c, d)
+
+    let[@inline] prove conclusion =
+      assert (conclusion.cpremise <> History []);
+      conclusion
+
+    let rec set_atom_proof a =
+      let aux acc b =
+        if Atom.equal a.neg b then acc
+        else set_atom_proof b :: acc
+      in
+      assert (a.var.v_level >= 0);
+      match (a.var.reason) with
+      | Some (Bcp c) ->
+        Log.debugf 5 (fun k->k "Analysing: @[%a@ %a@]" Atom.debug a Clause.debug c);
+        if Array.length c.atoms = 1 then (
+          Log.debugf 5 (fun k -> k "Old reason: @[%a@]" Atom.debug a);
+          c
+        ) else (
+          assert (a.neg.is_true);
+          let r = History (c :: (Array.fold_left aux [] c.atoms)) in
+          let c' = Clause.make [a.neg] r in
+          a.var.reason <- Some (Bcp c');
+          Log.debugf 5
+            (fun k -> k "New reason: @[%a@ %a@]" Atom.debug a Clause.debug c');
+          c'
+        )
+      | _ ->
+        Log.debugf 0 (fun k -> k "Error while proving atom %a" Atom.debug a);
+        raise (Resolution_error "Cannot prove atom")
+
+    let prove_unsat conflict =
+      if Array.length conflict.atoms = 0 then conflict
+      else (
+        Log.debugf 1 (fun k -> k "Proving unsat from: @[%a@]" Clause.debug conflict);
+        let l = Array.fold_left (fun acc a -> set_atom_proof a :: acc) [] conflict.atoms in
+        let res = Clause.make [] (History (conflict :: l)) in
+        Log.debugf 1 (fun k -> k "Proof found: @[%a@]" Clause.debug res);
+        res
+      )
+
+    let prove_atom a =
+      if (a.is_true && a.var.v_level = 0) then
+        Some (set_atom_proof a)
+      else
+        None
+
+    (* Interface exposed *)
+    type t = clause
+    and proof_node = {
+      conclusion : clause;
+      step : step;
+    }
+    and step =
+      | Hypothesis
+      | Assumption
+      | Lemma of lemma
+      | Duplicate of t * atom list
+      | Resolution of t * t * atom
+
+    let rec chain_res (c, cl) = function
+      | d :: r ->
+        Log.debugf 5 
+          (fun k -> k "  Resolving clauses : @[%a@\n%a@]" Clause.debug c Clause.debug d);
+        let dl = to_list d in
+        begin match resolve (merge cl dl) with
+          | [ a ], l ->
+            begin match r with
+              | [] -> (l, c, d, a)
+              | _ ->
+                let new_clause = Clause.make l (History [c; d]) in
+                chain_res (new_clause, l) r
+            end
+          | _ ->
+            Log.debugf 5
+              (fun k -> k "While resolving clauses:@[<hov>%a@\n%a@]"
+                  Clause.debug c Clause.debug d);
+            raise (Resolution_error "Clause mismatch")
+        end
+      | _ ->
+        raise (Resolution_error "Bad history")
+
+    let[@inline] conclusion (p:t) : clause = p
+
+    let expand conclusion =
+      Log.debugf 5 (fun k -> k "Expanding : @[%a@]" Clause.debug conclusion);
+      match conclusion.cpremise with
+      | Lemma l ->
+        {conclusion; step = Lemma l; }
+      | Hyp ->
+        { conclusion; step = Hypothesis; }
+      | Local ->
+        { conclusion; step = Assumption; }
+      | History [] ->
+        Log.debugf 0 (fun k -> k "Empty history for clause: %a" Clause.debug conclusion);
+        raise (Resolution_error "Empty history")
+      | History [ c ] ->
+        let duplicates, res = analyze (list c) in
+        assert (cmp_cl res (list conclusion) = 0);
+        { conclusion; step = Duplicate (c, List.concat duplicates) }
+      | History ( c :: ([_] as r)) ->
+        let (l, c', d', a) = chain_res (c, to_list c) r in
+        assert (cmp_cl l (to_list conclusion) = 0);
+        { conclusion; step = Resolution (c', d', a); }
+      | History ( c :: r ) ->
+        let (l, c', d', a) = chain_res (c, to_list c) r in
+        conclusion.cpremise <- History [c'; d'];
+        assert (cmp_cl l (to_list conclusion) = 0);
+        { conclusion; step = Resolution (c', d', a); }
+
+    (* Proof nodes manipulation *)
+    let is_leaf = function
+      | Hypothesis
+      | Assumption
+      | Lemma _ -> true
+      | Duplicate _
+      | Resolution _ -> false
+
+    let parents = function
+      | Hypothesis
+      | Assumption
+      | Lemma _ -> []
+      | Duplicate (p, _) -> [p]
+      | Resolution (p, p', _) -> [p; p']
+
+    let expl = function
+      | Hypothesis -> "hypothesis"
+      | Assumption -> "assumption"
+      | Lemma _ -> "lemma"
+      | Duplicate _ -> "duplicate"
+      | Resolution _ -> "resolution"
+
+    (* Compute unsat-core
+       TODO: replace visited bool by a int unique to each call
+       of unsat_core, so that the cleanup can be removed ? *)
+    let unsat_core proof =
+      let rec aux res acc = function
+        | [] -> res, acc
+        | c :: r ->
+          if not c.visited then (
+            c.visited <- true;
+            match c.cpremise with
+            | Hyp | Local | Lemma _ -> aux (c :: res) acc r
+            | History h ->
+              let l = List.fold_left (fun acc c ->
+                  if not c.visited then c :: acc else acc) r h in
+              aux res (c :: acc) l
+          ) else (
+            aux res acc r
+          )
+      in
+      let res, tmp = aux [] [] [proof] in
+      List.iter (fun c -> c.visited <- false) res;
+      List.iter (fun c -> c.visited <- false) tmp;
+      res
+
+    module Tbl = Clause.Tbl
+
+    type task =
+      | Enter of t
+      | Leaving of t
+
+    let spop s = try Some (Stack.pop s) with Stack.Empty -> None
+
+    let rec fold_aux s h f acc =
+      match spop s with
+      | None -> acc
+      | Some (Leaving c) ->
+        Tbl.add h c true;
+        fold_aux s h f (f acc (expand c))
+      | Some (Enter c) ->
+        if not (Tbl.mem h c) then begin
+          Stack.push (Leaving c) s;
+          let node = expand c in
+          begin match node.step with
+            | Duplicate (p1, _) ->
+              Stack.push (Enter p1) s
+            | Resolution (p1, p2, _) ->
+              Stack.push (Enter p2) s;
+              Stack.push (Enter p1) s
+            | Hypothesis | Assumption | Lemma _ -> ()
+          end
+        end;
+        fold_aux s h f acc
+
+    let fold f acc p =
+      let h = Tbl.create 42 in
+      let s = Stack.create () in
+      Stack.push (Enter p) s;
+      fold_aux s h f acc
+
+    let check p = fold (fun () _ -> ()) () p
+  end
+  type proof = Proof.t
 
   module H = (Heap.Make [@specialise]) (struct
-    type t = St.Elt.t
+    type t = Elt.t
     let[@inline] cmp i j = Elt.weight j < Elt.weight i (* comparison by weight *)
     let idx = Elt.idx
     let set_idx = Elt.set_idx
   end)
 
-  exception Sat
-  exception Unsat
+  exception E_sat
+  exception E_unsat
   exception UndecidedLit
   exception Restart
   exception Conflict of clause
@@ -50,9 +687,8 @@ module Make
 
   (* Singleton type containing the current state *)
   type t = {
-    st : St.t;
-
-    th: Plugin.t;
+    st : st;
+    th: theory;
 
     (* Clauses are simplified for eficiency purposes. In the following
        vectors, the comments actually refer to the original non-simplified
@@ -62,6 +698,7 @@ module Make
     (* clauses added by the user *)
     clauses_learnt : clause Vec.t;
     (* learnt clauses (tautologies true at any time, whatever the user level) *)
+    (* TODO: remove, replace by vec of assumptions *)
     clauses_temp : clause Vec.t;
     (* Temp clauses, corresponding to the local assumptions. This vec is used
        only to have an efficient way to access the list of local assumptions. *)
@@ -85,6 +722,7 @@ module Make
     th_levels : Plugin.level Vec.t;
     (* theory states corresponding to elt_levels *)
 
+    (* TODO: remove *)
     user_levels : int Vec.t;
     (* user levels in [clauses_temp] *)
 
@@ -120,10 +758,12 @@ module Make
     (* initial limit for the number of learnt clauses, 1/3 of initial
         number of clauses by default *)
 
+    (* TODO: remove *)
     mutable dirty: bool;
     (* is there a [pop()] on top of the stack for examining
        current model/proof? *)
   }
+  type solver = t
 
   (* Starting environment. *)
   let create_ ~st (th:theory) : t = {
@@ -158,7 +798,7 @@ module Make
   }
 
   let create ?(size=`Big) (th:theory) : t =
-    let st = St.create ~size () in
+    let st = create_st ~size () in
     create_ ~st th
 
   (* Misc functions *)
@@ -186,16 +826,16 @@ module Make
      of subterms of each formula, so we have a field [v_assignable]
      directly in variables to do so.  *)
   let iter_sub f v =
-    if St.mcsat then
+    if Plugin.mcsat then
       match v.v_assignable with
       | Some l -> List.iter f l
       | None -> assert false
 
   (* When we have a new literal,
      we need to first create the list of its subterms. *)
-  let mk_atom st (f:St.formula) : atom =
+  let mk_atom st (f:formula) : atom =
     let res = Atom.make st.st f in
-    if St.mcsat then (
+    if Plugin.mcsat then (
       begin match res.var.v_assignable with
         | Some _ -> ()
         | None ->
@@ -217,12 +857,13 @@ module Make
   *)
   let rec insert_var_order st (elt:elt) : unit =
     H.insert st.order elt;
-    begin match elt with
+    if Plugin.mcsat then (
+      match elt with
       | E_lit _ -> ()
       | E_var v -> insert_subterms_order st v
-    end
+    )
 
-  and insert_subterms_order st (v:St.var) : unit =
+  and insert_subterms_order st (v:var) : unit =
     iter_sub (fun t -> insert_var_order st (Elt.of_lit t)) v
 
   (* Add new litterals/atoms on which to decide on, even if there is no
@@ -233,9 +874,10 @@ module Make
     let l = Lit.make st.st t in
     insert_var_order st (E_lit l)
 
-  let new_atom st (p:formula) : unit =
+  let make_atom_ st (p:formula) : atom =
     let a = mk_atom st p in
-    insert_var_order st (E_var a.var)
+    insert_var_order st (E_var a.var);
+    a
 
   (* Rather than iterate over all the heap when we want to decrease all the
      variables/literals activity, we instead increase the value by which
@@ -250,8 +892,8 @@ module Make
   let var_bump_activity_aux st v =
     v.v_weight <- v.v_weight +. st.var_incr;
     if v.v_weight > 1e100 then (
-      for i = 0 to St.nb_elt st.st - 1 do
-        Elt.set_weight (St.get_elt st.st i) ((Elt.weight (St.get_elt st.st i)) *. 1e-100)
+      for i = 0 to nb_elt st.st - 1 do
+        Elt.set_weight (get_elt st.st i) ((Elt.weight (get_elt st.st i)) *. 1e-100)
       done;
       st.var_incr <- st.var_incr *. 1e-100;
     );
@@ -264,8 +906,8 @@ module Make
   let lit_bump_activity_aux st (l:lit): unit =
     l.l_weight <- l.l_weight +. st.var_incr;
     if l.l_weight > 1e100 then (
-      for i = 0 to St.nb_elt st.st - 1 do
-        Elt.set_weight (St.get_elt st.st i) ((Elt.weight (St.get_elt st.st i)) *. 1e-100)
+      for i = 0 to nb_elt st.st - 1 do
+        Elt.set_weight (get_elt st.st i) ((Elt.weight (get_elt st.st i)) *. 1e-100)
       done;
       st.var_incr <- st.var_incr *. 1e-100;
     );
@@ -473,7 +1115,7 @@ module Make
   let report_unsat st confl : _ =
     Log.debugf info (fun k -> k "@[Unsat conflict: %a@]" Clause.debug confl);
     st.unsat_conflict <- Some confl;
-    raise Unsat
+    raise E_unsat
 
   (* Simplification of boolean propagation reasons.
      When doing boolean propagation *at level 0*, it can happen
@@ -588,8 +1230,8 @@ module Make
   let th_eval st a : bool option =
     if a.is_true || a.neg.is_true then None
     else match Plugin.eval st.th a.lit with
-      | Plugin_intf.Unknown -> None
-      | Plugin_intf.Valued (b, l) ->
+      | Solver_intf.Unknown -> None
+      | Solver_intf.Valued (b, l) ->
         if l = [] then
           raise (Invalid_argument (
               Format.asprintf "msat:core/internal.ml: %s"
@@ -731,7 +1373,7 @@ module Make
   let[@inline] analyze st c_clause : conflict_res =
     analyze_sat st c_clause
       (*
-    if St.mcsat
+    if mcsat
     then analyze_mcsat c_clause
     else analyze_sat c_clause
          *)
@@ -959,22 +1601,22 @@ module Make
   let slice_get st i =
     match Vec.get st.trail i with
     | Atom a ->
-      Plugin_intf.Lit a.lit
+      Solver_intf.Lit a.lit
     | Lit {term; assigned = Some v; _} ->
-      Plugin_intf.Assign (term, v)
+      Solver_intf.Assign (term, v)
     | Lit _ -> assert false
 
-  let slice_push st (l:formula list) (lemma:proof): unit =
+  let slice_push st (l:formula list) (lemma:lemma): unit =
     let atoms = List.rev_map (create_atom st) l in
     let c = Clause.make atoms (Lemma lemma) in
     Log.debugf info (fun k->k "Pushing clause %a" Clause.debug c);
     Stack.push c st.clauses_to_add
 
   let slice_propagate (st:t) f = function
-    | Plugin_intf.Eval l ->
+    | Solver_intf.Eval l ->
       let a = mk_atom st f in
       enqueue_semantic st a l
-    | Plugin_intf.Consequence (causes, proof) ->
+    | Solver_intf.Consequence (causes, proof) ->
       let l = List.rev_map (mk_atom st) causes in
       if List.for_all (fun a -> a.is_true) l then (
         let p = mk_atom st f in
@@ -991,8 +1633,8 @@ module Make
         invalid_arg "Msat.Internal.slice_propagate"
       )
 
-  let current_slice st : (_,_,_) Plugin_intf.slice = {
-    Plugin_intf.start = st.th_head;
+  let current_slice st : (_,_,_) Solver_intf.slice = {
+    Solver_intf.start = st.th_head;
     length = Vec.size st.trail - st.th_head;
     get = slice_get st;
     push = slice_push st;
@@ -1000,8 +1642,8 @@ module Make
   }
 
   (* full slice, for [if_sat] final check *)
-  let full_slice st : (_,_,_) Plugin_intf.slice = {
-    Plugin_intf.start = 0;
+  let full_slice st : (_,_,_) Solver_intf.slice = {
+    Solver_intf.start = 0;
     length = Vec.size st.trail;
     get = slice_get st;
     push = slice_push st;
@@ -1020,9 +1662,9 @@ module Make
       let slice = current_slice st in
       st.th_head <- st.elt_head; (* catch up *)
       match Plugin.assume st.th slice with
-      | Plugin_intf.Sat ->
+      | Solver_intf.Th_sat ->
         propagate st
-      | Plugin_intf.Unsat (l, p) ->
+      | Solver_intf.Th_unsat (l, p) ->
         (* conflict *)
         let l = List.rev_map (create_atom st) l in
         (* Assert that the conflcit is indeeed a conflict *)
@@ -1031,7 +1673,7 @@ module Make
         );
         List.iter (fun a -> insert_var_order st (Elt.of_var a.var)) l;
         (* Create the clause and return it. *)
-        let c = St.Clause.make l (Lemma p) in
+        let c = Clause.make l (Lemma p) in
         Some c
     )
 
@@ -1072,14 +1714,20 @@ module Make
     if v.v_level >= 0 then (
       assert (v.pa.is_true || v.na.is_true);
       pick_branch_lit st
-    ) else match Plugin.eval st.th atom.lit with
-      | Plugin_intf.Unknown ->
+    ) else if Plugin.mcsat then (
+      match Plugin.eval st.th atom.lit with
+      | Solver_intf.Unknown ->
         new_decision_level st;
         let current_level = decision_level st in
         enqueue_bool st atom ~level:current_level Decision
-      | Plugin_intf.Valued (b, l) ->
+      | Solver_intf.Valued (b, l) ->
         let a = if b then atom else atom.neg in
         enqueue_semantic st a l
+    ) else (
+      new_decision_level st;
+      let current_level = decision_level st in
+      enqueue_bool st atom ~level:current_level Decision
+    )
 
   and pick_branch_lit st =
     match st.next_decision with
@@ -1099,7 +1747,7 @@ module Make
           )
         | E_var v ->
           pick_branch_aux st v.pa
-        | exception Not_found -> raise Sat
+        | exception Not_found -> raise E_sat
       end
 
   (* do some amount of search, until the number of conflicts or clause learnt
@@ -1122,8 +1770,7 @@ module Make
       | None -> (* No Conflict *)
         assert (st.elt_head = Vec.size st.trail);
         assert (st.elt_head = st.th_head);
-        if Vec.size st.trail = St.nb_elt st.st
-        then raise Sat;
+        if Vec.size st.trail = nb_elt st.st then raise E_sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then (
           Log.debug info "Restarting...";
           cancel_until st (base_level st);
@@ -1138,19 +1785,18 @@ module Make
         pick_branch_lit st
     done
 
-  let eval_level (st:t) lit =
-    let var, negated = Var.make st.st lit in
-    if not var.pa.is_true && not var.na.is_true
-    then raise UndecidedLit
-    else assert (var.v_level >= 0);
-    let truth = var.pa.is_true in
-    let value = match negated with
-      | Formula_intf.Negated -> not truth
-      | Formula_intf.Same_sign -> truth
-    in
-    value, var.v_level
+  let eval_level (_st:t) (a:atom) =
+    let lvl = a.var.v_level in
+    if Atom.is_true a then (
+      assert (lvl >= 0);
+      true, lvl
+    ) else if Atom.is_false a then (
+      false, lvl
+    ) else (
+      raise UndecidedLit
+    )
 
-  let eval st lit = fst (eval_level st lit)
+  let[@inline] eval st lit = fst @@ eval_level st lit
 
   let[@inline] unsat_conflict st = st.unsat_conflict
 
@@ -1166,7 +1812,7 @@ module Make
      conflict is reached *)
   let solve (st:t) : unit =
     Log.debug 5 "solve";
-    if is_unsat st then raise Unsat;
+    if is_unsat st then raise E_unsat;
     let n_of_conflicts = ref (to_float st.restart_first) in
     let n_of_learnts = ref ((to_float (nb_clauses st)) *. st.learntsize_factor) in
     try
@@ -1177,20 +1823,20 @@ module Make
           | Restart ->
             n_of_conflicts := !n_of_conflicts *. restart_inc;
             n_of_learnts   := !n_of_learnts *. learntsize_inc
-          | Sat ->
+          | E_sat ->
             assert (st.elt_head = Vec.size st.trail);
             begin match Plugin.if_sat st.th (full_slice st) with
-              | Plugin_intf.Sat -> ()
-              | Plugin_intf.Unsat (l, p) ->
+              | Solver_intf.Th_sat -> ()
+              | Solver_intf.Th_unsat (l, p) ->
                 let atoms = List.rev_map (create_atom st) l in
                 let c = Clause.make atoms (Lemma p) in
                 Log.debugf info (fun k -> k "Theory conflict clause: %a" Clause.debug c);
                 Stack.push c st.clauses_to_add
             end;
-            if Stack.is_empty st.clauses_to_add then raise Sat
+            if Stack.is_empty st.clauses_to_add then raise E_sat
         end
       done
-    with Sat -> ()
+    with E_sat -> ()
 
   let assume st ?tag cnf =
     List.iter
@@ -1205,7 +1851,7 @@ module Make
   let push st : unit =
     Log.debug debug "Pushing a new user level";
     match st.unsat_conflict with
-    | Some _ -> raise Unsat
+    | Some _ -> raise E_unsat
     | None ->
       cancel_until st (base_level st);
       Log.debugf debug
@@ -1244,9 +1890,8 @@ module Make
     )
 
   (* Add local hyps to the current decision level *)
-  let local (st:t) (l:_ list) : unit =
-    let aux lit =
-      let a = mk_atom st lit in
+  let local (st:t) (l:atom list) : unit =
+    let aux a =
       Log.debugf info (fun k-> k "Local assumption: @[%a@]" Atom.debug a);
       assert (decision_level st = base_level st);
       if not a.is_true then (
@@ -1313,6 +1958,159 @@ module Make
 
   let trail env = env.trail
 
+  (* Result type *)
+  type res =
+    | Sat of (term,atom) Solver_intf.sat_state
+    | Unsat of (clause,Proof.t) Solver_intf.unsat_state
+
+  let pp_all st lvl status =
+    Log.debugf lvl
+      (fun k -> k
+          "@[<v>%s - Full resume:@,@[<hov 2>Trail:@\n%a@]@,\
+           @[<hov 2>Temp:@\n%a@]@,@[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,@]@."
+          status
+          (Vec.pp ~sep:"" Trail_elt.debug) (trail st)
+          (Vec.pp ~sep:"" Clause.debug) (temp st)
+          (Vec.pp ~sep:"" Clause.debug) (hyps st)
+          (Vec.pp ~sep:"" Clause.debug) (history st)
+      )
+
+  let mk_sat (st:t) : (_,_) Solver_intf.sat_state =
+    pp_all st 99 "SAT";
+    let t = trail st in
+    let iter f f' =
+      Vec.iter (function
+          | Atom a -> f a
+          | Lit l -> f' l.term)
+        t
+    in
+    { Solver_intf.
+      eval = eval st;
+      eval_level = eval_level st;
+      iter_trail = iter;
+      model = (fun () -> model st);
+    }
+
+  let mk_unsat (st:t) : (_,_) Solver_intf.unsat_state =
+    pp_all st 99 "UNSAT";
+    let unsat_conflict () =
+      match unsat_conflict st with
+      | None -> assert false
+      | Some c -> c
+    in
+    let get_proof () =
+      let c = unsat_conflict () in
+      Proof.prove_unsat c
+    in
+    { Solver_intf.unsat_conflict; get_proof; }
+
+  (* clean local state *)
+  let[@inline] cleanup_ (st:t) : unit =
+    if st.dirty then (
+      pop st; (* reset *)
+      st.dirty <- false;
+    )
+
+  (* Wrappers around internal functions*)
+  let[@inline] assume st ?tag cls : unit =
+    cleanup_ st;
+    assume st ?tag cls
+
+  let[@inline] add_clause st ?tag c : unit =
+    cleanup_ st;
+    let c = Clause.make ?tag c Hyp in
+    add_clause st c
+
+  let solve (st:t) ?(assumptions=[]) () =
+    cleanup_ st;
+    try
+      push st;
+      st.dirty <- true; (* to call [pop] before any other action *)
+      local st assumptions;
+      solve st;
+      Sat (mk_sat st)
+    with E_unsat ->
+      Unsat (mk_unsat st)
+
+  let[@inline] push st =
+    cleanup_ st;
+    push st
+
+  let[@inline] pop st =
+    cleanup_ st;
+    pop st
+
+  let unsat_core = Proof.unsat_core
+
+  let true_at_level0 st a =
+    try
+      let b, lev = eval_level st a in
+      b && lev = 0
+    with UndecidedLit -> false
+
+  (* TODO: remove *)
+  let get_tag cl = cl.tag
+
+  let[@inline] new_lit st t =
+    cleanup_ st;
+    new_lit st t
+
+  let[@inline] make_atom st a =
+    cleanup_ st;
+    make_atom_ st a
+
+  let export (st:t) : clause Solver_intf.export =
+    let hyps = hyps st in
+    let history = history st in
+    let local = temp st in
+    {Solver_intf.hyps; history; local}
 end
-[@@inline]
+[@@inline][@@specialise]
+
+module Make_cdcl_t(Plugin : Solver_intf.PLUGIN_CDCL_T) =
+  Make(struct
+    include Plugin
+    module Term = struct
+      type t = Solver_intf.void
+      let equal _ _ = assert false
+      let hash _ =  assert false
+      let pp _ _ = assert false
+    end
+    let eval _ _ = Solver_intf.Unknown
+    let assign _ t = t
+    let mcsat = false
+    let iter_assignable _ _ _ = ()
+  end)
+[@@inline][@@specialise]
+
+module Make_mcsat(Plugin : Solver_intf.PLUGIN_MCSAT) =
+  Make(struct
+    include Plugin
+    let mcsat = true
+  end)
+[@@inline][@@specialise]
+
+module Make_pure_sat(F: Solver_intf.FORMULA) =
+  Make(struct
+  module Formula = F
+  module Term = struct
+    type t = Solver_intf.void
+    let equal _ _ = true
+    let hash _ = 1
+    let pp out _ = Format.pp_print_string out "()"
+  end
+  type t = unit
+  type proof = Solver_intf.void
+  type level = unit
+  let current_level () = ()
+  let assume () _ = Solver_intf.Th_sat
+  let if_sat () _ = Solver_intf.Th_sat
+  let backtrack () _ = ()
+  let eval () _ = Solver_intf.Unknown
+  let assign () t = t
+  let mcsat = false
+  let iter_assignable () _ _ = ()
+    let mcsat = false
+  end)
+[@@inline][@@specialise]
 

@@ -13,16 +13,22 @@ Copyright 2014 Simon Cruanes
 module type S = Solver_intf.S
 (** Safe external interface of solvers. *)
 
-module Make
-    (St : Solver_types.S)
-    (Th : Plugin_intf.S with type term = St.term
-                         and type formula = St.formula
-                         and type proof = St.proof)
-  : S with type term = St.term
-       and type formula = St.formula
-       and type clause = St.clause
-       and type Proof.lemma = St.proof
+module Make_cdcl_t(Th : Solver_intf.PLUGIN_CDCL_T)
+  : S with type Term.t = Solver_intf.void
+       and module Formula = Th.Formula
+       and type lemma = Th.proof
        and type theory = Th.t
-(** Functor to make a safe external interface. *)
+
+module Make_mcsat(Th : Solver_intf.PLUGIN_MCSAT)
+  : S with module Term = Th.Term
+       and module Formula = Th.Formula
+       and type lemma = Th.proof
+       and type theory = Th.t
+
+module Make_pure_sat(F: Solver_intf.FORMULA)
+  : S with type Term.t = Solver_intf.void
+       and module Formula = F
+       and type lemma = Solver_intf.void
+       and type theory = unit
 
 

@@ -3,8 +3,6 @@ MSAT is free software, using the Apache license, see file LICENSE
 Copyright 2015 Guillaume Bury
 *)
 
-open Msat
-
 module type S = Backend_intf.S
 
 module type Arg = sig
@@ -18,9 +16,10 @@ module type Arg = sig
   val context : Format.formatter -> proof -> unit
 end
 
-module Make(S : Res.S)(A : Arg with type formula := S.formula
+module Make(S : Msat.S)(A : Arg with type formula := S.formula
                                 and type lemma := S.lemma
                                 and type proof := S.proof) = struct
+  module P = S.Proof
 
   let pp_nl fmt = Format.fprintf fmt "@\n"
   let fprintf fmt format = Format.kfprintf pp_nl fmt format
@@ -32,10 +31,10 @@ module Make(S : Res.S)(A : Arg with type formula := S.formula
       | [] -> ()
       | a :: r ->
         let f, pos =
-          if S.Atom.is_pos a then
-            S.Atom.lit a, true
+          if S.Atom.sign a then
+            S.Atom.formula a, true
           else
-            S.Atom.lit (S.Atom.neg a), false
+            S.Atom.formula (S.Atom.neg a), false
         in
         fprintf fmt "%s _b %a ->@ %a"
           (if pos then "_pos" else "_neg") A.pp f aux r
