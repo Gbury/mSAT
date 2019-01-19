@@ -6,10 +6,7 @@ Copyright 2014 Simon Cruanes
 
 (* Tests that require the API *)
 
-open Msat
-
-module F = Minismt_sat.Expr
-module T = Msat_tseitin.Make(F)
+module F = Msat_sat.Expr
 
 let (|>) x f = f x
 
@@ -48,7 +45,7 @@ end
 
 let mk_solver (): (module BASIC_SOLVER) =
   let module S = struct
-    include Minismt_sat
+    include Msat_sat
     let create() = create()
     let solve st ?assumptions () =
       match solve st ?assumptions() with

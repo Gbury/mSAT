@@ -33,6 +33,8 @@ module Make_mcsat_expr(E : Expr_intf.S) = Solver_types.McMake(E)
 
 module Make = Solver.Make
 
+module Make_dummy = Plugin_intf.Dummy
+
 (**/**)
 module Vec = Vec
 module Log = Log

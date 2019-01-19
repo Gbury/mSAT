@@ -13,7 +13,7 @@ build: [
 depends: [
   "ocaml" { >= "4.03" }
   "dune" {build}
-  "dolmen" {with-test & = "dev" }
+  "containers" {with-test}
 ]
 tags: [ "sat" "smt" ]
 homepage: "https://github.com/Gbury/mSAT"

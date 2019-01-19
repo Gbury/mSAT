@@ -20,12 +20,11 @@ build:
 build-dev:
 	@dune build $(OPTS) @install
 
-test: build
+test:
 	@echo "run API tests…"
 	@dune runtest
 	@echo "run benchmarks…"
-	# @/usr/bin/time -f "%e" ./tests/run smt
-	@/usr/bin/time -f "%e" ./tests/run mcsat
+	@/usr/bin/time -f "%e" ./tests/run sat
 
 enable_log:
 	cd src/core; ln -sf log_real.ml log.ml

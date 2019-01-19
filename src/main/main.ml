@@ -4,8 +4,6 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-open Msat
-
 exception Incorrect_model
 exception Out_of_time
 exception Out_of_space
@@ -18,21 +16,9 @@ let p_proof_print = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
 
-module P =
-  Dolmen.Logic.Make(Dolmen.ParseLocation)
-    (Dolmen.Id)(Dolmen.Term)(Dolmen.Statement)
+module S = Msat_sat
 
-module type S = sig
-  val do_task : Dolmen.Statement.t -> unit
-end
-
-module Make
-    (S : Msat.S)
-    (T : Minismt.Type.S with type atom := S.atom)
-  : sig
-    val do_task : Dolmen.Statement.t -> unit
-  end = struct
-
+module Process = struct
   module D = Msat_backend.Dot.Make(S.Proof)(Msat_backend.Dot.Default(S.Proof))
 
   let hyps = ref []
@@ -73,64 +59,24 @@ module Make
         Format.printf "Unsat (%f/%f)@." t t'
     end
 
-  let do_task s =
-    match s.Dolmen.Statement.descr with
-    | Dolmen.Statement.Def (id, t) -> T.def id t
-    | Dolmen.Statement.Decl (id, t) -> T.decl id t
-    | Dolmen.Statement.Clause l ->
-      let cnf = T.antecedent (Dolmen.Term.or_ l) in
-      hyps := cnf @ !hyps;
-      S.assume st cnf
-    | Dolmen.Statement.Consequent t ->
-      let cnf = T.consequent t in
-      hyps := cnf @ !hyps;
-      S.assume st cnf
-    | Dolmen.Statement.Antecedent t ->
-      let cnf = T.antecedent t in
-      hyps := cnf @ !hyps;
-      S.assume st cnf
-    | Dolmen.Statement.Pack [
-        { Dolmen.Statement.descr = Dolmen.Statement.Push 1;_ };
-        { Dolmen.Statement.descr = Dolmen.Statement.Antecedent f;_ };
-        { Dolmen.Statement.descr = Dolmen.Statement.Prove [];_ };
-        { Dolmen.Statement.descr = Dolmen.Statement.Pop 1;_ };
-      ] ->
-      let assumptions = T.assumptions f in
-      prove ~assumptions ()
-    | Dolmen.Statement.Prove l ->
-      let assumptions = List.map T.assumptions l |> List.flatten in
-      prove ~assumptions ()
-    | Dolmen.Statement.Set_info _
-    | Dolmen.Statement.Set_logic _ -> ()
-    | Dolmen.Statement.Exit -> exit 0
-    | _ ->
-      Format.printf "Command not supported:@\n%a@."
-        Dolmen.Statement.print s
+  let conv_c c = List.rev_map S.Expr.make c
+
+  let add_clauses cs =
+    S.assume st @@ CCList.map conv_c cs
 end
 
-module Sat = Make(Minismt_sat)(Minismt_sat.Type)
-module Smt = Make(Minismt_smt)(Minismt_smt.Type)
-module Mcsat = Make(Minismt_mcsat)(Minismt_smt.Type)
-
-let solver = ref (module Sat : S)
-let solver_list = [
-  "sat", (module Sat : S);
-  "smt", (module Smt : S);
-  "mcsat", (module Mcsat : S);
-]
+let parse_file f =
+  let module L = Lexing in
+  CCIO.with_in f
+    (fun ic ->
+       let buf = L.from_channel ic in
+       buf.L.lex_curr_p <- {buf.L.lex_curr_p with L.pos_fname=f;};
+       Dimacs_parse.file Dimacs_lex.token buf)
 
 let error_msg opt arg l =
   Format.fprintf Format.str_formatter "'%s' is not a valid argument for '%s', valid arguments are : %a"
     arg opt (fun fmt -> List.iter (fun (s, _) -> Format.fprintf fmt "%s, " s)) l;
   Format.flush_str_formatter ()
-
-let set_flag opt arg flag l =
-  try
-    flag := List.assoc arg l
-  with Not_found ->
-    invalid_arg (error_msg opt arg l)
-
-let set_solver s = set_flag "Solver" s solver solver_list
 
 (* Arguments parsing *)
 let int_arg r arg =
@@ -174,8 +120,6 @@ let argspec = Arg.align [
     " If provided, print the dot proof in the given file";
     "-gc", Arg.Unit setup_gc_stat,
     " Outputs statistics about the GC";
-    "-s", Arg.String set_solver,
-    "{sat,smt,mcsat} Sets the solver to use (default smt)";
     "-size", Arg.String (int_arg size_limit),
     "<s>[kMGT] Sets the size limit for the sat solver";
     "-time", Arg.String (int_arg time_limit),
@@ -194,7 +138,6 @@ let check () =
   else if s > !size_limit then
     raise Out_of_space
 
-
 let main () =
   (* Administrative duties *)
   Arg.parse argspec input_file usage;
@@ -205,14 +148,9 @@ let main () =
   let al = Gc.create_alarm check in
 
   (* Interesting stuff happening *)
-  let lang, input = P.parse_file !file in
-  let module S = (val !solver : S) in
-  List.iter S.do_task input;
-  (* Small hack for dimacs, which do not output a "Prove" statement *)
-  begin match lang with
-    | P.Dimacs -> S.do_task @@ Dolmen.Statement.check_sat []
-    | _ -> ()
-  end;
+  let clauses = parse_file !file in
+  Process.add_clauses clauses;
+  Process.prove ~assumptions:[] ();
   Gc.delete_alarm al;
   ()
 
@@ -229,14 +167,4 @@ let () =
   | Incorrect_model ->
     Format.printf "Internal error : incorrect *sat* model@.";
     exit 4
-  | Minismt_sat.Type.Typing_error (msg, t)
-  | Minismt_smt.Type.Typing_error (msg, t) ->
-    let b = Printexc.get_backtrace () in
-    let loc = match t.Dolmen.Term.loc with
-      | Some l -> l | None -> Dolmen.ParseLocation.mk "<>" 0 0 0 0
-    in
-    Format.fprintf Format.std_formatter "While typing:@\n%a@\n%a: typing error\n%s@."
-      Dolmen.Term.print t Dolmen.ParseLocation.fmt loc msg;
-    if Printexc.backtrace_status () then
-      Format.fprintf Format.std_formatter "%s@." b
 
