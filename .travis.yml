@@ -25,8 +25,8 @@ before_install:
   - export OPAMVERBOSE=1
   - opam switch ${OCAML_VERSION}
   - eval `opam config env`
-  - opam install ocamlfind jbuilder
-  - if ${RUN_TEST}; then opam pin add dolmen https://github.com/Gbury/dolmen.git; fi
+  - opam install ocamlfind dune sequence
+  - if ${RUN_TEST}; then opam install containers ; fi
 install:
   - make build
 script:
