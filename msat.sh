@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec dune exec src/main/main.exe -- $@
+exec dune exec --profile=release src/main/main.exe -- $@
