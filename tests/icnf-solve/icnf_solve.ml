@@ -69,11 +69,13 @@ module Solver = struct
   let solve s ass =
     let ass = Array.to_list ass in
     match S.solve ~assumptions:ass s () with
-    | S.Sat _ -> true
-    | S.Unsat _ -> false
+    | S.Sat _ -> Ok ()
+    | S.Unsat { unsat_assumptions; _ } ->
+      let core = unsat_assumptions() in
+      Error core
 end
 
-let solve_with_solver ~debug file : unit =
+let solve_with_solver ~check ~debug file : unit =
   Printf.eprintf "c process %S\n%!" file;
   let s = Solver.make () in
   let pp_arr out a =
@@ -97,8 +99,22 @@ let solve_with_solver ~debug file : unit =
       if debug then (
         Printf.printf "c solve %a\n%!" pp_arr assumptions;
       );
-      let r = Solver.solve s assumptions in
-      Printf.printf "%s\n%!" (if r then "SAT" else "UNSAT");
+      begin match Solver.solve s assumptions with
+        | Ok () -> Printf.printf "SAT\n%!"
+        | Error (_::_ as core) when check ->
+          Printf.printf "UNSAT\n%!";
+          let core = Array.of_list core in
+          if debug then Printf.printf "check unsat core %a\n" pp_arr core;
+          (* check unsat core *)
+          begin match Solver.solve s core with
+            | Ok () ->
+              Printf.printf "error: unsat core %a is SAT\n%!" pp_arr core;
+              exit 1
+            | Error _ -> ()
+          end;
+        | Error _ ->
+          Printf.printf "UNSAT\n%!";
+      end;
       (* next problem! *)
       process_problem()
     | exception End_of_file ->
@@ -114,8 +130,8 @@ let solve_with_solver ~debug file : unit =
   in
   process_problem ()
 
-let solve_with_file ~debug file : unit =
-  try solve_with_solver ~debug file
+let solve_with_file ~check ~debug file : unit =
+  try solve_with_solver ~check ~debug file
   with e ->
     Printf.printf "error while solving %S:\n%s"
     file (Printexc.to_string e);
@@ -124,9 +140,11 @@ let solve_with_file ~debug file : unit =
 let () =
   let files = ref [] in
   let debug = ref false in
+  let check = ref false in
   let opts = [
     "-d", Arg.Set debug, " debug";
+    "--check", Arg.Set check, " check unsat cores";
   ] |> Arg.align in
   Arg.parse opts (fun f -> files := f :: !files) "icnf_solve [options] <file>";
-  List.iter (fun f -> solve_with_file ~debug:!debug f) !files;
+  List.iter (fun f -> solve_with_file ~check:!check ~debug:!debug f) !files;
   ()
