@@ -1685,7 +1685,7 @@ module Make(Plugin : PLUGIN)
   let analyze_final (self:t) (a:atom) : atom list =
     Log.debugf 5 (fun k->k "(@[sat.analyze-final@ :lit %a@])" Atom.debug a);
     assert (Atom.is_false a);
-    let core = ref [a.neg] in
+    let core = ref [a] in
     let idx = ref (Vec.size self.trail - 1) in
     Var.mark a.var;
     let seen = ref [a.var] in
