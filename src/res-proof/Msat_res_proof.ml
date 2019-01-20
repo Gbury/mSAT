@@ -272,4 +272,12 @@ module Make(A : Msat.PROOF_ARG)
     fold_aux s h f acc
 
   let check p = fold (fun () _ -> ()) () p
+
+  module ProofBuild(A: Solver_intf.PROOF_ARG) = struct
+
+    (* TODO: when building resolution proof, remember to reverse at the end *)
+List.rev !history;
+
+
+    end
 end

@@ -155,6 +155,10 @@ module type EXPR = sig
   module Formula : FORMULA
 end
 
+(** A representation of proofs is parametrized by formulas, clauses,
+    theory lemmas, etc.
+
+    See {!PROOF} to see where this argument is used. *)
 module type PROOF_ARG = sig
   module Formula : sig
     type t
@@ -180,26 +184,41 @@ module type PROOF = sig
 
   module Builder(A: PROOF_ARG) : sig
     type ctx
-    type builder
     type proof = A.theory_lemma t
 
     val create : unit -> ctx
     (** Create a (possibly mutable) context that will be stored
         in the SAT solver *)
 
-    val init_axiom : ctx -> builder
+    val make_axiom : ctx -> proof
     (** Initialize a proof using a user input clause *)
 
-    val init_assumption : ctx -> A.Formula.t -> builder
-    (** Make a builder from an initial assumption *)
+    val make_simplify : ctx -> A.Clause.t -> proof -> proof
+    (** Simplification step from [c] with its proof *)
 
-    val init_lemma : ctx -> A.theory_lemma -> builder
+    val make_lemma : ctx -> A.theory_lemma -> proof
 
-    val res_step : ctx -> pivot:A.Formula.t -> A.Clause.t -> builder -> builder
-    (** Resolution step. Several such steps can be chained before obtaining a conclusion. *)
+    type res_proof
+    (** Resolution proof builder *)
 
-    val make : ctx -> conclusion:A.Clause.t -> builder -> A.theory_lemma t
-    (** Give the resulting clause to the builder and obtain a proof *)
+    val res_init : ctx -> A.Clause.t -> proof -> res_proof
+    (** Init resolution from the given clause and its proof *)
+
+    val res_init_assumption : ctx -> A.Atom.t -> res_proof
+    (** A proof corresponding to the given assumption, which is going to
+        be resolved against a clause that propagated the assumption's negation. *)
+
+    (* TODO: also add pivot? *)
+    val res_step : ctx -> res_proof -> A.Clause.t -> proof -> unit
+    (** Resolution step with a clause and its proof.
+        Several such steps can be chained before obtaining a conclusion. *)
+
+    val res_step_assumption : ctx -> res_proof -> A.Atom.t -> unit
+    (** Resolution step with an atom that is part of the assumptions.
+        Several such steps can be chained before obtaining a conclusion. *)
+
+    val res_finalize : ctx -> res_proof -> proof
+    (** Make a proof from the resolution steps. *)
 
     val pp : proof printer
   end

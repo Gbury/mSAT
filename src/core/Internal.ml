@@ -56,10 +56,9 @@ module Make(Plugin : PLUGIN)
   and clause = {
     name : int;
     atoms : atom array;
-    mutable cpremise : proof;
+    mutable cproof: proof;
     mutable activity : float;
-    mutable attached : bool; (* TODO: use an int field, with another flag for "dead" after GC *)
-    mutable visited : bool;
+    mutable flags: int; (* bitfield *)
   }
 
   and reason =
@@ -323,15 +322,14 @@ module Make(Plugin : PLUGIN)
 
     let make_a =
       let n = ref 0 in
-      fun atoms premise ->
+      fun atoms proof ->
         let name = !n in
         incr n;
         { name;
           atoms = atoms;
-          visited = false;
-          attached = false;
+          flags = 0;
           activity = 0.;
-          cpremise = premise}
+          cproof = proof}
 
     let make l premise = make_a (Array.of_list l) premise
 
@@ -341,14 +339,26 @@ module Make(Plugin : PLUGIN)
     let[@inline] atoms_l c = Array.to_list c.atoms
     let hash cl = Array.fold_left (fun i a -> Hashtbl.hash (a.aid, i)) 0 cl.atoms
 
-    let[@inline] premise c = c.cpremise
-    let[@inline] set_premise c p = c.cpremise <- p
+    let[@inline] proof c = c.cproof
 
-    let[@inline] visited c = c.visited
-    let[@inline] set_visited c b = c.visited <- b
+    let flag_attached = 0b1
+    let flag_visited = 0b10
+    let flag_learnt = 0b100
 
-    let[@inline] attached c = c.attached
-    let[@inline] set_attached c b = c.attached <- b
+    let[@inline] visited c = (c.flags land flag_visited) <> 0
+    let[@inline] set_visited c b =
+      if b then c.flags <- c.flags lor flag_visited
+      else c.flags <- c.flags land lnot flag_visited
+
+    let[@inline] attached c = (c.flags land flag_attached) <> 0
+    let[@inline] set_attached c b =
+      if b then c.flags <- c.flags lor flag_attached
+      else c.flags <- c.flags land lnot flag_attached
+
+    let[@inline] learnt c = (c.flags land flag_learnt) <> 0
+    let[@inline] set_learnt c b =
+      if b then c.flags <- c.flags lor flag_learnt
+      else c.flags <- c.flags land lnot flag_learnt
 
     let[@inline] activity c = c.activity
     let[@inline] set_activity c w = c.activity <- w
@@ -367,7 +377,7 @@ module Make(Plugin : PLUGIN)
         (name c) Atom.debug_a arr
   end
 
-  module ProofBuilder = Plugin.Proof.Builder(struct
+  module PB = Plugin.Proof.Builder(struct
       module Clause = Clause
       module Atom = Atom
       module Formula = Formula
@@ -384,7 +394,8 @@ module Make(Plugin : PLUGIN)
   (* cause of "unsat", possibly conditional to local assumptions *)
   type unsat_cause =
     | US_local of {
-        core: atom list;
+        first: atom; (* assumption which was found to be proved false *)
+        core: atom list; (* the set of assumptions *)
       }
     | US_false of clause (* true unsat *)
 
@@ -416,6 +427,7 @@ module Make(Plugin : PLUGIN)
   type t = {
     st : st;
     th: theory;
+    proof_b: PB.ctx;
 
     (* Clauses are simplified for eficiency purposes. In the following
        vectors, the comments actually refer to the original non-simplified
@@ -484,6 +496,7 @@ module Make(Plugin : PLUGIN)
   (* Starting environment. *)
   let create_ ~st (th:theory) : t = {
     st; th;
+    proof_b= PB.create();
     unsat_at_0=None;
     next_decision = None;
 
@@ -663,7 +676,7 @@ module Make(Plugin : PLUGIN)
     else Array.to_list (Array.sub arr i (Array.length arr - i))
 
   (* Eliminates atom doublons in clauses *)
-  let eliminate_duplicates clause : clause =
+  let eliminate_duplicates (self:t) clause : clause =
     let trivial = ref false in
     let duplicates = ref [] in
     let res = ref [] in
@@ -684,8 +697,10 @@ module Make(Plugin : PLUGIN)
     ) else if !duplicates = [] then (
       clause
     ) else (
-      (* TODO: simplification step in ProofBuilder *)
-      Clause.make !res (History [clause])
+      let proof =
+        PB.make_simplify self.proof_b clause clause.cproof
+      in
+      Clause.make !res proof
     )
 
   (* Partition literals for new clauses, into:
@@ -754,14 +769,13 @@ module Make(Plugin : PLUGIN)
 
      A clause is attached (to its watching lits) when it is first added,
      either because it is assumed or learnt.
-
   *)
   let attach_clause c =
-    assert (not c.attached);
+    assert (not @@ Clause.attached c);
     Log.debugf debug (fun k -> k "Attaching %a" Clause.debug c);
     Vec.push c.atoms.(0).neg.watched c;
     Vec.push c.atoms.(1).neg.watched c;
-    c.attached <- true;
+    Clause.set_attached c true;
     ()
 
   (* Backtracking.
@@ -825,9 +839,9 @@ module Make(Plugin : PLUGIN)
     ()
 
   let pp_unsat_cause out = function
-    | US_local {core} ->
+    | US_local {first; core} ->
       Format.fprintf out "false assumptions (@[core %a@])"
-        (Format.pp_print_list Atom.pp) core
+        (Format.pp_print_list Atom.pp) (first::core)
     | US_false c ->
       Format.fprintf out "false %a" Clause.debug c
 
@@ -841,14 +855,21 @@ module Make(Plugin : PLUGIN)
     end;
     raise (E_unsat us)
 
+  (* make a resolution proof *)
+  let mk_res_proof (self:t) c history : proof =
+    let pb = PB.res_init self.proof_b c c.cproof in
+    List.iter (fun c -> PB.res_step self.proof_b pb c c.cproof) history;
+    PB.res_finalize self.proof_b pb
+
   (* Simplification of boolean propagation reasons.
      When doing boolean propagation *at level 0*, it can happen
      that the clause cl, which propagates a formula, also contains
      other formulas, but has been simplified. in which case, we
      need to rebuild a clause with correct history, in order to
      be able to build a correct proof at the end of proof search. *)
-  let simpl_reason : reason -> reason = function
-    | (Bcp cl) as r ->
+  let simpl_reason (self:t) (r:reason) : reason =
+    match r with
+    | Bcp cl ->
       let l, history = partition cl.atoms in
       begin match l with
         | [_] ->
@@ -861,7 +882,8 @@ module Make(Plugin : PLUGIN)
                with only one formula (which is [a]). So we explicitly create that clause
                and set it as the cause for the propagation of [a], that way we can
                rebuild the whole resolution tree when we want to prove [a]. *)
-            let c' = Clause.make l (History (cl :: history)) in
+            let proof = mk_res_proof self cl history in
+            let c' = Clause.make l proof in
             Log.debugf debug
               (fun k -> k "Simplified reason: @[<v>%a@,%a@]" Clause.debug cl Clause.debug c');
             Bcp c'
@@ -888,7 +910,7 @@ module Make(Plugin : PLUGIN)
             a.var.reason = None && lvl >= 0);
     let reason =
       if lvl > 0 then reason
-      else simpl_reason reason
+      else simpl_reason st reason
     in
     a.is_true <- true;
     a.var.v_level <- lvl;
@@ -991,7 +1013,7 @@ module Make(Plugin : PLUGIN)
   type conflict_res = {
     cr_backtrack_lvl : int; (* level to backtrack to *)
     cr_learnt: atom list; (* lemma learnt from conflict *)
-    cr_history: clause list; (* justification *)
+    cr_proof: PB.proof; (* justification *)
     cr_is_uip: bool; (* conflict is UIP? *)
   }
 
@@ -1011,7 +1033,7 @@ module Make(Plugin : PLUGIN)
     let seen   = ref [] in (* for cleanup *)
     let c      = ref (Some c_clause) in
     let tr_ind = ref (Vec.size st.trail - 1) in
-    let history = ref [] in
+    let proof = PB.res_init st.proof_b c_clause c_clause.cproof in
     assert (decision_level st > 0);
     let conflict_level =
       Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
@@ -1024,11 +1046,10 @@ module Make(Plugin : PLUGIN)
           Log.debug debug "  skipping resolution for semantic propagation"
         | Some clause ->
           Log.debugf debug (fun k->k"  Resolving clause: %a"  Clause.debug clause);
-          begin match clause.cpremise with
-            | History _ -> clause_bump_activity st clause
-            | Hyp | Lemma _ -> ()
-          end;
-          history := clause :: !history;
+          if Clause.learnt clause then (
+            clause_bump_activity st clause
+          );
+          PB.res_step st.proof_b proof clause clause.cproof;
           (* visit the current predecessors *)
           for j = 0 to Array.length clause.atoms - 1 do
             let q = clause.atoms.(j) in
@@ -1036,7 +1057,7 @@ module Make(Plugin : PLUGIN)
             if q.var.v_level <= 0 then (
               assert (q.neg.is_true);
               match q.var.reason with
-              | Some Bcp cl -> history := cl :: !history
+              | Some Bcp cl -> PB.res_step st.proof_b proof cl cl.cproof;
               | _ -> assert false
             );
             if not (Var.seen_both q.var) then (
@@ -1074,7 +1095,7 @@ module Make(Plugin : PLUGIN)
       match !pathC, p.var.reason with
       | 0, _ ->
         cond := false;
-        learnt := p.neg :: (List.rev !learnt)
+        learnt := p.neg :: !learnt
       | n, Some Semantic ->
         assert (n > 0);
         learnt := p.neg :: !learnt;
@@ -1090,7 +1111,7 @@ module Make(Plugin : PLUGIN)
     let level, is_uip = backtrack_lvl st l in
     { cr_backtrack_lvl = level;
       cr_learnt = l;
-      cr_history = List.rev !history;
+      cr_proof = PB.res_finalize st.proof_b proof;
       cr_is_uip = is_uip;
     }
 
@@ -1112,14 +1133,17 @@ module Make(Plugin : PLUGIN)
           (* incompatible at level 0 *)
           report_unsat st (US_false confl)
         ) else (
-          let uclause = Clause.make cr.cr_learnt (History cr.cr_history) in
-          Vec.push st.clauses_learnt uclause;
+          let uclause = Clause.make cr.cr_learnt cr.cr_proof in
+          Clause.set_learnt uclause true;
           (* no need to attach [uclause], it is true at level 0 *)
           enqueue_bool st fuip ~level:0 (Bcp uclause)
         )
       | fuip :: _ ->
-        let lclause = Clause.make cr.cr_learnt (History cr.cr_history) in
-        Vec.push st.clauses_learnt lclause;
+        let lclause = Clause.make cr.cr_learnt cr.cr_proof in
+        Clause.set_learnt lclause true;
+        if Array.length lclause.atoms > 2 then (
+          Vec.push st.clauses_learnt lclause; (* potentially gc'able *)
+        );
         attach_clause lclause;
         clause_bump_activity st lclause;
         if cr.cr_is_uip then (
@@ -1152,9 +1176,11 @@ module Make(Plugin : PLUGIN)
 
   (* Get the correct vector to insert a clause in. *)
   let clause_vector st c =
-    match c.cpremise with
-    | Hyp -> st.clauses_hyps
-    | Lemma _ | History _ -> st.clauses_learnt
+    if Clause.learnt c then (
+      st.clauses_learnt
+    ) else (
+      st.clauses_hyps
+    )
 
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
@@ -1165,17 +1191,19 @@ module Make(Plugin : PLUGIN)
     Array.iter (fun x -> insert_var_order st (Elt.of_var x.var)) init.atoms;
     let vec = clause_vector st init in
     try
-      let c = eliminate_duplicates init in
+      let c = eliminate_duplicates st init in
       Log.debugf debug (fun k -> k "Doublons eliminated: %a" Clause.debug c);
       let atoms, history = partition c.atoms in
       let clause =
         if history = []
         then (
-          (* update order of atoms *)
+          (* just update order of atoms *)
           List.iteri (fun i a -> c.atoms.(i) <- a) atoms;
           c
+        ) else (
+          let proof = mk_res_proof st c history in
+          Clause.make atoms proof
         )
-        else Clause.make atoms (History (c :: history))
       in
       Log.debugf info (fun k->k "New clause: @[<hov>%a@]" Clause.debug clause);
       match atoms with
@@ -1285,7 +1313,7 @@ module Make(Plugin : PLUGIN)
       if i >= Vec.size watched then ()
       else (
         let c = Vec.get watched i in
-        assert c.attached;
+        assert (Clause.attached c);
         let j = match propagate_in_clause st a c i with
           | Watch_kept -> i+1
           | Watch_removed -> i (* clause at this index changed *)
@@ -1311,7 +1339,7 @@ module Make(Plugin : PLUGIN)
 
   let slice_push st (l:formula list) (lemma:lemma): unit =
     let atoms = List.rev_map (create_atom st) l in
-    let c = Clause.make atoms (Lemma lemma) in
+    let c = Clause.make atoms (PB.make_lemma st.proof_b lemma) in
     Log.debugf info (fun k->k "Pushing clause %a" Clause.debug c);
     Stack.push c st.clauses_to_add
 
@@ -1323,7 +1351,7 @@ module Make(Plugin : PLUGIN)
       let l = List.rev_map (mk_atom st) causes in
       if List.for_all (fun a -> a.is_true) l then (
         let p = mk_atom st f in
-        let c = Clause.make (p :: List.map Atom.neg l) (Lemma proof) in
+        let c = Clause.make (p :: List.map Atom.neg l) (PB.make_lemma st.proof_b proof) in
         if p.is_true then ()
         else if p.neg.is_true then (
           Stack.push c st.clauses_to_add
@@ -1367,7 +1395,7 @@ module Make(Plugin : PLUGIN)
       match Plugin.assume st.th slice with
       | Solver_intf.Th_sat ->
         propagate st
-      | Solver_intf.Th_unsat (l, p) ->
+      | Solver_intf.Th_unsat (l, lemma) ->
         (* conflict *)
         let l = List.rev_map (create_atom st) l in
         (* Assert that the conflcit is indeeed a conflict *)
@@ -1376,7 +1404,7 @@ module Make(Plugin : PLUGIN)
         );
         List.iter (fun a -> insert_var_order st (Elt.of_var a.var)) l;
         (* Create the clause and return it. *)
-        let c = Clause.make l (Lemma p) in
+        let c = Clause.make l (PB.make_lemma st.proof_b lemma) in
         Some c
     )
 
@@ -1480,7 +1508,7 @@ module Make(Plugin : PLUGIN)
       ) else if Atom.is_false a then (
         (* root conflict, find unsat core *)
         let core = analyze_final st a in
-        raise (E_unsat (US_local {core}))
+        raise (E_unsat (US_local {first=a; core}))
       ) else (
         pick_branch_aux st a
       )
@@ -1512,7 +1540,7 @@ module Make(Plugin : PLUGIN)
            might 'forget' the initial conflict clause, and only add the
            analyzed backtrack clause. So in those case, we use add_clause
            to make sure the initial conflict clause is also added. *)
-        if confl.attached then (
+        if Clause.attached confl then (
           add_boolean_conflict st confl
         ) else (
           add_clause_ st confl
@@ -1579,9 +1607,9 @@ module Make(Plugin : PLUGIN)
             assert (st.elt_head = Vec.size st.trail);
             begin match Plugin.if_sat st.th (full_slice st) with
               | Solver_intf.Th_sat -> ()
-              | Solver_intf.Th_unsat (l, p) ->
+              | Solver_intf.Th_unsat (l, lemma) ->
                 let atoms = List.rev_map (create_atom st) l in
-                let c = Clause.make atoms (Lemma p) in
+                let c = Clause.make atoms (PB.make_lemma st.proof_b lemma) in
                 Log.debugf info (fun k -> k "Theory conflict clause: %a" Clause.debug c);
                 Stack.push c st.clauses_to_add
             end;
@@ -1594,7 +1622,7 @@ module Make(Plugin : PLUGIN)
     List.iter
       (fun l ->
          let atoms = List.rev_map (mk_atom st) l in
-         let c = Clause.make atoms Hyp in
+         let c = Clause.make atoms (PB.make_axiom st.proof_b) in
          Log.debugf debug (fun k -> k "Assuming clause: @[<hov 2>%a@]" Clause.debug c);
          Stack.push c st.clauses_to_add)
       cnf
@@ -1668,33 +1696,42 @@ module Make(Plugin : PLUGIN)
       model = (fun () -> model st);
     }
 
+  (* make an prove an empty clause from the given unsat-core *)
+  let empty_clause_of_core st (a:atom) (core:atom list) : Clause.t =
+    let pb = PB.res_init_assumption st.proof_b a in
+    (* resolution with other members of [core] *)
+    List.iter
+      (fun a' ->
+         if not (Atom.equal a a') then (
+           match Atom.reason a' with
+           | None-> assert false
+           | Some (Bcp c) -> PB.res_step st.proof_b pb c c.cproof
+           | Some (Decision|Semantic) -> PB.res_step_assumption st.proof_b pb a'
+         ))
+      core;
+    let proof = PB.res_finalize st.proof_b pb in
+    Clause.make [] proof
+
   let mk_unsat (st:t) (us: unsat_cause) : _ Solver_intf.unsat_state =
     pp_all st 99 "UNSAT";
     let unsat_assumptions () = match us with
-      | US_local {core} -> core
+      | US_local {first=_; core} -> core
       | _ -> []
-    in
-    let unsat_conflict = match us with
+    and unsat_conflict = match us with
       | US_false c -> fun() -> c
-      | US_local {core} ->
-        let c = lazy (
-          let hist = [] in (* FIXME *)
-          Clause.make (List.map Atom.neg core) (History hist)
-        ) in
+      | US_local {first; core} ->
+        let c = lazy (empty_clause_of_core st first core) in
         fun () -> Lazy.force c
     in
-    let get_proof () =
-      let c = unsat_conflict () in
-      Proof.prove c
-    in
+    let get_proof () = Clause.proof @@ unsat_conflict() in
     { Solver_intf.unsat_conflict; get_proof; unsat_assumptions; }
 
   let[@inline] add_clause_a st c : unit =
-    let c = Clause.make_a c Hyp in
+    let c = Clause.make_a c (PB.make_axiom st.proof_b) in
     add_clause_ st c
 
   let[@inline] add_clause st c : unit =
-    let c = Clause.make c Hyp in
+    let c = Clause.make c (PB.make_axiom st.proof_b) in
     add_clause_ st c
 
   let solve (st:t) ?(assumptions=[]) () =
@@ -1753,7 +1790,7 @@ module Make_pure_sat(Plugin : Solver_intf.PLUGIN_SAT) = Make(struct
     let pp out _ = Format.pp_print_string out "()"
   end
   type t = unit
-  type proof = Solver_intf.void
+  type lemma = Solver_intf.void
   type level = unit
   let current_level () = ()
   let assume () _ = Solver_intf.Th_sat

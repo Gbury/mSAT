@@ -15,11 +15,18 @@ module Proof_empty
 = struct
   type _ t = unit
   module Builder(A : Solver_intf.PROOF_ARG) = struct
-    type builder = unit
-    let init_axiom = ()
-    let init_assumption _ = ()
-    let init_lemma _ = ()
-    let res_step ~pivot:_ _ _ = ()
-    let make ~conclusion:_ _ = ()
+    type ctx = unit
+    type res_proof = unit
+    type proof = unit
+    let create() = ()
+    let make_axiom _ = ()
+    let make_simplify _ _ _ = ()
+    let make_lemma _ _ = ()
+    let res_init _ _ _ = ()
+    let res_init_assumption _ _ = ()
+    let res_step _ _ _ _ = ()
+    let res_step_assumption _ _ _ = ()
+    let res_finalize _ _ = ()
+    let pp out _ = Format.fprintf out "<empty proof>"
   end [@@specialise] [@@inline]
 end
