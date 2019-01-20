@@ -137,9 +137,6 @@ end
 
 (** Formulas and Terms required for mcSAT *)
 module type EXPR = sig
-  type proof
-  (** An abstract type for proofs *)
-
   module Term : sig
     type t
     (** The type of terms *)
@@ -158,6 +155,56 @@ module type EXPR = sig
   module Formula : FORMULA
 end
 
+module type PROOF_ARG = sig
+  module Formula : sig
+    type t
+    val pp : t printer
+  end
+  module Atom : sig
+    type t
+    val formula : t -> Formula.t
+    val pp : t printer
+  end
+  module Clause : sig
+    type t
+    val atoms_l : t -> Atom.t list
+    val pp : t printer
+    module Tbl : Hashtbl.S with type key = t
+  end
+
+  type theory_lemma
+end
+
+module type PROOF = sig
+  type 'lemma t
+
+  module Builder(A: PROOF_ARG) : sig
+    type ctx
+    type builder
+    type proof = A.theory_lemma t
+
+    val create : unit -> ctx
+    (** Create a (possibly mutable) context that will be stored
+        in the SAT solver *)
+
+    val init_axiom : ctx -> builder
+    (** Initialize a proof using a user input clause *)
+
+    val init_assumption : ctx -> A.Formula.t -> builder
+    (** Make a builder from an initial assumption *)
+
+    val init_lemma : ctx -> A.theory_lemma -> builder
+
+    val res_step : ctx -> pivot:A.Formula.t -> A.Clause.t -> builder -> builder
+    (** Resolution step. Several such steps can be chained before obtaining a conclusion. *)
+
+    val make : ctx -> conclusion:A.Clause.t -> builder -> A.theory_lemma t
+    (** Give the resulting clause to the builder and obtain a proof *)
+
+    val pp : proof printer
+  end
+end
+
 (** Signature for theories to be given to the CDCL(T) solver *)
 module type PLUGIN_CDCL_T = sig
   type t
@@ -165,7 +212,11 @@ module type PLUGIN_CDCL_T = sig
 
   module Formula : FORMULA
 
-  type proof
+  type lemma
+  (** Lemma for this theory *)
+
+  module Proof : PROOF
+  (** Builder for proofs *)
 
   type level
   (** The type for levels to allow backtracking. *)
@@ -174,11 +225,11 @@ module type PLUGIN_CDCL_T = sig
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
 
-  val assume : t -> (void, Formula.t, proof) slice -> (Formula.t, proof) th_res
+  val assume : t -> (void, Formula.t, lemma) slice -> (Formula.t, lemma) th_res
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
       and returns the result of the new assumptions. *)
 
-  val if_sat : t -> (void, Formula.t, proof) slice -> (Formula.t, proof) th_res
+  val if_sat : t -> (void, Formula.t, lemma) slice -> (Formula.t, lemma) th_res
   (** Called at the end of the search in case a model has been found. If no new clause is
       pushed and the function returns [Sat], then proof search ends and 'sat' is returned,
       else search is resumed. *)
@@ -196,6 +247,12 @@ module type PLUGIN_MCSAT = sig
 
   include EXPR
 
+  module Proof : PROOF
+  (** How to build proofs *)
+
+  type lemma
+  (** Lemma for this theory *)
+
   type level
   (** The type for levels to allow backtracking. *)
 
@@ -203,11 +260,11 @@ module type PLUGIN_MCSAT = sig
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
 
-  val assume : t -> (Term.t, Formula.t, proof) slice -> (Formula.t, proof) th_res
+  val assume : t -> (Term.t, Formula.t, lemma) slice -> (Formula.t, lemma) th_res
   (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
       and returns the result of the new assumptions. *)
 
-  val if_sat : t -> (Term.t, Formula.t, proof) slice -> (Formula.t, proof) th_res
+  val if_sat : t -> (Term.t, Formula.t, lemma) slice -> (Formula.t, lemma) th_res
   (** Called at the end of the search in case a model has been found. If no new clause is
       pushed and the function returns [Sat], then proof search ends and 'sat' is returned,
       else search is resumed. *)
@@ -224,102 +281,11 @@ module type PLUGIN_MCSAT = sig
 
   val eval : t -> Formula.t -> Term.t eval_res
   (** Returns the evaluation of the Formula.t in the current assignment *)
-
 end
 
-module type PROOF = sig
-  (** Signature for a module handling proof by resolution from sat solving traces *)
-
-  (** {3 Type declarations} *)
-
-  exception Insuficient_hyps
-  (** Raised when a complete resolution derivation cannot be found using the current hypotheses. *)
-
-  type formula
-  type atom
-  type lemma
-  type clause
-  (** Abstract types for atoms, clauses and theory-specific lemmas *)
-
-  type t
-  (** Lazy type for proof trees. Proofs are persistent objects, and can be
-      extended to proof nodes using functions defined later. *)
-
-  and proof_node = {
-    conclusion : clause;  (** The conclusion of the proof *)
-    step : step;          (** The reasoning step used to prove the conclusion *)
-  }
-  (** A proof can be expanded into a proof node, which show the first step of the proof. *)
-
-  (** The type of reasoning steps allowed in a proof. *)
-  and step =
-    | Hypothesis
-    (** The conclusion is a user-provided hypothesis *)
-    | Assumption
-    (** The conclusion has been locally assumed by the user *)
-    | Lemma of lemma
-    (** The conclusion is a tautology provided by the theory, with associated proof *)
-    | Duplicate of t * atom list
-    (** The conclusion is obtained by eliminating multiple occurences of the atom in
-        the conclusion of the provided proof. *)
-    | Resolution of t * t * atom
-    (** The conclusion can be deduced by performing a resolution between the conclusions
-        of the two given proofs. The atom on which to perform the resolution is also given. *)
-
-  (** {3 Proof building functions} *)
-
-  val prove : clause -> t
-  (** Given a clause, return a proof of that clause.
-      @raise Insuficient_hyps if it does not succeed. *)
-
-  val prove_unsat : clause -> t
-  (** Given a conflict clause [c], returns a proof of the empty clause.
-      @raise Insuficient_hyps if it does not succeed. *)
-
-  val prove_atom : atom -> t option
-  (** Given an atom [a], returns a proof of the clause [[a]] if [a] is true at level 0 *)
-
-  (** {3 Proof Nodes} *)
-
-  val parents : step -> t list
-  (** Returns the parents of a proof node. *)
-
-  val is_leaf : step -> bool
-  (** Returns wether the the proof node is a leaf, i.e. an hypothesis,
-      an assumption, or a lemma.
-      [true] if and only if {!parents} returns the empty list. *)
-
-  val expl : step -> string
-  (** Returns a short string description for the proof step; for instance
-      ["hypothesis"] for a [Hypothesis]
-      (it currently returns the variant name in lowercase). *)
-
-
-  (** {3 Proof Manipulation} *)
-
-  val expand : t -> proof_node
-  (** Return the proof step at the root of a given proof. *)
-
-  val conclusion : t -> clause
-  (** What is proved at the root of the clause *)
-
-  val fold : ('a -> proof_node -> 'a) -> 'a -> t -> 'a
-  (** [fold f acc p], fold [f] over the proof [p] and all its node. It is guaranteed that
-      [f] is executed exactly once on each proof node in the tree, and that the execution of
-      [f] on a proof node happens after the execution on the parents of the nodes. *)
-
-  val unsat_core : t -> clause list
-  (** Returns the unsat_core of the given proof, i.e the lists of conclusions
-      of all leafs of the proof.
-      More efficient than using the [fold] function since it has
-      access to the internal representation of proofs *)
-
-  (** {3 Misc} *)
-
-  val check : t -> unit
-  (** Check the contents of a proof. Mainly for internal use *)
-
-  module Tbl : Hashtbl.S with type key = t
+module type PLUGIN_SAT = sig
+  module Formula : FORMULA
+  module Proof : PROOF
 end
 
 (** The external interface implemented by safe solvers, such as the one
@@ -345,8 +311,12 @@ module type S = sig
   type theory
 
   type lemma
+  (** Theory lemmas *)
 
   type solver
+
+  type proof
+  (** Type of proof attached to clauses *)
 
   module Atom : sig
     type t = atom
@@ -368,19 +338,12 @@ module type S = sig
     val atoms_l : t -> atom list
     val equal : t -> t -> bool
     val name : t -> string
+    val proof : t -> proof
 
     val pp : t printer
 
     module Tbl : Hashtbl.S with type key = t
   end
-
-  module Proof : PROOF
-    with type clause = clause
-     and type atom = atom
-     and type formula = formula
-     and type lemma = lemma
-     and type t = proof
-  (** A module to manipulate proofs. *)
 
   type t = solver
   (** Main solver type, containing all state for solving. *)
@@ -396,7 +359,7 @@ module type S = sig
   (** Result type for the solver *)
   type res =
     | Sat of (term,atom) sat_state (** Returned when the solver reaches SAT, with a model *)
-    | Unsat of (atom,clause,Proof.t) unsat_state (** Returned when the solver reaches UNSAT, with a proof *)
+    | Unsat of (atom,clause,proof) unsat_state (** Returned when the solver reaches UNSAT, with a proof *)
 
   exception UndecidedLit
   (** Exception raised by the evaluating functions when a literal

@@ -19,7 +19,8 @@ module Make(Plugin : PLUGIN)
   type term = Term.t
   type formula = Formula.t
   type theory = Plugin.t
-  type lemma = Plugin.proof
+  type lemma = Plugin.lemma
+  type proof = lemma Plugin.Proof.t
 
   (* MCSAT literal *)
   type lit = {
@@ -55,9 +56,9 @@ module Make(Plugin : PLUGIN)
   and clause = {
     name : int;
     atoms : atom array;
-    mutable cpremise : premise;
+    mutable cpremise : proof;
     mutable activity : float;
-    mutable attached : bool; (* TODO: use an int field *)
+    mutable attached : bool; (* TODO: use an int field, with another flag for "dead" after GC *)
     mutable visited : bool;
   }
 
@@ -65,13 +66,6 @@ module Make(Plugin : PLUGIN)
     | Decision
     | Bcp of clause
     | Semantic
-
-  (* TODO: remove, replace with user-provided proof trackng device?
-     for pure SAT, [reason] is sufficient *)
-  and premise =
-    | Hyp
-    | Lemma of lemma
-    | History of clause list
 
   type elt =
     | E_lit of lit
@@ -109,11 +103,6 @@ module Make(Plugin : PLUGIN)
   let nb_elt st = Vec.size st.vars
   let get_elt st i = Vec.get st.vars i
   let iter_elt st f = Vec.iter f st.vars
-
-  let name_of_clause c = match c.cpremise with
-    | Hyp -> "H" ^ string_of_int c.name
-    | Lemma _ -> "T" ^ string_of_int c.name
-    | History _ -> "C" ^ string_of_int c.name
 
   module Lit = struct
     type t = lit
@@ -273,7 +262,7 @@ module Make(Plugin : PLUGIN)
       | n, Some Decision ->
         Format.fprintf fmt "@@%d" n
       | n, Some Bcp c ->
-        Format.fprintf fmt "->%d/%s" n (name_of_clause c)
+        Format.fprintf fmt "->%d/%d" n c.name
       | n, Some Semantic ->
         Format.fprintf fmt "::%d" n
 
@@ -346,8 +335,7 @@ module Make(Plugin : PLUGIN)
 
     let make l premise = make_a (Array.of_list l) premise
 
-    let empty = make [] (History [])
-    let name = name_of_clause
+    let[@inline] name c = string_of_int c.name
     let[@inline] equal c1 c2 = c1==c2
     let[@inline] atoms c = c.atoms
     let[@inline] atoms_l c = Array.to_list c.atoms
@@ -374,282 +362,17 @@ module Make(Plugin : PLUGIN)
     let pp fmt c =
       Format.fprintf fmt "%s : %a" (name c) Atom.pp_a c.atoms
 
-    let debug_premise out = function
-      | Hyp -> Format.fprintf out "hyp"
-      | Lemma _ -> Format.fprintf out "th_lemma"
-      | History v ->
-        List.iter (fun c -> Format.fprintf out "%s,@ " (name_of_clause c)) v
-
-    let debug out ({atoms=arr; cpremise=cp;_}as c) =
-      Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"
-        (name c) Atom.debug_a arr debug_premise cp
+    let debug out ({atoms=arr; _}as c) =
+      Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@]"
+        (name c) Atom.debug_a arr
   end
 
-  module Proof =  struct
-    exception Insuficient_hyps
-    exception Resolution_error of string
-
-    type atom = Atom.t
-    type clause = Clause.t
-    type formula = Formula.t
-    type lemma = Plugin.proof
-
-    let merge = List.merge Atom.compare
-
-    let _c = ref 0
-    let fresh_pcl_name () = incr _c; "R" ^ (string_of_int !_c)
-
-    (* Compute resolution of 2 clauses *)
-    let resolve l =
-      let rec aux resolved acc = function
-        | [] -> resolved, acc
-        | [a] -> resolved, a :: acc
-        | a :: b :: r ->
-          if Atom.equal a b then
-            aux resolved (a :: acc) r
-          else if Atom.equal a.neg b then
-            aux (a.var.pa :: resolved) acc r
-          else
-            aux resolved (a :: acc) (b :: r)
-      in
-      let resolved, new_clause = aux [] [] l in
-      resolved, List.rev new_clause
-
-    (* Compute the set of doublons of a clause *)
-    let list c = List.sort Atom.compare (Array.to_list c.atoms)
-
-    let analyze cl =
-      let rec aux duplicates free = function
-        | [] -> duplicates, free
-        | [ x ] -> duplicates, x :: free
-        | x :: ((y :: r) as l) ->
-          if x == y then
-            count duplicates (x :: free) x [y] r
-          else
-            aux duplicates (x :: free) l
-      and count duplicates free x acc = function
-        | (y :: r) when x == y ->
-          count duplicates free x (y :: acc) r
-        | l ->
-          aux (acc :: duplicates) free l
-      in
-      let doublons, acc = aux [] [] cl in
-      doublons, List.rev acc
-
-    let to_list c =
-      let cl = list c in
-      let doublons, l = analyze cl in
-      let conflicts, _ = resolve l in
-      if doublons <> [] then
-        Log.debug 3 "Input clause has redundancies";
-      if conflicts <> [] then
-        Log.debug 3 "Input clause is a tautology";
-      cl
-
-    (* Comparison of clauses *)
-    let cmp_cl c d =
-      let rec aux = function
-        | [], [] -> 0
-        | a :: r, a' :: r' ->
-          begin match Atom.compare a a' with
-            | 0 -> aux (r, r')
-            | x -> x
-          end
-        | _ :: _ , [] -> -1
-        | [], _ :: _ -> 1
-      in
-      aux (c, d)
-
-    let[@inline] prove conclusion =
-      assert (conclusion.cpremise <> History []);
-      conclusion
-
-    let rec set_atom_proof a =
-      let aux acc b =
-        if Atom.equal a.neg b then acc
-        else set_atom_proof b :: acc
-      in
-      assert (a.var.v_level >= 0);
-      match (a.var.reason) with
-      | Some (Bcp c) ->
-        Log.debugf 5 (fun k->k "Analysing: @[%a@ %a@]" Atom.debug a Clause.debug c);
-        if Array.length c.atoms = 1 then (
-          Log.debugf 5 (fun k -> k "Old reason: @[%a@]" Atom.debug a);
-          c
-        ) else (
-          assert (a.neg.is_true);
-          let r = History (c :: (Array.fold_left aux [] c.atoms)) in
-          let c' = Clause.make [a.neg] r in
-          a.var.reason <- Some (Bcp c');
-          Log.debugf 5
-            (fun k -> k "New reason: @[%a@ %a@]" Atom.debug a Clause.debug c');
-          c'
-        )
-      | _ ->
-        Log.debugf 0 (fun k -> k "Error while proving atom %a" Atom.debug a);
-        raise (Resolution_error "Cannot prove atom")
-
-    let prove_unsat conflict =
-      if Array.length conflict.atoms = 0 then conflict
-      else (
-        Log.debugf 1 (fun k -> k "Proving unsat from: @[%a@]" Clause.debug conflict);
-        let l = Array.fold_left (fun acc a -> set_atom_proof a :: acc) [] conflict.atoms in
-        let res = Clause.make [] (History (conflict :: l)) in
-        Log.debugf 1 (fun k -> k "Proof found: @[%a@]" Clause.debug res);
-        res
-      )
-
-    let prove_atom a =
-      if (a.is_true && a.var.v_level = 0) then
-        Some (set_atom_proof a)
-      else
-        None
-
-    (* Interface exposed *)
-    type t = clause
-    and proof_node = {
-      conclusion : clause;
-      step : step;
-    }
-    and step =
-      | Hypothesis
-      | Assumption
-      | Lemma of lemma
-      | Duplicate of t * atom list
-      | Resolution of t * t * atom
-
-    let rec chain_res (c, cl) = function
-      | d :: r ->
-        Log.debugf 5 
-          (fun k -> k "  Resolving clauses : @[%a@\n%a@]" Clause.debug c Clause.debug d);
-        let dl = to_list d in
-        begin match resolve (merge cl dl) with
-          | [ a ], l ->
-            begin match r with
-              | [] -> (l, c, d, a)
-              | _ ->
-                let new_clause = Clause.make l (History [c; d]) in
-                chain_res (new_clause, l) r
-            end
-          | _ ->
-            Log.debugf 5
-              (fun k -> k "While resolving clauses:@[<hov>%a@\n%a@]"
-                  Clause.debug c Clause.debug d);
-            raise (Resolution_error "Clause mismatch")
-        end
-      | _ ->
-        raise (Resolution_error "Bad history")
-
-    let[@inline] conclusion (p:t) : clause = p
-
-    let expand conclusion =
-      Log.debugf 5 (fun k -> k "Expanding : @[%a@]" Clause.debug conclusion);
-      match conclusion.cpremise with
-      | Lemma l ->
-        {conclusion; step = Lemma l; }
-      | Hyp ->
-        { conclusion; step = Hypothesis; }
-      | History [] ->
-        Log.debugf 0 (fun k -> k "Empty history for clause: %a" Clause.debug conclusion);
-        raise (Resolution_error "Empty history")
-      | History [ c ] ->
-        let duplicates, res = analyze (list c) in
-        assert (cmp_cl res (list conclusion) = 0);
-        { conclusion; step = Duplicate (c, List.concat duplicates) }
-      | History ( c :: ([_] as r)) ->
-        let (l, c', d', a) = chain_res (c, to_list c) r in
-        assert (cmp_cl l (to_list conclusion) = 0);
-        { conclusion; step = Resolution (c', d', a); }
-      | History ( c :: r ) ->
-        let (l, c', d', a) = chain_res (c, to_list c) r in
-        conclusion.cpremise <- History [c'; d'];
-        assert (cmp_cl l (to_list conclusion) = 0);
-        { conclusion; step = Resolution (c', d', a); }
-
-    (* Proof nodes manipulation *)
-    let is_leaf = function
-      | Hypothesis
-      | Assumption
-      | Lemma _ -> true
-      | Duplicate _
-      | Resolution _ -> false
-
-    let parents = function
-      | Hypothesis
-      | Assumption
-      | Lemma _ -> []
-      | Duplicate (p, _) -> [p]
-      | Resolution (p, p', _) -> [p; p']
-
-    let expl = function
-      | Hypothesis -> "hypothesis"
-      | Assumption -> "assumption"
-      | Lemma _ -> "lemma"
-      | Duplicate _ -> "duplicate"
-      | Resolution _ -> "resolution"
-
-    (* Compute unsat-core
-       TODO: replace visited bool by a int unique to each call
-       of unsat_core, so that the cleanup can be removed ? *)
-    let unsat_core proof =
-      let rec aux res acc = function
-        | [] -> res, acc
-        | c :: r ->
-          if not c.visited then (
-            c.visited <- true;
-            match c.cpremise with
-            | Hyp | Lemma _ -> aux (c :: res) acc r
-            | History h ->
-              let l = List.fold_left (fun acc c ->
-                  if not c.visited then c :: acc else acc) r h in
-              aux res (c :: acc) l
-          ) else (
-            aux res acc r
-          )
-      in
-      let res, tmp = aux [] [] [proof] in
-      List.iter (fun c -> c.visited <- false) res;
-      List.iter (fun c -> c.visited <- false) tmp;
-      res
-
-    module Tbl = Clause.Tbl
-
-    type task =
-      | Enter of t
-      | Leaving of t
-
-    let spop s = try Some (Stack.pop s) with Stack.Empty -> None
-
-    let rec fold_aux s h f acc =
-      match spop s with
-      | None -> acc
-      | Some (Leaving c) ->
-        Tbl.add h c true;
-        fold_aux s h f (f acc (expand c))
-      | Some (Enter c) ->
-        if not (Tbl.mem h c) then begin
-          Stack.push (Leaving c) s;
-          let node = expand c in
-          begin match node.step with
-            | Duplicate (p1, _) ->
-              Stack.push (Enter p1) s
-            | Resolution (p1, p2, _) ->
-              Stack.push (Enter p2) s;
-              Stack.push (Enter p1) s
-            | Hypothesis | Assumption | Lemma _ -> ()
-          end
-        end;
-        fold_aux s h f acc
-
-    let fold f acc p =
-      let h = Tbl.create 42 in
-      let s = Stack.create () in
-      Stack.push (Enter p) s;
-      fold_aux s h f acc
-
-    let check p = fold (fun () _ -> ()) () p
-  end
-  type proof = Proof.t
+  module ProofBuilder = Plugin.Proof.Builder(struct
+      module Clause = Clause
+      module Atom = Atom
+      module Formula = Formula
+      type theory_lemma = lemma
+    end)
 
   module H = (Heap.Make [@specialise]) (struct
     type t = Elt.t
@@ -956,12 +679,14 @@ module Make(Plugin : PLUGIN)
          if Var.seen_both a.var then trivial := true;
          Var.clear a.var)
       !res;
-    if !trivial then
+    if !trivial then (
       raise Trivial
-    else if !duplicates = [] then
+    ) else if !duplicates = [] then (
       clause
-    else
+    ) else (
+      (* TODO: simplification step in ProofBuilder *)
       Clause.make !res (History [clause])
+    )
 
   (* Partition literals for new clauses, into:
      - true literals (maybe makes the clause trivial if the lit is proved true at level 0)
@@ -1914,7 +1639,7 @@ module Make(Plugin : PLUGIN)
   (* Result type *)
   type res =
     | Sat of (term,atom) Solver_intf.sat_state
-    | Unsat of (atom,clause,Proof.t) Solver_intf.unsat_state
+    | Unsat of (atom,clause,proof) Solver_intf.unsat_state
 
   let pp_all st lvl status =
     Log.debugf lvl
@@ -2018,9 +1743,9 @@ module Make_mcsat(Plugin : Solver_intf.PLUGIN_MCSAT) =
   end)
 [@@inline][@@specialise]
 
-module Make_pure_sat(F: Solver_intf.FORMULA) =
-  Make(struct
-  module Formula = F
+module Make_pure_sat(Plugin : Solver_intf.PLUGIN_SAT) = Make(struct
+  module Formula = Plugin.Formula
+  module Proof = Plugin.Proof
   module Term = struct
     type t = Solver_intf.void
     let equal _ _ = true
