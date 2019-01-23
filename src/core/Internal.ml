@@ -57,8 +57,7 @@ module Make(Plugin : PLUGIN)
     atoms : atom array;
     mutable cpremise : premise;
     mutable activity : float;
-    mutable attached : bool; (* TODO: use an int field *)
-    mutable visited : bool;
+    mutable flags: int; (* bitfield *)
   }
 
   and reason =
@@ -339,8 +338,7 @@ module Make(Plugin : PLUGIN)
         incr n;
         { name;
           atoms = atoms;
-          visited = false;
-          attached = false;
+          flags = 0;
           activity = 0.;
           cpremise = premise}
 
@@ -353,14 +351,28 @@ module Make(Plugin : PLUGIN)
     let[@inline] atoms_l c = Array.to_list c.atoms
     let hash cl = Array.fold_left (fun i a -> Hashtbl.hash (a.aid, i)) 0 cl.atoms
 
-    let[@inline] premise c = c.cpremise
-    let[@inline] set_premise c p = c.cpremise <- p
+    let flag_attached = 0b1
+    let flag_visited = 0b10
+    let flag_learnt = 0b100
+    let flag_dead = 0b1000
 
-    let[@inline] visited c = c.visited
-    let[@inline] set_visited c b = c.visited <- b
+    let[@inline] visited c = (c.flags land flag_visited) <> 0
+    let[@inline] set_visited c b =
+      if b then c.flags <- c.flags lor flag_visited
+      else c.flags <- c.flags land lnot flag_visited
 
-    let[@inline] attached c = c.attached
-    let[@inline] set_attached c b = c.attached <- b
+    let[@inline] attached c = (c.flags land flag_attached) <> 0
+    let[@inline] set_attached c b =
+      if b then c.flags <- c.flags lor flag_attached
+      else c.flags <- c.flags land lnot flag_attached
+
+    let[@inline] learnt c = (c.flags land flag_learnt) <> 0
+    let[@inline] set_learnt c b =
+      if b then c.flags <- c.flags lor flag_learnt
+      else c.flags <- c.flags land lnot flag_learnt
+
+    let[@inline] dead c = (c.flags land flag_dead) <> 0
+    let[@inline] set_dead c = c.flags <- c.flags lor flag_dead
 
     let[@inline] activity c = c.activity
     let[@inline] set_activity c w = c.activity <- w
@@ -595,21 +607,21 @@ module Make(Plugin : PLUGIN)
       let rec aux res acc = function
         | [] -> res, acc
         | c :: r ->
-          if not c.visited then (
-            c.visited <- true;
+          if not @@ Clause.visited c then (
+            Clause.set_visited c true;
             match c.cpremise with
             | Hyp | Lemma _ -> aux (c :: res) acc r
             | History h ->
               let l = List.fold_left (fun acc c ->
-                  if not c.visited then c :: acc else acc) r h in
+                  if not @@ Clause.visited c then c :: acc else acc) r h in
               aux res (c :: acc) l
           ) else (
             aux res acc r
           )
       in
       let res, tmp = aux [] [] [proof] in
-      List.iter (fun c -> c.visited <- false) res;
-      List.iter (fun c -> c.visited <- false) tmp;
+      List.iter (fun c -> Clause.set_visited c false) res;
+      List.iter (fun c -> Clause.set_visited c false) tmp;
       res
 
     module Tbl = Clause.Tbl
@@ -703,6 +715,7 @@ module Make(Plugin : PLUGIN)
     clauses_learnt : clause Vec.t;
     (* learnt clauses (tautologies true at any time, whatever the user level) *)
 
+    (* TODO: make this a Vec.t *)
     clauses_to_add : clause Stack.t;
     (* Clauses either assumed or pushed by the theory, waiting to be added. *)
 
@@ -809,10 +822,11 @@ module Make(Plugin : PLUGIN)
      of subterms of each formula, so we have a field [v_assignable]
      directly in variables to do so.  *)
   let iter_sub f v =
-    if Plugin.mcsat then
+    if Plugin.mcsat then (
       match v.v_assignable with
       | Some l -> List.iter f l
       | None -> assert false
+    )
 
   (* When we have a new literal,
      we need to first create the list of its subterms. *)
@@ -892,12 +906,10 @@ module Make(Plugin : PLUGIN)
     )
 
   (* increase activity of literal [l] *)
-  let lit_bump_activity_aux st (l:lit): unit =
+  let lit_bump_activity_aux (st:t) (l:lit): unit =
     l.l_weight <- l.l_weight +. st.var_incr;
     if l.l_weight > 1e100 then (
-      for i = 0 to nb_elt st.st - 1 do
-        Elt.set_weight (get_elt st.st i) ((Elt.weight (get_elt st.st i)) *. 1e-100)
-      done;
+      iter_elt st.st (fun e -> Elt.set_weight e (Elt.weight e *. 1e-100));
       st.var_incr <- st.var_incr *. 1e-100;
     );
     let elt = Elt.of_lit l in
@@ -914,10 +926,7 @@ module Make(Plugin : PLUGIN)
   let clause_bump_activity st (c:clause) : unit =
     c.activity <- c.activity +. st.clause_incr;
     if c.activity > 1e20 then (
-      for i = 0 to Vec.size st.clauses_learnt - 1 do
-        (Vec.get st.clauses_learnt i).activity <-
-          (Vec.get st.clauses_learnt i).activity *. 1e-20;
-      done;
+      Vec.iter (fun c -> c.activity <- c.activity *. 1e-20) st.clauses_learnt;
       st.clause_incr <- st.clause_incr *. 1e-20
     )
 
@@ -1032,11 +1041,11 @@ module Make(Plugin : PLUGIN)
 
   *)
   let attach_clause c =
-    assert (not c.attached);
+    assert (not @@ Clause.attached c);
     Log.debugf debug (fun k -> k "Attaching %a" Clause.debug c);
     Vec.push c.atoms.(0).neg.watched c;
     Vec.push c.atoms.(1).neg.watched c;
-    c.attached <- true;
+    Clause.set_attached c true;
     ()
 
   (* Backtracking.
@@ -1778,6 +1787,8 @@ module Make(Plugin : PLUGIN)
   (* do some amount of search, until the number of conflicts or clause learnt
      reaches the given parameters *)
   let search (st:t) n_of_conflicts n_of_learnts : unit =
+    Log.debugf 3
+      (fun k->k "(@[sat.search@ :n-conflicts %d@ :n-learnt %d@])" n_of_conflicts n_of_learnts);
     let conflictC = ref 0 in
     while true do
       match propagate st with
@@ -1787,7 +1798,7 @@ module Make(Plugin : PLUGIN)
            might 'forget' the initial conflict clause, and only add the
            analyzed backtrack clause. So in those case, we use add_clause
            to make sure the initial conflict clause is also added. *)
-        if confl.attached then (
+        if Clause.attached confl then (
           add_boolean_conflict st confl
         ) else (
           add_clause_ st confl
