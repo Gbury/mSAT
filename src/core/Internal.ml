@@ -69,6 +69,7 @@ module Make(Plugin : PLUGIN)
      for pure SAT, [reason] is sufficient *)
   and premise =
     | Hyp
+    | Local
     | Lemma of lemma
     | History of clause list
 
@@ -112,6 +113,7 @@ module Make(Plugin : PLUGIN)
   let name_of_clause c = match c.cpremise with
     | Hyp -> "H" ^ string_of_int c.name
     | Lemma _ -> "T" ^ string_of_int c.name
+    | Local -> "L" ^ string_of_int c.name
     | History _ -> "C" ^ string_of_int c.name
 
   module Lit = struct
@@ -389,6 +391,7 @@ module Make(Plugin : PLUGIN)
     let debug_premise out = function
       | Hyp -> Format.fprintf out "hyp"
       | Lemma _ -> Format.fprintf out "th_lemma"
+      | Local -> Format.fprintf out "local"
       | History v ->
         List.iter (fun c -> Format.fprintf out "%s,@ " (name_of_clause c)) v
 
@@ -559,12 +562,14 @@ module Make(Plugin : PLUGIN)
       match conclusion.cpremise with
       | Lemma l ->
         {conclusion; step = Lemma l; }
+      | Local ->
+        { conclusion; step = Assumption; }
       | Hyp ->
         { conclusion; step = Hypothesis; }
       | History [] ->
         Log.debugf 0 (fun k -> k "Empty history for clause: %a" Clause.debug conclusion);
         raise (Resolution_error "Empty history")
-      | History [ c ] ->
+      | History [c] ->
         let duplicates, res = analyze (list c) in
         assert (cmp_cl res (list conclusion) = 0);
         { conclusion; step = Duplicate (c, List.concat duplicates) }
@@ -610,7 +615,7 @@ module Make(Plugin : PLUGIN)
           if not @@ Clause.visited c then (
             Clause.set_visited c true;
             match c.cpremise with
-            | Hyp | Lemma _ -> aux (c :: res) acc r
+            | Hyp | Lemma _ | Local -> aux (c :: res) acc r
             | History h ->
               let l = List.fold_left (fun acc c ->
                   if not @@ Clause.visited c then c :: acc else acc) r h in
@@ -673,7 +678,8 @@ module Make(Plugin : PLUGIN)
   (* cause of "unsat", possibly conditional to local assumptions *)
   type unsat_cause =
     | US_local of {
-        core: atom list;
+        first: atom; (* assumption which was found to be proved false *)
+        core: atom list; (* the set of assumptions *)
       }
     | US_false of clause (* true unsat *)
 
@@ -1109,7 +1115,7 @@ module Make(Plugin : PLUGIN)
     ()
 
   let pp_unsat_cause out = function
-    | US_local {core} ->
+    | US_local {first=_; core} ->
       Format.fprintf out "false assumptions (@[core %a@])"
         (Format.pp_print_list Atom.pp) core
     | US_false c ->
@@ -1310,7 +1316,7 @@ module Make(Plugin : PLUGIN)
           Log.debugf debug (fun k->k"  Resolving clause: %a"  Clause.debug clause);
           begin match clause.cpremise with
             | History _ -> clause_bump_activity st clause
-            | Hyp | Lemma _ -> ()
+            | Hyp | Local | Lemma _ -> ()
           end;
           history := clause :: !history;
           (* visit the current predecessors *)
@@ -1437,6 +1443,7 @@ module Make(Plugin : PLUGIN)
     match c.cpremise with
     | Hyp | Lemma _ -> st.clauses_hyps
     | History _ -> st.clauses_learnt
+    | Local -> assert false (* never added directly *)
 
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
@@ -1727,6 +1734,7 @@ module Make(Plugin : PLUGIN)
       decr idx
     done;
     List.iter Var.unmark !seen;
+    Log.debugf 5 (fun k->k "(@[sat.analyze-final.done@ :core %a@])" (Format.pp_print_list Atom.debug) !core);
     !core
 
   (* remove some learnt clauses. *)
@@ -1783,7 +1791,7 @@ module Make(Plugin : PLUGIN)
       ) else if Atom.is_false a then (
         (* root conflict, find unsat core *)
         let core = analyze_final st a in
-        raise (E_unsat (US_local {core}))
+        raise (E_unsat (US_local {first=a; core}))
       ) else (
         pick_branch_aux st a
       )
@@ -1977,15 +1985,27 @@ module Make(Plugin : PLUGIN)
   let mk_unsat (st:t) (us: unsat_cause) : _ Solver_intf.unsat_state =
     pp_all st 99 "UNSAT";
     let unsat_assumptions () = match us with
-      | US_local {core} -> core
+      | US_local {first=_; core} -> core
       | _ -> []
     in
     let unsat_conflict = match us with
       | US_false c -> fun() -> c
-      | US_local {core} ->
+      | US_local {core=[]; _} -> assert false
+      | US_local {first; core} ->
         let c = lazy (
-          let hist = [] in (* FIXME *)
-          Clause.make (List.map Atom.neg core) (History hist)
+          let core = List.rev core in (* increasing trail order *)
+          assert (Atom.equal first @@ List.hd core);
+          let proof_of (a:atom) = match Atom.reason a with
+            | Some (Decision | Semantic) -> Clause.make [a] Local
+            | Some (Bcp c) -> c
+            | None -> assert false
+          in
+          let other_lits = List.filter (fun a -> not (Atom.equal a first)) core in
+          let hist =
+            Clause.make [first] Local ::
+            proof_of first ::
+            List.map proof_of other_lits in
+          Clause.make [] (History hist)
         ) in
         fun () -> Lazy.force c
     in
