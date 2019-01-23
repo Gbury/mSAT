@@ -1380,11 +1380,6 @@ module Make(Plugin : PLUGIN)
 
   let[@inline] analyze st c_clause : conflict_res =
     analyze_sat st c_clause
-      (*
-    if mcsat
-    then analyze_mcsat c_clause
-    else analyze_sat c_clause
-         *)
 
   (* add the learnt clause to the clause database, propagate, etc. *)
   let record_learnt_clause st (confl:clause) (cr:conflict_res): unit =
@@ -1524,7 +1519,9 @@ module Make(Plugin : PLUGIN)
       (* false lit must be at index 1 *)
       atoms.(0) <- atoms.(1);
       atoms.(1) <- first
-    ) else assert (a.neg == atoms.(1));
+    ) else (
+      assert (a.neg == atoms.(1))
+    );
     let first = atoms.(0) in
     if first.is_true
     then Watch_kept (* true clause, keep it in watched *)
