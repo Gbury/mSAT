@@ -68,39 +68,40 @@ type 'term eval_res =
     - [Valued (false, [x; y])] if [x] and [y] are assigned to 1 (or any non-zero number)
 *)
 
-type ('formula, 'proof) th_res =
-  | Th_sat
-  (** The current set of assumptions is satisfiable. *)
-  | Th_unsat of 'formula list * 'proof
-  (** The current set of assumptions is *NOT* satisfiable, and here is a
-      theory tautology (with its proof), for which every litteral is false
-      under the current assumptions. *)
-(** Type returned by the theory. Formulas in the unsat clause must come from the
-    current set of assumptions, i.e must have been encountered in a slice. *)
-
 type ('term, 'formula) assumption =
-  | Lit of 'formula         (** The given formula is asserted true by the solver *)
+  | Lit of 'formula  (** The given formula is asserted true by the solver *)
   | Assign of 'term * 'term (** The first term is assigned to the second *)
 (** Asusmptions made by the core SAT solver. *)
 
 type ('term, 'formula, 'proof) reason =
-  | Eval of 'term list                      (** The formula can be evalutaed using the terms in the list *)
-  | Consequence of 'formula list * 'proof   (** [Consequence (l, p)] means that the formulas in [l] imply
-                                                the propagated formula [f]. The proof should be a proof of
-                                                the clause "[l] implies [f]". *)
+  | Eval of 'term list
+  (** The formula can be evalutaed using the terms in the list *)
+  | Consequence of 'formula list * 'proof
+  (** [Consequence (l, p)] means that the formulas in [l] imply the propagated
+      formula [f]. The proof should be a proof of the clause "[l] implies [f]".
+  *)
 (** The type of reasons for propagations of a formula [f]. *)
 
+(* TODO: find a way to use atoms instead of formulas here *)
 type ('term, 'formula, 'proof) slice = {
-  start : int;                                (** Start of the slice *)
-  length : int;                               (** Length of the slice *)
-  get : int -> ('term, 'formula) assumption;  (** Accessor for the assertions in the slice.
-                                                  Should only be called on integers [i] s.t.
-                                                  [start <= i < start + length] *)
-  push : 'formula list -> 'proof -> unit;     (** Add a clause to the solver. *)
-  propagate : 'formula ->
-    ('term, 'formula, 'proof) reason -> unit; (** Propagate a formula, i.e. the theory can
-                                                  evaluate the formula to be true (see the
-                                                  definition of {!type:eval_res} *)
+  iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
+  (** Traverse the new assumptions on the boolean trail. *)
+
+  push : ?keep:bool -> 'formula list -> 'proof -> unit;
+  (** Add a clause to the solver.
+      @param keep if true, the clause will be kept by the solver.
+        Otherwise the solver is allowed to GC the clause and propose this
+        partial model again. 
+  *)
+
+  raise_conflict: 'b. 'formula list -> 'proof -> 'b;
+  (** Raise a conflict, yielding control back to the solver.
+      The list of atoms must be a valid theory lemma that is false in the
+      current trail. *)
+
+  propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
+  (** Propagate a formula, i.e. the theory can evaluate the formula to be true
+      (see the definition of {!type:eval_res} *)
 }
 (** The type for a slice of assertions to assume/propagate in the theory. *)
 
@@ -174,19 +175,19 @@ module type PLUGIN_CDCL_T = sig
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
 
-  val assume : t -> (void, Formula.t, proof) slice -> (Formula.t, proof) th_res
-  (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
-      and returns the result of the new assumptions. *)
+  val assume : t -> (void, Formula.t, proof) slice -> unit
+  (** Assume the formulas in the slice, possibly pushing new formulas to be
+      propagated or raising a conflict. *)
 
-  val if_sat : t -> (void, Formula.t, proof) slice -> (Formula.t, proof) th_res
-  (** Called at the end of the search in case a model has been found. If no new clause is
-      pushed and the function returns [Sat], then proof search ends and 'sat' is returned,
-      else search is resumed. *)
+  val if_sat : t -> (void, Formula.t, proof) slice -> unit
+  (** Called at the end of the search in case a model has been found.
+      If no new clause is pushed, then proof search ends and 'sat' is returned;
+      if lemmas are added, search is resumed;
+      if a conflict clause is added, search backtracks and then resumes. *)
 
   val backtrack : t -> level -> unit
   (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
       same state as when it returned the value [l], *)
-
 end
 
 (** Signature for theories to be given to the Model Constructing Solver. *)
@@ -203,14 +204,15 @@ module type PLUGIN_MCSAT = sig
   (** Return the current level of the theory (either the empty/beginning state, or the
       last level returned by the [assume] function). *)
 
-  val assume : t -> (Term.t, Formula.t, proof) slice -> (Formula.t, proof) th_res
-  (** Assume the formulas in the slice, possibly pushing new formulas to be propagated,
-      and returns the result of the new assumptions. *)
+  val assume : t -> (Term.t, Formula.t, proof) slice -> unit
+  (** Assume the formulas in the slice, possibly pushing new formulas to be
+      propagated or raising a conflict. *)
 
-  val if_sat : t -> (Term.t, Formula.t, proof) slice -> (Formula.t, proof) th_res
-  (** Called at the end of the search in case a model has been found. If no new clause is
-      pushed and the function returns [Sat], then proof search ends and 'sat' is returned,
-      else search is resumed. *)
+  val if_sat : t -> (Term.t, Formula.t, proof) slice -> unit
+  (** Called at the end of the search in case a model has been found.
+      If no new clause is pushed, then proof search ends and 'sat' is returned;
+      if lemmas are added, search is resumed;
+      if a conflict clause is added, search backtracks and then resumes. *)
 
   val backtrack : t -> level -> unit
   (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
