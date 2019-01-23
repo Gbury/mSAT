@@ -1397,13 +1397,16 @@ module Make(Plugin : PLUGIN)
           report_unsat st (US_false confl)
         ) else (
           let uclause = Clause.make cr.cr_learnt (History cr.cr_history) in
-          Vec.push st.clauses_learnt uclause;
           (* no need to attach [uclause], it is true at level 0 *)
+          Clause.set_learnt uclause true;
           enqueue_bool st fuip ~level:0 (Bcp uclause)
         )
       | fuip :: _ ->
         let lclause = Clause.make cr.cr_learnt (History cr.cr_history) in
-        Vec.push st.clauses_learnt lclause;
+        Clause.set_learnt lclause true;
+        if Array.length lclause.atoms > 2 then (
+          Vec.push st.clauses_learnt lclause; (* potentially gc'able *)
+        );
         attach_clause lclause;
         clause_bump_activity st lclause;
         if cr.cr_is_uip then (
@@ -1437,8 +1440,8 @@ module Make(Plugin : PLUGIN)
   (* Get the correct vector to insert a clause in. *)
   let clause_vector st c =
     match c.cpremise with
-    | Hyp -> st.clauses_hyps
-    | Lemma _ | History _ -> st.clauses_learnt
+    | Hyp | Lemma _ -> st.clauses_hyps
+    | History _ -> st.clauses_learnt
 
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
@@ -1569,10 +1572,16 @@ module Make(Plugin : PLUGIN)
       if i >= Vec.size watched then ()
       else (
         let c = Vec.get watched i in
-        assert c.attached;
-        let j = match propagate_in_clause st a c i with
-          | Watch_kept -> i+1
-          | Watch_removed -> i (* clause at this index changed *)
+        assert (Clause.attached c);
+        let j =
+          if Clause.dead c then (
+            Vec.fast_remove watched i;
+            i
+          ) else (
+            match propagate_in_clause st a c i with
+            | Watch_kept -> i+1
+            | Watch_removed -> i (* clause at this index changed *)
+          )
         in
         aux j
       )
@@ -1723,10 +1732,23 @@ module Make(Plugin : PLUGIN)
     List.iter Var.unmark !seen;
     !core
 
-  (* remove some learnt clauses
-     NOTE: so far we do not forget learnt clauses. We could, as long as
-     lemmas from the theory itself are kept. *)
-  let reduce_db () = ()
+  (* remove some learnt clauses. *)
+  let reduce_db (st:t) (n_of_learnts: int) : unit =
+    let v = st.clauses_learnt in
+    Log.debugf 3 (fun k->k "(@[sat.gc.start :keep %d :out-of %d@])" n_of_learnts (Vec.size v));
+    assert (Vec.size v > n_of_learnts);
+    (* sort by decreasing activity *)
+    Vec.sort v (fun c1 c2 -> Pervasives.compare c2.activity c1.activity);
+    let n_collected = ref 0 in
+    while Vec.size v > n_of_learnts do
+      let c = Vec.pop v in
+      assert (Clause.learnt c);
+      Clause.set_dead c;
+      assert (Clause.dead c);
+      incr n_collected;
+    done;
+    Log.debugf 3 (fun k->k "(@[sat.gc.done :collected %d@])" !n_collected);
+    ()
 
   (* Decide on a new literal, and enqueue it into the trail *)
   let rec pick_branch_aux st atom : unit =
@@ -1815,9 +1837,9 @@ module Make(Plugin : PLUGIN)
         );
         (* if decision_level() = 0 then simplify (); *)
 
-        if n_of_learnts >= 0 &&
-           Vec.size st.clauses_learnt - Vec.size st.trail >= n_of_learnts then (
-          reduce_db();
+        if n_of_learnts > 0 &&
+           Vec.size st.clauses_learnt - Vec.size st.trail > n_of_learnts then (
+          reduce_db st n_of_learnts;
         );
 
         pick_branch_lit st
@@ -1851,9 +1873,10 @@ module Make(Plugin : PLUGIN)
   let solve_ (st:t) : unit =
     Log.debugf 5 (fun k->k "(@[sat.solve :assms %d@])" (Vec.size st.assumptions));
     check_unsat_ st;
-    let n_of_conflicts = ref (float_of_int st.restart_first) in
-    let n_of_learnts = ref ((float_of_int (nb_clauses st)) *. st.learntsize_factor) in
     try
+      flush_clauses st; (* add initial clauses *)
+      let n_of_conflicts = ref (float_of_int st.restart_first) in
+      let n_of_learnts = ref ((float_of_int (nb_clauses st)) *. st.learntsize_factor) in
       while true do
         begin try
             search st (int_of_float !n_of_conflicts) (int_of_float !n_of_learnts)
