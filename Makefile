@@ -22,9 +22,7 @@ build-dev:
 
 test:
 	@echo "run tests…"
-	@dune runtest
-
-test-full: test
+	@OCAMLRUNPARAM=b dune runtest --force --no-buffer
 	@echo "run benchmarks…"
 	@/usr/bin/time -f "%e" ./tests/run sat
 
