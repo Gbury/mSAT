@@ -27,9 +27,21 @@ type 'clause export = 'clause Solver_intf.export = {
   hyps : 'clause Vec.t;
   history : 'clause Vec.t;
 }
-type ('formula, 'proof) th_res = ('formula, 'proof) Solver_intf.th_res =
-  | Th_sat
-  | Th_unsat of 'formula list * 'proof
+
+type ('term, 'formula) assumption = ('term, 'formula) Solver_intf.assumption =
+  | Lit of 'formula
+  | Assign of 'term * 'term (** The first term is assigned to the second *)
+
+type ('term, 'formula, 'proof) reason = ('term, 'formula, 'proof) Solver_intf.reason =
+  | Eval of 'term list
+  | Consequence of 'formula list * 'proof
+
+type ('term, 'formula, 'proof) slice = ('term, 'formula, 'proof) Solver_intf.slice = {
+  iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
+  push : ?keep:bool -> 'formula list -> 'proof -> unit;
+  raise_conflict: 'b. 'formula list -> 'proof -> 'b;
+  propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
+}
 
 type negated = Solver_intf.negated = Negated | Same_sign
 

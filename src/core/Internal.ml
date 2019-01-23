@@ -1440,10 +1440,7 @@ module Make(Plugin : PLUGIN)
 
   (* Get the correct vector to insert a clause in. *)
   let clause_vector st c =
-    match c.cpremise with
-    | Hyp | Lemma _ -> st.clauses_hyps
-    | History _ -> st.clauses_learnt
-    | Local -> assert false (* never added directly *)
+    if Clause.learnt c then st.clauses_learnt else st.clauses_hyps
 
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
@@ -1598,6 +1595,8 @@ module Make(Plugin : PLUGIN)
     ignore (th_eval st a);
     a
 
+  exception Th_conflict of Clause.t
+
   let slice_get st i =
     match Vec.get st.trail i with
     | Atom a ->
@@ -1606,11 +1605,17 @@ module Make(Plugin : PLUGIN)
       Solver_intf.Assign (term, v)
     | Lit _ -> assert false
 
-  let slice_push st (l:formula list) (lemma:lemma): unit =
+  let slice_push st ?(keep=false) (l:formula list) (lemma:lemma): unit =
     let atoms = List.rev_map (create_atom st) l in
     let c = Clause.make atoms (Lemma lemma) in
+    if not keep then Clause.set_learnt c true;
     Log.debugf info (fun k->k "Pushing clause %a" Clause.debug c);
     Stack.push c st.clauses_to_add
+
+  let slice_raise st (l:formula list) proof : 'a =
+    let atoms = List.rev_map (create_atom st) l in
+    let c = Clause.make atoms (Lemma proof) in
+    raise_notrace (Th_conflict c)
 
   let slice_propagate (st:t) f = function
     | Solver_intf.Eval l ->
@@ -1633,22 +1638,43 @@ module Make(Plugin : PLUGIN)
         invalid_arg "Msat.Internal.slice_propagate"
       )
 
-  let current_slice st : (_,_,_) Solver_intf.slice = {
-    Solver_intf.start = st.th_head;
-    length = Vec.size st.trail - st.th_head;
-    get = slice_get st;
+  let[@specialise] slice_iter st ~full f : unit =
+    for i = (if full then 0 else st.th_head) to Vec.size st.trail-1 do
+      let e = match Vec.get st.trail i with
+        | Atom a ->
+          Solver_intf.Lit a.lit
+        | Lit {term; assigned = Some v; _} ->
+          Solver_intf.Assign (term, v)
+        | Lit _ -> assert false
+      in
+      f e
+    done
+
+  let[@inline] current_slice st : (_,_,_) Solver_intf.slice = {
+    Solver_intf.
+    iter_assumptions=slice_iter st ~full:false;
     push = slice_push st;
     propagate = slice_propagate st;
+    raise_conflict=slice_raise st;
   }
 
   (* full slice, for [if_sat] final check *)
-  let full_slice st : (_,_,_) Solver_intf.slice = {
-    Solver_intf.start = 0;
-    length = Vec.size st.trail;
-    get = slice_get st;
+  let[@inline] full_slice st : (_,_,_) Solver_intf.slice = {
+    Solver_intf.
+    iter_assumptions=slice_iter st ~full:true;
     push = slice_push st;
-    propagate = (fun _ -> assert false);
+    propagate = slice_propagate st;
+    raise_conflict=slice_raise st;
   }
+
+  (* Assert that the conflict is indeeed a conflict *)
+  let check_is_conflict_ (c:Clause.t) : unit =
+    if not @@ Array.for_all (Atom.is_false) c.atoms then (
+      let msg =
+        Format.asprintf "msat:core/internal: invalid conflict %a" Clause.debug c
+      in
+      raise (Invalid_argument msg);
+    )
 
   (* some boolean literals were decided/propagated within Msat. Now we
      need to inform the theory of those assumptions, so it can do its job.
@@ -1662,18 +1688,11 @@ module Make(Plugin : PLUGIN)
       let slice = current_slice st in
       st.th_head <- st.elt_head; (* catch up *)
       match Plugin.assume st.th slice with
-      | Solver_intf.Th_sat ->
+      | () ->
         propagate st
-      | Solver_intf.Th_unsat (l, p) ->
-        (* conflict *)
-        let l = List.rev_map (create_atom st) l in
-        (* Assert that the conflcit is indeeed a conflict *)
-        if not @@ List.for_all (fun a -> a.neg.is_true) l then (
-          raise (Invalid_argument "msat:core/internal: invalid conflict");
-        );
-        List.iter (fun a -> insert_var_order st (Elt.of_var a.var)) l;
-        (* Create the clause and return it. *)
-        let c = Clause.make l (Lemma p) in
+      | exception Th_conflict c ->
+        check_is_conflict_ c;
+        Array.iter (fun a -> insert_var_order st (Elt.of_var a.var)) c.atoms;
         Some c
     )
 
@@ -1892,14 +1911,18 @@ module Make(Plugin : PLUGIN)
           | E_sat ->
             assert (st.elt_head = Vec.size st.trail);
             begin match Plugin.if_sat st.th (full_slice st) with
-              | Solver_intf.Th_sat -> ()
-              | Solver_intf.Th_unsat (l, p) ->
-                let atoms = List.rev_map (create_atom st) l in
-                let c = Clause.make atoms (Lemma p) in
+              | () ->
+                if st.elt_head = Vec.size st.trail &&
+                   Stack.is_empty st.clauses_to_add then (
+                  raise_notrace E_sat
+                );
+                (* otherwise, keep on *)
+              | exception Th_conflict c ->
+                check_is_conflict_ c;
+                Array.iter (fun a -> insert_var_order st (Elt.of_var a.var)) c.atoms;
                 Log.debugf info (fun k -> k "Theory conflict clause: %a" Clause.debug c);
                 Stack.push c st.clauses_to_add
             end;
-            if Stack.is_empty st.clauses_to_add then raise_notrace E_sat
         end
       done
     with E_sat -> ()
@@ -2082,8 +2105,8 @@ module Make_pure_sat(F: Solver_intf.FORMULA) =
   type proof = Solver_intf.void
   type level = unit
   let current_level () = ()
-  let assume () _ = Solver_intf.Th_sat
-  let if_sat () _ = Solver_intf.Th_sat
+  let assume () _ = ()
+  let if_sat () _ = ()
   let backtrack () _ = ()
   let eval () _ = Solver_intf.Unknown
   let assign () t = t
