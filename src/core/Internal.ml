@@ -1376,6 +1376,9 @@ module Make(Plugin : PLUGIN)
       | _ -> assert false
     done;
     List.iter (fun q -> Var.clear q.var) !seen;
+    (* put high-level literals first, so that:
+       - they make adequate watch lits
+       - the first literal is the UIP, if any *)
     let l = List.fast_sort (fun p q -> compare q.var.v_level p.var.v_level) !learnt in
     let level, is_uip = backtrack_lvl st l in
     { cr_backtrack_lvl = level;

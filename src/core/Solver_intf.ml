@@ -87,7 +87,7 @@ type ('term, 'formula, 'proof) slice = {
   iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
   (** Traverse the new assumptions on the boolean trail. *)
 
-  push : ?keep:bool -> 'formula list -> 'proof -> unit;
+  push: ?keep:bool -> 'formula list -> 'proof -> unit;
   (** Add a clause to the solver.
       @param keep if true, the clause will be kept by the solver.
         Otherwise the solver is allowed to GC the clause and propose this
@@ -99,7 +99,7 @@ type ('term, 'formula, 'proof) slice = {
       The list of atoms must be a valid theory lemma that is false in the
       current trail. *)
 
-  propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
+  propagate: 'formula -> ('term, 'formula, 'proof) reason -> unit;
   (** Propagate a formula, i.e. the theory can evaluate the formula to be true
       (see the definition of {!type:eval_res} *)
 }
