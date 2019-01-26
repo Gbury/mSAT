@@ -721,8 +721,7 @@ module Make(Plugin : PLUGIN)
     clauses_learnt : clause Vec.t;
     (* learnt clauses (tautologies true at any time, whatever the user level) *)
 
-    (* TODO: make this a Vec.t *)
-    clauses_to_add : clause Stack.t;
+    clauses_to_add : clause Vec.t;
     (* Clauses either assumed or pushed by the theory, waiting to be added. *)
 
     mutable unsat_at_0: clause option;
@@ -789,7 +788,7 @@ module Make(Plugin : PLUGIN)
     clauses_hyps = Vec.create();
     clauses_learnt = Vec.create();
 
-    clauses_to_add = Stack.create ();
+    clauses_to_add = Vec.create ();
     to_clear=Vec.create();
 
     th_head = 0;
@@ -1505,13 +1504,14 @@ module Make(Plugin : PLUGIN)
       Vec.push vec init;
       Log.debugf info (fun k->k "Trivial clause ignored : @[%a@]" Clause.debug init)
 
-  let flush_clauses st =
-    if not (Stack.is_empty st.clauses_to_add) then (
-      while not (Stack.is_empty st.clauses_to_add) do
-        let c = Stack.pop st.clauses_to_add in
-        add_clause_ st c
-      done
-    )
+  let[@inline never] flush_clauses_ st =
+    while not @@ Vec.is_empty st.clauses_to_add do
+      let c = Vec.pop st.clauses_to_add in
+      add_clause_ st c
+    done
+
+  let[@inline] flush_clauses st =
+    if not @@ Vec.is_empty st.clauses_to_add then flush_clauses_ st
 
   type watch_res =
     | Watch_kept
@@ -1616,7 +1616,7 @@ module Make(Plugin : PLUGIN)
     let c = Clause.make atoms (Lemma lemma) in
     if not keep then Clause.set_learnt c true;
     Log.debugf info (fun k->k "Pushing clause %a" Clause.debug c);
-    Stack.push c st.clauses_to_add
+    Vec.push st.clauses_to_add c
 
   let slice_raise st (l:formula list) proof : 'a =
     let atoms = List.rev_map (create_atom st) l in
@@ -1634,7 +1634,7 @@ module Make(Plugin : PLUGIN)
         let c = Clause.make (p :: List.map Atom.neg l) (Lemma proof) in
         if p.is_true then ()
         else if p.neg.is_true then (
-          Stack.push c st.clauses_to_add
+          Vec.push st.clauses_to_add c
         ) else (
           insert_subterms_order st p.var;
           let level = List.fold_left (fun acc a -> max acc a.var.v_level) 0 l in
@@ -1695,6 +1695,7 @@ module Make(Plugin : PLUGIN)
       st.th_head <- st.elt_head; (* catch up *)
       match Plugin.assume st.th slice with
       | () ->
+        flush_clauses st;
         propagate st
       | exception Th_conflict c ->
         check_is_conflict_ c;
@@ -1919,15 +1920,17 @@ module Make(Plugin : PLUGIN)
             begin match Plugin.if_sat st.th (full_slice st) with
               | () ->
                 if st.elt_head = Vec.size st.trail &&
-                   Stack.is_empty st.clauses_to_add then (
+                   Vec.is_empty st.clauses_to_add then (
                   raise_notrace E_sat
                 );
                 (* otherwise, keep on *)
+                flush_clauses st;
               | exception Th_conflict c ->
                 check_is_conflict_ c;
                 Array.iter (fun a -> insert_var_order st (Elt.of_var a.var)) c.atoms;
                 Log.debugf info (fun k -> k "Theory conflict clause: %a" Clause.debug c);
-                Stack.push c st.clauses_to_add
+                Vec.push st.clauses_to_add c;
+                flush_clauses st;
             end;
         end
       done
@@ -1939,7 +1942,7 @@ module Make(Plugin : PLUGIN)
          let atoms = List.rev_map (mk_atom st) l in
          let c = Clause.make atoms Hyp in
          Log.debugf debug (fun k -> k "Assuming clause: @[<hov 2>%a@]" Clause.debug c);
-         Stack.push c st.clauses_to_add)
+         Vec.push st.clauses_to_add c)
       cnf
 
   (* Check satisfiability *)
@@ -1967,7 +1970,7 @@ module Make(Plugin : PLUGIN)
       false
 
   let check st : bool =
-    Stack.is_empty st.clauses_to_add &&
+    Vec.is_empty st.clauses_to_add &&
     check_vec st.clauses_hyps &&
     check_vec st.clauses_learnt
 
