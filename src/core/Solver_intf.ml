@@ -174,13 +174,14 @@ module type PLUGIN_CDCL_T = sig
   val pop_levels : t -> int -> unit
   (** Pop [n] levels of the theory *)
 
-  val assume : t -> (void, Formula.t, proof) slice -> unit
-  (** Assume the formulas in the slice, possibly pushing new formulas to be
-      propagated or raising a conflict. *)
+  val partial_check : t -> (void, Formula.t, proof) slice -> unit
+  (** Assume the formulas in the slice, possibly using the [slice]
+      to push new formulas to be propagated or to raising a conflict or to add
+      new lemmas. *)
 
-  val if_sat : t -> (void, Formula.t, proof) slice -> unit
+  val final_check : t -> (void, Formula.t, proof) slice -> unit
   (** Called at the end of the search in case a model has been found.
-      If no new clause is pushed, then proof search ends and 'sat' is returned;
+      If no new clause is pushed, then proof search ends and "sat" is returned;
       if lemmas are added, search is resumed;
       if a conflict clause is added, search backtracks and then resumes. *)
 end
@@ -199,13 +200,14 @@ module type PLUGIN_MCSAT = sig
   val pop_levels : t -> int -> unit
   (** Pop [n] levels of the theory *)
 
-  val assume : t -> (Term.t, Formula.t, proof) slice -> unit
-  (** Assume the formulas in the slice, possibly pushing new formulas to be
-      propagated or raising a conflict. *)
+  val partial_check : t -> (Term.t, Formula.t, proof) slice -> unit
+  (** Assume the formulas in the slice, possibly using the [slice]
+      to push new formulas to be propagated or to raising a conflict or to add
+      new lemmas. *)
 
-  val if_sat : t -> (Term.t, Formula.t, proof) slice -> unit
+  val final_check : t -> (Term.t, Formula.t, proof) slice -> unit
   (** Called at the end of the search in case a model has been found.
-      If no new clause is pushed, then proof search ends and 'sat' is returned;
+      If no new clause is pushed, then proof search ends and "sat" is returned;
       if lemmas are added, search is resumed;
       if a conflict clause is added, search backtracks and then resumes. *)
 
