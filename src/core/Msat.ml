@@ -16,11 +16,11 @@ type void = (unit,bool) Solver_intf.gadt_eq
 
 type lbool = Solver_intf.lbool = L_true | L_false | L_undefined
 
-type ('term, 'form) sat_state = ('term, 'form) Solver_intf.sat_state = {
+type ('term, 'form, 'value) sat_state = ('term, 'form, 'value) Solver_intf.sat_state = {
   eval : 'form -> bool;
   eval_level : 'form -> bool * int;
   iter_trail : ('form -> unit) -> ('term -> unit) -> unit;
-  model : unit -> ('term * 'term) list;
+  model : unit -> ('term * 'value) list;
 }
 
 type ('atom,'clause, 'proof) unsat_state = ('atom,'clause, 'proof) Solver_intf.unsat_state = {
@@ -33,16 +33,16 @@ type 'clause export = 'clause Solver_intf.export = {
   history : 'clause Vec.t;
 }
 
-type ('term, 'formula) assumption = ('term, 'formula) Solver_intf.assumption =
-  | Lit of 'formula
-  | Assign of 'term * 'term (** The first term is assigned to the second *)
+type ('term, 'formula, 'value) assumption = ('term, 'formula, 'value) Solver_intf.assumption =
+  | Lit of 'formula  (** The given formula is asserted true by the solver *)
+  | Assign of 'term * 'value (** The term is assigned to the value *)
 
 type ('term, 'formula, 'proof) reason = ('term, 'formula, 'proof) Solver_intf.reason =
   | Eval of 'term list
   | Consequence of 'formula list * 'proof
 
-type ('term, 'formula, 'proof) acts = ('term, 'formula, 'proof) Solver_intf.acts = {
-  acts_iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
+type ('term, 'formula, 'value, 'proof) acts = ('term, 'formula, 'value, 'proof) Solver_intf.acts = {
+  acts_iter_assumptions: (('term,'formula,'value) assumption -> unit) -> unit;
   acts_eval_lit: 'formula -> lbool;
   acts_mk_lit: 'formula -> unit;
   acts_mk_term: 'term -> unit;

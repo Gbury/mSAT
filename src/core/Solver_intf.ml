@@ -13,7 +13,7 @@ Copyright 2016 Simon Cruanes
 
 type 'a printer = Format.formatter -> 'a -> unit
 
-type ('term, 'form) sat_state = {
+type ('term, 'form, 'value) sat_state = {
   eval: 'form -> bool;
   (** Returns the valuation of a formula in the current state
       of the sat solver.
@@ -27,7 +27,7 @@ type ('term, 'form) sat_state = {
   iter_trail : ('form -> unit) -> ('term -> unit) -> unit;
   (** Iter thorugh the formulas and terms in order of decision/propagation
       (starting from the first propagation, to the last propagation). *)
-  model: unit -> ('term * 'term) list;
+  model: unit -> ('term * 'value) list;
   (** Returns the model found if the formula is satisfiable. *)
 }
 (** The type of values returned when the solver reaches a SAT state. *)
@@ -68,9 +68,9 @@ type 'term eval_res =
     - [Valued (false, [x; y])] if [x] and [y] are assigned to 1 (or any non-zero number)
 *)
 
-type ('term, 'formula) assumption =
+type ('term, 'formula, 'value) assumption =
   | Lit of 'formula  (** The given formula is asserted true by the solver *)
-  | Assign of 'term * 'term (** The first term is assigned to the second *)
+  | Assign of 'term * 'value (** The term is assigned to the value *)
 (** Asusmptions made by the core SAT solver. *)
 
 type ('term, 'formula, 'proof) reason =
@@ -86,8 +86,8 @@ type lbool = L_true | L_false | L_undefined
 (** Valuation of an atom *)
 
 (* TODO: find a way to use atoms instead of formulas here *)
-type ('term, 'formula, 'proof) acts = {
-  acts_iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
+type ('term, 'formula, 'value, 'proof) acts = {
+  acts_iter_assumptions: (('term,'formula,'value) assumption -> unit) -> unit;
   (** Traverse the new assumptions on the boolean trail. *)
 
   acts_eval_lit: 'formula -> lbool;
@@ -164,7 +164,22 @@ module type EXPR = sig
 
     val hash : t -> int
     (** Hashing function for terms. Should be such that two terms equal according
-        to {!val:Expr_intf.S.equal} have the same hash. *)
+        to {!equal} have the same hash. *)
+
+    val pp : t printer
+    (** Printing function used among other for debugging. *)
+  end
+
+  module Value : sig
+    type t
+    (** The type of semantic values (domain elements) *)
+
+    val equal : t -> t -> bool
+    (** Equality over values. *)
+
+    val hash : t -> int
+    (** Hashing function for values. Should be such that two terms equal according
+        to {!equal} have the same hash. *)
 
     val pp : t printer
     (** Printing function used among other for debugging. *)
@@ -188,12 +203,12 @@ module type PLUGIN_CDCL_T = sig
   val pop_levels : t -> int -> unit
   (** Pop [n] levels of the theory *)
 
-  val partial_check : t -> (void, Formula.t, proof) acts -> unit
+  val partial_check : t -> (void, Formula.t, void, proof) acts -> unit
   (** Assume the formulas in the slice, possibly using the [slice]
       to push new formulas to be propagated or to raising a conflict or to add
       new lemmas. *)
 
-  val final_check : t -> (void, Formula.t, proof) acts -> unit
+  val final_check : t -> (void, Formula.t, void, proof) acts -> unit
   (** Called at the end of the search in case a model has been found.
       If no new clause is pushed, then proof search ends and "sat" is returned;
       if lemmas are added, search is resumed;
@@ -207,25 +222,24 @@ module type PLUGIN_MCSAT = sig
 
   include EXPR
 
-
   val push_level : t -> unit
   (** Create a new backtrack level *)
 
   val pop_levels : t -> int -> unit
   (** Pop [n] levels of the theory *)
 
-  val partial_check : t -> (Term.t, Formula.t, proof) acts -> unit
+  val partial_check : t -> (Term.t, Formula.t, Value.t, proof) acts -> unit
   (** Assume the formulas in the slice, possibly using the [slice]
       to push new formulas to be propagated or to raising a conflict or to add
       new lemmas. *)
 
-  val final_check : t -> (Term.t, Formula.t, proof) acts -> unit
+  val final_check : t -> (Term.t, Formula.t, Value.t, proof) acts -> unit
   (** Called at the end of the search in case a model has been found.
       If no new clause is pushed, then proof search ends and "sat" is returned;
       if lemmas are added, search is resumed;
       if a conflict clause is added, search backtracks and then resumes. *)
 
-  val assign : t -> Term.t -> Term.t
+  val assign : t -> Term.t -> Value.t
   (** Returns an assignment value for the given term. *)
 
   val iter_assignable : t -> (Term.t -> unit) -> Formula.t -> unit
@@ -407,7 +421,7 @@ module type S = sig
 
   (** Result type for the solver *)
   type res =
-    | Sat of (term,atom) sat_state (** Returned when the solver reaches SAT, with a model *)
+    | Sat of (term,atom,Value.t) sat_state (** Returned when the solver reaches SAT, with a model *)
     | Unsat of (atom,clause,Proof.t) unsat_state (** Returned when the solver reaches UNSAT, with a proof *)
 
   exception UndecidedLit

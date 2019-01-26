@@ -15,11 +15,13 @@ module Make(Plugin : PLUGIN)
 = struct
   module Term = Plugin.Term
   module Formula = Plugin.Formula
+  module Value = Plugin.Value
 
   type term = Term.t
   type formula = Formula.t
   type theory = Plugin.t
   type lemma = Plugin.proof
+  type value = Value.t
 
   (* MCSAT literal *)
   type lit = {
@@ -28,7 +30,7 @@ module Make(Plugin : PLUGIN)
     mutable l_level : int;
     mutable l_idx: int;
     mutable l_weight : float;
-    mutable assigned : term option;
+    mutable assigned : value option;
   }
 
   type var = {
@@ -144,7 +146,7 @@ module Make(Plugin : PLUGIN)
       | None ->
         Format.fprintf fmt ""
       | Some t ->
-        Format.fprintf fmt "@[<hov>@@%d->@ %a@]" v.l_level Term.pp t
+        Format.fprintf fmt "@[<hov>@@%d->@ %a@]" v.l_level Value.pp t
 
     let pp out v = Term.pp out v.term
     let debug out v =
@@ -1197,7 +1199,7 @@ module Make(Plugin : PLUGIN)
     )
 
   (* MCsat semantic assignment *)
-  let enqueue_assign st l value lvl =
+  let enqueue_assign st (l:lit) (value:value) lvl =
     match l.assigned with
     | Some _ ->
       Log.debugf error
@@ -1664,7 +1666,7 @@ module Make(Plugin : PLUGIN)
 
   let[@inline] acts_mk_term st t : unit = make_term st t
 
-  let[@inline] current_slice st : (_,_,_) Solver_intf.acts = {
+  let[@inline] current_slice st : _ Solver_intf.acts = {
     Solver_intf.
     acts_iter_assumptions=acts_iter st ~full:false st.th_head;
     acts_eval_lit= acts_eval_lit st;
@@ -1676,7 +1678,7 @@ module Make(Plugin : PLUGIN)
   }
 
   (* full slice, for [if_sat] final check *)
-  let[@inline] full_slice st : (_,_,_) Solver_intf.acts = {
+  let[@inline] full_slice st : _ Solver_intf.acts = {
     Solver_intf.
     acts_iter_assumptions=acts_iter st ~full:true st.th_head;
     acts_eval_lit= acts_eval_lit st;
@@ -1905,7 +1907,7 @@ module Make(Plugin : PLUGIN)
 
   let[@inline] unsat_conflict st = st.unsat_at_0
 
-  let model (st:t) : (term * term) list =
+  let model (st:t) : (term * value) list =
     let opt = function Some a -> a | None -> assert false in
     Vec.fold
       (fun acc e -> match e with
@@ -2000,7 +2002,7 @@ module Make(Plugin : PLUGIN)
 
   (* Result type *)
   type res =
-    | Sat of (term,atom) Solver_intf.sat_state
+    | Sat of (term,atom,value) Solver_intf.sat_state
     | Unsat of (atom,clause,Proof.t) Solver_intf.unsat_state
 
   let pp_all st lvl status =
@@ -2014,7 +2016,7 @@ module Make(Plugin : PLUGIN)
           (Vec.pp ~sep:"" Clause.debug) (history st)
       )
 
-  let mk_sat (st:t) : (_,_) Solver_intf.sat_state =
+  let mk_sat (st:t) : _ Solver_intf.sat_state =
     pp_all st 99 "SAT";
     let t = trail st in
     let iter f f' =
@@ -2094,15 +2096,18 @@ module Make(Plugin : PLUGIN)
 end
 [@@inline][@@specialise]
 
+  module Void_ = struct
+    type t = Solver_intf.void
+    let equal _ _ = assert false
+    let hash _ =  assert false
+    let pp _ _ = assert false
+  end
+
 module Make_cdcl_t(Plugin : Solver_intf.PLUGIN_CDCL_T) =
   Make(struct
     include Plugin
-    module Term = struct
-      type t = Solver_intf.void
-      let equal _ _ = assert false
-      let hash _ =  assert false
-      let pp _ _ = assert false
-    end
+    module Term = Void_
+    module Value = Void_
     let eval _ _ = Solver_intf.Unknown
     let assign _ t = t
     let mcsat = false
@@ -2120,12 +2125,8 @@ module Make_mcsat(Plugin : Solver_intf.PLUGIN_MCSAT) =
 module Make_pure_sat(F: Solver_intf.FORMULA) =
   Make(struct
   module Formula = F
-  module Term = struct
-    type t = Solver_intf.void
-    let equal _ _ = true
-    let hash _ = 1
-    let pp out _ = Format.pp_print_string out "()"
-  end
+  module Term = Void_
+  module Value = Void_
   type t = unit
   type proof = Solver_intf.void
   let push_level () = ()
