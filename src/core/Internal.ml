@@ -403,7 +403,6 @@ module Make(Plugin : PLUGIN)
   end
 
   module Proof =  struct
-    exception Insuficient_hyps
     exception Resolution_error of string
 
     type atom = Atom.t
@@ -412,6 +411,8 @@ module Make(Plugin : PLUGIN)
     type lemma = Plugin.proof
 
     let merge = List.merge Atom.compare
+
+    let error_res_f msg = Format.kasprintf (fun s -> raise (Resolution_error s)) msg
 
     let _c = ref 0
     let fresh_pcl_name () = incr _c; "R" ^ (string_of_int !_c)
@@ -455,12 +456,12 @@ module Make(Plugin : PLUGIN)
 
     let to_list c =
       let cl = list c in
-      let doublons, l = analyze cl in
+      let dups, l = analyze cl in
       let conflicts, _ = resolve l in
-      if doublons <> [] then
-        Log.debug 3 "Input clause has redundancies";
+      if dups <> [] then
+        Log.debug 3 "(@[sat.input-clause@ :has-duplicates@])";
       if conflicts <> [] then
-        Log.debug 3 "Input clause is a tautology";
+        Log.debug 3 "(@[sat.input-clause@ :is-tautology@])";
       cl
 
     (* Comparison of clauses *)
@@ -489,9 +490,9 @@ module Make(Plugin : PLUGIN)
       assert (a.var.v_level >= 0);
       match (a.var.reason) with
       | Some (Bcp c) ->
-        Log.debugf 5 (fun k->k "Analysing: @[%a@ %a@]" Atom.debug a Clause.debug c);
+        Log.debugf 5 (fun k->k "(@[proof.analyze.clause@ :atom %a@ :c %a@])" Atom.debug a Clause.debug c);
         if Array.length c.atoms = 1 then (
-          Log.debugf 5 (fun k -> k "Old reason: @[%a@]" Atom.debug a);
+          Log.debugf 5 (fun k -> k "(@[proof.analyze.old-reason@ %a@])" Atom.debug a);
           c
         ) else (
           assert (a.neg.is_true);
@@ -499,20 +500,20 @@ module Make(Plugin : PLUGIN)
           let c' = Clause.make [a.neg] r in
           a.var.reason <- Some (Bcp c');
           Log.debugf 5
-            (fun k -> k "New reason: @[%a@ %a@]" Atom.debug a Clause.debug c');
+            (fun k -> k "(@[proof.analyze.new-reason@ :atom %a@ :c %a@])" Atom.debug a Clause.debug c');
           c'
         )
       | _ ->
-        Log.debugf 0 (fun k -> k "Error while proving atom %a" Atom.debug a);
-        raise (Resolution_error "Cannot prove atom")
+        error_res_f "cannot prove atom %a" Atom.debug a
 
     let prove_unsat conflict =
-      if Array.length conflict.atoms = 0 then conflict
-      else (
-        Log.debugf 1 (fun k -> k "Proving unsat from: @[%a@]" Clause.debug conflict);
+      if Array.length conflict.atoms = 0 then (
+        conflict
+      ) else (
+        Log.debugf 1 (fun k -> k "(@[sat.prove-unsat@ :from %a@])" Clause.debug conflict);
         let l = Array.fold_left (fun acc a -> set_atom_proof a :: acc) [] conflict.atoms in
         let res = Clause.make [] (History (conflict :: l)) in
-        Log.debugf 1 (fun k -> k "Proof found: @[%a@]" Clause.debug res);
+        Log.debugf 1 (fun k -> k "(@[sat.proof-found@ %a@])" Clause.debug res);
         res
       )
 
@@ -535,10 +536,12 @@ module Make(Plugin : PLUGIN)
       | Duplicate of t * atom list
       | Resolution of t * t * atom
 
+    let[@inline] conclusion (p:t) : clause = p
+
     let rec chain_res (c, cl) = function
       | d :: r ->
         Log.debugf 5 
-          (fun k -> k "  Resolving clauses : @[%a@\n%a@]" Clause.debug c Clause.debug d);
+          (fun k -> k "(@[sat.analyze.resolving@ :c1 %a@ :c2 %a@])" Clause.debug c Clause.debug d);
         let dl = to_list d in
         begin match resolve (merge cl dl) with
           | [ a ], l ->
@@ -549,18 +552,14 @@ module Make(Plugin : PLUGIN)
                 chain_res (new_clause, l) r
             end
           | _ ->
-            Log.debugf 5
-              (fun k -> k "While resolving clauses:@[<hov>%a@\n%a@]"
-                  Clause.debug c Clause.debug d);
-            raise (Resolution_error "Clause mismatch")
+            error_res_f "@[<2>clause mismatch while resolving@ %a@ and %a@]"
+              Clause.debug c Clause.debug d
         end
       | _ ->
-        raise (Resolution_error "Bad history")
-
-    let[@inline] conclusion (p:t) : clause = p
+        error_res_f "bad history"
 
     let expand conclusion =
-      Log.debugf 5 (fun k -> k "Expanding : @[%a@]" Clause.debug conclusion);
+      Log.debugf 5 (fun k -> k "(@[sat.proof.expand@ @[%a@]@])" Clause.debug conclusion);
       match conclusion.cpremise with
       | Lemma l ->
         {conclusion; step = Lemma l; }
@@ -569,8 +568,7 @@ module Make(Plugin : PLUGIN)
       | Hyp ->
         { conclusion; step = Hypothesis; }
       | History [] ->
-        Log.debugf 0 (fun k -> k "Empty history for clause: %a" Clause.debug conclusion);
-        raise (Resolution_error "Empty history")
+        error_res_f "@[empty history for clause@ %a@]" Clause.debug conclusion
       | History [c] ->
         let duplicates, res = analyze (list c) in
         assert (cmp_cl res (list conclusion) = 0);
@@ -956,7 +954,7 @@ module Make(Plugin : PLUGIN)
     if i >= Array.length arr then []
     else Array.to_list (Array.sub arr i (Array.length arr - i))
 
-  (* Eliminates atom doublons in clauses *)
+  (* Eliminates atom duplicates in clauses *)
   let eliminate_duplicates clause : clause =
     let trivial = ref false in
     let duplicates = ref [] in
@@ -1050,7 +1048,7 @@ module Make(Plugin : PLUGIN)
   *)
   let attach_clause c =
     assert (not @@ Clause.attached c);
-    Log.debugf debug (fun k -> k "Attaching %a" Clause.debug c);
+    Log.debugf debug (fun k -> k "(@[sat.attach-clause@ %a@])" Clause.debug c);
     Vec.push c.atoms.(0).neg.watched c;
     Vec.push c.atoms.(1).neg.watched c;
     Clause.set_attached c true;
@@ -1064,9 +1062,9 @@ module Make(Plugin : PLUGIN)
     assert (lvl >= 0);
     (* Nothing to do if we try to backtrack to a non-existent level. *)
     if decision_level st <= lvl then (
-      Log.debugf debug (fun k -> k "Already at level <= %d" lvl)
+      Log.debugf debug (fun k -> k "(@[sat.cancel-until.nop@ :already-at-level <= %d@])" lvl)
     ) else (
-      Log.debugf info (fun k -> k "Backtracking to lvl %d" lvl);
+      Log.debugf info (fun k -> k "(@[sat.cancel-until %d@])" lvl);
       (* We set the head of the solver and theory queue to what it was. *)
       let head = ref (Vec.get st.elt_levels lvl) in
       st.elt_head <- !head;
@@ -1118,15 +1116,15 @@ module Make(Plugin : PLUGIN)
 
   let pp_unsat_cause out = function
     | US_local {first=_; core} ->
-      Format.fprintf out "false assumptions (@[core %a@])"
+      Format.fprintf out "(@[unsat-cause@ :false-assumptions %a@])"
         (Format.pp_print_list Atom.pp) core
     | US_false c ->
-      Format.fprintf out "false %a" Clause.debug c
+      Format.fprintf out "(@[unsat-cause@ :false %a@])" Clause.debug c
 
   (* Unsatisfiability is signaled through an exception, since it can happen
      in multiple places (adding new clauses, or solving for instance). *)
   let report_unsat st (us:unsat_cause) : _ =
-    Log.debugf info (fun k -> k "@[Unsat conflict: %a@]" pp_unsat_cause us);
+    Log.debugf info (fun k -> k "(@[sat.unsat-conflict@ %a@])" pp_unsat_cause us);
     begin match us with
       | US_false c -> st.unsat_at_0 <- Some c;
       | _ -> ()
@@ -1155,15 +1153,14 @@ module Make(Plugin : PLUGIN)
                rebuild the whole resolution tree when we want to prove [a]. *)
             let c' = Clause.make l (History (cl :: history)) in
             Log.debugf debug
-              (fun k -> k "Simplified reason: @[<v>%a@,%a@]" Clause.debug cl Clause.debug c');
+              (fun k -> k "(@[<hv>sat.simplified-reason@ %a@ %a@])" Clause.debug cl Clause.debug c');
             Bcp c'
           )
         | _ ->
           Log.debugf error
             (fun k ->
-               k "@[<v 2>Failed at reason simplification:@,%a@,%a@]"
-                 (Vec.pp ~sep:"" Atom.debug)
-                 (Vec.of_list l)
+               k "(@[<v2>sat.simplify-reason.failed@ :at %a@ %a@]"
+                 (Vec.pp ~sep:"" Atom.debug) (Vec.of_list l)
                  Clause.debug cl);
           assert false
       end
@@ -1173,7 +1170,8 @@ module Make(Plugin : PLUGIN)
      Wrapper function for adding a new propagated formula. *)
   let enqueue_bool st a ~level:lvl reason : unit =
     if a.neg.is_true then (
-      Log.debugf error (fun k->k "Trying to enqueue a false literal: %a" Atom.debug a);
+      Log.debugf error
+        (fun k->k "(@[sat.error.trying to enqueue a false literal %a@])" Atom.debug a);
       assert false
     );
     assert (not a.is_true && a.var.v_level < 0 &&
@@ -1187,7 +1185,7 @@ module Make(Plugin : PLUGIN)
     a.var.reason <- Some reason;
     Vec.push st.trail (Trail_elt.of_atom a);
     Log.debugf debug
-      (fun k->k "Enqueue (%d): %a" (Vec.size st.trail) Atom.debug a);
+      (fun k->k "(@[sat.enqueue[%d]@ %a@])" (Vec.size st.trail) Atom.debug a);
     ()
 
   let enqueue_semantic st a terms =
@@ -1203,7 +1201,7 @@ module Make(Plugin : PLUGIN)
     match l.assigned with
     | Some _ ->
       Log.debugf error
-        (fun k -> k "Trying to assign an already assigned literal: %a" Lit.debug l);
+        (fun k -> k "(@[sat.error: Trying to assign an already assigned literal:@ %a@])" Lit.debug l);
       assert false
     | None ->
       assert (l.l_level < 0);
@@ -1211,7 +1209,7 @@ module Make(Plugin : PLUGIN)
       l.l_level <- lvl;
       Vec.push st.trail (Trail_elt.of_lit l);
       Log.debugf debug
-        (fun k -> k "Enqueue (%d): %a" (Vec.size st.trail) Lit.debug l);
+        (fun k -> k "(@[sat.enqueue-semantic[%d]@ %a@])" (Vec.size st.trail) Lit.debug l);
       ()
 
   (* swap elements of array *)
@@ -1312,13 +1310,13 @@ module Make(Plugin : PLUGIN)
       Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
     in
     Log.debugf debug
-      (fun k -> k "Analyzing conflict (%d): %a" conflict_level Clause.debug c_clause);
+      (fun k -> k "(@[sat.analyze-conflict@ :c-level %d@ :clause %a@])" conflict_level Clause.debug c_clause);
     while !cond do
       begin match !c with
         | None ->
-          Log.debug debug "  skipping resolution for semantic propagation"
+          Log.debug debug "(@[sat.analyze-conflict: skipping resolution for semantic propagation@])"
         | Some clause ->
-          Log.debugf debug (fun k->k"  Resolving clause: %a"  Clause.debug clause);
+          Log.debugf debug (fun k->k"(@[sat.analyze-conflict.resolve@ %a@])"  Clause.debug clause);
           begin match clause.cpremise with
             | History _ -> clause_bump_activity st clause
             | Hyp | Local | Lemma _ -> ()
@@ -1353,7 +1351,8 @@ module Make(Plugin : PLUGIN)
       (* look for the next node to expand *)
       while
         let a = Vec.get st.trail !tr_ind in
-        Log.debugf debug (fun k -> k "  looking at: %a" Trail_elt.debug a);
+        Log.debugf debug
+          (fun k -> k "(@[sat.analyze-conflict.at-trail-elt@ %a@])" Trail_elt.debug a);
         match a with
         | Atom q ->
           (not (Var.marked q.var)) ||
@@ -1431,7 +1430,7 @@ module Make(Plugin : PLUGIN)
      - report unsat if conflict at level 0
   *)
   let add_boolean_conflict st (confl:clause): unit =
-    Log.debugf info (fun k -> k "Boolean conflict: %a" Clause.debug confl);
+    Log.debugf info (fun k -> k "(@[sat.add-bool-conflict@ %a@])" Clause.debug confl);
     st.next_decision <- None;
     assert (decision_level st >= 0);
     if decision_level st = 0 ||
@@ -1450,14 +1449,14 @@ module Make(Plugin : PLUGIN)
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
   let add_clause_ st (init:clause) : unit =
-    Log.debugf debug (fun k -> k "Adding clause: @[<hov>%a@]" Clause.debug init);
+    Log.debugf debug (fun k -> k "(@[sat.add-clause@ @[<hov>%a@]@])" Clause.debug init);
     (* Insertion of new lits is done before simplification. Indeed, else a lit in a
        trivial clause could end up being not decided on, which is a bug. *)
     Array.iter (fun x -> insert_var_order st (Elt.of_var x.var)) init.atoms;
     let vec = clause_vector st init in
     try
       let c = eliminate_duplicates init in
-      Log.debugf debug (fun k -> k "Doublons eliminated: %a" Clause.debug c);
+      Log.debugf debug (fun k -> k "(@[sat.dups-removed@ %a@])" Clause.debug c);
       let atoms, history = partition c.atoms in
       let clause =
         if history = []
@@ -1468,7 +1467,7 @@ module Make(Plugin : PLUGIN)
         )
         else Clause.make atoms (History (c :: history))
       in
-      Log.debugf info (fun k->k "New clause: @[<hov>%a@]" Clause.debug clause);
+      Log.debugf info (fun k->k "(@[sat.new-clause@ @[<hov>%a@]@])" Clause.debug clause);
       match atoms with
       | [] ->
         report_unsat st @@ US_false clause
@@ -1480,7 +1479,8 @@ module Make(Plugin : PLUGIN)
         ) else if a.is_true then (
           () (* atom is already true, nothing to do *)
         ) else (
-          Log.debugf debug (fun k->k "Unit clause, propagating: %a" Atom.debug a);
+          Log.debugf debug
+            (fun k->k "(@[sat.add-clause.unit-clause@ :propagating %a@])" Atom.debug a);
           Vec.push vec clause;
           enqueue_bool st a ~level:0 (Bcp clause)
         )
@@ -1501,7 +1501,8 @@ module Make(Plugin : PLUGIN)
           )
         )
     with Trivial ->
-      Log.debugf info (fun k->k "Trivial clause ignored : @[%a@]" Clause.debug init)
+      Log.debugf info
+        (fun k->k "(@[sat.add-clause@ :ignore-trivial @[%a@]@])" Clause.debug init)
 
   let[@inline never] flush_clauses_ st =
     while not @@ Vec.is_empty st.clauses_to_add do
@@ -1614,7 +1615,7 @@ module Make(Plugin : PLUGIN)
     let atoms = List.rev_map (create_atom st) l in
     let c = Clause.make atoms (Lemma lemma) in
     if not keep then Clause.set_learnt c true;
-    Log.debugf info (fun k->k "Pushing clause %a" Clause.debug c);
+    Log.debugf info (fun k->k "(@[sat.th.add-clause@ %a@])" Clause.debug c);
     Vec.push st.clauses_to_add c
 
   let acts_raise st (l:formula list) proof : 'a =
@@ -1878,7 +1879,7 @@ module Make(Plugin : PLUGIN)
         assert (st.elt_head = st.th_head);
         if Vec.size st.trail = nb_elt st.st then raise_notrace E_sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then (
-          Log.debug info "Restarting...";
+          Log.debug info "(@[sat.restarting@])";
           cancel_until st 0;
           raise_notrace Restart
         );
@@ -1944,7 +1945,7 @@ module Make(Plugin : PLUGIN)
               | exception Th_conflict c ->
                 check_is_conflict_ c;
                 Array.iter (fun a -> insert_var_order st (Elt.of_var a.var)) c.atoms;
-                Log.debugf info (fun k -> k "Theory conflict clause: %a" Clause.debug c);
+                Log.debugf info (fun k -> k "(@[sat.theory-conflict-clause@ %a@])" Clause.debug c);
                 Vec.push st.clauses_to_add c;
                 flush_clauses st;
             end;
@@ -1957,7 +1958,7 @@ module Make(Plugin : PLUGIN)
       (fun l ->
          let atoms = List.rev_map (mk_atom st) l in
          let c = Clause.make atoms Hyp in
-         Log.debugf debug (fun k -> k "Assuming clause: @[<hov 2>%a@]" Clause.debug c);
+         Log.debugf debug (fun k -> k "(@[sat.assume-clause@ @[<hov 2>%a@]@])" Clause.debug c);
          Vec.push st.clauses_to_add c)
       cnf
 
@@ -1966,7 +1967,7 @@ module Make(Plugin : PLUGIN)
     let res = Array.exists (fun a -> a.is_true) c.atoms in
     if not res then (
       Log.debugf debug
-        (fun k -> k "Clause not satisfied: @[<hov>%a@]" Clause.debug c);
+        (fun k -> k "(@[sat.check-clause@ :not-satisfied @[<hov>%a@]@])" Clause.debug c);
       false
     ) else
       true
@@ -1995,7 +1996,7 @@ module Make(Plugin : PLUGIN)
   let pp_all st lvl status =
     Log.debugf lvl
       (fun k -> k
-          "@[<v>%s - Full resume:@,@[<hov 2>Trail:@\n%a@]@,\
+          "(@[<v>sat.full-state :res %s - Full summary:@,@[<hov 2>Trail:@\n%a@]@,\
            @[<hov 2>Hyps:@\n%a@]@,@[<hov 2>Lemmas:@\n%a@]@,@]@."
           status
           (Vec.pp ~sep:"" Trail_elt.debug) (trail st)

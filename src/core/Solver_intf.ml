@@ -255,8 +255,8 @@ module type PROOF = sig
 
   (** {3 Type declarations} *)
 
-  exception Insuficient_hyps
-  (** Raised when a complete resolution derivation cannot be found using the current hypotheses. *)
+  exception Resolution_error of string
+  (** Raised when resolution failed. *)
 
   type formula
   type atom
@@ -293,11 +293,11 @@ module type PROOF = sig
 
   val prove : clause -> t
   (** Given a clause, return a proof of that clause.
-      @raise Insuficient_hyps if it does not succeed. *)
+      @raise Resolution_error if it does not succeed. *)
 
   val prove_unsat : clause -> t
   (** Given a conflict clause [c], returns a proof of the empty clause.
-      @raise Insuficient_hyps if it does not succeed. *)
+      @raise Resolution_error if it does not succeed. *)
 
   val prove_atom : atom -> t option
   (** Given an atom [a], returns a proof of the clause [[a]] if [a] is true at level 0 *)
