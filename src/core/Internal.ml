@@ -1303,12 +1303,12 @@ module Make(Plugin : PLUGIN)
     let learnt = ref [] in
     let cond   = ref true in
     let blevel = ref 0 in
-    let seen   = st.to_clear in (* for cleanup *)
+    let to_unmark = st.to_clear in (* for cleanup *)
     let c      = ref (Some c_clause) in
     let tr_ind = ref (Vec.size st.trail - 1) in
     let history = ref [] in
     assert (decision_level st > 0);
-    Vec.clear seen;
+    Vec.clear to_unmark;
     let conflict_level =
       Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
     in
@@ -1337,7 +1337,7 @@ module Make(Plugin : PLUGIN)
             );
             if not (Var.marked q.var) then (
               Var.mark q.var;
-              Vec.push seen q.var;
+              Vec.push to_unmark q.var;
               if q.var.v_level > 0 then (
                 var_bump_activity st q.var;
                 if q.var.v_level >= conflict_level then (
@@ -1369,7 +1369,7 @@ module Make(Plugin : PLUGIN)
       match !pathC, p.var.reason with
       | 0, _ ->
         cond := false;
-        learnt := p.neg :: (List.rev !learnt)
+        learnt := p.neg :: List.rev !learnt
       | n, Some Semantic ->
         assert (n > 0);
         learnt := p.neg :: !learnt;
@@ -1380,7 +1380,8 @@ module Make(Plugin : PLUGIN)
         c := Some cl
       | _ -> assert false
     done;
-    Vec.iter Var.clear seen;
+    Vec.iter Var.clear to_unmark;
+    Vec.clear to_unmark;
     (* put high-level literals first, so that:
        - they make adequate watch lits
        - the first literal is the UIP, if any *)
