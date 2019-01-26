@@ -177,7 +177,7 @@ end = struct
                  (fun c -> F.make true x y (Cell.make (c+1)))
              in
              Log.debugf 4 (fun k->k "(@[add-clause@ %a@])" pp_c_ c);
-             acts.push ~keep:true c ();
+             acts.acts_add_clause ~keep:true c ();
            ))
 
     (* check constraints *)
@@ -198,7 +198,7 @@ end = struct
                assert (x1<>x2 || y1<>y2);
                let c = [F.make false x1 y1 c1; F.make false x2 y2 c2] in
                logs_conflict ("all-diff." ^ kind) c;
-               acts.raise_conflict c ()
+               acts.acts_raise_conflict c ()
              ))
       in
       all_diff "rows" Grid.rows;
@@ -206,8 +206,8 @@ end = struct
       all_diff "squares" Grid.squares;
       ()
 
-    let trail_ acts = 
-      acts.iter_assumptions
+    let trail_ (acts:(Msat.void,_,_) Msat.acts) = 
+      acts.acts_iter_assumptions
       |> Sequence.map
         (function
           | Assign _ -> assert false
@@ -228,7 +228,7 @@ end = struct
               (* conflict: at most one value *)
               let c = [F.make false x y c; F.make false x y c'] in
               logs_conflict "at-most-one" c;
-              acts.raise_conflict c ()
+              acts.acts_raise_conflict c ()
             )
         )
 

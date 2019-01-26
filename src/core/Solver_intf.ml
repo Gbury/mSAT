@@ -82,24 +82,38 @@ type ('term, 'formula, 'proof) reason =
   *)
 (** The type of reasons for propagations of a formula [f]. *)
 
+type lbool = L_true | L_false | L_undefined
+(** Valuation of an atom *)
+
 (* TODO: find a way to use atoms instead of formulas here *)
-type ('term, 'formula, 'proof) slice = {
-  iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
+type ('term, 'formula, 'proof) acts = {
+  acts_iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
   (** Traverse the new assumptions on the boolean trail. *)
 
-  push: ?keep:bool -> 'formula list -> 'proof -> unit;
+  acts_eval_lit: 'formula -> lbool;
+  (** Obtain current value of the given literal *)
+
+  acts_mk_lit: 'formula -> unit;
+  (** Map the given formula to a literal, which will be decided by the
+      SAT solver. *)
+
+  acts_mk_term: 'term -> unit;
+  (** Map the given term (and its subterms) to decision variables,
+      for the MCSAT solver to decide. *)
+
+  acts_add_clause: ?keep:bool -> 'formula list -> 'proof -> unit;
   (** Add a clause to the solver.
       @param keep if true, the clause will be kept by the solver.
         Otherwise the solver is allowed to GC the clause and propose this
         partial model again. 
   *)
 
-  raise_conflict: 'b. 'formula list -> 'proof -> 'b;
+  acts_raise_conflict: 'b. 'formula list -> 'proof -> 'b;
   (** Raise a conflict, yielding control back to the solver.
       The list of atoms must be a valid theory lemma that is false in the
       current trail. *)
 
-  propagate: 'formula -> ('term, 'formula, 'proof) reason -> unit;
+  acts_propagate: 'formula -> ('term, 'formula, 'proof) reason -> unit;
   (** Propagate a formula, i.e. the theory can evaluate the formula to be true
       (see the definition of {!type:eval_res} *)
 }
@@ -174,12 +188,12 @@ module type PLUGIN_CDCL_T = sig
   val pop_levels : t -> int -> unit
   (** Pop [n] levels of the theory *)
 
-  val partial_check : t -> (void, Formula.t, proof) slice -> unit
+  val partial_check : t -> (void, Formula.t, proof) acts -> unit
   (** Assume the formulas in the slice, possibly using the [slice]
       to push new formulas to be propagated or to raising a conflict or to add
       new lemmas. *)
 
-  val final_check : t -> (void, Formula.t, proof) slice -> unit
+  val final_check : t -> (void, Formula.t, proof) acts -> unit
   (** Called at the end of the search in case a model has been found.
       If no new clause is pushed, then proof search ends and "sat" is returned;
       if lemmas are added, search is resumed;
@@ -200,12 +214,12 @@ module type PLUGIN_MCSAT = sig
   val pop_levels : t -> int -> unit
   (** Pop [n] levels of the theory *)
 
-  val partial_check : t -> (Term.t, Formula.t, proof) slice -> unit
+  val partial_check : t -> (Term.t, Formula.t, proof) acts -> unit
   (** Assume the formulas in the slice, possibly using the [slice]
       to push new formulas to be propagated or to raising a conflict or to add
       new lemmas. *)
 
-  val final_check : t -> (Term.t, Formula.t, proof) slice -> unit
+  val final_check : t -> (Term.t, Formula.t, proof) acts -> unit
   (** Called at the end of the search in case a model has been found.
       If no new clause is pushed, then proof search ends and "sat" is returned;
       if lemmas are added, search is resumed;
@@ -418,8 +432,8 @@ module type S = sig
         The assumptions are just used for this call to [solve], they are
         not saved in the solver's state. *)
 
-  val new_lit : t -> term -> unit
-  (** Add a new litteral (i.e term) to the solver. This term will
+  val make_term : t -> term -> unit
+  (** Add a new term (i.e. decision variable) to the solver. This term will
       be decided on at some point during solving, wether it appears
       in clauses or not. *)
 
