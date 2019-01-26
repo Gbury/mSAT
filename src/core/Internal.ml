@@ -152,9 +152,9 @@ module Make(Plugin : PLUGIN)
         (v.lid+1) debug_assign v Term.pp v.term
   end
 
-  let seen_var = 0b1
-  let seen_pos = 0b10
-  let seen_neg = 0b100
+  let seen_var = 0x1
+  let seen_pos = 0x2
+  let seen_neg = 0x4
 
   module Var = struct
     type t = var
@@ -762,6 +762,9 @@ module Make(Plugin : PLUGIN)
     order : H.t;
     (* Heap ordered by variable activity *)
 
+    to_clear: var Vec.t;
+    (* variables to unmark *)
+
     mutable var_incr : float;
     (* increment for variables' activity *)
 
@@ -787,6 +790,7 @@ module Make(Plugin : PLUGIN)
     clauses_learnt = Vec.create();
 
     clauses_to_add = Stack.create ();
+    to_clear=Vec.create();
 
     th_head = 0;
     elt_head = 0;
@@ -1285,24 +1289,26 @@ module Make(Plugin : PLUGIN)
     cr_is_uip: bool; (* conflict is UIP? *)
   }
 
-  let get_atom st i =
+  let[@inline] get_atom st i =
     match Vec.get st.trail i with
-    | Lit _ -> assert false | Atom x -> x
+    | Atom x -> x
+    | Lit _ -> assert false
 
   (* conflict analysis for SAT
      Same idea as the mcsat analyze function (without semantic propagations),
      except we look the the Last UIP (TODO: check ?), and do it in an imperative
      and efficient manner. *)
-  let analyze_sat st c_clause : conflict_res =
+  let analyze st c_clause : conflict_res =
     let pathC  = ref 0 in
     let learnt = ref [] in
     let cond   = ref true in
     let blevel = ref 0 in
-    let seen   = ref [] in (* for cleanup *)
+    let seen   = st.to_clear in (* for cleanup *)
     let c      = ref (Some c_clause) in
     let tr_ind = ref (Vec.size st.trail - 1) in
     let history = ref [] in
     assert (decision_level st > 0);
+    Vec.clear seen;
     let conflict_level =
       Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
     in
@@ -1329,10 +1335,9 @@ module Make(Plugin : PLUGIN)
               | Some Bcp cl -> history := cl :: !history
               | _ -> assert false
             );
-            if not (Var.seen_both q.var) then (
-              Atom.mark q;
-              Atom.mark q.neg;
-              seen := q :: !seen;
+            if not (Var.marked q.var) then (
+              Var.mark q.var;
+              Vec.push seen q.var;
               if q.var.v_level > 0 then (
                 var_bump_activity st q.var;
                 if q.var.v_level >= conflict_level then (
@@ -1352,7 +1357,7 @@ module Make(Plugin : PLUGIN)
         Log.debugf debug (fun k -> k "  looking at: %a" Trail_elt.debug a);
         match a with
         | Atom q ->
-          (not (Var.seen_both q.var)) ||
+          (not (Var.marked q.var)) ||
           (q.var.v_level < conflict_level)
         | Lit _ -> true
       do
@@ -1375,7 +1380,7 @@ module Make(Plugin : PLUGIN)
         c := Some cl
       | _ -> assert false
     done;
-    List.iter (fun q -> Var.clear q.var) !seen;
+    Vec.iter Var.clear seen;
     (* put high-level literals first, so that:
        - they make adequate watch lits
        - the first literal is the UIP, if any *)
@@ -1386,9 +1391,6 @@ module Make(Plugin : PLUGIN)
       cr_history = List.rev !history;
       cr_is_uip = is_uip;
     }
-
-  let[@inline] analyze st c_clause : conflict_res =
-    analyze_sat st c_clause
 
   (* add the learnt clause to the clause database, propagate, etc. *)
   let record_learnt_clause st (confl:clause) (cr:conflict_res): unit =
