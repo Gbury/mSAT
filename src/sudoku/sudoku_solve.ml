@@ -125,36 +125,7 @@ end = struct
     a
 end
 
-(** Backtrackable ref *)
-module B_ref : sig
-  type 'a t
-  val create : 'a -> 'a t
-  val set : 'a t -> 'a -> unit
-  val get : 'a t -> 'a
-  val update : 'a t -> ('a -> 'a) -> unit
-  val push_level : _ t -> unit
-  val pop_levels : _ t -> int -> unit
-end = struct
-  type 'a t = {
-    mutable cur: 'a;
-    stack: 'a Vec.t;
-  }
-
-  let create x: _ t = {cur=x; stack=Vec.create()}
-
-  let[@inline] get self = self.cur
-  let[@inline] set self x = self.cur <- x
-  let[@inline] update self f = self.cur <- f self.cur
-
-  let[@inline] push_level self : unit = Vec.push self.stack self.cur
-  let pop_levels self n : unit =
-    assert (n>=0 && n <= Vec.size self.stack);
-    let i = Vec.size self.stack-n in
-    let x = Vec.get self.stack i in
-    self.cur <- x;
-    Vec.shrink self.stack i;
-    ()
-end
+module B_ref = Msat.Backtrackable_ref
 
 module Solver : sig
   type t
