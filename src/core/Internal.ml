@@ -1248,10 +1248,11 @@ module Make(Plugin : PLUGIN)
     else match Plugin.eval st.th a.lit with
       | Solver_intf.Unknown -> None
       | Solver_intf.Valued (b, l) ->
-        if l = [] then
+        if l = [] then (
           raise (Invalid_argument (
               Format.asprintf "msat:core/internal.ml: %s"
                 "semantic propagation at level 0 are currently forbidden"));
+        );
         let atom = if b then a else a.neg in
         enqueue_semantic st atom l;
         Some b
@@ -1962,11 +1963,7 @@ module Make(Plugin : PLUGIN)
 
   (* Check satisfiability *)
   let check_clause c =
-    let tmp = Array.map (fun a ->
-        if a.is_true then true
-        else if a.neg.is_true then false
-        else raise UndecidedLit) c.atoms in
-    let res = Array.exists (fun x -> x) tmp in
+    let res = Array.exists (fun a -> a.is_true) c.atoms in
     if not res then (
       Log.debugf debug
         (fun k -> k "Clause not satisfied: @[<hov>%a@]" Clause.debug c);
@@ -1974,16 +1971,7 @@ module Make(Plugin : PLUGIN)
     ) else
       true
 
-  let check_vec v =
-    Vec.for_all check_clause v
-
-  let check_stack s =
-    try
-      Stack.iter (fun c -> if not (check_clause c) then raise Exit) s;
-      true
-    with Exit ->
-      false
-
+  let check_vec v = Vec.for_all check_clause v
   let check st : bool =
     Vec.is_empty st.clauses_to_add &&
     check_vec st.clauses_hyps &&
