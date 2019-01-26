@@ -1500,7 +1500,6 @@ module Make(Plugin : PLUGIN)
           )
         )
     with Trivial ->
-      Vec.push vec init;
       Log.debugf info (fun k->k "Trivial clause ignored : @[%a@]" Clause.debug init)
 
   let[@inline never] flush_clauses_ st =
