@@ -47,6 +47,7 @@ module Grid : sig
   val parse : string -> t
   val is_full : t -> bool
   val is_valid : t -> bool
+  val matches : pat:t -> t -> bool
   val pp : t Fmt.printer
 end = struct
   type t = Cell.t array
@@ -95,6 +96,11 @@ end = struct
     Sequence.for_all all_distinct @@ rows g &&
     Sequence.for_all all_distinct @@ cols g &&
     Sequence.for_all all_distinct @@ squares g
+
+  let matches ~pat:g1 g2 : bool =
+    all_cells g1
+    |> Sequence.filter (fun (_,_,c) -> Cell.is_full c)
+    |> Sequence.for_all (fun (x,y,c) -> Cell.equal c @@ get g2 x y)
 
   let pp out g =
     Fmt.fprintf out "@[<v>";
@@ -323,6 +329,8 @@ let solve_file file =
          errorf "grid %a@ is not full" Grid.pp g'
        | Some g' when not @@ Grid.is_valid g' ->
          errorf "grid %a@ is not valid" Grid.pp g'
+       | Some g' when not @@ Grid.matches ~pat:g g' ->
+         errorf "grid %a@ @[<2>does not match original@ %a@]" Grid.pp g' Grid.pp g
        | Some g' ->
          Format.printf "@[<v>@[<2>solution (in %.3fs):@ %a@]@,###################@]@."
            (Sys.time()-.start) Grid.pp g')
