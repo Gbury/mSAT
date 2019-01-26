@@ -1644,8 +1644,8 @@ module Make(Plugin : PLUGIN)
         invalid_arg "Msat.Internal.slice_propagate"
       )
 
-  let[@specialise] slice_iter st ~full f : unit =
-    for i = (if full then 0 else st.th_head) to Vec.size st.trail-1 do
+  let[@specialise] slice_iter st ~full head f : unit =
+    for i = (if full then 0 else head) to Vec.size st.trail-1 do
       let e = match Vec.get st.trail i with
         | Atom a ->
           Solver_intf.Lit a.lit
@@ -1658,7 +1658,7 @@ module Make(Plugin : PLUGIN)
 
   let[@inline] current_slice st : (_,_,_) Solver_intf.slice = {
     Solver_intf.
-    iter_assumptions=slice_iter st ~full:false;
+    iter_assumptions=slice_iter st ~full:false st.th_head;
     push = slice_push st;
     propagate = slice_propagate st;
     raise_conflict=slice_raise st;
@@ -1667,7 +1667,7 @@ module Make(Plugin : PLUGIN)
   (* full slice, for [if_sat] final check *)
   let[@inline] full_slice st : (_,_,_) Solver_intf.slice = {
     Solver_intf.
-    iter_assumptions=slice_iter st ~full:true;
+    iter_assumptions=slice_iter st ~full:true st.th_head;
     push = slice_push st;
     propagate = slice_propagate st;
     raise_conflict=slice_raise st;
