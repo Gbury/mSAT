@@ -174,13 +174,6 @@ module type EXPR = sig
     type t
     (** The type of semantic values (domain elements) *)
 
-    val equal : t -> t -> bool
-    (** Equality over values. *)
-
-    val hash : t -> int
-    (** Hashing function for values. Should be such that two terms equal according
-        to {!equal} have the same hash. *)
-
     val pp : t printer
     (** Printing function used among other for debugging. *)
   end
