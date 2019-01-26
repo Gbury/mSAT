@@ -261,14 +261,14 @@ end = struct
             )
         )
 
-    let assume (self:t) acts : unit =
+    let partial_check (self:t) acts : unit =
       Log.debugf 4
-        (fun k->k "(@[sudoku.assume@ :trail [@[%a@]]@])" (Fmt.seq F.pp) (trail_ acts));
+        (fun k->k "(@[sudoku.partial-check@ :trail [@[%a@]]@])" (Fmt.seq F.pp) (trail_ acts));
       add_slice self acts;
       check_ self acts
 
-    let if_sat (self:t) acts : unit =
-      Log.debugf 4 (fun k->k "(@[sudoku.if-sat@])");
+    let final_check (self:t) acts : unit =
+      Log.debugf 4 (fun k->k "(@[sudoku.final-check@])");
       check_full_ self acts;
       check_ self acts
 

@@ -1690,7 +1690,7 @@ module Make(Plugin : PLUGIN)
     ) else (
       let slice = current_slice st in
       st.th_head <- st.elt_head; (* catch up *)
-      match Plugin.assume st.th slice with
+      match Plugin.partial_check st.th slice with
       | () ->
         flush_clauses st;
         propagate st
@@ -1914,7 +1914,7 @@ module Make(Plugin : PLUGIN)
             n_of_learnts   := !n_of_learnts *. learntsize_inc
           | E_sat ->
             assert (st.elt_head = Vec.size st.trail);
-            begin match Plugin.if_sat st.th (full_slice st) with
+            begin match Plugin.final_check st.th (full_slice st) with
               | () ->
                 if st.elt_head = Vec.size st.trail &&
                    Vec.is_empty st.clauses_to_add then (
@@ -2113,8 +2113,8 @@ module Make_pure_sat(F: Solver_intf.FORMULA) =
   type proof = Solver_intf.void
   let push_level () = ()
   let pop_levels _ _ = ()
-  let assume () _ = ()
-  let if_sat () _ = ()
+  let partial_check () _ = ()
+  let final_check () _ = ()
   let eval () _ = Solver_intf.Unknown
   let assign () t = t
   let mcsat = false
