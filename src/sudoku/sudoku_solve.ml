@@ -206,7 +206,7 @@ end = struct
       all_diff "squares" Grid.squares;
       ()
 
-    let trail_ (acts:(Msat.void,_,_) Msat.acts) = 
+    let trail_ (acts:_ Msat.acts) = 
       acts.acts_iter_assumptions
       |> Sequence.map
         (function
