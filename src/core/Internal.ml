@@ -1600,92 +1600,68 @@ module Make(Plugin : PLUGIN)
 
   exception Th_conflict of Clause.t
 
-  let slice_get st i =
-    match Vec.get st.trail i with
-    | Atom a ->
-      Solver_intf.Lit a.lit
-    | Lit {term; assigned = Some v; _} ->
-      Solver_intf.Assign (term, v)
-    | Lit _ -> assert false
+  module Acts = struct
+    type t = {
+      st: solver;
+      full: bool;
+    }
 
-  let acts_add_clause st ?(keep=false) (l:formula list) (lemma:lemma): unit =
-    let atoms = List.rev_map (create_atom st) l in
-    let c = Clause.make atoms (Lemma lemma) in
-    if not keep then Clause.set_learnt c true;
-    Log.debugf info (fun k->k "Pushing clause %a" Clause.debug c);
-    Vec.push st.clauses_to_add c
+    let add_clause (self:t) ?(keep=false) (l:formula list) (lemma:lemma): unit =
+      let atoms = List.rev_map (create_atom self.st) l in
+      let c = Clause.make atoms (Lemma lemma) in
+      if not keep then Clause.set_learnt c true;
+      Log.debugf info (fun k->k "Pushing clause %a" Clause.debug c);
+      Vec.push self.st.clauses_to_add c
 
-  let acts_raise st (l:formula list) proof : 'a =
-    let atoms = List.rev_map (create_atom st) l in
-    let c = Clause.make atoms (Lemma proof) in
-    raise_notrace (Th_conflict c)
+    let raise_conflict (self:t) (l:formula list) proof : 'a =
+      let atoms = List.rev_map (create_atom self.st) l in
+      let c = Clause.make atoms (Lemma proof) in
+      raise_notrace (Th_conflict c)
 
-  let acts_propagate (st:t) f = function
-    | Solver_intf.Eval l ->
-      let a = mk_atom st f in
-      enqueue_semantic st a l
-    | Solver_intf.Consequence (causes, proof) ->
-      let l = List.rev_map (mk_atom st) causes in
-      if List.for_all (fun a -> a.is_true) l then (
-        let p = mk_atom st f in
-        let c = Clause.make (p :: List.map Atom.neg l) (Lemma proof) in
-        if p.is_true then ()
-        else if p.neg.is_true then (
-          Vec.push st.clauses_to_add c
+    let propagate (self:t) f = function
+      | Solver_intf.Eval l ->
+        let a = mk_atom self.st f in
+        enqueue_semantic self.st a l
+      | Solver_intf.Consequence (causes, proof) ->
+        let l = List.rev_map (mk_atom self.st) causes in
+        if List.for_all (fun a -> a.is_true) l then (
+          let p = mk_atom self.st f in
+          let c = Clause.make (p :: List.map Atom.neg l) (Lemma proof) in
+          if p.is_true then ()
+          else if p.neg.is_true then (
+            Vec.push self.st.clauses_to_add c
+          ) else (
+            insert_subterms_order self.st p.var;
+            let level = List.fold_left (fun acc a -> max acc a.var.v_level) 0 l in
+            enqueue_bool self.st p ~level (Bcp c)
+          )
         ) else (
-          insert_subterms_order st p.var;
-          let level = List.fold_left (fun acc a -> max acc a.var.v_level) 0 l in
-          enqueue_bool st p ~level (Bcp c)
+          invalid_arg "Msat.Internal.slice_propagate"
         )
-      ) else (
-        invalid_arg "Msat.Internal.slice_propagate"
-      )
 
-  let[@specialise] acts_iter st ~full head f : unit =
-    for i = (if full then 0 else head) to Vec.size st.trail-1 do
-      let e = match Vec.get st.trail i with
-        | Atom a ->
-          Solver_intf.Lit a.lit
-        | Lit {term; assigned = Some v; _} ->
-          Solver_intf.Assign (term, v)
-        | Lit _ -> assert false
-      in
-      f e
-    done
+    let iter (self:t) head f : unit =
+      for i = (if self.full then 0 else head) to Vec.size self.st.trail-1 do
+        let e = match Vec.get self.st.trail i with
+          | Atom a ->
+            Solver_intf.Lit a.lit
+          | Lit {term; assigned = Some v; _} ->
+            Solver_intf.Assign (term, v)
+          | Lit _ -> assert false
+        in
+        f e
+      done
 
-  let acts_eval_lit st (f:formula) : Solver_intf.lbool =
-    let a = create_atom st f in
-    if Atom.is_true a then Solver_intf.L_true
-    else if Atom.is_false a then Solver_intf.L_false
-    else Solver_intf.L_undefined
+    let eval_lit (self:t) (f:formula) : Solver_intf.lbool =
+      let a = create_atom self.st f in
+      if Atom.is_true a then Solver_intf.L_true
+      else if Atom.is_false a then Solver_intf.L_false
+      else Solver_intf.L_undefined
 
-  let[@inline] acts_mk_lit st f : unit =
-    ignore (create_atom st f : atom)
+    let[@inline] mk_lit self f : unit =
+      ignore (create_atom self.st f : atom)
 
-  let[@inline] acts_mk_term st t : unit = make_term st t
-
-  let[@inline] current_slice st : (_,_,_) Solver_intf.acts = {
-    Solver_intf.
-    acts_iter_assumptions=acts_iter st ~full:false st.th_head;
-    acts_eval_lit= acts_eval_lit st;
-    acts_mk_lit=acts_mk_lit st;
-    acts_mk_term=acts_mk_term st;
-    acts_add_clause = acts_add_clause st;
-    acts_propagate = acts_propagate st;
-    acts_raise_conflict=acts_raise st;
-  }
-
-  (* full slice, for [if_sat] final check *)
-  let[@inline] full_slice st : (_,_,_) Solver_intf.acts = {
-    Solver_intf.
-    acts_iter_assumptions=acts_iter st ~full:true st.th_head;
-    acts_eval_lit= acts_eval_lit st;
-    acts_mk_lit=acts_mk_lit st;
-    acts_mk_term=acts_mk_term st;
-    acts_add_clause = acts_add_clause st;
-    acts_propagate = acts_propagate st;
-    acts_raise_conflict=acts_raise st;
-  }
+    let[@inline] mk_term self t : unit = make_term self.st t
+  end
 
   (* Assert that the conflict is indeeed a conflict *)
   let check_is_conflict_ (c:Clause.t) : unit =

@@ -167,44 +167,50 @@ end = struct
     let[@inline] logs_conflict kind c : unit =
       Log.debugf 4 (fun k->k "(@[conflict.%s@ %a@])" kind pp_c_ c)
 
-    (* check that all cells are full *)
-    let check_full_ (self:t) acts : unit =
-      Grid.all_cells (grid self)
-        (fun (x,y,c) ->
-           if Cell.is_empty c then (
-             let c =
-               CCList.init 9
-                 (fun c -> F.make true x y (Cell.make (c+1)))
-             in
-             Log.debugf 4 (fun k->k "(@[add-clause@ %a@])" pp_c_ c);
-             acts.acts_add_clause ~keep:true c ();
-           ))
+    module Check(A : Msat.ACTS
+                 with type term = Msat.void
+                  and type formula = F.t
+                  and type proof = unit) = struct
 
-    (* check constraints *)
-    let check_ (self:t) acts : unit =
-      Log.debugf 4 (fun k->k "(@[sudoku.check@ @[:g %a@]@])" Grid.pp (B_ref.get self.grid));
-      let[@inline] all_diff kind f =
-        let pairs =
-          f (grid self)
-          |> Sequence.flat_map
-            (fun set ->
-               set
-               |> Sequence.filter (fun (_,_,c) -> Cell.is_full c)
-               |> Sequence.diagonal)
-        in
-        pairs
-          (fun ((x1,y1,c1),(x2,y2,c2)) ->
-             if Cell.equal c1 c2 then (
-               assert (x1<>x2 || y1<>y2);
-               let c = [F.make false x1 y1 c1; F.make false x2 y2 c2] in
-               logs_conflict ("all-diff." ^ kind) c;
-               acts.acts_raise_conflict c ()
+      (* check that all cells are full *)
+      let check_full_ (self:t) (acts:A.t) : unit =
+        Grid.all_cells (grid self)
+          (fun (x,y,c) ->
+             if Cell.is_empty c then (
+               let c =
+                 CCList.init 9
+                   (fun c -> F.make true x y (Cell.make (c+1)))
+               in
+               Log.debugf 4 (fun k->k "(@[add-clause@ %a@])" pp_c_ c);
+               A.add_clause ~keep:true c ();
              ))
-      in
-      all_diff "rows" Grid.rows;
-      all_diff "cols" Grid.cols;
-      all_diff "squares" Grid.squares;
-      ()
+
+      (* check constraints *)
+      let check_ (self:t) acts : unit =
+        Log.debugf 4 (fun k->k "(@[sudoku.check@ @[:g %a@]@])" Grid.pp (B_ref.get self.grid));
+        let[@inline] all_diff kind f =
+          let pairs =
+            f (grid self)
+            |> Sequence.flat_map
+              (fun set ->
+                 set
+                 |> Sequence.filter (fun (_,_,c) -> Cell.is_full c)
+                 |> Sequence.diagonal)
+          in
+          pairs
+            (fun ((x1,y1,c1),(x2,y2,c2)) ->
+               if Cell.equal c1 c2 then (
+                 assert (x1<>x2 || y1<>y2);
+                 let c = [F.make false x1 y1 c1; F.make false x2 y2 c2] in
+                 logs_conflict ("all-diff." ^ kind) c;
+                 acts.acts_raise_conflict c ()
+               ))
+        in
+        all_diff "rows" Grid.rows;
+        all_diff "cols" Grid.cols;
+        all_diff "squares" Grid.squares;
+        ()
+    end
 
     let trail_ (acts:(Msat.void,_,_) Msat.acts) = 
       acts.acts_iter_assumptions

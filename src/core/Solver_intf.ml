@@ -85,39 +85,46 @@ type ('term, 'formula, 'proof) reason =
 type lbool = L_true | L_false | L_undefined
 (** Valuation of an atom *)
 
-(* TODO: find a way to use atoms instead of formulas here *)
-type ('term, 'formula, 'proof) acts = {
-  acts_iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
+(** The parameters given to the plugin when it's asked to check
+    a partial or total model *)
+module type ACTS = sig
+  type t
+  (** The type of the action callback *)
+
+  type term
+  type formula
+  type proof
+
+  val iter_assumptions: t -> ((term,formula) assumption -> unit) -> unit
   (** Traverse the new assumptions on the boolean trail. *)
 
-  acts_eval_lit: 'formula -> lbool;
+  val eval_lit: t -> formula -> lbool
   (** Obtain current value of the given literal *)
 
-  acts_mk_lit: 'formula -> unit;
+  val mk_lit: t -> formula -> unit
   (** Map the given formula to a literal, which will be decided by the
       SAT solver. *)
 
-  acts_mk_term: 'term -> unit;
+  val mk_term: t -> term -> unit
   (** Map the given term (and its subterms) to decision variables,
       for the MCSAT solver to decide. *)
 
-  acts_add_clause: ?keep:bool -> 'formula list -> 'proof -> unit;
+  val add_clause: t -> ?keep:bool -> formula list -> proof -> unit
   (** Add a clause to the solver.
       @param keep if true, the clause will be kept by the solver.
         Otherwise the solver is allowed to GC the clause and propose this
         partial model again. 
   *)
 
-  acts_raise_conflict: 'b. 'formula list -> 'proof -> 'b;
+  val raise_conflict: t -> formula list -> proof -> 'any
   (** Raise a conflict, yielding control back to the solver.
       The list of atoms must be a valid theory lemma that is false in the
       current trail. *)
 
-  acts_propagate: 'formula -> ('term, 'formula, 'proof) reason -> unit;
+  val propagate: t -> formula -> (term,formula,proof) reason -> unit
   (** Propagate a formula, i.e. the theory can evaluate the formula to be true
       (see the definition of {!type:eval_res} *)
-}
-(** The type for a slice of assertions to assume/propagate in the theory. *)
+end
 
 type ('a, 'b) gadt_eq = GADT_EQ : ('a, 'a) gadt_eq
 
@@ -188,16 +195,21 @@ module type PLUGIN_CDCL_T = sig
   val pop_levels : t -> int -> unit
   (** Pop [n] levels of the theory *)
 
-  val partial_check : t -> (void, Formula.t, proof) acts -> unit
-  (** Assume the formulas in the slice, possibly using the [slice]
-      to push new formulas to be propagated or to raising a conflict or to add
-      new lemmas. *)
+  module Check(A: ACTS with type formula = Formula.t
+                        and type term = void
+                        and type proof = proof) : sig
 
-  val final_check : t -> (void, Formula.t, proof) acts -> unit
-  (** Called at the end of the search in case a model has been found.
-      If no new clause is pushed, then proof search ends and "sat" is returned;
-      if lemmas are added, search is resumed;
-      if a conflict clause is added, search backtracks and then resumes. *)
+    val partial_check : t -> A.t -> unit
+    (** Assume the formulas in the slice, possibly using the [acts]
+        to push new formulas to be propagated or to raising a conflict or to add
+        new lemmas. *)
+
+    val final_check : t -> A.t -> unit
+    (** Called at the end of the search in case a model has been found.
+        If no new clause is pushed, then proof search ends and "sat" is returned;
+        if lemmas are added, search is resumed;
+        if a conflict clause is added, search backtracks and then resumes. *)
+  end
 end
 
 (** Signature for theories to be given to the Model Constructing Solver. *)
@@ -214,25 +226,31 @@ module type PLUGIN_MCSAT = sig
   val pop_levels : t -> int -> unit
   (** Pop [n] levels of the theory *)
 
-  val partial_check : t -> (Term.t, Formula.t, proof) acts -> unit
-  (** Assume the formulas in the slice, possibly using the [slice]
-      to push new formulas to be propagated or to raising a conflict or to add
-      new lemmas. *)
-
-  val final_check : t -> (Term.t, Formula.t, proof) acts -> unit
-  (** Called at the end of the search in case a model has been found.
-      If no new clause is pushed, then proof search ends and "sat" is returned;
-      if lemmas are added, search is resumed;
-      if a conflict clause is added, search backtracks and then resumes. *)
 
   val assign : t -> Term.t -> Term.t
   (** Returns an assignment value for the given term. *)
 
   val iter_assignable : t -> (Term.t -> unit) -> Formula.t -> unit
-  (** An iterator over the subTerm.ts of a Formula.t that should be assigned a value (usually the poure subTerm.ts) *)
+  (** An iterator over the sub[Term.t]s of a [Formula.t]
+      that should be assigned a value (usually the pure sub[Term.t]s) *)
 
   val eval : t -> Formula.t -> Term.t eval_res
   (** Returns the evaluation of the Formula.t in the current assignment *)
+
+  module Check(A: ACTS with type formula = Formula.t
+                        and type term = Term.t
+                        and type proof = proof) : sig
+    val partial_check : t -> A.t -> unit
+    (** Assume the formulas in the slice, possibly using the [acts]
+        to push new formulas to be propagated or to raising a conflict or to add
+        new lemmas. *)
+
+    val final_check : t -> A.t -> unit
+    (** Called at the end of the search in case a model has been found.
+        If no new clause is pushed, then proof search ends and "sat" is returned;
+        if lemmas are added, search is resumed;
+        if a conflict clause is added, search backtracks and then resumes. *)
+  end
 
 end
 

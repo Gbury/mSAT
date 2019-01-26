@@ -33,23 +33,7 @@ type 'clause export = 'clause Solver_intf.export = {
   history : 'clause Vec.t;
 }
 
-type ('term, 'formula) assumption = ('term, 'formula) Solver_intf.assumption =
-  | Lit of 'formula
-  | Assign of 'term * 'term (** The first term is assigned to the second *)
-
-type ('term, 'formula, 'proof) reason = ('term, 'formula, 'proof) Solver_intf.reason =
-  | Eval of 'term list
-  | Consequence of 'formula list * 'proof
-
-type ('term, 'formula, 'proof) acts = ('term, 'formula, 'proof) Solver_intf.acts = {
-  acts_iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
-  acts_eval_lit: 'formula -> lbool;
-  acts_mk_lit: 'formula -> unit;
-  acts_mk_term: 'term -> unit;
-  acts_add_clause : ?keep:bool -> 'formula list -> 'proof -> unit;
-  acts_raise_conflict: 'b. 'formula list -> 'proof -> 'b;
-  acts_propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
-}
+module type ACTS = Solver_intf.ACTS
 
 type negated = Solver_intf.negated = Negated | Same_sign
 
