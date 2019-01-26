@@ -10,14 +10,23 @@
 (alias
  (name    runtest)
  (deps    test_api.exe)
+ (locks test)
  (action  (run %{deps})))
 
 (alias
  (name    runtest)
  (deps    ./icnf-solve/icnf_solve.exe Makefile (source_tree regression))
+ (locks test)
  (action  (run make test-icnf)))
 
 (alias
  (name    runtest)
  (deps    ./../src/sudoku/sudoku_solve.exe Makefile (source_tree sudoku))
+ (locks test)
  (action  (run make test-sudoku)))
+
+(alias
+  (name runtest)
+  (deps   ./../src/main/main.exe ./run (source_tree .))
+  (locks test)
+  (action (run /usr/bin/time -f "%e" ./run sat)))

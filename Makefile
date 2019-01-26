@@ -23,8 +23,6 @@ build-dev:
 test:
 	@echo "run tests…"
 	@OCAMLRUNPARAM=b dune runtest --force --no-buffer
-	@echo "run benchmarks…"
-	@/usr/bin/time -f "%e" ./tests/run sat
 
 enable_log:
 	cd src/core; ln -sf log_real.ml log.ml
