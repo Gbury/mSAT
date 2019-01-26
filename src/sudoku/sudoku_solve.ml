@@ -308,6 +308,8 @@ let solve_grid (g:Grid.t) : Grid.t option =
   Solver.solve s
 
 let solve_file file =
+  Format.printf "solve grids in file %S@." file;
+  let start = Sys.time() in
   let grids =
     CCIO.with_in file CCIO.read_lines_l
     |> CCList.filter_map
@@ -319,6 +321,7 @@ let solve_file file =
            | exception e ->
              errorf "cannot parse sudoku %S: %s@." s (Printexc.to_string e))
   in
+  Format.printf "parsed %d grids (in %.3fs)@." (List.length grids) (Sys.time()-.start);
   List.iter
     (fun g ->
        Format.printf "@[<v>@,#########################@,@[<2>solve grid:@ %a@]@]@." Grid.pp g;
