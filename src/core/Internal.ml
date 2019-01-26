@@ -168,6 +168,10 @@ module Make(Plugin : PLUGIN)
     let[@inline] unmark v = v.v_fields <- v.v_fields land (lnot seen_var)
     let[@inline] marked v = (v.v_fields land seen_var) <> 0
 
+    (* abtraction of the level of [v], on 8 bits *)
+    let[@inline] abstract_level (v:t) : int =
+      1 lsl (v.v_level land 31)
+
     let make (st:st) (t:formula) : var * Solver_intf.negated =
       let lit, negated = Formula.norm t in
       try
@@ -535,7 +539,7 @@ module Make(Plugin : PLUGIN)
 
     let rec chain_res (c, cl) = function
       | d :: r ->
-        Log.debugf 5 
+        Log.debugf 5
           (fun k -> k "  Resolving clauses : @[%a@\n%a@]" Clause.debug c Clause.debug d);
         let dl = to_list d in
         begin match resolve (merge cl dl) with
@@ -1276,6 +1280,72 @@ module Make(Plugin : PLUGIN)
         max (a.var.v_level - 1) 0, false
       )
 
+  exception Non_redundant
+
+  (* can we remove [a] by self-subsuming resolutions with other lits
+     of the learnt clause? *)
+  let lit_redundant (self:t) (abstract_levels:int) (v:var) : bool =
+    let to_unmark = self.to_clear in
+    let top = Vec.size to_unmark in
+    let rec aux v =
+      match v.reason with
+      | None -> assert false
+      | Some (Decision | Semantic) -> raise Non_redundant
+      | Some (Bcp c) ->
+        assert (v == c.atoms.(0).var);
+        (* check that all the other lits of [c] are marked or redundant *)
+        for i = 1 to Array.length c.atoms - 1 do
+          let v2 = c.atoms.(i).var in
+          if not (Var.marked v2) && v2.v_level > 0 then (
+            match Var.reason v2 with
+            | None -> assert false
+            | Some (Bcp _) when (Var.abstract_level v2 land abstract_levels) <> 0 ->
+              (* possibly removable, its level may comprise an atom in learnt clause *)
+              Vec.push to_unmark v2;
+              Var.mark v2;
+              aux v2
+            | Some _ ->
+              raise_notrace Non_redundant
+          )
+        done
+    in
+    try aux v; true
+    with Non_redundant ->
+      (* clear new marks, they are not actually redundant *)
+      for i = top to Vec.size to_unmark-1 do
+        Var.clear (Vec.get to_unmark i)
+      done;
+      Vec.shrink to_unmark top;
+      false
+
+  (* minimize conflict by removing atoms whose propagation history
+     is ultimately self-subsuming with [lits] *)
+  let minimize_conflict (self:t) (c_level:int) (lits:atom list) : atom list =
+    let to_unmark = self.to_clear in
+    assert (Vec.is_empty to_unmark);
+    List.iter
+      (fun {var;_} ->
+         if var.v_level < c_level then (
+           Vec.push to_unmark var;
+           Var.mark var
+         ))
+      lits;
+    (* abstraction of the levels involved in the conflict at all *)
+    let abstract_levels =
+      List.fold_left (fun lvl a -> lvl lor Var.abstract_level a.var) 0 lits
+    in
+    let new_lits =
+      List.filter
+        (fun a ->
+           a.var.v_level = c_level ||
+           match a.var.reason with
+           | Some (Decision | Semantic) -> true
+           | _ -> not (lit_redundant self abstract_levels a.var))
+        lits
+    in
+    Vec.iter Var.clear to_unmark;
+    new_lits
+
   (* result of conflict analysis, containing the learnt clause and some
      additional info.
 
@@ -1382,6 +1452,7 @@ module Make(Plugin : PLUGIN)
     done;
     Vec.iter Var.clear to_unmark;
     Vec.clear to_unmark;
+    learnt := minimize_conflict st conflict_level !learnt;
     (* put high-level literals first, so that:
        - they make adequate watch lits
        - the first literal is the UIP, if any *)
