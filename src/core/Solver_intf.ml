@@ -168,12 +168,11 @@ module type PLUGIN_CDCL_T = sig
 
   type proof
 
-  type level
-  (** The type for levels to allow backtracking. *)
+  val push_level : t -> unit
+  (** Create a new backtrack level *)
 
-  val current_level : t -> level
-  (** Return the current level of the theory (either the empty/beginning state, or the
-      last level returned by the [assume] function). *)
+  val pop_levels : t -> int -> unit
+  (** Pop [n] levels of the theory *)
 
   val assume : t -> (void, Formula.t, proof) slice -> unit
   (** Assume the formulas in the slice, possibly pushing new formulas to be
@@ -184,10 +183,6 @@ module type PLUGIN_CDCL_T = sig
       If no new clause is pushed, then proof search ends and 'sat' is returned;
       if lemmas are added, search is resumed;
       if a conflict clause is added, search backtracks and then resumes. *)
-
-  val backtrack : t -> level -> unit
-  (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
-      same state as when it returned the value [l], *)
 end
 
 (** Signature for theories to be given to the Model Constructing Solver. *)
@@ -197,12 +192,12 @@ module type PLUGIN_MCSAT = sig
 
   include EXPR
 
-  type level
-  (** The type for levels to allow backtracking. *)
 
-  val current_level : t -> level
-  (** Return the current level of the theory (either the empty/beginning state, or the
-      last level returned by the [assume] function). *)
+  val push_level : t -> unit
+  (** Create a new backtrack level *)
+
+  val pop_levels : t -> int -> unit
+  (** Pop [n] levels of the theory *)
 
   val assume : t -> (Term.t, Formula.t, proof) slice -> unit
   (** Assume the formulas in the slice, possibly pushing new formulas to be
@@ -213,10 +208,6 @@ module type PLUGIN_MCSAT = sig
       If no new clause is pushed, then proof search ends and 'sat' is returned;
       if lemmas are added, search is resumed;
       if a conflict clause is added, search backtracks and then resumes. *)
-
-  val backtrack : t -> level -> unit
-  (** Backtrack to the given level. After a call to [backtrack l], the theory should be in the
-      same state as when it returned the value [l], *)
 
   val assign : t -> Term.t -> Term.t
   (** Returns an assignment value for the given term. *)
@@ -392,6 +383,9 @@ module type S = sig
       @param theory the theory
       @param size the initial size of internal data structures. The bigger,
         the faster, but also the more RAM it uses. *)
+
+  val theory : t -> theory
+  (** Access the theory state *)
 
   (** {2 Types} *)
 

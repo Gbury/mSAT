@@ -736,8 +736,6 @@ module Make(Plugin : PLUGIN)
 
     elt_levels : int Vec.t;
     (* decision levels in [trail]  *)
-    th_levels : Plugin.level Vec.t;
-    (* theory states corresponding to elt_levels *)
 
     mutable assumptions: atom Vec.t;
     (* current assumptions *)
@@ -796,7 +794,6 @@ module Make(Plugin : PLUGIN)
 
     trail = Vec.create ();
     elt_levels = Vec.create();
-    th_levels = Vec.create();
     assumptions= Vec.create();
 
     order = H.create();
@@ -1040,7 +1037,7 @@ module Make(Plugin : PLUGIN)
     assert (st.th_head = Vec.size st.trail);
     assert (st.elt_head = Vec.size st.trail);
     Vec.push st.elt_levels (Vec.size st.trail);
-    Vec.push st.th_levels (Plugin.current_level st.th); (* save the current theory state *)
+    Plugin.push_level st.th;
     ()
 
   (* Attach/Detach a clause.
@@ -1108,13 +1105,13 @@ module Make(Plugin : PLUGIN)
           )
       done;
       (* Recover the right theory state. *)
-      Plugin.backtrack st.th (Vec.get st.th_levels lvl);
+      let n = decision_level st - lvl in
+      assert (n>0);
+      Plugin.pop_levels st.th n;
       (* Resize the vectors according to their new size. *)
       Vec.shrink st.trail !head;
       Vec.shrink st.elt_levels lvl;
-      Vec.shrink st.th_levels lvl;
     );
-    assert (Vec.size st.elt_levels = Vec.size st.th_levels);
     ()
 
   let pp_unsat_cause out = function
@@ -1974,6 +1971,8 @@ module Make(Plugin : PLUGIN)
     check_vec st.clauses_hyps &&
     check_vec st.clauses_learnt
 
+  let[@inline] theory st = st.th
+
   (* Unsafe access to internal data *)
 
   let hyps env = env.clauses_hyps
@@ -2112,16 +2111,15 @@ module Make_pure_sat(F: Solver_intf.FORMULA) =
   end
   type t = unit
   type proof = Solver_intf.void
-  type level = unit
-  let current_level () = ()
+  let push_level () = ()
+  let pop_levels _ _ = ()
   let assume () _ = ()
   let if_sat () _ = ()
-  let backtrack () _ = ()
   let eval () _ = Solver_intf.Unknown
   let assign () t = t
   let mcsat = false
   let iter_assignable () _ _ = ()
-    let mcsat = false
-  end)
+  let mcsat = false
+end)
 [@@inline][@@specialise]
 
