@@ -873,7 +873,7 @@ module Make(Plugin : PLUGIN)
      clause that constrains it.
      We could maybe check if they have already has been decided before
      inserting them into the heap, if it appears that it helps performance. *)
-  let new_lit st t =
+  let make_term st t =
     let l = Lit.make st.st t in
     if l.l_level < 0 then (
       insert_var_order st (E_lit l)
@@ -1608,19 +1608,19 @@ module Make(Plugin : PLUGIN)
       Solver_intf.Assign (term, v)
     | Lit _ -> assert false
 
-  let slice_push st ?(keep=false) (l:formula list) (lemma:lemma): unit =
+  let acts_add_clause st ?(keep=false) (l:formula list) (lemma:lemma): unit =
     let atoms = List.rev_map (create_atom st) l in
     let c = Clause.make atoms (Lemma lemma) in
     if not keep then Clause.set_learnt c true;
     Log.debugf info (fun k->k "Pushing clause %a" Clause.debug c);
     Vec.push st.clauses_to_add c
 
-  let slice_raise st (l:formula list) proof : 'a =
+  let acts_raise st (l:formula list) proof : 'a =
     let atoms = List.rev_map (create_atom st) l in
     let c = Clause.make atoms (Lemma proof) in
     raise_notrace (Th_conflict c)
 
-  let slice_propagate (st:t) f = function
+  let acts_propagate (st:t) f = function
     | Solver_intf.Eval l ->
       let a = mk_atom st f in
       enqueue_semantic st a l
@@ -1641,7 +1641,7 @@ module Make(Plugin : PLUGIN)
         invalid_arg "Msat.Internal.slice_propagate"
       )
 
-  let[@specialise] slice_iter st ~full head f : unit =
+  let[@specialise] acts_iter st ~full head f : unit =
     for i = (if full then 0 else head) to Vec.size st.trail-1 do
       let e = match Vec.get st.trail i with
         | Atom a ->
@@ -1653,21 +1653,38 @@ module Make(Plugin : PLUGIN)
       f e
     done
 
-  let[@inline] current_slice st : (_,_,_) Solver_intf.slice = {
+  let acts_eval_lit st (f:formula) : Solver_intf.lbool =
+    let a = create_atom st f in
+    if Atom.is_true a then Solver_intf.L_true
+    else if Atom.is_false a then Solver_intf.L_false
+    else Solver_intf.L_undefined
+
+  let[@inline] acts_mk_lit st f : unit =
+    ignore (create_atom st f : atom)
+
+  let[@inline] acts_mk_term st t : unit = make_term st t
+
+  let[@inline] current_slice st : (_,_,_) Solver_intf.acts = {
     Solver_intf.
-    iter_assumptions=slice_iter st ~full:false st.th_head;
-    push = slice_push st;
-    propagate = slice_propagate st;
-    raise_conflict=slice_raise st;
+    acts_iter_assumptions=acts_iter st ~full:false st.th_head;
+    acts_eval_lit= acts_eval_lit st;
+    acts_mk_lit=acts_mk_lit st;
+    acts_mk_term=acts_mk_term st;
+    acts_add_clause = acts_add_clause st;
+    acts_propagate = acts_propagate st;
+    acts_raise_conflict=acts_raise st;
   }
 
   (* full slice, for [if_sat] final check *)
-  let[@inline] full_slice st : (_,_,_) Solver_intf.slice = {
+  let[@inline] full_slice st : (_,_,_) Solver_intf.acts = {
     Solver_intf.
-    iter_assumptions=slice_iter st ~full:true st.th_head;
-    push = slice_push st;
-    propagate = slice_propagate st;
-    raise_conflict=slice_raise st;
+    acts_iter_assumptions=acts_iter st ~full:true st.th_head;
+    acts_eval_lit= acts_eval_lit st;
+    acts_mk_lit=acts_mk_lit st;
+    acts_mk_term=acts_mk_term st;
+    acts_add_clause = acts_add_clause st;
+    acts_propagate = acts_propagate st;
+    acts_raise_conflict=acts_raise st;
   }
 
   (* Assert that the conflict is indeeed a conflict *)

@@ -11,6 +11,11 @@ module type PLUGIN_CDCL_T = Solver_intf.PLUGIN_CDCL_T
 module type PLUGIN_MCSAT = Solver_intf.PLUGIN_MCSAT
 module type PROOF = Solver_intf.PROOF
 
+(** Empty type *)
+type void = (unit,bool) Solver_intf.gadt_eq
+
+type lbool = Solver_intf.lbool = L_true | L_false | L_undefined
+
 type ('term, 'form) sat_state = ('term, 'form) Solver_intf.sat_state = {
   eval : 'form -> bool;
   eval_level : 'form -> bool * int;
@@ -36,11 +41,14 @@ type ('term, 'formula, 'proof) reason = ('term, 'formula, 'proof) Solver_intf.re
   | Eval of 'term list
   | Consequence of 'formula list * 'proof
 
-type ('term, 'formula, 'proof) slice = ('term, 'formula, 'proof) Solver_intf.slice = {
-  iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
-  push : ?keep:bool -> 'formula list -> 'proof -> unit;
-  raise_conflict: 'b. 'formula list -> 'proof -> 'b;
-  propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
+type ('term, 'formula, 'proof) acts = ('term, 'formula, 'proof) Solver_intf.acts = {
+  acts_iter_assumptions: (('term,'formula) assumption -> unit) -> unit;
+  acts_eval_lit: 'formula -> lbool;
+  acts_mk_lit: 'formula -> unit;
+  acts_mk_term: 'term -> unit;
+  acts_add_clause : ?keep:bool -> 'formula list -> 'proof -> unit;
+  acts_raise_conflict: 'b. 'formula list -> 'proof -> 'b;
+  acts_propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
 }
 
 type negated = Solver_intf.negated = Negated | Same_sign
