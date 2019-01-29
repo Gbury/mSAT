@@ -414,7 +414,7 @@ module type S = sig
 
   (** Result type for the solver *)
   type res =
-    | Sat of (term,atom,Value.t) sat_state (** Returned when the solver reaches SAT, with a model *)
+    | Sat of (term,formula,Value.t) sat_state (** Returned when the solver reaches SAT, with a model *)
     | Unsat of (atom,clause,Proof.t) unsat_state (** Returned when the solver reaches UNSAT, with a proof *)
 
   exception UndecidedLit

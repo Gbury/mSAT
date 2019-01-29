@@ -1990,7 +1990,7 @@ module Make(Plugin : PLUGIN)
 
   (* Result type *)
   type res =
-    | Sat of (term,atom,value) Solver_intf.sat_state
+    | Sat of (term,Formula.t,value) Solver_intf.sat_state
     | Unsat of (atom,clause,Proof.t) Solver_intf.unsat_state
 
   let pp_all st lvl status =
@@ -2004,19 +2004,19 @@ module Make(Plugin : PLUGIN)
           (Vec.pp ~sep:"" Clause.debug) (history st)
       )
 
-  let mk_sat (st:t) : _ Solver_intf.sat_state =
+  let mk_sat (st:t) : (Term.t, Formula.t, _) Solver_intf.sat_state =
     pp_all st 99 "SAT";
     let t = trail st in
-    let iter f f' =
+    let iter_trail f f' =
       Vec.iter (function
-          | Atom a -> f a
+          | Atom a -> f (Atom.formula a)
           | Lit l -> f' l.term)
         t
     in
+    let[@inline] eval f = eval st (mk_atom st f) in
+    let[@inline] eval_level f = eval_level st (mk_atom st f) in
     { Solver_intf.
-      eval = eval st;
-      eval_level = eval_level st;
-      iter_trail = iter;
+      eval; eval_level; iter_trail;
       model = (fun () -> model st);
     }
 
@@ -2061,7 +2061,7 @@ module Make(Plugin : PLUGIN)
     let c = Clause.make c Hyp in
     add_clause_ st c
 
-  let solve (st:t) ?(assumptions=[]) () =
+  let solve (st:t) ?(assumptions=[]) () : res =
     cancel_until st 0;
     Vec.clear st.assumptions;
     List.iter (Vec.push st.assumptions) assumptions;
