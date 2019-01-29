@@ -62,7 +62,7 @@ module Process = struct
   let conv_c c = List.rev_map S.Int_lit.make c
 
   let add_clauses cs =
-    S.assume st @@ CCList.map conv_c cs
+    S.assume st (CCList.map conv_c cs) ()
 end
 
 let parse_file f =

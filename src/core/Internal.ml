@@ -70,7 +70,7 @@ module Make(Plugin : PLUGIN)
   (* TODO: remove, replace with user-provided proof trackng device?
      for pure SAT, [reason] is sufficient *)
   and premise =
-    | Hyp
+    | Hyp of lemma
     | Local
     | Lemma of lemma
     | History of clause list
@@ -113,7 +113,7 @@ module Make(Plugin : PLUGIN)
   let iter_elt st f = Vec.iter f st.vars
 
   let name_of_clause c = match c.cpremise with
-    | Hyp -> "H" ^ string_of_int c.name
+    | Hyp _ -> "H" ^ string_of_int c.name
     | Lemma _ -> "T" ^ string_of_int c.name
     | Local -> "L" ^ string_of_int c.name
     | History _ -> "C" ^ string_of_int c.name
@@ -391,7 +391,7 @@ module Make(Plugin : PLUGIN)
       Format.fprintf fmt "%s : %a" (name c) Atom.pp_a c.atoms
 
     let debug_premise out = function
-      | Hyp -> Format.fprintf out "hyp"
+      | Hyp _ -> Format.fprintf out "hyp"
       | Lemma _ -> Format.fprintf out "th_lemma"
       | Local -> Format.fprintf out "local"
       | History v ->
@@ -530,7 +530,7 @@ module Make(Plugin : PLUGIN)
       step : step;
     }
     and step =
-      | Hypothesis
+      | Hypothesis of lemma
       | Assumption
       | Lemma of lemma
       | Duplicate of t * atom list
@@ -565,8 +565,8 @@ module Make(Plugin : PLUGIN)
         {conclusion; step = Lemma l; }
       | Local ->
         { conclusion; step = Assumption; }
-      | Hyp ->
-        { conclusion; step = Hypothesis; }
+      | Hyp l ->
+        { conclusion; step = Hypothesis l; }
       | History [] ->
         error_res_f "@[empty history for clause@ %a@]" Clause.debug conclusion
       | History [c] ->
@@ -585,21 +585,21 @@ module Make(Plugin : PLUGIN)
 
     (* Proof nodes manipulation *)
     let is_leaf = function
-      | Hypothesis
+      | Hypothesis _
       | Assumption
       | Lemma _ -> true
       | Duplicate _
       | Resolution _ -> false
 
     let parents = function
-      | Hypothesis
+      | Hypothesis _
       | Assumption
       | Lemma _ -> []
       | Duplicate (p, _) -> [p]
       | Resolution (p, p', _) -> [p; p']
 
     let expl = function
-      | Hypothesis -> "hypothesis"
+      | Hypothesis _ -> "hypothesis"
       | Assumption -> "assumption"
       | Lemma _ -> "lemma"
       | Duplicate _ -> "duplicate"
@@ -615,7 +615,7 @@ module Make(Plugin : PLUGIN)
           if not @@ Clause.visited c then (
             Clause.set_visited c true;
             match c.cpremise with
-            | Hyp | Lemma _ | Local -> aux (c :: res) acc r
+            | Hyp _ | Lemma _ | Local -> aux (c :: res) acc r
             | History h ->
               let l = List.fold_left (fun acc c ->
                   if not @@ Clause.visited c then c :: acc else acc) r h in
@@ -653,7 +653,7 @@ module Make(Plugin : PLUGIN)
             | Resolution (p1, p2, _) ->
               Stack.push (Enter p2) s;
               Stack.push (Enter p1) s
-            | Hypothesis | Assumption | Lemma _ -> ()
+            | Hypothesis _ | Assumption | Lemma _ -> ()
           end
         end;
         fold_aux s h f acc
@@ -1319,7 +1319,7 @@ module Make(Plugin : PLUGIN)
           Log.debugf debug (fun k->k"(@[sat.analyze-conflict.resolve@ %a@])"  Clause.debug clause);
           begin match clause.cpremise with
             | History _ -> clause_bump_activity st clause
-            | Hyp | Local | Lemma _ -> ()
+            | Hyp _ | Local | Lemma _ -> ()
           end;
           history := clause :: !history;
           (* visit the current predecessors *)
@@ -1953,11 +1953,11 @@ module Make(Plugin : PLUGIN)
       done
     with E_sat -> ()
 
-  let assume st cnf =
+  let assume st cnf lemma =
     List.iter
       (fun l ->
          let atoms = List.rev_map (mk_atom st) l in
-         let c = Clause.make atoms Hyp in
+         let c = Clause.make atoms (Hyp lemma) in
          Log.debugf debug (fun k -> k "(@[sat.assume-clause@ @[<hov 2>%a@]@])" Clause.debug c);
          Vec.push st.clauses_to_add c)
       cnf
@@ -2053,12 +2053,12 @@ module Make(Plugin : PLUGIN)
     in
     { Solver_intf.unsat_conflict; get_proof; unsat_assumptions; }
 
-  let[@inline] add_clause_a st c : unit =
-    let c = Clause.make_a c Hyp in
+  let[@inline] add_clause_a st c lemma : unit =
+    let c = Clause.make_a c (Hyp lemma) in
     add_clause_ st c
 
-  let[@inline] add_clause st c : unit =
-    let c = Clause.make c Hyp in
+  let[@inline] add_clause st c lemma : unit =
+    let c = Clause.make c (Hyp lemma) in
     add_clause_ st c
 
   let solve ?(assumptions=[]) (st:t) : res =
@@ -2110,13 +2110,13 @@ module Make_mcsat(Plugin : Solver_intf.PLUGIN_MCSAT) =
   end)
 [@@inline][@@specialise]
 
-module Make_pure_sat(F: Solver_intf.FORMULA) =
+module Make_pure_sat(Plugin : Solver_intf.PLUGIN_SAT) =
   Make(struct
-  module Formula = F
+  module Formula = Plugin.Formula
   module Term = Void_
   module Value = Void_
   type t = unit
-  type proof = Solver_intf.void
+  type proof = Plugin.proof
   let push_level () = ()
   let pop_levels _ _ = ()
   let partial_check () _ = ()
