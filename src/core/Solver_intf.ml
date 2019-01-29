@@ -433,7 +433,7 @@ module type S = sig
   val add_clause_a : t -> atom array -> unit
   (** Lower level addition of clauses *)
 
-  val solve : t -> ?assumptions:atom list -> unit -> res
+  val solve : ?assumptions:atom list -> t -> res
   (** Try and solves the current set of clauses.
       @param assumptions additional atomic assumptions to be temporarily added.
         The assumptions are just used for this call to [solve], they are

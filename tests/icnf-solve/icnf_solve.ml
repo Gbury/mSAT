@@ -68,7 +68,7 @@ module Solver = struct
   let to_int a : int = F.to_int @@ S.Atom.formula a
   let solve s ass =
     let ass = Array.to_list ass in
-    match S.solve ~assumptions:ass s () with
+    match S.solve ~assumptions:ass s with
     | S.Sat _ -> Ok ()
     | S.Unsat { unsat_assumptions; _ } ->
       let core = unsat_assumptions() in

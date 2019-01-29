@@ -2061,7 +2061,7 @@ module Make(Plugin : PLUGIN)
     let c = Clause.make c Hyp in
     add_clause_ st c
 
-  let solve (st:t) ?(assumptions=[]) () : res =
+  let solve ?(assumptions=[]) (st:t) : res =
     cancel_until st 0;
     Vec.clear st.assumptions;
     List.iter (Vec.push st.assumptions) assumptions;

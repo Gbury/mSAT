@@ -263,7 +263,7 @@ end = struct
     Log.debugf 2
       (fun k->k "(@[sudoku.solve@ :assumptions %a@])" (Fmt.Dump.list S.Atom.pp) assumptions);
     let r =
-      match S.solve self.solver ~assumptions () with
+      match S.solve self.solver ~assumptions with
       | S.Sat _ -> Some (Theory.grid (S.theory self.solver))
       | S.Unsat _ -> None
     in
