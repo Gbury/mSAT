@@ -37,7 +37,7 @@ module Process = struct
     List.for_all (fun x -> x) l
 
   let prove ~assumptions () =
-    let res = S.solve st ~assumptions () in
+    let res = S.solve ~assumptions st in
     let t = Sys.time () in
     begin match res with
       | S.Sat state ->
