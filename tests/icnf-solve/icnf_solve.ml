@@ -64,7 +64,7 @@ module Solver = struct
 
   let make () = S.create()
   let mklit s i = S.make_atom s (let v = F.make (abs i) in if i>0 then v else F.neg v)
-  let add_clause s c = S.add_clause_a s c; true
+  let add_clause s c = S.add_clause_a s c (); true
   let to_int a : int = F.to_int @@ S.Atom.formula a
   let solve s ass =
     let ass = Array.to_list ass in

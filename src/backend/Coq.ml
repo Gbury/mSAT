@@ -124,7 +124,7 @@ module Make(S : Msat.S)(A : Arg with type hyp := S.clause
   let prove_node t fmt node =
     let clause = node.P.conclusion in
     match node.P.step with
-    | P.Hypothesis ->
+    | P.Hypothesis _ ->
       A.prove_hyp fmt (name clause) clause
     | P.Assumption ->
       A.prove_assumption fmt (name clause) clause

@@ -110,7 +110,7 @@ module Make(S : Msat.S)(A : Arg with type atom := S.atom
   let print_contents fmt n =
     match P.(n.step) with
     (* Leafs of the proof tree *)
-    | P.Hypothesis ->
+    | P.Hypothesis _ ->
       let rule, color, l = A.hyp_info P.(n.conclusion) in
       let color = match color with None -> "LIGHTBLUE" | Some c -> c in
       print_dot_node fmt (node_id n) "LIGHTBLUE" P.(n.conclusion) rule color l

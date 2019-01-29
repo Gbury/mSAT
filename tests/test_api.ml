@@ -72,10 +72,10 @@ module Test = struct
       List.iter
         (function
           | A_assume cs ->
-            S.assume st cs
+            S.assume st cs ()
           | A_solve (assumptions, expect) ->
             let assumptions = List.map (S.make_atom st) assumptions in
-            match S.solve st ~assumptions (), expect with
+            match S.solve ~assumptions st, expect with
               | S.Sat _, `Expect_sat -> ()
               | S.Unsat us, `Expect_unsat ->
                 let p = us.Msat.get_proof () in

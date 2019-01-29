@@ -240,7 +240,13 @@ module type PLUGIN_MCSAT = sig
 
   val eval : t -> Formula.t -> Term.t eval_res
   (** Returns the evaluation of the Formula.t in the current assignment *)
+end
 
+(** Signature for pure SAT solvers *)
+module type PLUGIN_SAT = sig
+  module Formula : FORMULA
+
+  type proof
 end
 
 module type PROOF = sig
@@ -269,7 +275,7 @@ module type PROOF = sig
 
   (** The type of reasoning steps allowed in a proof. *)
   and step =
-    | Hypothesis
+    | Hypothesis of lemma
     (** The conclusion is a user-provided hypothesis *)
     | Assumption
     (** The conclusion has been locally assumed by the user *)
@@ -361,6 +367,7 @@ module type S = sig
   type theory
 
   type lemma
+  (** A theory lemma or an input axiom *)
 
   type solver
 
@@ -423,14 +430,14 @@ module type S = sig
 
   (** {2 Base operations} *)
 
-  val assume : t -> formula list list -> unit
+  val assume : t -> formula list list -> lemma -> unit
   (** Add the list of clauses to the current set of assumptions.
       Modifies the sat solver state in place. *)
 
-  val add_clause : t -> atom list -> unit
+  val add_clause : t -> atom list -> lemma -> unit
   (** Lower level addition of clauses *)
 
-  val add_clause_a : t -> atom array -> unit
+  val add_clause_a : t -> atom array -> lemma -> unit
   (** Lower level addition of clauses *)
 
   val solve : ?assumptions:atom list -> t -> res

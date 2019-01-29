@@ -25,10 +25,10 @@ module Make_mcsat(Th : Solver_intf.PLUGIN_MCSAT)
        and type lemma = Th.proof
        and type theory = Th.t
 
-module Make_pure_sat(F: Solver_intf.FORMULA)
+module Make_pure_sat(Th: Solver_intf.PLUGIN_SAT)
   : S with type Term.t = Solver_intf.void
-       and module Formula = F
-       and type lemma = Solver_intf.void
+       and module Formula = Th.Formula
+       and type lemma = Th.proof
        and type theory = unit
 
 
