@@ -29,7 +29,7 @@ module Process = struct
     let check_clause c =
       let l = List.map (function a ->
           Log.debugf 99
-            (fun k -> k "Checking value of %a" S.Atom.pp a);
+            (fun k -> k "Checking value of %a" S.Formula.pp a);
           sat.Msat.eval a) c in
       List.exists (fun x -> x) l
     in
