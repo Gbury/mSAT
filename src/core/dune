@@ -4,7 +4,7 @@
   (public_name msat)
   (libraries sequence)
   (synopsis "core data structures and algorithms for msat")
-  (flags :standard -w +a-4-42-44-48-50-58-32-60@8 -color always -safe-string)
+  (flags :standard -warn-error -3 -w +a-4-42-44-48-50-58-32-60@8 -color always -safe-string)
   (ocamlopt_flags :standard -O3 -bin-annot
                   -unbox-closures -unbox-closures-factor 20)
   )
