@@ -468,6 +468,9 @@ module type S = sig
   (** [true_at_level0 a] returns [true] if [a] was proved at level0, i.e.
       it must hold in all models *)
 
+  val eval_atom : t -> atom -> lbool
+  (** Evaluate atom in current state *)
+
   val export : t -> clause export
 end
 
