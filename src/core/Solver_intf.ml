@@ -411,13 +411,13 @@ module type S = sig
   (** Main solver type, containing all state for solving. *)
 
   val create :
-    ?log_proof:bool ->
+    ?store_proof:bool ->
     ?size:[`Tiny|`Small|`Big] ->
     theory ->
     t
   (** Create new solver
       @param theory the theory
-      @param log_proof if true, stores proof (default [true]). Otherwise
+      @param store_proof if true, stores proof (default [true]). Otherwise
         the functions that return proofs will fail with [No_proof]
       @param size the initial size of internal data structures. The bigger,
         the faster, but also the more RAM it uses. *)

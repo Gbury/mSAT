@@ -24,7 +24,7 @@ module Process() = struct
 
   let hyps = ref []
 
-  let st = S.create ~log_proof:(not !no_proof) ~size:`Big ()
+  let st = S.create ~store_proof:(not !no_proof) ~size:`Big ()
 
   let check_model sat =
     let check_clause c =

@@ -719,7 +719,7 @@ module Make(Plugin : PLUGIN)
     st : st;
     th: theory;
 
-    log_proof: bool; (* do we store proofs? *)
+    store_proof: bool; (* do we store proofs? *)
 
     (* Clauses are simplified for eficiency purposes. In the following
        vectors, the comments actually refer to the original non-simplified
@@ -787,7 +787,7 @@ module Make(Plugin : PLUGIN)
   type solver = t
 
   (* Starting environment. *)
-  let create_ ~st ~log_proof (th:theory) : t = {
+  let create_ ~st ~store_proof (th:theory) : t = {
     st; th;
     unsat_at_0=None;
     next_decision = None;
@@ -809,16 +809,16 @@ module Make(Plugin : PLUGIN)
 
     var_incr = 1.;
     clause_incr = 1.;
-    log_proof;
+    store_proof;
 
     restart_first = 100;
 
     learntsize_factor = 1. /. 3. ;
   }
 
-  let create ?(log_proof=true) ?(size=`Big) (th:theory) : t =
+  let create ?(store_proof=true) ?(size=`Big) (th:theory) : t =
     let st = create_st ~size () in
-    create_ ~st ~log_proof th
+    create_ ~st ~store_proof th
 
   let[@inline] st t = t.st
   let[@inline] nb_clauses st = Vec.size st.clauses_hyps
@@ -1402,7 +1402,7 @@ module Make(Plugin : PLUGIN)
 
   (* add the learnt clause to the clause database, propagate, etc. *)
   let record_learnt_clause st (confl:clause) (cr:conflict_res): unit =
-    let proof = if st.log_proof then History cr.cr_history else Empty_premise in
+    let proof = if st.store_proof then History cr.cr_history else Empty_premise in
     begin match cr.cr_learnt with
       | [] -> assert false
       | [fuip] ->
@@ -1474,7 +1474,7 @@ module Make(Plugin : PLUGIN)
           List.iteri (fun i a -> c.atoms.(i) <- a) atoms;
           c
         ) else (
-          let proof = if st.log_proof then History (c::history) else Empty_premise in
+          let proof = if st.store_proof then History (c::history) else Empty_premise in
           Clause.make atoms proof
         )
       in

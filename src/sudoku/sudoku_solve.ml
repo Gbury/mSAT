@@ -271,7 +271,7 @@ end = struct
     r
 
   let create g : t =
-    { solver=S.create ~log_proof:false (Theory.create g); grid0=g }
+    { solver=S.create ~store_proof:false (Theory.create g); grid0=g }
 end
 
 let solve_grid (g:Grid.t) : Grid.t option =
