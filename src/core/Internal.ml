@@ -1455,8 +1455,12 @@ module Make(Plugin : PLUGIN)
     record_learnt_clause st confl cr
 
   (* Get the correct vector to insert a clause in. *)
-  let[@inline] clause_vector st c =
-    if Clause.removable c then st.clauses_learnt else st.clauses_hyps
+  let[@inline] add_clause_to_vec st c =
+    if Clause.removable c then (
+      Vec.push st.clauses_learnt c
+    ) else (
+      Vec.push st.clauses_hyps c
+    )
 
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
@@ -1465,9 +1469,9 @@ module Make(Plugin : PLUGIN)
     (* Insertion of new lits is done before simplification. Indeed, else a lit in a
        trivial clause could end up being not decided on, which is a bug. *)
     Array.iter (fun x -> insert_var_order st (Elt.of_var x.var)) init.atoms;
-    let vec = clause_vector st init in
     try
       let c = eliminate_duplicates init in
+      assert (c.flags = init.flags);
       Log.debugf debug (fun k -> k "(@[sat.dups-removed@ %a@])" Clause.debug c);
       let atoms, history = partition c.atoms in
       let clause =
@@ -1480,6 +1484,7 @@ module Make(Plugin : PLUGIN)
           Clause.make ~flags:c.flags atoms proof
         )
       in
+      assert (clause.flags = init.flags);
       Log.debugf info (fun k->k "(@[sat.new-clause@ @[<hov>%a@]@])" Clause.debug clause);
       match atoms with
       | [] ->
@@ -1494,11 +1499,11 @@ module Make(Plugin : PLUGIN)
         ) else (
           Log.debugf debug
             (fun k->k "(@[sat.add-clause.unit-clause@ :propagating %a@])" Atom.debug a);
-          Vec.push vec clause;
+          add_clause_to_vec st clause;
           enqueue_bool st a ~level:0 (Bcp clause)
         )
       | a::b::_ ->
-        Vec.push vec clause;
+        add_clause_to_vec st clause;
         if a.neg.is_true then (
           (* Atoms need to be sorted in decreasing order of decision level,
              or we might watch the wrong literals. *)
