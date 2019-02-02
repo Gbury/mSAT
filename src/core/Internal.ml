@@ -1667,11 +1667,14 @@ module Make(Plugin : PLUGIN)
       f e
     done
 
-  let acts_eval_lit st (f:formula) : Solver_intf.lbool =
-    let a = create_atom st f in
+  let eval_atom_ a =
     if Atom.is_true a then Solver_intf.L_true
     else if Atom.is_false a then Solver_intf.L_false
     else Solver_intf.L_undefined
+
+  let[@inline] acts_eval_lit st (f:formula) : Solver_intf.lbool =
+    let a = create_atom st f in
+    eval_atom_ a
 
   let[@inline] acts_mk_lit st f : unit =
     ignore (create_atom st f : atom)
@@ -2087,6 +2090,8 @@ module Make(Plugin : PLUGIN)
       let b, lev = eval_level st a in
       b && lev = 0
     with UndecidedLit -> false
+
+  let[@inline] eval_atom _st a : Solver_intf.lbool = eval_atom_ a
 
   let export (st:t) : clause Solver_intf.export =
     let hyps = hyps st in
