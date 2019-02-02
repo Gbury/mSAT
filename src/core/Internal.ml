@@ -74,6 +74,7 @@ module Make(Plugin : PLUGIN)
     | Local
     | Lemma of lemma
     | History of clause list
+    | Empty_premise
 
   type elt =
     | E_lit of lit
@@ -117,6 +118,7 @@ module Make(Plugin : PLUGIN)
     | Lemma _ -> "T" ^ string_of_int c.name
     | Local -> "L" ^ string_of_int c.name
     | History _ -> "C" ^ string_of_int c.name
+    | Empty_premise -> string_of_int c.name
 
   module Lit = struct
     type t = lit
@@ -396,6 +398,7 @@ module Make(Plugin : PLUGIN)
       | Local -> Format.fprintf out "local"
       | History v ->
         List.iter (fun c -> Format.fprintf out "%s,@ " (name_of_clause c)) v
+      | Empty_premise -> Format.fprintf out "<no premise>"
 
     let debug out ({atoms=arr; cpremise=cp;_}as c) =
       Format.fprintf out "%s@[<hov>{@[<hov>%a@]}@ cpremise={@[<hov>%a@]}@]"
@@ -478,9 +481,11 @@ module Make(Plugin : PLUGIN)
       in
       aux (c, d)
 
-    let[@inline] prove conclusion =
-      assert (conclusion.cpremise <> History []);
-      conclusion
+    let prove conclusion =
+      match conclusion.cpremise with
+      | History [] -> assert false
+      | Empty_premise -> raise Solver_intf.No_proof
+      | _ -> conclusion
 
     let rec set_atom_proof a =
       let aux acc b =
@@ -582,6 +587,7 @@ module Make(Plugin : PLUGIN)
         conclusion.cpremise <- History [c'; d'];
         assert (cmp_cl l (to_list conclusion) = 0);
         { conclusion; step = Resolution (c', d', a); }
+      | Empty_premise -> raise Solver_intf.No_proof
 
     (* Proof nodes manipulation *)
     let is_leaf = function
@@ -615,6 +621,7 @@ module Make(Plugin : PLUGIN)
           if not @@ Clause.visited c then (
             Clause.set_visited c true;
             match c.cpremise with
+            | Empty_premise -> raise Solver_intf.No_proof
             | Hyp _ | Lemma _ | Local -> aux (c :: res) acc r
             | History h ->
               let l = List.fold_left (fun acc c ->
@@ -712,6 +719,8 @@ module Make(Plugin : PLUGIN)
     st : st;
     th: theory;
 
+    log_proof: bool; (* do we store proofs? *)
+
     (* Clauses are simplified for eficiency purposes. In the following
        vectors, the comments actually refer to the original non-simplified
        clause. *)
@@ -778,7 +787,7 @@ module Make(Plugin : PLUGIN)
   type solver = t
 
   (* Starting environment. *)
-  let create_ ~st (th:theory) : t = {
+  let create_ ~st ~log_proof (th:theory) : t = {
     st; th;
     unsat_at_0=None;
     next_decision = None;
@@ -800,15 +809,16 @@ module Make(Plugin : PLUGIN)
 
     var_incr = 1.;
     clause_incr = 1.;
+    log_proof;
 
     restart_first = 100;
 
     learntsize_factor = 1. /. 3. ;
   }
 
-  let create ?(size=`Big) (th:theory) : t =
+  let create ?(log_proof=true) ?(size=`Big) (th:theory) : t =
     let st = create_st ~size () in
-    create_ ~st th
+    create_ ~st ~log_proof th
 
   let[@inline] st t = t.st
   let[@inline] nb_clauses st = Vec.size st.clauses_hyps
@@ -1317,10 +1327,9 @@ module Make(Plugin : PLUGIN)
           Log.debug debug "(@[sat.analyze-conflict: skipping resolution for semantic propagation@])"
         | Some clause ->
           Log.debugf debug (fun k->k"(@[sat.analyze-conflict.resolve@ %a@])"  Clause.debug clause);
-          begin match clause.cpremise with
-            | History _ -> clause_bump_activity st clause
-            | Hyp _ | Local | Lemma _ -> ()
-          end;
+          if Clause.learnt clause then (
+            clause_bump_activity st clause;
+          );
           history := clause :: !history;
           (* visit the current predecessors *)
           for j = 0 to Array.length clause.atoms - 1 do
@@ -1393,6 +1402,7 @@ module Make(Plugin : PLUGIN)
 
   (* add the learnt clause to the clause database, propagate, etc. *)
   let record_learnt_clause st (confl:clause) (cr:conflict_res): unit =
+    let proof = if st.log_proof then History cr.cr_history else Empty_premise in
     begin match cr.cr_learnt with
       | [] -> assert false
       | [fuip] ->
@@ -1401,13 +1411,13 @@ module Make(Plugin : PLUGIN)
           (* incompatible at level 0 *)
           report_unsat st (US_false confl)
         ) else (
-          let uclause = Clause.make cr.cr_learnt (History cr.cr_history) in
+          let uclause = Clause.make cr.cr_learnt proof  in
           (* no need to attach [uclause], it is true at level 0 *)
           Clause.set_learnt uclause true;
           enqueue_bool st fuip ~level:0 (Bcp uclause)
         )
       | fuip :: _ ->
-        let lclause = Clause.make cr.cr_learnt (History cr.cr_history) in
+        let lclause = Clause.make cr.cr_learnt proof in
         Clause.set_learnt lclause true;
         if Array.length lclause.atoms > 2 then (
           Vec.push st.clauses_learnt lclause; (* potentially gc'able *)
@@ -1459,13 +1469,14 @@ module Make(Plugin : PLUGIN)
       Log.debugf debug (fun k -> k "(@[sat.dups-removed@ %a@])" Clause.debug c);
       let atoms, history = partition c.atoms in
       let clause =
-        if history = []
-        then (
-          (* update order of atoms *)
+        if history = [] then (
+          (* just update order of atoms *)
           List.iteri (fun i a -> c.atoms.(i) <- a) atoms;
           c
+        ) else (
+          let proof = if st.log_proof then History (c::history) else Empty_premise in
+          Clause.make atoms proof
         )
-        else Clause.make atoms (History (c :: history))
       in
       Log.debugf info (fun k->k "(@[sat.new-clause@ @[<hov>%a@]@])" Clause.debug clause);
       match atoms with
