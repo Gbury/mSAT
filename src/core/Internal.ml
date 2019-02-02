@@ -359,7 +359,7 @@ module Make(Plugin : PLUGIN)
 
     let flag_attached = 0b1
     let flag_visited = 0b10
-    let flag_learnt = 0b100
+    let flag_removable = 0b100
     let flag_dead = 0b1000
 
     let[@inline] visited c = (c.flags land flag_visited) <> 0
@@ -372,10 +372,10 @@ module Make(Plugin : PLUGIN)
       if b then c.flags <- c.flags lor flag_attached
       else c.flags <- c.flags land lnot flag_attached
 
-    let[@inline] learnt c = (c.flags land flag_learnt) <> 0
-    let[@inline] set_learnt c b =
-      if b then c.flags <- c.flags lor flag_learnt
-      else c.flags <- c.flags land lnot flag_learnt
+    let[@inline] removable c = (c.flags land flag_removable) <> 0
+    let[@inline] set_removable c b =
+      if b then c.flags <- c.flags lor flag_removable
+      else c.flags <- c.flags land lnot flag_removable
 
     let[@inline] dead c = (c.flags land flag_dead) <> 0
     let[@inline] set_dead c = c.flags <- c.flags lor flag_dead
@@ -1327,7 +1327,7 @@ module Make(Plugin : PLUGIN)
           Log.debug debug "(@[sat.analyze-conflict: skipping resolution for semantic propagation@])"
         | Some clause ->
           Log.debugf debug (fun k->k"(@[sat.analyze-conflict.resolve@ %a@])"  Clause.debug clause);
-          if Clause.learnt clause then (
+          if Clause.removable clause then (
             clause_bump_activity st clause;
           );
           history := clause :: !history;
@@ -1413,12 +1413,12 @@ module Make(Plugin : PLUGIN)
         ) else (
           let uclause = Clause.make cr.cr_learnt proof  in
           (* no need to attach [uclause], it is true at level 0 *)
-          Clause.set_learnt uclause true;
+          Clause.set_removable uclause true;
           enqueue_bool st fuip ~level:0 (Bcp uclause)
         )
       | fuip :: _ ->
         let lclause = Clause.make cr.cr_learnt proof in
-        Clause.set_learnt lclause true;
+        Clause.set_removable lclause true;
         if Array.length lclause.atoms > 2 then (
           Vec.push st.clauses_learnt lclause; (* potentially gc'able *)
         );
@@ -1453,8 +1453,8 @@ module Make(Plugin : PLUGIN)
     record_learnt_clause st confl cr
 
   (* Get the correct vector to insert a clause in. *)
-  let clause_vector st c =
-    if Clause.learnt c then st.clauses_learnt else st.clauses_hyps
+  let[@inline] clause_vector st c =
+    if Clause.removable c then st.clauses_learnt else st.clauses_hyps
 
   (* Add a new clause, simplifying, propagating, and backtracking if
      the clause is false in the current trail *)
@@ -1625,7 +1625,7 @@ module Make(Plugin : PLUGIN)
   let acts_add_clause st ?(keep=false) (l:formula list) (lemma:lemma): unit =
     let atoms = List.rev_map (create_atom st) l in
     let c = Clause.make atoms (Lemma lemma) in
-    if not keep then Clause.set_learnt c true;
+    if not keep then Clause.set_removable c true;
     Log.debugf info (fun k->k "(@[sat.th.add-clause@ %a@])" Clause.debug c);
     Vec.push st.clauses_to_add c
 
@@ -1801,7 +1801,7 @@ module Make(Plugin : PLUGIN)
     let n_collected = ref 0 in
     while Vec.size v > n_of_learnts do
       let c = Vec.pop v in
-      assert (Clause.learnt c);
+      assert (Clause.removable c);
       Clause.set_dead c;
       assert (Clause.dead c);
       incr n_collected;
