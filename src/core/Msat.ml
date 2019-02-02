@@ -53,6 +53,17 @@ type ('term, 'formula, 'value, 'proof) acts = ('term, 'formula, 'value, 'proof) 
 
 type negated = Solver_intf.negated = Negated | Same_sign
 
+(** Print {!negated} values *)
+let pp_negated out = function
+  | Negated -> Format.fprintf out "negated"
+  | Same_sign -> Format.fprintf out "same-sign"
+
+(** Print {!lbool} values *)
+let pp_lbool out = function
+  | L_true -> Format.fprintf out "true"
+  | L_false -> Format.fprintf out "false"
+  | L_undefined -> Format.fprintf out "undefined"
+
 module Make_mcsat = Solver.Make_mcsat
 module Make_cdcl_t = Solver.Make_cdcl_t
 module Make_pure_sat = Solver.Make_pure_sat
