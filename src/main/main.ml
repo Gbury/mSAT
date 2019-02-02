@@ -15,15 +15,16 @@ let p_dot_proof = ref ""
 let p_proof_print = ref false
 let time_limit = ref 300.
 let size_limit = ref 1000_000_000.
+let no_proof = ref false
 
 module S = Msat_sat
 
-module Process = struct
+module Process() = struct
   module D = Msat_backend.Dot.Make(S)(Msat_backend.Dot.Default(S))
 
   let hyps = ref []
 
-  let st = S.create ~size:`Big ()
+  let st = S.create ~log_proof:(not !no_proof) ~size:`Big ()
 
   let check_model sat =
     let check_clause c =
@@ -63,7 +64,7 @@ module Process = struct
 
   let add_clauses cs =
     S.assume st (CCList.map conv_c cs) ()
-end
+end[@@inline]
 
 let parse_file f =
   let module L = Lexing in
@@ -126,6 +127,7 @@ let argspec = Arg.align [
     "<t>[smhd] Sets the time limit for the sat solver";
     "-v", Arg.Int (fun i -> Log.set_debug i),
     "<lvl> Sets the debug verbose level";
+    "-no-proof", Arg.Set no_proof, " disable proof logging";
   ]
 
 (* Limits alarm *)
@@ -147,10 +149,12 @@ let main () =
   );
   let al = Gc.create_alarm check in
 
+  let module P = Process() in
+
   (* Interesting stuff happening *)
   let clauses = parse_file !file in
-  Process.add_clauses clauses;
-  Process.prove ~assumptions:[] ();
+  P.add_clauses clauses;
+  P.prove ~assumptions:[] ();
   Gc.delete_alarm al;
   ()
 
