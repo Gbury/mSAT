@@ -142,3 +142,44 @@ it into clauses using `make_cnf`:
 - : Sat.res = Sat.Unsat ...
 ```
 
+### CDCL(T): a Sudoku solver as an example
+
+The directory `src/sudoku/` contains a simple Sudoku solver that
+uses the interface `Msat.Make_cdcl_t`.
+In essence, it implements the logical theory `CDCL(Sudoku)`.
+The script `sudoku_solve.sh` compiles and runs the solver.
+
+It's able to parse sudoku grids denoted as 81 integers
+(see `tests/sudoku/sudoku.txt` for example).
+
+Here is a sample grid and the output from the solver (in roughly .5s):
+
+```sh
+$ echo '..............3.85..1.2.......5.7.....4...1...9.......5......73..2.1........4...9' > sudoku.txt
+$ ./sudoku_solve.sh sudoku.txt
+...
+#########################
+solve grid:
+  .........
+  .....3.85
+  ..1.2....
+  ...5.7...
+  ..4...1..
+  .9.......
+  5......73
+  ..2.1....
+  ....4...9
+  
+...
+  987654321
+  246173985
+  351928746
+  128537694
+  634892157
+  795461832
+  519286473
+  472319568
+  863745219
+  
+###################
+```
