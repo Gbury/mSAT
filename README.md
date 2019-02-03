@@ -23,13 +23,17 @@ See https://gbury.github.io/mSAT/
 Once the package is on [opam](http://opam.ocaml.org), just `opam install msat`.
 For the development version, use:
 
-    opam pin add msat https://github.com/Gbury/mSAT.git
+```
+opam pin add msat https://github.com/Gbury/mSAT.git
+```
 
 ### Manual installation
 
-You will need ocamlfind and ocamlbuild. The command is:
+You will need `dune` and `sequence`. The command is:
 
-    make install
+```
+$ make install
+```
 
 ## USAGE
 
@@ -47,43 +51,66 @@ as a functor which takes two modules :
 
 ### Sat Solver
 
-A ready-to-use SAT solver is available in the Sat module. It can be used
+A ready-to-use SAT solver is available in the `Msat_sat` module
+using the `msat.sat` library. It can be loaded
 as shown in the following code :
 
 ```ocaml
-(* Module initialization *)
-module Sat = Msat.Sat.Make()
-module E = Msat.Sat.Expr (* expressions *)
+# #require "msat.sat";;
+# #print_depth 0;; (* do not print details *)
+```
+
+Then we can create a solver and create some boolean variables:
+
+```ocaml
+module Sat = Msat_sat
+module E = Sat.Int_lit (* expressions *)
+
+let solver = Sat.create()
 
 (* We create here two distinct atoms *)
 let a = E.fresh ()    (* A 'new_atom' is always distinct from any other atom *)
 let b = E.make 1      (* Atoms can be created from integers *)
-
-(* We can try and check the satisfiability of some clauses --
-   here, the clause [a or b].
-   Sat.assume adds a list of clauses to the solver. *)
-let() = Sat.assume [[a; b]]
-let res = Sat.solve ()        (* Should return (Sat.Sat _) *)
-
-(* The Sat solver has an incremental mutable state, so we still have
-   the clause [a or b] in our assumptions.
-   We add [not a] and [not b] to the state. *)
-let () = Sat.assume [[E.neg a]; [E.neg b]]
-let res = Sat.solve ()        (* Should return (Sat.Unsat _) *)
 ```
 
+We can try and check the satisfiability of some clauses — here, the clause `a or b`.
+`Sat.assume` adds a list of clauses to the solver. Calling `Sat.solve`
+will check the satisfiability of the current set of clauses, here "Sat".
+
+```ocaml
+# Sat.assume solver [[a; b]] ();;
+- : unit = ()
+# let res = Sat.solve solver;;
+val res : Sat.res = Sat.Sat ...
+```
+
+The Sat solver has an incremental mutable state, so we still have
+the clause `a or b` in our assumptions.
+We add `not a` and `not b` to the state, and get "Unsat".
+
+```ocaml
+# Sat.assume solver [[E.neg a]; [E.neg b]] () ;;
+- : unit = ()
+# let res = Sat.solve solver ;;
+val res : Sat.res = Sat.Unsat ...
+```
 
 #### Formulas API
 
 Writing clauses by hand can be tedious and error-prone.
-The functor `Msat.Tseitin.Make` proposes a formula AST (parametrized by
+The functor `Msat_tseitin.Make` in the library `msat.tseitin`
+proposes a formula AST (parametrized by
 atoms) and a function to convert these formulas into clauses:
 
 ```ocaml
+# #require "msat.tseitin";;
+```
+
+```ocaml
 (* Module initialization *)
-module Sat = Msat.Sat.Make()
-module E = Msat.Sat.Expr (* expressions *)
-module F = Msat.Tseitin.Make(E)
+module F = Msat_tseitin.Make(E)
+
+let solver = Sat.create ()
 
 (* We create here two distinct atoms *)
 let a = E.fresh ()    (* A fresh atom is always distinct from any other atom *)
@@ -94,14 +121,22 @@ let p = F.make_atom a
 let q = F.make_atom b
 let r = F.make_and [p; q]
 let s = F.make_or [F.make_not p; F.make_not q]
+```
 
-(* We can try and check the satisfiability of the given formulas *)
-let () = Sat.assume (F.make_cnf r)
-let _ = Sat.solve ()        (* Should return (Sat.Sat _) *)
+We can try and check the satisfiability of the given formulas, by turning
+it into clauses using `make_cnf`:
 
-(* The Sat solver has an incremental mutable state, so we still have
- * the formula 'r' in our assumptions *)
-let () = Sat.assume (F.make_cnf s)
-let _ = Sat.solve ()        (* Should return (Sat.Unsat _) *)
+```ocaml
+# Sat.assume solver (F.make_cnf r) ();;
+- : unit = ()
+# Sat.solve solver;;
+- : Sat.res = Sat.Sat ...
+```
+
+```ocaml
+# Sat.assume solver (F.make_cnf s) ();;
+- : unit = ()
+# Sat.solve solver ;;
+- : Sat.res = Sat.Unsat ...
 ```
 
