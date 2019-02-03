@@ -78,6 +78,8 @@ We can try and check the satisfiability of some clauses — here, the clause `a 
 will check the satisfiability of the current set of clauses, here "Sat".
 
 ```ocaml
+# a <> b;;
+- : bool = true
 # Sat.assume solver [[a; b]] ();;
 - : unit = ()
 # let res = Sat.solve solver;;
