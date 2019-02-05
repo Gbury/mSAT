@@ -11,6 +11,9 @@ module type PLUGIN = sig
   include Solver_intf.PLUGIN_MCSAT
 end
 
+let invalid_argf fmt =
+  Format.kasprintf (fun msg -> invalid_arg ("msat: " ^ msg)) fmt
+
 module Make(Plugin : PLUGIN)
 = struct
   module Term = Plugin.Term
@@ -55,7 +58,7 @@ module Make(Plugin : PLUGIN)
   }
 
   and clause = {
-    name : int;
+    cid: int;
     atoms : atom array;
     mutable cpremise : premise;
     mutable activity : float;
@@ -114,11 +117,11 @@ module Make(Plugin : PLUGIN)
   let iter_elt st f = Vec.iter f st.vars
 
   let name_of_clause c = match c.cpremise with
-    | Hyp _ -> "H" ^ string_of_int c.name
-    | Lemma _ -> "T" ^ string_of_int c.name
-    | Local -> "L" ^ string_of_int c.name
-    | History _ -> "C" ^ string_of_int c.name
-    | Empty_premise -> string_of_int c.name
+    | Hyp _ -> "H" ^ string_of_int c.cid
+    | Lemma _ -> "T" ^ string_of_int c.cid
+    | Local -> "L" ^ string_of_int c.cid
+    | History _ -> "C" ^ string_of_int c.cid
+    | Empty_premise -> string_of_int c.cid
 
   module Lit = struct
     type t = lit
@@ -156,9 +159,10 @@ module Make(Plugin : PLUGIN)
         (v.lid+1) debug_assign v Term.pp v.term
   end
 
-  let seen_var = 0x1
-  let seen_pos = 0x2
-  let seen_neg = 0x4
+  (* some boolean flags for variables, used as masks *)
+  let seen_var = 0b1
+  let seen_pos = 0b10
+  let seen_neg = 0b100
 
   module Var = struct
     type t = var
@@ -234,8 +238,7 @@ module Make(Plugin : PLUGIN)
     let[@inline] is_false a = a.neg.is_true
 
     let[@inline] seen a =
-      let pos = equal a (abs a) in
-      if pos
+      if sign a
       then (seen_pos land a.var.v_fields <> 0)
       else (seen_neg land a.var.v_fields <> 0)
 
@@ -340,9 +343,9 @@ module Make(Plugin : PLUGIN)
     let make_a =
       let n = ref 0 in
       fun ~flags atoms premise ->
-        let name = !n in
+        let cid = !n in
         incr n;
-        { name;
+        { cid;
           atoms = atoms;
           flags;
           activity = 0.;
@@ -352,10 +355,10 @@ module Make(Plugin : PLUGIN)
 
     let empty = make [] (History [])
     let name = name_of_clause
-    let[@inline] equal c1 c2 = c1==c2
+    let[@inline] equal c1 c2 = c1.cid = c2.cid
+    let[@inline] hash c = Hashtbl.hash c.cid
     let[@inline] atoms c = c.atoms
     let[@inline] atoms_l c = Array.to_list c.atoms
-    let hash cl = Array.fold_left (fun i a -> Hashtbl.hash (a.aid, i)) 0 cl.atoms
 
     let flag_attached = 0b1
     let flag_visited = 0b10
@@ -706,10 +709,10 @@ module Make(Plugin : PLUGIN)
   let debug = 50
 
   let var_decay : float = 1. /. 0.95
-  (* inverse of the activity factor for variables. Default 1/0.999 *)
+  (* inverse of the activity factor for variables. Default 1/0.95 *)
 
   let clause_decay : float = 1. /. 0.999
-  (* inverse of the activity factor for clauses. Default 1/0.95 *)
+  (* inverse of the activity factor for clauses. Default 1/0.999 *)
 
   let restart_inc : float = 1.5
   (* multiplicative factor for restart limit, default 1.5 *)
@@ -1261,9 +1264,7 @@ module Make(Plugin : PLUGIN)
       | Solver_intf.Unknown -> None
       | Solver_intf.Valued (b, l) ->
         if l = [] then (
-          raise (Invalid_argument (
-              Format.asprintf "msat:core/internal.ml: %s"
-                "semantic propagation at level 0 are currently forbidden"));
+          invalid_argf "semantic propagation at level 0 currently forbidden: %a" Atom.pp a;
         );
         let atom = if b then a else a.neg in
         enqueue_semantic st atom l;
@@ -1660,7 +1661,7 @@ module Make(Plugin : PLUGIN)
           enqueue_bool st p ~level (Bcp c)
         )
       ) else (
-        invalid_arg "Msat.Internal.slice_propagate"
+        invalid_argf "slice.acts_propagate: Consequence should contain only true literals"
       )
 
   let[@specialise] acts_iter st ~full head f : unit =
@@ -1715,10 +1716,7 @@ module Make(Plugin : PLUGIN)
   (* Assert that the conflict is indeeed a conflict *)
   let check_is_conflict_ (c:Clause.t) : unit =
     if not @@ Array.for_all (Atom.is_false) c.atoms then (
-      let msg =
-        Format.asprintf "msat:core/internal: invalid conflict %a" Clause.debug c
-      in
-      raise (Invalid_argument msg);
+      invalid_argf "conflict should be false: %a" Clause.debug c
     )
 
   (* some boolean literals were decided/propagated within Msat. Now we
