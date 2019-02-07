@@ -125,7 +125,7 @@ end = struct
     a
 end
 
-module B_ref = Msat.Backtrackable_ref
+module B_ref = Msat_backtrack.Ref
 
 module Solver : sig
   type t
