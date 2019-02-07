@@ -68,8 +68,6 @@ module Make_mcsat = Solver.Make_mcsat
 module Make_cdcl_t = Solver.Make_cdcl_t
 module Make_pure_sat = Solver.Make_pure_sat
 
-module Backtrackable_ref = Backtrackable_ref
-
 (**/**)
 module Vec = Vec
 module Log = Log
