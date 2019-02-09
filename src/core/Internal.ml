@@ -850,20 +850,23 @@ module Make(Plugin : PLUGIN)
       | None -> assert false
     )
 
+  let mk_atom_mcsat_ st a =
+    match a.var.v_assignable with
+    | Some _ -> ()
+    | None ->
+      let l = ref [] in
+      Plugin.iter_assignable st.th
+        (fun t -> l := Lit.make st.st t :: !l)
+        a.var.pa.lit;
+      a.var.v_assignable <- Some !l;
+      ()
+
   (* When we have a new literal,
      we need to first create the list of its subterms. *)
   let mk_atom st (f:formula) : atom =
     let res = Atom.make st.st f in
     if Plugin.mcsat then (
-      begin match res.var.v_assignable with
-        | Some _ -> ()
-        | None ->
-          let l = ref [] in
-          Plugin.iter_assignable st.th
-            (fun t -> l := Lit.make st.st t :: !l)
-            res.var.pa.lit;
-          res.var.v_assignable <- Some !l;
-      end;
+      mk_atom_mcsat_ st res;
     );
     res
 
