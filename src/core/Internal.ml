@@ -874,7 +874,7 @@ module Make(Plugin : PLUGIN)
      When we add a variable (which wraps a formula), we also need to add all
      its subterms.
   *)
-  let rec insert_var_order st (elt:elt) : unit =
+  let rec insert_elt_order st (elt:elt) : unit =
     H.insert st.order elt;
     if Plugin.mcsat then (
       match elt with
@@ -882,8 +882,11 @@ module Make(Plugin : PLUGIN)
       | E_var v -> insert_subterms_order st v
     )
 
+  and insert_var_order st (v:var) : unit =
+    insert_elt_order st (E_var v)
+
   and insert_subterms_order st (v:var) : unit =
-    iter_sub (fun t -> insert_var_order st (Elt.of_lit t)) v
+    iter_sub (fun t -> insert_elt_order st (Elt.of_lit t)) v
 
   (* Add new litterals/atoms on which to decide on, even if there is no
      clause that constrains it.
@@ -892,13 +895,13 @@ module Make(Plugin : PLUGIN)
   let make_term st t =
     let l = Lit.make st.st t in
     if l.l_level < 0 then (
-      insert_var_order st (E_lit l)
+      insert_elt_order st (E_lit l)
     )
 
   let make_atom st (p:formula) : atom =
     let a = mk_atom st p in
     if a.var.v_level < 0 then (
-      insert_var_order st (E_var a.var);
+      insert_elt_order st (E_var a.var);
     ) else (
       assert (a.is_true || a.neg.is_true);
     );
@@ -1100,7 +1103,7 @@ module Make(Plugin : PLUGIN)
           ) else (
             l.assigned <- None;
             l.l_level <- -1;
-            insert_var_order st (Elt.of_lit l)
+            insert_elt_order st (Elt.of_lit l)
           )
         (* A variable is not true/false anymore, one of two things can happen: *)
         | Atom a ->
@@ -1118,7 +1121,7 @@ module Make(Plugin : PLUGIN)
             a.neg.is_true <- false;
             a.var.v_level <- -1;
             a.var.reason <- None;
-            insert_var_order st (Elt.of_var a.var)
+            insert_elt_order st (Elt.of_var a.var)
           )
       done;
       (* Recover the right theory state. *)
@@ -1469,7 +1472,7 @@ module Make(Plugin : PLUGIN)
     Log.debugf debug (fun k -> k "(@[sat.add-clause@ @[<hov>%a@]@])" Clause.debug init);
     (* Insertion of new lits is done before simplification. Indeed, else a lit in a
        trivial clause could end up being not decided on, which is a bug. *)
-    Array.iter (fun x -> insert_var_order st (Elt.of_var x.var)) init.atoms;
+    Array.iter (fun x -> insert_elt_order st (Elt.of_var x.var)) init.atoms;
     try
       let c = eliminate_duplicates init in
       assert (c.flags = init.flags);
@@ -1648,20 +1651,20 @@ module Make(Plugin : PLUGIN)
       let a = mk_atom st f in
       enqueue_semantic st a l
     | Solver_intf.Consequence (causes, proof) ->
-      let l = List.rev_map (mk_atom st) causes in
-      if List.for_all (fun a -> a.is_true) l then (
-        let p = mk_atom st f in
-        let c = Clause.make_removable (p :: List.map Atom.neg l) (Lemma proof) in
-        if p.is_true then ()
-        else if p.neg.is_true then (
-          Vec.push st.clauses_to_add c
-        ) else (
-          insert_subterms_order st p.var;
-          let level = List.fold_left (fun acc a -> max acc a.var.v_level) 0 l in
-          enqueue_bool st p ~level (Bcp c)
-        )
-      ) else (
+      let l = List.rev_map (fun f -> Atom.neg @@ mk_atom st f) causes in
+      if List.exists Atom.is_true l then (
         invalid_argf "slice.acts_propagate: Consequence should contain only true literals"
+      );
+      let p = mk_atom st f in
+      if Atom.is_true p then ()
+      else if Atom.is_false p then (
+        let c = Clause.make_removable (p :: l) (Lemma proof) in
+        raise_notrace (Th_conflict c)
+      ) else (
+        insert_var_order st p.var;
+        let level = List.fold_left (fun acc a -> max acc a.var.v_level) 0 l in
+        let c = Clause.make_removable (p :: l) (Lemma proof) in
+        enqueue_bool st p ~level (Bcp c)
       )
 
   let[@specialise] acts_iter st ~full head f : unit =
@@ -1736,7 +1739,7 @@ module Make(Plugin : PLUGIN)
         propagate st
       | exception Th_conflict c ->
         check_is_conflict_ c;
-        Array.iter (fun a -> insert_var_order st (Elt.of_var a.var)) c.atoms;
+        Array.iter (fun a -> insert_elt_order st (Elt.of_var a.var)) c.atoms;
         Some c
     )
 
@@ -1964,7 +1967,7 @@ module Make(Plugin : PLUGIN)
                 flush_clauses st;
               | exception Th_conflict c ->
                 check_is_conflict_ c;
-                Array.iter (fun a -> insert_var_order st (Elt.of_var a.var)) c.atoms;
+                Array.iter (fun a -> insert_elt_order st (Elt.of_var a.var)) c.atoms;
                 Log.debugf info (fun k -> k "(@[sat.theory-conflict-clause@ %a@])" Clause.debug c);
                 Vec.push st.clauses_to_add c;
                 flush_clauses st;
