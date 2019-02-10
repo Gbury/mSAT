@@ -366,6 +366,7 @@ module Make(Plugin : PLUGIN)
     let flag_dead = 0b1000
 
     let[@inline] make_removable l premise = make ~flags:flag_removable l premise
+    let[@inline] make_removable_a l premise = make_a ~flags:flag_removable l premise
     let[@inline] make_permanent l premise = make ~flags:0 l premise
 
     let[@inline] visited c = (c.flags land flag_visited) <> 0
@@ -1280,10 +1281,12 @@ module Make(Plugin : PLUGIN)
      and a boolean stating whether it is
      a UIP ("Unique Implication Point")
      precond: the atom list is sorted by decreasing decision level *)
-  let backtrack_lvl _st : atom list -> int * bool = function
-    | [] | [_] ->
+  let backtrack_lvl _st (arr: atom array) : int * bool =
+    if Array.length arr <= 1 then (
       0, true
-    | a :: b :: _ ->
+    ) else (
+      let a = arr.(0) in
+      let b = arr.(1) in
       assert(a.var.v_level > 0);
       if a.var.v_level > b.var.v_level then (
         (* backtrack below [a], so we can propagate [not a] *)
@@ -1293,6 +1296,7 @@ module Make(Plugin : PLUGIN)
         assert (a.var.v_level >= 0);
         max (a.var.v_level - 1) 0, false
       )
+    )
 
   (* result of conflict analysis, containing the learnt clause and some
      additional info.
@@ -1302,7 +1306,7 @@ module Make(Plugin : PLUGIN)
      (boolean conflict i.e hypothesis, or theory lemma) *)
   type conflict_res = {
     cr_backtrack_lvl : int; (* level to backtrack to *)
-    cr_learnt: atom list; (* lemma learnt from conflict *)
+    cr_learnt: atom array; (* lemma learnt from conflict *)
     cr_history: clause list; (* justification *)
     cr_is_uip: bool; (* conflict is UIP? *)
   }
@@ -1403,10 +1407,12 @@ module Make(Plugin : PLUGIN)
     (* put high-level literals first, so that:
        - they make adequate watch lits
        - the first literal is the UIP, if any *)
-    let l = List.fast_sort (fun p q -> compare q.var.v_level p.var.v_level) !learnt in
-    let level, is_uip = backtrack_lvl st l in
+    let a = Array.of_list !learnt in
+    Array.fast_sort (fun p q -> compare q.var.v_level p.var.v_level) a;
+    (* put_high_level_atoms_first a; *)
+    let level, is_uip = backtrack_lvl st a in
     { cr_backtrack_lvl = level;
-      cr_learnt = l;
+      cr_learnt = a;
       cr_history = List.rev !history;
       cr_is_uip = is_uip;
     }
@@ -1415,19 +1421,20 @@ module Make(Plugin : PLUGIN)
   let record_learnt_clause st (confl:clause) (cr:conflict_res): unit =
     let proof = if st.store_proof then History cr.cr_history else Empty_premise in
     begin match cr.cr_learnt with
-      | [] -> assert false
-      | [fuip] ->
+      | [| |] -> assert false
+      | [|fuip|] ->
         assert (cr.cr_backtrack_lvl = 0 && decision_level st = 0);
         if fuip.neg.is_true then (
           (* incompatible at level 0 *)
           report_unsat st (US_false confl)
         ) else (
-          let uclause = Clause.make_removable cr.cr_learnt proof  in
+          let uclause = Clause.make_removable_a cr.cr_learnt proof  in
           (* no need to attach [uclause], it is true at level 0 *)
           enqueue_bool st fuip ~level:0 (Bcp uclause)
         )
-      | fuip :: _ ->
-        let lclause = Clause.make_removable cr.cr_learnt proof in
+      | _ ->
+        let fuip = cr.cr_learnt.(0) in
+        let lclause = Clause.make_removable_a cr.cr_learnt proof in
         if Array.length lclause.atoms > 2 then (
           Vec.push st.clauses_learnt lclause; (* potentially gc'able *)
         );
