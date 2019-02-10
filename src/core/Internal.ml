@@ -1647,6 +1647,7 @@ module Make(Plugin : PLUGIN)
     let atoms = List.rev_map (create_atom st) l in
     (* conflicts can be removed *)
     let c = Clause.make_removable atoms (Lemma proof) in
+    Log.debugf 5 (fun k->k "(@[@{<yellow>sat.th.raise-conflict@}@ %a@])" Clause.debug c);
     raise_notrace (Th_conflict c)
 
   let acts_propagate (st:t) f = function
