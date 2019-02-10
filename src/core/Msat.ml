@@ -64,6 +64,8 @@ let pp_lbool out = function
   | L_false -> Format.fprintf out "false"
   | L_undefined -> Format.fprintf out "undefined"
 
+exception No_proof = Solver_intf.No_proof
+
 module Make_mcsat = Solver.Make_mcsat
 module Make_cdcl_t = Solver.Make_cdcl_t
 module Make_pure_sat = Solver.Make_pure_sat
