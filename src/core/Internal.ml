@@ -1988,19 +1988,13 @@ module Make(Plugin : PLUGIN)
     with E_sat -> ()
 
   let assume st cnf lemma =
-    try
-      List.iter
-        (fun l ->
-           let atoms = List.rev_map (mk_atom st) l in
-           let c = Clause.make_permanent atoms (Hyp lemma) in
-           Log.debugf debug (fun k -> k "(@[sat.assume-clause@ @[<hov 2>%a@]@])" Clause.debug c);
-           Vec.push st.clauses_to_add c)
-        cnf
-    with
-    | E_unsat (US_false c) ->
-      st.unsat_at_0 <- Some c
-    | E_unsat (US_local _) ->
-      assert false (* assumptions should only be present in [solve] *)
+    List.iter
+      (fun l ->
+         let atoms = List.rev_map (mk_atom st) l in
+         let c = Clause.make_permanent atoms (Hyp lemma) in
+         Log.debugf debug (fun k -> k "(@[sat.assume-clause@ @[<hov 2>%a@]@])" Clause.debug c);
+         Vec.push st.clauses_to_add c)
+      cnf
 
   (* Check satisfiability *)
   let check_clause c =
