@@ -2087,13 +2087,21 @@ module Make(Plugin : PLUGIN)
     in
     { Solver_intf.unsat_conflict; get_proof; unsat_assumptions; }
 
-  let[@inline] add_clause_a st c lemma : unit =
-    let c = Clause.make_a ~flags:0 c (Hyp lemma) in
-    add_clause_ st c
+  let add_clause_a st c lemma : unit =
+    try
+      let c = Clause.make_a ~flags:0 c (Hyp lemma) in
+      add_clause_ st c
+    with
+    | E_unsat (US_false c) ->
+      st.unsat_at_0 <- Some c
 
-  let[@inline] add_clause st c lemma : unit =
-    let c = Clause.make_permanent c (Hyp lemma) in
-    add_clause_ st c
+  let add_clause st c lemma : unit =
+    try
+      let c = Clause.make_permanent c (Hyp lemma) in
+      add_clause_ st c
+    with
+    | E_unsat (US_false c) ->
+      st.unsat_at_0 <- Some c
 
   let solve ?(assumptions=[]) (st:t) : res =
     cancel_until st 0;
