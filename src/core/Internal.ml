@@ -302,6 +302,8 @@ module Make(Plugin : PLUGIN)
 
     let debug_a out vec =
       Array.iter (fun a -> Format.fprintf out "%a@ " debug a) vec
+
+    module Set = Set.Make(struct type t=atom let compare=compare end)
   end
 
   (* Elements *)
@@ -420,73 +422,58 @@ module Make(Plugin : PLUGIN)
     type formula = Formula.t
     type lemma = Plugin.proof
 
-    let merge = List.merge Atom.compare
-
     let error_res_f msg = Format.kasprintf (fun s -> raise (Resolution_error s)) msg
 
-    let _c = ref 0
-    let fresh_pcl_name () = incr _c; "R" ^ (string_of_int !_c)
+    let[@inline] cleanup_ (a:atom) = Var.clear a.var
 
     (* Compute resolution of 2 clauses *)
-    let resolve l =
-      let rec aux resolved acc = function
-        | [] -> resolved, acc
-        | [a] -> resolved, a :: acc
-        | a :: b :: r ->
-          if Atom.equal a b then
-            aux resolved (a :: acc) r
-          else if Atom.equal a.neg b then
-            aux (a.var.pa :: resolved) acc r
-          else
-            aux resolved (a :: acc) (b :: r)
+    let resolve (c1:clause) (c2:clause) : atom list * atom list =
+      (* invariants: only atoms in [c2] are marked, and the pivot is
+         cleared when traversing [c1] *)
+      Array.iter Atom.mark c2.atoms;
+      let pivots = ref [] in
+      let l =
+        Array.fold_left
+          (fun l a ->
+             if Atom.seen a then l
+             else if Atom.seen a.neg then (
+               pivots := a.var.pa :: !pivots;
+               cleanup_ a;
+               l
+             ) else a::l)
+          [] c1.atoms
       in
-      let resolved, new_clause = aux [] [] l in
-      resolved, List.rev new_clause
-
-    (* Compute the set of doublons of a clause *)
-    let list c = List.sort Atom.compare (Array.to_list c.atoms)
-
-    let analyze cl =
-      let rec aux duplicates free = function
-        | [] -> duplicates, free
-        | [ x ] -> duplicates, x :: free
-        | x :: ((y :: r) as l) ->
-          if x == y then
-            count duplicates (x :: free) x [y] r
-          else
-            aux duplicates (x :: free) l
-      and count duplicates free x acc = function
-        | (y :: r) when x == y ->
-          count duplicates free x (y :: acc) r
-        | l ->
-          aux (acc :: duplicates) free l
+      let l =
+        Array.fold_left (fun l a -> if Atom.seen a then a::l else l) l c2.atoms
       in
-      let doublons, acc = aux [] [] cl in
-      doublons, List.rev acc
+      Array.iter cleanup_ c2.atoms;
+      !pivots, l
 
-    let to_list c =
-      let cl = list c in
-      let dups, l = analyze cl in
-      let conflicts, _ = resolve l in
-      if dups <> [] then
-        Log.debug 3 "(@[sat.input-clause@ :has-duplicates@])";
-      if conflicts <> [] then
-        Log.debug 3 "(@[sat.input-clause@ :is-tautology@])";
-      cl
-
-    (* Comparison of clauses *)
-    let cmp_cl c d =
-      let rec aux = function
-        | [], [] -> 0
-        | a :: r, a' :: r' ->
-          begin match Atom.compare a a' with
-            | 0 -> aux (r, r')
-            | x -> x
-          end
-        | _ :: _ , [] -> -1
-        | [], _ :: _ -> 1
+    (* [find_dups c] returns a list of duplicate atoms, and the deduplicated list *)
+    let find_dups (c:clause) : atom list * atom list =
+      let res =
+        Array.fold_left
+          (fun (dups,l) a ->
+             if Atom.seen a then (
+               a::dups, l
+             ) else (
+               Atom.mark a;
+               dups, a::l
+             ))
+          ([], []) c.atoms
       in
-      aux (c, d)
+      Array.iter cleanup_ c.atoms;
+      res
+
+    (* do [c1] and [c2] have the same lits, modulo reordering and duplicates? *)
+    let same_lits (c1:atom array) (c2:atom array): bool =
+      let subset a b =
+        Array.iter Atom.mark b;
+        let res = Array.for_all Atom.seen a in
+        Array.iter cleanup_ b;
+        res
+      in
+      subset c1 c2 && subset c2 c1
 
     let prove conclusion =
       match conclusion.cpremise with
@@ -550,18 +537,25 @@ module Make(Plugin : PLUGIN)
 
     let[@inline] conclusion (p:t) : clause = p
 
-    let rec chain_res (c, cl) = function
+    type res_step = {
+      rs_res: atom list;
+      rs_c1: clause;
+      rs_c2: clause;
+      rs_pivot: atom;
+    }
+
+    let rec chain_res (c:clause) (hist:_ list) : res_step =
+      match hist with
       | d :: r ->
         Log.debugf 5 
           (fun k -> k "(@[sat.analyze.resolving@ :c1 %a@ :c2 %a@])" Clause.debug c Clause.debug d);
-        let dl = to_list d in
-        begin match resolve (merge cl dl) with
-          | [ a ], l ->
+        begin match resolve c d with
+          | [a], l ->
             begin match r with
-              | [] -> (l, c, d, a)
+              | [] -> {rs_res=l; rs_c1=c; rs_c2=d; rs_pivot=a}
               | _ ->
                 let new_clause = Clause.make ~flags:c.flags l (History [c; d]) in
-                chain_res (new_clause, l) r
+                chain_res new_clause r
             end
           | _ ->
             error_res_f "@[<2>clause mismatch while resolving@ %a@ and %a@]"
@@ -582,18 +576,18 @@ module Make(Plugin : PLUGIN)
       | History [] ->
         error_res_f "@[empty history for clause@ %a@]" Clause.debug conclusion
       | History [c] ->
-        let duplicates, res = analyze (list c) in
-        assert (cmp_cl res (list conclusion) = 0);
-        { conclusion; step = Duplicate (c, List.concat duplicates) }
-      | History ( c :: ([_] as r)) ->
-        let (l, c', d', a) = chain_res (c, to_list c) r in
-        assert (cmp_cl l (to_list conclusion) = 0);
-        { conclusion; step = Resolution (c', d', a); }
-      | History ( c :: r ) ->
-        let (l, c', d', a) = chain_res (c, to_list c) r in
-        conclusion.cpremise <- History [c'; d'];
-        assert (cmp_cl l (to_list conclusion) = 0);
-        { conclusion; step = Resolution (c', d', a); }
+        let duplicates, res = find_dups c in
+        assert (same_lits (Array.of_list res) conclusion.atoms);
+        { conclusion; step = Duplicate (c, duplicates) }
+      | History (c :: ([_] as r)) ->
+        let rs = chain_res c r in
+        assert (same_lits (Array.of_list rs.rs_res) conclusion.atoms);
+        { conclusion; step = Resolution (rs.rs_c1, rs.rs_c2, rs.rs_pivot); }
+      | History (c :: r) ->
+        let rs = chain_res c r in
+        conclusion.cpremise <- History [rs.rs_c1; rs.rs_c2];
+        assert (same_lits (Array.of_list rs.rs_res) conclusion.atoms);
+        { conclusion; step = Resolution (rs.rs_c1, rs.rs_c2, rs.rs_pivot); }
       | Empty_premise -> raise Solver_intf.No_proof
 
     (* Proof nodes manipulation *)
