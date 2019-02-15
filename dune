@@ -1,8 +1,8 @@
 
 (alias
  (name runtest)
- (deps README.md)
+ (deps README.md ./sudoku_solve.sh)
  (action (progn
-          (run mdx test %{deps})
-          (diff? %{deps} %{deps}.corrected))))
+          (run mdx test README.md)
+          (diff? README.md README.md.corrected))))
 
