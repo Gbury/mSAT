@@ -79,11 +79,12 @@ module Make(S : Msat.S)(A : Arg with type atom := S.atom
 
   let print_edges fmt n =
     match P.(n.step) with
-    | P.Hyper_res {P.hr_init; hr_steps} ->
-      print_edge fmt (res_np_id n hr_init) (proof_id hr_init);
+    | P.Hyper_res {P.hr_steps=[];_} -> () (* NOTE: should never happen *)
+    | P.Hyper_res {P.hr_init; hr_steps=((_,p0)::_) as l} ->
+      print_edge fmt (res_np_id n p0) (proof_id hr_init);
       List.iter
         (fun (_,p2) -> print_edge fmt (res_np_id n p2) (proof_id p2))
-        hr_steps;
+        l;
     | _ -> ()
 
   let table_options fmt color =
@@ -130,15 +131,14 @@ module Make(S : Msat.S)(A : Arg with type atom := S.atom
         ((fun fmt () -> (Format.fprintf fmt "%s" (node_id n))) ::
          List.map (ttify A.print_atom) l);
       print_edge fmt (node_id n) (node_id (P.expand p))
-    | P.Hyper_res {P.hr_init; hr_steps} ->
+    | P.Hyper_res {P.hr_steps=l; _} ->
       print_dot_node fmt (node_id n) "GREY" P.(n.conclusion) "Resolution" "GREY"
         [(fun fmt () -> (Format.fprintf fmt "%s" (node_id n)))];
-      print_edge fmt (node_id n) (res_np_id n hr_init);
       List.iter
         (fun (a,p2) ->
           print_dot_res_node fmt (res_np_id n p2) a;
           print_edge fmt (node_id n) (res_np_id n p2))
-        hr_steps
+        l
 
   let print_node fmt n =
     print_contents fmt n;
