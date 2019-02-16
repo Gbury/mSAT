@@ -521,12 +521,11 @@ module Make(Plugin : PLUGIN)
       )
 
     let prove_atom a =
-      if (a.is_true && a.var.v_level = 0) then
+      if a.is_true && a.var.v_level = 0 then
         Some (set_atom_proof a)
       else
         None
 
-    (* Interface exposed *)
     type t = clause
     and proof_node = {
       conclusion : clause;
@@ -652,9 +651,7 @@ module Make(Plugin : PLUGIN)
       | Duplicate _ -> "duplicate"
       | Hyper_res _ -> "hyper-resolution"
 
-    (* Compute unsat-core
-       TODO: replace visited bool by a int unique to each call
-       of unsat_core, so that the cleanup can be removed ? *)
+    (* Compute unsat-core by accumulating the leaves *)
     let unsat_core proof =
       let rec aux res acc = function
         | [] -> res, acc
@@ -1187,10 +1184,13 @@ module Make(Plugin : PLUGIN)
      in multiple places (adding new clauses, or solving for instance). *)
   let report_unsat st (us:unsat_cause) : _ =
     Log.debugf info (fun k -> k "(@[sat.unsat-conflict@ %a@])" pp_unsat_cause us);
-    begin match us with
-      | US_false c -> st.unsat_at_0 <- Some c;
-      | _ -> ()
-    end;
+    let us = match us with
+      | US_false c ->
+        let c = if st.store_proof then Proof.prove_unsat c else c in
+        st.unsat_at_0 <- Some c;
+        US_false c
+      | _ -> us
+    in
     raise (E_unsat us)
 
   (* Simplification of boolean propagation reasons.
