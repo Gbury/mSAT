@@ -68,6 +68,7 @@ module Make(Plugin : PLUGIN)
   and reason =
     | Decision
     | Bcp of clause
+    | Bcp_lazy of clause lazy_t
     | Semantic
 
   (* TODO: remove, replace with user-provided proof trackng device?
@@ -282,6 +283,8 @@ module Make(Plugin : PLUGIN)
         Format.fprintf fmt "@@%d" n
       | n, Some Bcp c ->
         Format.fprintf fmt "->%d/%s" n (name_of_clause c)
+      | n, Some (Bcp_lazy _) ->
+        Format.fprintf fmt "->%d/<lazy>" n
       | n, Some Semantic ->
         Format.fprintf fmt "::%d" n
 
@@ -1061,7 +1064,7 @@ module Make(Plugin : PLUGIN)
           let l = a.var.v_level in
           if l = 0 then (
             match a.var.reason with
-            | Some (Bcp cl) ->
+            | Some (Bcp cl | Bcp_lazy (lazy cl)) ->
               partition_aux trues unassigned falses (cl :: history) (i + 1)
             (* A var false at level 0 can be eliminated from the clause,
                but we need to kepp in mind that we used another clause to simplify it. *)
@@ -1699,21 +1702,26 @@ module Make(Plugin : PLUGIN)
     | Solver_intf.Eval l ->
       let a = mk_atom st f in
       enqueue_semantic st a l
-    | Solver_intf.Consequence (causes, proof) ->
-      let l = List.rev_map (fun f -> Atom.neg @@ mk_atom st f) causes in
-      if List.exists Atom.is_true l then (
-        invalid_argf "slice.acts_propagate: Consequence should contain only true literals"
-      );
+    | Solver_intf.Consequence mk_expl ->
       let p = mk_atom st f in
       if Atom.is_true p then ()
       else if Atom.is_false p then (
+        let lits, proof = mk_expl() in
+        let l = List.rev_map (fun f -> Atom.neg @@ mk_atom st f) lits in
+        if List.exists Atom.is_true l then (
+          invalid_argf "slice.acts_propagate: Consequence should contain only true literals"
+        );
         let c = Clause.make_removable (p :: l) (Lemma proof) in
         raise_notrace (Th_conflict c)
       ) else (
         insert_var_order st p.var;
-        let level = List.fold_left (fun acc a -> max acc a.var.v_level) 0 l in
-        let c = Clause.make_removable (p :: l) (Lemma proof) in
-        enqueue_bool st p ~level (Bcp c)
+        let c = lazy (
+          let lits, proof = mk_expl () in
+          let l = List.rev_map (fun f -> Atom.neg @@ mk_atom st f) lits in
+          Clause.make_removable (p :: l) (Lemma proof)
+        ) in
+        let level = decision_level st in
+        enqueue_bool st p ~level (Bcp_lazy c)
       )
 
   let[@specialise] acts_iter st ~full head f : unit =
@@ -2107,7 +2115,7 @@ module Make(Plugin : PLUGIN)
           assert (Atom.equal first @@ List.hd core);
           let proof_of (a:atom) = match Atom.reason a with
             | Some (Decision | Semantic) -> Clause.make_removable [a] Local
-            | Some (Bcp c) -> c
+            | Some (Bcp c | Bcp_lazy (lazy c)) -> c
             | None -> assert false
           in
           let other_lits = List.filter (fun a -> not (Atom.equal a first)) core in
