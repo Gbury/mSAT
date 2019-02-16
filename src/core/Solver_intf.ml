@@ -286,9 +286,12 @@ module type PROOF = sig
     | Duplicate of t * atom list
     (** The conclusion is obtained by eliminating multiple occurences of the atom in
         the conclusion of the provided proof. *)
-    | Resolution of t * t * atom
-    (** The conclusion can be deduced by performing a resolution between the conclusions
-        of the two given proofs. The atom on which to perform the resolution is also given. *)
+    | Hyper_res of hyper_res_step
+
+  and hyper_res_step = {
+    hr_init: t;
+    hr_steps: (atom * t) list; (* list of pivot+clause to resolve against [init] *)
+  }
 
   (** {3 Proof building functions} *)
 
@@ -302,6 +305,12 @@ module type PROOF = sig
 
   val prove_atom : atom -> t option
   (** Given an atom [a], returns a proof of the clause [[a]] if [a] is true at level 0 *)
+
+  val res_of_hyper_res : hyper_res_step -> t * t * atom
+  (** Turn an hyper resolution step into a resolution step.
+      The conclusion can be deduced by performing a resolution between the conclusions
+      of the two given proofs.
+      The atom on which to perform the resolution is also given. *)
 
   (** {3 Proof Nodes} *)
 

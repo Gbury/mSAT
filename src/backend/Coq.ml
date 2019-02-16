@@ -134,7 +134,8 @@ module Make(S : Msat.S)(A : Arg with type hyp := S.clause
       let c = P.conclusion p in
       let () = elim_duplicate fmt clause c l in
       clean t fmt [c]
-    | P.Resolution (p1, p2, a) ->
+    | P.Hyper_res hr ->
+      let (p1, p2, a) = P.res_of_hyper_res hr in
       let c1 = P.conclusion p1 in
       let c2 = P.conclusion p2 in
       if resolution fmt clause c1 c2 a then clean t fmt [c1; c2]

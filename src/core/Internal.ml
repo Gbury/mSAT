@@ -302,6 +302,8 @@ module Make(Plugin : PLUGIN)
 
     let debug_a out vec =
       Array.iter (fun a -> Format.fprintf out "%a@ " debug a) vec
+    let debug_l out l =
+      List.iter (fun a -> Format.fprintf out "%a@ " debug a) l
 
     module Set = Set.Make(struct type t=atom let compare=compare end)
   end
@@ -360,6 +362,7 @@ module Make(Plugin : PLUGIN)
     let[@inline] equal c1 c2 = c1.cid = c2.cid
     let[@inline] hash c = Hashtbl.hash c.cid
     let[@inline] atoms c = c.atoms
+    let[@inline] atoms_seq c = Sequence.of_array c.atoms
     let[@inline] atoms_l c = Array.to_list c.atoms
 
     let flag_attached = 0b1
@@ -424,9 +427,10 @@ module Make(Plugin : PLUGIN)
 
     let error_res_f msg = Format.kasprintf (fun s -> raise (Resolution_error s)) msg
 
-    let[@inline] cleanup_ (a:atom) = Var.clear a.var
+    let[@inline] clear_var_of_ (a:atom) = Var.clear a.var
 
-    (* Compute resolution of 2 clauses *)
+    (* Compute resolution of 2 clauses.
+       returns [pivots, resulting_atoms] *)
     let resolve (c1:clause) (c2:clause) : atom list * atom list =
       (* invariants: only atoms in [c2] are marked, and the pivot is
          cleared when traversing [c1] *)
@@ -438,7 +442,7 @@ module Make(Plugin : PLUGIN)
              if Atom.seen a then l
              else if Atom.seen a.neg then (
                pivots := a.var.pa :: !pivots;
-               cleanup_ a;
+               clear_var_of_ a;
                l
              ) else a::l)
           [] c1.atoms
@@ -446,7 +450,7 @@ module Make(Plugin : PLUGIN)
       let l =
         Array.fold_left (fun l a -> if Atom.seen a then a::l else l) l c2.atoms
       in
-      Array.iter cleanup_ c2.atoms;
+      Array.iter clear_var_of_ c2.atoms;
       !pivots, l
 
     (* [find_dups c] returns a list of duplicate atoms, and the deduplicated list *)
@@ -462,15 +466,15 @@ module Make(Plugin : PLUGIN)
              ))
           ([], []) c.atoms
       in
-      Array.iter cleanup_ c.atoms;
+      Array.iter clear_var_of_ c.atoms;
       res
 
     (* do [c1] and [c2] have the same lits, modulo reordering and duplicates? *)
-    let same_lits (c1:atom array) (c2:atom array): bool =
+    let same_lits (c1:atom Sequence.t) (c2:atom Sequence.t): bool =
       let subset a b =
-        Array.iter Atom.mark b;
-        let res = Array.for_all Atom.seen a in
-        Array.iter cleanup_ b;
+        Sequence.iter Atom.mark b;
+        let res = Sequence.for_all Atom.seen a in
+        Sequence.iter clear_var_of_ b;
         res
       in
       subset c1 c2 && subset c2 c1
@@ -533,7 +537,12 @@ module Make(Plugin : PLUGIN)
       | Assumption
       | Lemma of lemma
       | Duplicate of t * atom list
-      | Resolution of t * t * atom
+      | Hyper_res of hyper_res_step
+
+    and hyper_res_step = {
+      hr_init: t;
+      hr_steps: (atom * t) list; (* list of pivot+clause to resolve against [init] *)
+    }
 
     let[@inline] conclusion (p:t) : clause = p
 
@@ -544,31 +553,51 @@ module Make(Plugin : PLUGIN)
       rs_pivot: atom;
     }
 
-    let rec chain_res (c:clause) (hist:_ list) : res_step =
-      match hist with
-      | d :: r ->
-        Log.debugf 5 
-          (fun k -> k "(@[sat.analyze.resolving@ :c1 %a@ :c2 %a@])" Clause.debug c Clause.debug d);
-        begin match resolve c d with
-          | [a], l ->
-            begin match r with
-              | [] -> {rs_res=l; rs_c1=c; rs_c2=d; rs_pivot=a}
-              | _ ->
-                let new_clause = Clause.make ~flags:c.flags l (History [c; d]) in
-                chain_res new_clause r
-            end
-          | _ ->
-            error_res_f "@[<2>clause mismatch while resolving@ %a@ and %a@]"
-              Clause.debug c Clause.debug d
-        end
-      | _ ->
-        error_res_f "bad history"
+    (* find pivots for resolving [l] with [init], and also return
+       the atoms of the conclusion *)
+    let find_pivots (init:clause) (l:clause list) : _ * (atom * t) list =
+      Log.debugf 15
+        (fun k->k "(@[proof.find-pivots@ :init %a@ :l %a@])"
+            Clause.debug init (Format.pp_print_list Clause.debug) l);
+      Array.iter Atom.mark init.atoms;
+      let steps =
+        List.map
+          (fun c ->
+             let pivot =
+               match
+                 Sequence.of_array c.atoms
+                 |> Sequence.filter (fun a -> Atom.seen (Atom.neg a))
+                 |> Sequence.to_list
+               with
+                 | [a] -> a
+                 | [] ->
+                   error_res_f "(@[proof.expand.pivot_missing@ %a@])" Clause.debug c
+                 | pivots ->
+                   error_res_f "(@[proof.expand.multiple_pivots@ %a@ :pivots %a@])"
+                     Clause.debug c Atom.debug_l pivots
+             in
+             Array.iter Atom.mark c.atoms; (* add atoms to result *)
+             clear_var_of_ pivot;
+             Atom.abs pivot, c)
+          l
+      in
+      (* cleanup *)
+      let res = ref [] in
+      let cleanup_a_ a =
+        if Atom.seen a then (
+          res := a :: !res;
+          clear_var_of_ a
+        )
+      in
+      Array.iter cleanup_a_ init.atoms;
+      List.iter (fun c -> Array.iter cleanup_a_ c.atoms) l;
+      !res, steps
 
     let expand conclusion =
       Log.debugf 5 (fun k -> k "(@[sat.proof.expand@ @[%a@]@])" Clause.debug conclusion);
       match conclusion.cpremise with
       | Lemma l ->
-        {conclusion; step = Lemma l; }
+        { conclusion; step = Lemma l; }
       | Local ->
         { conclusion; step = Assumption; }
       | Hyp l ->
@@ -577,18 +606,29 @@ module Make(Plugin : PLUGIN)
         error_res_f "@[empty history for clause@ %a@]" Clause.debug conclusion
       | History [c] ->
         let duplicates, res = find_dups c in
-        assert (same_lits (Array.of_list res) conclusion.atoms);
+        assert (same_lits (Sequence.of_list res) (Clause.atoms_seq conclusion));
         { conclusion; step = Duplicate (c, duplicates) }
       | History (c :: ([_] as r)) ->
-        let rs = chain_res c r in
-        assert (same_lits (Array.of_list rs.rs_res) conclusion.atoms);
-        { conclusion; step = Resolution (rs.rs_c1, rs.rs_c2, rs.rs_pivot); }
+        let res, steps = find_pivots c r in
+        assert (same_lits (Sequence.of_list res) (Clause.atoms_seq conclusion));
+        { conclusion; step = Hyper_res { hr_init=c; hr_steps=steps; }; }
       | History (c :: r) ->
-        let rs = chain_res c r in
-        conclusion.cpremise <- History [rs.rs_c1; rs.rs_c2];
-        assert (same_lits (Array.of_list rs.rs_res) conclusion.atoms);
-        { conclusion; step = Resolution (rs.rs_c1, rs.rs_c2, rs.rs_pivot); }
+        let res, steps = find_pivots c r in
+        assert (same_lits (Sequence.of_list res) (Clause.atoms_seq conclusion));
+        { conclusion; step = Hyper_res {hr_init=c; hr_steps=steps};  }
       | Empty_premise -> raise Solver_intf.No_proof
+
+    let rec res_of_hyper_res (hr: hyper_res_step) : _ * _ * atom =
+      let {hr_init=c1; hr_steps=l} = hr in
+      match l with
+      | [] -> assert false
+      | [a, c2] -> c1, c2, a (* done *)
+      | (a,c2) :: steps' ->
+        (* resolve [c1] with [c2], then resolve that against [steps] *)
+        let pivots, l = resolve c1 c2 in
+        assert (match pivots with [a'] -> Atom.equal a a' | _ -> false);
+        let c_1_2 = Clause.make_removable l (History [c1; c2]) in
+        res_of_hyper_res {hr_init=c_1_2; hr_steps=steps'}
 
     (* Proof nodes manipulation *)
     let is_leaf = function
@@ -596,21 +636,21 @@ module Make(Plugin : PLUGIN)
       | Assumption
       | Lemma _ -> true
       | Duplicate _
-      | Resolution _ -> false
+      | Hyper_res _ -> false
 
     let parents = function
       | Hypothesis _
       | Assumption
       | Lemma _ -> []
       | Duplicate (p, _) -> [p]
-      | Resolution (p, p', _) -> [p; p']
+      | Hyper_res {hr_init; hr_steps} -> hr_init :: List.map snd hr_steps
 
     let expl = function
       | Hypothesis _ -> "hypothesis"
       | Assumption -> "assumption"
       | Lemma _ -> "lemma"
       | Duplicate _ -> "duplicate"
-      | Resolution _ -> "resolution"
+      | Hyper_res _ -> "hyper-resolution"
 
     (* Compute unsat-core
        TODO: replace visited bool by a int unique to each call
@@ -658,9 +698,9 @@ module Make(Plugin : PLUGIN)
           begin match node.step with
             | Duplicate (p1, _) ->
               Stack.push (Enter p1) s
-            | Resolution (p1, p2, _) ->
-              Stack.push (Enter p2) s;
-              Stack.push (Enter p1) s
+            | Hyper_res {hr_init=p1; hr_steps=l} ->
+              List.iter (fun (_,p2) -> Stack.push (Enter p2) s) l;
+              Stack.push (Enter p1) s;
             | Hypothesis _ | Assumption | Lemma _ -> ()
           end
         end;

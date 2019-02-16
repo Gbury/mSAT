@@ -58,10 +58,9 @@ module Make(S : Msat.S)(A : Arg with type atom := S.atom
   module P = S.Proof
 
   let node_id n = Clause.name n.P.conclusion
-
-  let res_node_id n = (node_id n) ^ "_res"
-
   let proof_id p = node_id (P.expand p)
+  let res_nn_id n1 n2 = node_id n1 ^ "_" ^ node_id n2 ^ "_res"
+  let res_np_id n1 n2 = node_id n1 ^ "_" ^ proof_id n2 ^ "_res"
 
   let print_clause fmt c =
     let v = Clause.atoms c in
@@ -80,9 +79,11 @@ module Make(S : Msat.S)(A : Arg with type atom := S.atom
 
   let print_edges fmt n =
     match P.(n.step) with
-    | P.Resolution (p1, p2, _) ->
-      print_edge fmt (res_node_id n) (proof_id p1);
-      print_edge fmt (res_node_id n) (proof_id p2)
+    | P.Hyper_res {P.hr_init; hr_steps} ->
+      print_edge fmt (res_np_id n hr_init) (proof_id hr_init);
+      List.iter
+        (fun (_,p2) -> print_edge fmt (res_np_id n p2) (proof_id p2))
+        hr_steps;
     | _ -> ()
 
   let table_options fmt color =
@@ -129,11 +130,15 @@ module Make(S : Msat.S)(A : Arg with type atom := S.atom
         ((fun fmt () -> (Format.fprintf fmt "%s" (node_id n))) ::
          List.map (ttify A.print_atom) l);
       print_edge fmt (node_id n) (node_id (P.expand p))
-    | P.Resolution (_, _, a) ->
+    | P.Hyper_res {P.hr_init; hr_steps} ->
       print_dot_node fmt (node_id n) "GREY" P.(n.conclusion) "Resolution" "GREY"
         [(fun fmt () -> (Format.fprintf fmt "%s" (node_id n)))];
-      print_dot_res_node fmt (res_node_id n) a;
-      print_edge fmt (node_id n) (res_node_id n)
+      print_edge fmt (node_id n) (res_np_id n hr_init);
+      List.iter
+        (fun (a,p2) ->
+          print_dot_res_node fmt (res_np_id n p2) a;
+          print_edge fmt (node_id n) (res_np_id n p2))
+        hr_steps
 
   let print_node fmt n =
     print_contents fmt n;
