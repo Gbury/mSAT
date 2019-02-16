@@ -48,14 +48,16 @@ module Process() = struct
         let t' = Sys.time () -. t in
         Format.printf "Sat (%f/%f)@." t t'
       | S.Unsat state ->
-        if !p_check then begin
+        if !p_check then (
           let p = state.Msat.get_proof () in
           S.Proof.check p;
-          if !p_dot_proof <> "" then begin
-            let fmt = Format.formatter_of_out_channel (open_out !p_dot_proof) in
-            D.pp fmt p
-          end
-        end;
+          if !p_dot_proof <> "" then (
+            let oc = open_out !p_dot_proof in
+            let fmt = Format.formatter_of_out_channel oc in
+            Format.fprintf fmt "%a@?" D.pp p;
+            flush oc; close_out_noerr oc;
+          )
+        );
         let t' = Sys.time () -. t in
         Format.printf "Unsat (%f/%f)@." t t'
     end
@@ -171,4 +173,7 @@ let () =
   | Incorrect_model ->
     Format.printf "Internal error : incorrect *sat* model@.";
     exit 4
+  | S.Proof.Resolution_error msg  ->
+    Format.printf "Internal error: incorrect *unsat* proof:\n%s@." msg;
+    exit 5
 
