@@ -12,10 +12,10 @@ OPTS= -j $(J)
 
 LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 
-dev: build-dev test
-
 build:
 	@dune build $(OPTS) @install --profile=release
+
+dev: build-dev test
 
 build-dev:
 	@dune build $(OPTS) @install
