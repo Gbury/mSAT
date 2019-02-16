@@ -712,7 +712,11 @@ module Make(Plugin : PLUGIN)
       Stack.push (Enter p) s;
       fold_aux s h f acc
 
-    let check p = fold (fun () _ -> ()) () p
+    let check (p:t) =
+      if Array.length p.atoms > 0 then (
+        error_res_f "@[<2>Proof.check: non empty conclusion for claus@ %a@]" Clause.debug p;
+      );
+      fold (fun () _ -> ()) () p
   end
   type proof = Proof.t
 
