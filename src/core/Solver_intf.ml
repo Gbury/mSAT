@@ -76,7 +76,7 @@ type ('term, 'formula, 'value) assumption =
 type ('term, 'formula, 'proof) reason =
   | Eval of 'term list
   (** The formula can be evalutaed using the terms in the list *)
-  | Consequence of 'formula list * 'proof
+  | Consequence of (unit -> 'formula list * 'proof)
   (** [Consequence (l, p)] means that the formulas in [l] imply the propagated
       formula [f]. The proof should be a proof of the clause "[l] implies [f]".
   *)

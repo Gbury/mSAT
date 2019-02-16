@@ -39,7 +39,7 @@ type ('term, 'formula, 'value) assumption = ('term, 'formula, 'value) Solver_int
 
 type ('term, 'formula, 'proof) reason = ('term, 'formula, 'proof) Solver_intf.reason =
   | Eval of 'term list
-  | Consequence of 'formula list * 'proof
+  | Consequence of (unit -> 'formula list * 'proof)
 
 type ('term, 'formula, 'value, 'proof) acts = ('term, 'formula, 'value, 'proof) Solver_intf.acts = {
   acts_iter_assumptions: (('term,'formula,'value) assumption -> unit) -> unit;
