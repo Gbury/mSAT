@@ -1,16 +1,8 @@
 # copyright (c) 2014, guillaume bury
 # copyright (c) 2017, simon cruanes
 
-BIN=main.native
-TEST_BIN=tests/test_api.native
-
-NAME=msat
 J?=3
-TIMEOUT?=30
-TARGETS=src/bin/main.exe
 OPTS= -j $(J)
-
-LIB=$(addprefix $(NAME), .cma .cmxa .cmxs)
 
 build:
 	@dune build $(OPTS) @install --profile=release
@@ -20,15 +12,9 @@ dev: build-dev test
 build-dev:
 	@dune build $(OPTS) @install
 
-test:
+test: build-dev
 	@echo "run tests…"
 	@OCAMLRUNPARAM=b dune runtest --force --no-buffer
-
-enable_log:
-	cd src/core; ln -sf log_real.ml log.ml
-
-disable_log:
-	cd src/core; ln -sf log_dummy.ml log.ml
 
 clean:
 	@dune clean
@@ -59,4 +45,4 @@ WATCH=all
 watch:
 	@dune build @all -w
 
-.PHONY: clean doc all bench install uninstall remove reinstall enable_log disable_log bin test
+.PHONY: clean doc all bench install uninstall remove reinstall bin test

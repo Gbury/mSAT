@@ -1,7 +1,8 @@
 
 (alias
  (name runtest)
- (deps README.md ./sudoku_solve.sh)
+ (deps README.md)
+ (locks test)
  (action (progn
           (run mdx test README.md)
           (diff? README.md README.md.corrected))))
