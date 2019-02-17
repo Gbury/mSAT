@@ -50,6 +50,7 @@ module Process() = struct
       | S.Unsat state ->
         if !p_check then (
           let p = state.Msat.get_proof () in
+          S.Proof.check_empty_conclusion p;
           S.Proof.check p;
           if !p_dot_proof <> "" then (
             let oc = open_out !p_dot_proof in
