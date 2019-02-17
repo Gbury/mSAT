@@ -349,8 +349,12 @@ module type PROOF = sig
 
   (** {3 Misc} *)
 
+  val check_empty_conclusion : t -> unit
+  (** Check that the proof's conclusion is the empty clause,
+      @raise Resolution_error otherwise *)
+
   val check : t -> unit
-  (** Check the contents of a proof. Mainly for internal use *)
+  (** Check the contents of a proof. Mainly for internal use. *)
 
   module Tbl : Hashtbl.S with type key = t
 end
