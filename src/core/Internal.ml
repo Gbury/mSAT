@@ -495,7 +495,7 @@ module Make(Plugin : PLUGIN)
       in
       assert (a.var.v_level >= 0);
       match (a.var.reason) with
-      | Some (Bcp c) ->
+      | Some (Bcp c | Bcp_lazy (lazy c)) ->
         Log.debugf 5 (fun k->k "(@[proof.analyze.clause@ :atom %a@ :c %a@])" Atom.debug a Clause.debug c);
         if Array.length c.atoms = 1 then (
           Log.debugf 5 (fun k -> k "(@[proof.analyze.old-reason@ %a@])" Atom.debug a);
@@ -1203,7 +1203,7 @@ module Make(Plugin : PLUGIN)
      need to rebuild a clause with correct history, in order to
      be able to build a correct proof at the end of proof search. *)
   let simpl_reason : reason -> reason = function
-    | (Bcp cl) as r ->
+    | (Bcp cl | Bcp_lazy (lazy cl)) as r ->
       let l, history = partition cl.atoms in
       begin match l with
         | [_] ->
@@ -1229,7 +1229,7 @@ module Make(Plugin : PLUGIN)
                  Clause.debug cl);
           assert false
       end
-    | r -> r
+    | (Decision | Semantic) as r -> r
 
   (* Boolean propagation.
      Wrapper function for adding a new propagated formula. *)
@@ -1394,8 +1394,8 @@ module Make(Plugin : PLUGIN)
             if q.var.v_level <= 0 then (
               assert (q.neg.is_true);
               match q.var.reason with
-              | Some Bcp cl -> history := cl :: !history
-              | _ -> assert false
+              | Some (Bcp cl | Bcp_lazy (lazy cl)) -> history := cl :: !history
+              | Some (Decision | Semantic) | None -> assert false
             );
             if not (Var.marked q.var) then (
               Var.mark q.var;
@@ -1437,11 +1437,11 @@ module Make(Plugin : PLUGIN)
         assert (n > 0);
         learnt := p.neg :: !learnt;
         c := None
-      | n, Some Bcp cl ->
+      | n, Some (Bcp cl | Bcp_lazy (lazy cl)) ->
         assert (n > 0);
         assert (p.var.v_level >= conflict_level);
         c := Some cl
-      | _ -> assert false
+      | _, (None | Some Decision) -> assert false
     done;
     Vec.iter Var.clear to_unmark;
     Vec.clear to_unmark;
@@ -1842,7 +1842,7 @@ module Make(Plugin : PLUGIN)
             match Atom.reason a' with
             | Some Semantic -> ()
             | Some Decision -> core := a' :: !core
-            | Some (Bcp c) ->
+            | Some (Bcp c | Bcp_lazy (lazy c)) ->
               Array.iter
                 (fun a ->
                    let v = a.var in
@@ -1851,7 +1851,7 @@ module Make(Plugin : PLUGIN)
                      Var.mark v;
                    ))
                 c.atoms
-            | _ -> ()
+            | None -> ()
           );
       end;
       decr idx
