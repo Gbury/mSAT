@@ -28,6 +28,8 @@ uninstall:
 doc:
 	@dune build $(OPTS) @doc
 
+build-js:
+	@dune build @main_js --profile=release
 
 reinstall: | uninstall install
 

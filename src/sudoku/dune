@@ -1,9 +1,35 @@
 
+(library
+  (name sudoku_solver)
+  (modules Sudoku_solver)
+  (libraries msat msat.backtrack sequence containers)
+  (flags :standard -warn-error -3 -w +a-4-42-44-48-50-58-32-60@8 -color always -safe-string -open Msat)
+  (ocamlopt_flags :standard -O3 -color always
+                  -unbox-closures -unbox-closures-factor 20)
+)
+
 (executable
   (name sudoku_solve)
   (modes native)
-  (libraries msat msat.backtrack sequence containers)
-  (flags :standard -warn-error -a -w +a-4-42-44-48-50-58-32-60@8 -color always -safe-string)
+  (modules Sudoku_solve)
+  (libraries containers sudoku_solver)
+  (flags :standard -warn-error -3 -color always -safe-string)
   (ocamlopt_flags :standard -O3 -bin-annot
                   -unbox-closures -unbox-closures-factor 20)
 )
+
+; js file
+
+(executable
+  (name main_js)
+  ;(package msat)
+  (modules Main_js)
+  (js_of_ocaml (flags :standard --opt 3))
+  (libraries containers sudoku_solver js_of_ocaml)
+  (flags :standard -warn-error -3 -color always -safe-string)
+  (preprocess (pps js_of_ocaml-ppx))
+)
+
+(alias
+  (name main_js)
+  (deps main_js.bc.js))
