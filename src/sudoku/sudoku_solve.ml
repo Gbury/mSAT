@@ -308,7 +308,9 @@ let solve_file file =
        | Some g' ->
          Format.printf "@[<v>@[<2>solution (in %.3fs):@ %a@]@,###################@]@."
            (Sys.time()-.start) Grid.pp g')
-    grids
+    grids;
+  Format.printf "@.solved %d grids (in %.3fs)@." (List.length grids) (Sys.time()-.start);
+  ()
 
 let () =
   Fmt.set_color_default true;
