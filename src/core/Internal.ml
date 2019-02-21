@@ -822,15 +822,15 @@ module Make(Plugin : PLUGIN)
 
     mutable clause_incr : float;
     (* increment for clauses' activity *)
-
-    mutable restart_first : int;
-    (* intial restart limit, default 100 *)
-
-    mutable learntsize_factor : float;
-    (* initial limit for the number of learnt clauses, 1/3 of initial
-        number of clauses by default *)
   }
   type solver = t
+
+  (* intial restart limit *)
+  let restart_first = 100
+
+  (* initial limit for the number of learnt clauses, 1/3 of initial
+      number of clauses by default *)
+  let learntsize_factor = 1. /. 3.
 
   (* Starting environment. *)
   let create_ ~st ~store_proof (th:theory) : t = {
@@ -856,10 +856,6 @@ module Make(Plugin : PLUGIN)
     var_incr = 1.;
     clause_incr = 1.;
     store_proof;
-
-    restart_first = 100;
-
-    learntsize_factor = 1. /. 3. ;
   }
 
   let create ?(store_proof=true) ?(size=`Big) (th:theory) : t =
@@ -2004,8 +2000,8 @@ module Make(Plugin : PLUGIN)
     check_unsat_ st;
     try
       flush_clauses st; (* add initial clauses *)
-      let n_of_conflicts = ref (float_of_int st.restart_first) in
-      let n_of_learnts = ref ((float_of_int (nb_clauses st)) *. st.learntsize_factor) in
+      let n_of_conflicts = ref (float_of_int restart_first) in
+      let n_of_learnts = ref ((float_of_int (nb_clauses st)) *. learntsize_factor) in
       while true do
         begin try
             search st (int_of_float !n_of_conflicts) (int_of_float !n_of_learnts)
