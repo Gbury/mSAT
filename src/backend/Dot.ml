@@ -79,7 +79,7 @@ module Make(S : Msat.S)(A : Arg with type atom := S.atom
 
   let print_edges fmt n =
     match P.(n.step) with
-    | P.Hyper_res {P.hr_steps=[];_} -> () (* NOTE: should never happen *)
+    | P.Hyper_res {P.hr_steps=[];_} -> assert false (* NOTE: should never happen *)
     | P.Hyper_res {P.hr_init; hr_steps=((_,p0)::_) as l} ->
       print_edge fmt (res_np_id n p0) (proof_id hr_init);
       List.iter

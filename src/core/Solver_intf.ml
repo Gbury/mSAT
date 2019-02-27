@@ -79,6 +79,16 @@ type ('term, 'formula, 'proof) reason =
   | Consequence of (unit -> 'formula list * 'proof)
   (** [Consequence (l, p)] means that the formulas in [l] imply the propagated
       formula [f]. The proof should be a proof of the clause "[l] implies [f]".
+
+      invariant: in [Consequence (l,p)], all elements of [l] must be true in
+      the current trail.
+
+      note on lazyiness: the justification is suspended (using [unit -> …])
+      to avoid potentially costly computations that might never be used
+      if this literal is backtracked without participating in a conflict.
+      However, if the theory isn't robust wrt backtracking an subsequent changes,
+      it can be easier to produce the explanation eagerly when
+      propagating, and then use [Consequence (fun () -> expl, proof)].
   *)
 (** The type of reasons for propagations of a formula [f]. *)
 

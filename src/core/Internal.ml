@@ -610,10 +610,6 @@ module Make(Plugin : PLUGIN)
         let duplicates, res = find_dups c in
         assert (same_lits (Sequence.of_list res) (Clause.atoms_seq conclusion));
         { conclusion; step = Duplicate (c, duplicates) }
-      | History (c :: ([_] as r)) ->
-        let res, steps = find_pivots c r in
-        assert (same_lits (Sequence.of_list res) (Clause.atoms_seq conclusion));
-        { conclusion; step = Hyper_res { hr_init=c; hr_steps=steps; }; }
       | History (c :: r) ->
         let res, steps = find_pivots c r in
         assert (same_lits (Sequence.of_list res) (Clause.atoms_seq conclusion));
@@ -714,7 +710,7 @@ module Make(Plugin : PLUGIN)
 
     let check_empty_conclusion (p:t) =
       if Array.length p.atoms > 0 then (
-        error_res_f "@[<2>Proof.check: non empty conclusion for claus@ %a@]" Clause.debug p;
+        error_res_f "@[<2>Proof.check: non empty conclusion for clause@ %a@]" Clause.debug p;
       )
 
     let check (p:t) = fold (fun () _ -> ()) () p
