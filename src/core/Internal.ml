@@ -1691,6 +1691,14 @@ module Make(Plugin : PLUGIN)
     Log.debugf 5 (fun k->k "(@[@{<yellow>sat.th.raise-conflict@}@ %a@])" Clause.debug c);
     raise_notrace (Th_conflict c)
 
+  let check_consequence_lits_false_ l : unit =
+    match List.find Atom.is_true l with
+    | a ->
+      invalid_argf
+        "slice.acts_propagate:@ Consequence should contain only true literals, but %a isn't"
+        Atom.debug (Atom.neg a)
+    | exception Not_found -> ()
+
   let acts_propagate (st:t) f = function
     | Solver_intf.Eval l ->
       let a = mk_atom st f in
@@ -1701,9 +1709,7 @@ module Make(Plugin : PLUGIN)
       else if Atom.is_false p then (
         let lits, proof = mk_expl() in
         let l = List.rev_map (fun f -> Atom.neg @@ mk_atom st f) lits in
-        if List.exists Atom.is_true l then (
-          invalid_argf "slice.acts_propagate: Consequence should contain only true literals"
-        );
+        check_consequence_lits_false_ l;
         let c = Clause.make_removable (p :: l) (Lemma proof) in
         raise_notrace (Th_conflict c)
       ) else (
@@ -1711,6 +1717,13 @@ module Make(Plugin : PLUGIN)
         let c = lazy (
           let lits, proof = mk_expl () in
           let l = List.rev_map (fun f -> Atom.neg @@ mk_atom st f) lits in
+          (* note: we can check that invariant here in the [lazy] block,
+             as conflict analysis will run in an environment where
+             the literals should be true anyway, since it's an extension of the
+             current trail
+             (otherwise the propagated lit would have been backtracked and
+             discarded already.) *)
+          check_consequence_lits_false_ l;
           Clause.make_removable (p :: l) (Lemma proof)
         ) in
         let level = decision_level st in
