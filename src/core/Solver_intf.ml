@@ -80,15 +80,20 @@ type ('term, 'formula, 'proof) reason =
   (** [Consequence (l, p)] means that the formulas in [l] imply the propagated
       formula [f]. The proof should be a proof of the clause "[l] implies [f]".
 
-      invariant: in [Consequence (l,p)], all elements of [l] must be true in
+      invariant: in [Consequence (fun () -> l,p)], all elements of [l] must be true in
       the current trail.
 
-      note on lazyiness: the justification is suspended (using [unit -> …])
+      {b note} on lazyiness: the justification is suspended (using [unit -> …])
       to avoid potentially costly computations that might never be used
       if this literal is backtracked without participating in a conflict.
-      However, if the theory isn't robust wrt backtracking an subsequent changes,
+      Therefore the function that produces [(l,p)] needs only be safe in
+      trails (partial models) that are conservative extensions of the current
+      trail.
+      If the theory isn't robust w.r.t. extensions of the trail (e.g. if
+      its internal state undergoes significant changes),
       it can be easier to produce the explanation eagerly when
-      propagating, and then use [Consequence (fun () -> expl, proof)].
+      propagating, and then use [Consequence (fun () -> expl, proof)] with
+      the already produced [(expl,proof)] tuple.
   *)
 (** The type of reasons for propagations of a formula [f]. *)
 
