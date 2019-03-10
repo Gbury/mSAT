@@ -1,6 +1,0 @@
-= Msat
-
-Documentation:
-
-- link:dev[dev]
-- link:0.5[0.5]
