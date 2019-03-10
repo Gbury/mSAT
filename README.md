@@ -29,7 +29,7 @@ opam pin add msat https://github.com/Gbury/mSAT.git
 
 ### Manual installation
 
-You will need `dune` and `sequence`. The command is:
+You will need `dune` and `iter`. The command is:
 
 ```
 $ make install

@@ -16,7 +16,7 @@ val to_array : 'a t -> 'a array
 
 val of_list : 'a list -> 'a t
 
-val to_seq : 'a t -> 'a Sequence.t
+val to_seq : 'a t -> 'a Iter.t
 
 val clear : 'a t -> unit
 (** Set size to 0, doesn't free elements *)

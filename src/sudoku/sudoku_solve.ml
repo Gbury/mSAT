@@ -36,13 +36,13 @@ module Grid : sig
   val set : t -> int -> int -> Cell.t -> t
 
   (** A set of related cells *)
-  type set = (int*int*Cell.t) Sequence.t
+  type set = (int*int*Cell.t) Iter.t
 
-  val rows : t -> set Sequence.t
-  val cols : t -> set Sequence.t
-  val squares : t -> set Sequence.t
+  val rows : t -> set Iter.t
+  val cols : t -> set Iter.t
+  val squares : t -> set Iter.t
 
-  val all_cells : t -> (int*int*Cell.t) Sequence.t
+  val all_cells : t -> (int*int*Cell.t) Iter.t
 
   val parse : string -> t
   val is_full : t -> bool
@@ -60,9 +60,9 @@ end = struct
     s'
 
   (** A set of related cells *)
-  type set = (int*int*Cell.t) Sequence.t
+  type set = (int*int*Cell.t) Iter.t
 
-  open Sequence.Infix
+  open Iter.Infix
 
   let all_cells (g:t) =
     0 -- 8 >>= fun i ->
@@ -90,17 +90,17 @@ end = struct
   let is_valid g =
     let all_distinct (s:set) =
       (s >|= fun (_,_,c) -> c)
-      |> Sequence.diagonal
-      |> Sequence.for_all (fun (c1,c2) -> Cell.neq c1 c2)
+      |> Iter.diagonal
+      |> Iter.for_all (fun (c1,c2) -> Cell.neq c1 c2)
     in
-    Sequence.for_all all_distinct @@ rows g &&
-    Sequence.for_all all_distinct @@ cols g &&
-    Sequence.for_all all_distinct @@ squares g
+    Iter.for_all all_distinct @@ rows g &&
+    Iter.for_all all_distinct @@ cols g &&
+    Iter.for_all all_distinct @@ squares g
 
   let matches ~pat:g1 g2 : bool =
     all_cells g1
-    |> Sequence.filter (fun (_,_,c) -> Cell.is_full c)
-    |> Sequence.for_all (fun (x,y,c) -> Cell.equal c @@ get g2 x y)
+    |> Iter.filter (fun (_,_,c) -> Cell.is_full c)
+    |> Iter.for_all (fun (x,y,c) -> Cell.equal c @@ get g2 x y)
 
   let pp out g =
     Fmt.fprintf out "@[<v>";
@@ -186,11 +186,11 @@ end = struct
       let[@inline] all_diff kind f =
         let pairs =
           f (grid self)
-          |> Sequence.flat_map
+          |> Iter.flat_map
             (fun set ->
                set
-               |> Sequence.filter (fun (_,_,c) -> Cell.is_full c)
-               |> Sequence.diagonal)
+               |> Iter.filter (fun (_,_,c) -> Cell.is_full c)
+               |> Iter.diagonal)
         in
         pairs
           (fun ((x1,y1,c1),(x2,y2,c2)) ->
@@ -208,7 +208,7 @@ end = struct
 
     let trail_ (acts:_ Msat.acts) = 
       acts.acts_iter_assumptions
-      |> Sequence.map
+      |> Iter.map
         (function
           | Assign _ -> assert false
           | Lit f -> f)
@@ -255,10 +255,10 @@ end = struct
   let solve (self:t) : _ option =
     let assumptions =
       Grid.all_cells self.grid0
-      |> Sequence.filter (fun (_,_,c) -> Cell.is_full c)
-      |> Sequence.map (fun (x,y,c) -> F.make true x y c)
-      |> Sequence.map (S.make_atom self.solver)
-      |> Sequence.to_rev_list
+      |> Iter.filter (fun (_,_,c) -> Cell.is_full c)
+      |> Iter.map (fun (x,y,c) -> F.make true x y c)
+      |> Iter.map (S.make_atom self.solver)
+      |> Iter.to_rev_list
     in
     Log.debugf 2
       (fun k->k "(@[sudoku.solve@ :assumptions %a@])" (Fmt.Dump.list S.Atom.pp) assumptions);

@@ -365,7 +365,7 @@ module Make(Plugin : PLUGIN)
     let[@inline] equal c1 c2 = c1.cid = c2.cid
     let[@inline] hash c = Hashtbl.hash c.cid
     let[@inline] atoms c = c.atoms
-    let[@inline] atoms_seq c = Sequence.of_array c.atoms
+    let[@inline] atoms_seq c = Iter.of_array c.atoms
     let[@inline] atoms_l c = Array.to_list c.atoms
 
     let flag_attached = 0b1
@@ -473,11 +473,11 @@ module Make(Plugin : PLUGIN)
       res
 
     (* do [c1] and [c2] have the same lits, modulo reordering and duplicates? *)
-    let same_lits (c1:atom Sequence.t) (c2:atom Sequence.t): bool =
+    let same_lits (c1:atom Iter.t) (c2:atom Iter.t): bool =
       let subset a b =
-        Sequence.iter Atom.mark b;
-        let res = Sequence.for_all Atom.seen a in
-        Sequence.iter clear_var_of_ b;
+        Iter.iter Atom.mark b;
+        let res = Iter.for_all Atom.seen a in
+        Iter.iter clear_var_of_ b;
         res
       in
       subset c1 c2 && subset c2 c1
@@ -567,9 +567,9 @@ module Make(Plugin : PLUGIN)
           (fun c ->
              let pivot =
                match
-                 Sequence.of_array c.atoms
-                 |> Sequence.filter (fun a -> Atom.seen (Atom.neg a))
-                 |> Sequence.to_list
+                 Iter.of_array c.atoms
+                 |> Iter.filter (fun a -> Atom.seen (Atom.neg a))
+                 |> Iter.to_list
                with
                  | [a] -> a
                  | [] ->
@@ -608,11 +608,11 @@ module Make(Plugin : PLUGIN)
         error_res_f "@[empty history for clause@ %a@]" Clause.debug conclusion
       | History [c] ->
         let duplicates, res = find_dups c in
-        assert (same_lits (Sequence.of_list res) (Clause.atoms_seq conclusion));
+        assert (same_lits (Iter.of_list res) (Clause.atoms_seq conclusion));
         { conclusion; step = Duplicate (c, duplicates) }
       | History (c :: r) ->
         let res, steps = find_pivots c r in
-        assert (same_lits (Sequence.of_list res) (Clause.atoms_seq conclusion));
+        assert (same_lits (Iter.of_list res) (Clause.atoms_seq conclusion));
         { conclusion; step = Hyper_res {hr_init=c; hr_steps=steps};  }
       | Empty_premise -> raise Solver_intf.No_proof
 

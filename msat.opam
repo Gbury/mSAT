@@ -13,7 +13,7 @@ build: [
 depends: [
   "ocaml" { >= "4.03" }
   "dune" {build}
-  "sequence"
+  "iter" { >= "1.2" }
   "containers" {with-test}
   "mdx" {with-test}
 ]
