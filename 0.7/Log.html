@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="next" href="Formula_intf.html">
+<link rel="Up" href="index.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Log</title>
+</head>
+<body>
+<div class="navbar">&nbsp;<a class="up" href="index.html" title="Index">Up</a>
+&nbsp;<a class="post" href="Formula_intf.html" title="Formula_intf">Next</a>
+</div>
+<h1>Module <a href="type_Log.html">Log</a></h1>
+
+<pre><span id="MODULELog"><span class="keyword">module</span> Log</span>: <code class="code">sig</code> <a href="Log.html">..</a> <code class="code">end</code></pre><div class="info module top">
+<div class="info-desc">
+<h2 id="1_Loggingfunctionfordebugging">Logging function, for debugging</h2></div>
+</div>
+<hr width="100%">
+
+<pre><span id="VALset_debug"><span class="keyword">val</span> set_debug</span> : <code class="type">int -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Set debug level</p>
+</div>
+</div>
+
+<pre><span id="VALget_debug"><span class="keyword">val</span> get_debug</span> : <code class="type">unit -> int</code></pre><div class="info ">
+<div class="info-desc">
+<p>Current debug level</p>
+</div>
+</div>
+
+<pre><span id="VALdebugf"><span class="keyword">val</span> debugf</span> : <code class="type">int -><br>       ('a, Format.formatter, unit, unit) Pervasives.format4 -> ('a -> unit) -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Emit a debug message at the given level. If the level is lower
+    than <code class="code">get_debug ()</code>, the message will indeed be emitted</p>
+</div>
+</div>
+
+<pre><span id="VALdebug"><span class="keyword">val</span> debug</span> : <code class="type">int -> string -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Simpler version of <a href="Log.html#VALdebug"><code class="code">Log.debug</code></a>, without formatting</p>
+</div>
+</div>
+
+<pre><span id="VALset_debug_out"><span class="keyword">val</span> set_debug_out</span> : <code class="type">Format.formatter -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Change the output formatter.</p>
+</div>
+</div>
+</body></html>

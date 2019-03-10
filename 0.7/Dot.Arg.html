@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<link rel="stylesheet" href="style.css" type="text/css">
+<meta content="text/html; charset=iso-8859-1" http-equiv="Content-Type">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="Start" href="index.html">
+<link rel="previous" href="Dot.S.html">
+<link rel="Up" href="Dot.html">
+<link title="Index of types" rel=Appendix href="index_types.html">
+<link title="Index of exceptions" rel=Appendix href="index_exceptions.html">
+<link title="Index of values" rel=Appendix href="index_values.html">
+<link title="Index of modules" rel=Appendix href="index_modules.html">
+<link title="Index of module types" rel=Appendix href="index_module_types.html">
+<link title="Log" rel="Chapter" href="Log.html">
+<link title="Formula_intf" rel="Chapter" href="Formula_intf.html">
+<link title="Theory_intf" rel="Chapter" href="Theory_intf.html">
+<link title="Plugin_intf" rel="Chapter" href="Plugin_intf.html">
+<link title="Expr_intf" rel="Chapter" href="Expr_intf.html">
+<link title="Res_intf" rel="Chapter" href="Res_intf.html">
+<link title="Solver_types_intf" rel="Chapter" href="Solver_types_intf.html">
+<link title="Solver_intf" rel="Chapter" href="Solver_intf.html">
+<link title="Tseitin_intf" rel="Chapter" href="Tseitin_intf.html">
+<link title="Res" rel="Chapter" href="Res.html">
+<link title="Internal" rel="Chapter" href="Internal.html">
+<link title="External" rel="Chapter" href="External.html">
+<link title="Solver_types" rel="Chapter" href="Solver_types.html">
+<link title="Solver" rel="Chapter" href="Solver.html">
+<link title="Mcsolver" rel="Chapter" href="Mcsolver.html">
+<link title="Tseitin" rel="Chapter" href="Tseitin.html">
+<link title="Dot" rel="Chapter" href="Dot.html">
+<link title="Coq" rel="Chapter" href="Coq.html">
+<link title="Dedukti" rel="Chapter" href="Dedukti.html">
+<link title="Backend_intf" rel="Chapter" href="Backend_intf.html">
+<link title="Sat" rel="Chapter" href="Sat.html"><title>mSAT doc : Dot.Arg</title>
+</head>
+<body>
+<div class="navbar"><a class="pre" href="Dot.S.html" title="Dot.S">Previous</a>
+&nbsp;<a class="up" href="Dot.html" title="Dot">Up</a>
+&nbsp;</div>
+<h1>Module type <a href="type_Dot.Arg.html">Dot.Arg</a></h1>
+
+<pre><span id="MODULETYPEArg"><span class="keyword">module type</span> Arg</span> = <code class="code">sig</code> <a href="Dot.Arg.html">..</a> <code class="code">end</code></pre><hr width="100%">
+<p>Term printing for DOT</p>
+
+<p>This module defines what functions are required in order to export
+      a proof to the DOT format.</p>
+
+<pre><span id="TYPEatom"><span class="keyword">type</span> <code class="type"></code>atom</span> </pre>
+<div class="info ">
+<div class="info-desc">
+<p>The type of atomic formuals</p>
+</div>
+</div>
+
+
+<pre><span id="TYPEhyp"><span class="keyword">type</span> <code class="type"></code>hyp</span> </pre>
+
+
+<pre><span id="TYPElemma"><span class="keyword">type</span> <code class="type"></code>lemma</span> </pre>
+
+
+<pre><span id="TYPEassumption"><span class="keyword">type</span> <code class="type"></code>assumption</span> </pre>
+<div class="info ">
+<div class="info-desc">
+<p>The type of theory-specifi proofs (also called lemmas).</p>
+</div>
+</div>
+
+
+<pre><span id="VALprint_atom"><span class="keyword">val</span> print_atom</span> : <code class="type">Format.formatter -> <a href="Dot.Arg.html#TYPEatom">atom</a> -> unit</code></pre><div class="info ">
+<div class="info-desc">
+<p>Print the contents of the given atomic formulas.
+      WARNING: this function should take care to escape and/or not output special
+      reserved characters for the dot format (such as quotes and so on).</p>
+</div>
+</div>
+
+<pre><span id="VALhyp_info"><span class="keyword">val</span> hyp_info</span> : <code class="type"><a href="Dot.Arg.html#TYPEhyp">hyp</a> -><br>       string * string option * (Format.formatter -> unit -> unit) list</code></pre>
+<pre><span id="VALlemma_info"><span class="keyword">val</span> lemma_info</span> : <code class="type"><a href="Dot.Arg.html#TYPElemma">lemma</a> -><br>       string * string option * (Format.formatter -> unit -> unit) list</code></pre>
+<pre><span id="VALassumption_info"><span class="keyword">val</span> assumption_info</span> : <code class="type"><a href="Dot.Arg.html#TYPEassumption">assumption</a> -><br>       string * string option * (Format.formatter -> unit -> unit) list</code></pre><div class="info ">
+<div class="info-desc">
+<p>Generate some information about the leafs of the proof tree. Currently this backend
+      print each lemma/assumption/hypothesis as a single leaf of the proof tree.
+      These function should return a triplet <code class="code">(rule, color, l)</code>, such that:</p>
+<ul>
+<li><code class="code">rule</code> is a name for the proof (arbitrary, does not need to be unique, but
+        should rather be descriptive)</li>
+<li><code class="code">color</code> is a color name (optional) understood by DOT</li>
+<li><code class="code">l</code> is a list of printers that will be called to print some additional information</li>
+</ul>
+</div>
+</div>
+</body></html>
