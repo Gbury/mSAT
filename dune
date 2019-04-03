@@ -1,6 +1,7 @@
 
 (alias
  (name runtest)
+ (package msat)
  (deps README.md src/core/msat.cma src/sat/msat_sat.cma src/sudoku/sudoku_solve.exe)
  (locks test)
  (action (progn

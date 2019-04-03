@@ -73,7 +73,13 @@ let parse_file f =
   let module L = Lexing in
   CCIO.with_in f
     (fun ic ->
-       let buf = L.from_channel ic in
+       let buf =
+         if CCString.suffix ~suf:".gz" f
+         then (
+           let gic = Gzip.open_in_chan ic in
+           L.from_function (fun bytes len -> Gzip.input gic bytes 0 len)
+         ) else L.from_channel ic
+       in
        buf.L.lex_curr_p <- {buf.L.lex_curr_p with L.pos_fname=f;};
        Dimacs_parse.file Dimacs_lex.token buf)
 
