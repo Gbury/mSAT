@@ -25,7 +25,7 @@ before_install:
   - export OPAMVERBOSE=1
   - opam switch ${OCAML_VERSION}
   - eval `opam config env`
-  - opam install ocamlfind dune iter
+  - opam install ocamlfind dune iter camlzip
   - if ${RUN_TEST}; then opam install containers ; fi
 install:
   - make build

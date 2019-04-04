@@ -10,5 +10,5 @@
                   -unbox-closures -unbox-closures-factor 20)
   )
 
-(menhir (modules Dimacs_parse))
+(ocamlyacc (modules Dimacs_parse))
 (ocamllex (modules Dimacs_lex))

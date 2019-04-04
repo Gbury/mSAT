@@ -21,21 +21,14 @@
 
 prelude:
   | P CNF LIT LIT { () }
-  | error
-    {
-      failwith @@ Format.asprintf "expected prelude %a" pp_pos ($startpos,$endpos)
-    }
 
 clauses:
-  | l=clause* { l }
-  | error
-    {
-      failwith @@ Format.asprintf "expected list of clauses %a"
-        pp_pos ($startpos,$endpos)
-    }
+  | { [] }
+  | clause clauses { $1 :: $2 }
 
 file:
-  | prelude l=clauses EOF { l }
+  | prelude clauses EOF { $2 }
 
 clause:
-  | l=LIT+ ZERO { l }
+  | ZERO { [] }
+  | LIT clause { $1 :: $2 }
