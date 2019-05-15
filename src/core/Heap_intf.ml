@@ -1,8 +1,9 @@
-
 module type RANKED = sig
   type t
   val idx: t -> int (** Index in heap. return -1 if never set *)
+
   val set_idx : t -> int -> unit (** Update index in heap *)
+
   val cmp : t -> t -> bool
 end
 

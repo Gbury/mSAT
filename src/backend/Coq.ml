@@ -44,11 +44,11 @@ module Make(S : Msat.S)(A : Arg with type hyp := S.clause
     Array.iter aux (Clause.atoms clause)
 
   let elim_duplicate fmt goal hyp _ =
-    (** Printing info comment in coq *)
+    (* Printing info comment in coq *)
     Format.fprintf fmt
       "(* Eliminating doublons. Goal : %s ; Hyp : %s *)@\n"
       (name goal) (name hyp);
-    (** Prove the goal: intro the atoms, then use them with the hyp *)
+    (* Prove the goal: intro the atoms, then use them with the hyp *)
     let m = clause_map goal in
     Format.fprintf fmt "pose proof @[<hov>(fun %a=>@ %s%a) as %s@].@\n"
       (clause_iter m "%s@ ") goal (name hyp)
@@ -78,11 +78,11 @@ module Make(S : Msat.S)(A : Arg with type hyp := S.clause
         hyp2, hyp1
       )
     in
-    (** Print some debug info *)
+    (* Print some debug info *)
     Format.fprintf fmt
       "(* Clausal resolution. Goal : %s ; Hyps : %s, %s *)@\n"
       (name goal) (name h1) (name h2);
-    (** Prove the goal: intro the axioms, then perform resolution *)
+    (* Prove the goal: intro the axioms, then perform resolution *)
     if Array.length (Clause.atoms goal) = 0 then (
       let m = M.empty in
       Format.fprintf fmt "exact @[<hov 1>(%a)@].@\n" (resolution_aux m a h1 h2) ();
