@@ -1,19 +1,22 @@
 module type RANKED = sig
   type t
-  val idx: t -> int (** Index in heap. return -1 if never set *)
 
-  val set_idx : t -> int -> unit (** Update index in heap *)
+  val idx : t -> int
+  (** Index in heap. return -1 if never set *)
+
+  val set_idx : t -> int -> unit
+  (** Update index in heap *)
 
   val cmp : t -> t -> bool
 end
 
 module type S = sig
-  type elt
   (** Type of elements *)
+  type elt
 
-  type t
   (** Heap of {!elt}, whose priority is increased or decreased
       incrementally (see {!decrease} for instance) *)
+  type t
 
   val create : unit -> t
   (** Create a heap *)

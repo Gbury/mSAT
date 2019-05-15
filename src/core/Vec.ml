@@ -1,10 +1,9 @@
-
 type 'a t = {
   mutable data : 'a array;
-  mutable sz : int;
+  mutable sz : int
 }
 
-let make n x = {data=Array.make n x; sz=0}
+let make n x = {data = Array.make n x; sz = 0}
 
 let[@inline] create () = {data = [||]; sz = 0}
 
@@ -12,7 +11,7 @@ let[@inline] clear s = s.sz <- 0
 
 let[@inline] shrink t i =
   assert (i >= 0);
-  assert (i<=t.sz);
+  assert (i <= t.sz);
   t.sz <- i
 
 let[@inline] pop t =
@@ -33,12 +32,9 @@ let[@inline] copy t : _ t =
 
 (* grow the array *)
 let[@inline never] grow_to_double_size t x : unit =
-  if Array.length t.data = Sys.max_array_length then (
+  if Array.length t.data = Sys.max_array_length then
     failwith "vec: cannot resize";
-  );
-  let size =
-    min Sys.max_array_length (max 4 (2 * Array.length t.data))
-  in
+  let size = min Sys.max_array_length (max 4 (2 * Array.length t.data)) in
   let arr' = Array.make size x in
   Array.blit t.data 0 arr' 0 (Array.length t.data);
   t.data <- arr';
@@ -56,14 +52,13 @@ let[@inline] get t i =
 
 let[@inline] set t i v =
   if i < 0 || i > t.sz then invalid_arg "vec.set";
-  if i = t.sz then (
+  if i = t.sz then
     push t v
-  ) else (
+  else
     Array.unsafe_set t.data i v
-  )
 
 let[@inline] fast_remove t i =
-  assert (i>= 0 && i < t.sz);
+  assert (i >= 0 && i < t.sz);
   Array.unsafe_set t.data i @@ Array.unsafe_get t.data (t.sz - 1);
   t.sz <- t.sz - 1
 
@@ -98,16 +93,16 @@ let to_array a = Array.sub a.data 0 a.sz
 
 let of_list l : _ t =
   match l with
-  | [] -> create()
+  | [] -> create ()
   | x :: tl ->
-    let v = make (List.length tl+1) x in
+    let v = make (List.length tl + 1) x in
     List.iter (push v) l;
     v
 
-let pp ?(sep=", ") pp out v =
+let pp ?(sep = ", ") pp out v =
   let first = ref true in
   iter
     (fun x ->
-       if !first then first := false else Format.fprintf out "%s@," sep;
-       pp out x)
+      if !first then first := false else Format.fprintf out "%s@," sep;
+      pp out x )
     v

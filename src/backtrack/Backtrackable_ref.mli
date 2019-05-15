@@ -1,4 +1,3 @@
-
 (** {1 Backtrackable ref} *)
 
 type 'a t
@@ -16,7 +15,7 @@ val get : 'a t -> 'a
 
 val update : 'a t -> ('a -> 'a) -> unit
 (** Update the reference's current content *)
-  
+
 val push_level : _ t -> unit
 (** Push a backtracking level, copying the current value on top of some
     stack. The [copy] function will be used if it was provided in {!create}. *)

@@ -11,12 +11,11 @@ Copyright 2014 Simon Cruanes
     CNF, that can then be fed to a SAT/SMT/McSat solver.
 *)
 
-module type Arg = Tseitin_intf.Arg
 (** The implementation of formulas required to implement Tseitin's CNF conversion. *)
+module type Arg = Tseitin_intf.Arg
 
-module type S = Tseitin_intf.S
 (** The exposed interface of Tseitin's CNF conversion. *)
+module type S = Tseitin_intf.S
 
-module Make : functor (F : Arg) -> S with type atom = F.t
 (** This functor provides an implementation of Tseitin's CNF conversion. *)
-
+module Make (F : Arg) : S with type atom = F.t

@@ -1,6 +1,5 @@
-
-type 'a t
 (** Abstract type of vectors of 'a *)
+type 'a t
 
 val make : int -> 'a -> 'a t
 (** [make cap dummy] creates a new vector filled with [dummy]. The vector
@@ -80,4 +79,6 @@ val for_all : ('a -> bool) -> 'a t -> bool
 val pp :
   ?sep:string ->
   (Format.formatter -> 'a -> unit) ->
-  Format.formatter -> 'a t -> unit
+  Format.formatter ->
+  'a t ->
+  unit

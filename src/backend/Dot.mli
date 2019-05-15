@@ -10,8 +10,8 @@ Copyright 2014 Simon Cruanes
     Graphs in dot format can be used to generates images using the graphviz tool.
 *)
 
-module type S = Backend_intf.S
 (** Interface for exporting proofs. *)
+module type S = Backend_intf.S
 
 module type Arg = sig
   (** Term printing for DOT
@@ -20,22 +20,29 @@ module type Arg = sig
       a proof to the DOT format.
   *)
 
-  type atom
   (** The type of atomic formuals *)
+  type atom
 
   type hyp
   type lemma
-  type assumption
+
   (** The type of theory-specifi proofs (also called lemmas). *)
+  type assumption
 
   val print_atom : Format.formatter -> atom -> unit
   (** Print the contents of the given atomic formulas.
       WARNING: this function should take care to escape and/or not output special
       reserved characters for the dot format (such as quotes and so on). *)
 
-  val hyp_info : hyp -> string * string option * (Format.formatter -> unit -> unit) list
-  val lemma_info : lemma -> string * string option * (Format.formatter -> unit -> unit) list
-  val assumption_info : assumption -> string * string option * (Format.formatter -> unit -> unit) list
+  val hyp_info :
+    hyp -> string * string option * (Format.formatter -> unit -> unit) list
+
+  val lemma_info :
+    lemma -> string * string option * (Format.formatter -> unit -> unit) list
+
+  val assumption_info :
+    assumption ->
+    string * string option * (Format.formatter -> unit -> unit) list
   (** Generate some information about the leafs of the proof tree. Currently this backend
       print each lemma/assumption/hypothesis as a single leaf of the proof tree.
       These function should return a triplet [(rule, color, l)], such that:
@@ -44,27 +51,33 @@ module type Arg = sig
       - [color] is a color name (optional) understood by DOT
       - [l] is a list of printers that will be called to print some additional information
   *)
-
 end
 
-module Default(S : Msat.S) : Arg with type atom := S.atom
-                                 and type hyp := S.clause
-                                 and type lemma := S.clause
-                                 and type assumption := S.clause
 (** Provides a reasonnable default to instantiate the [Make] functor, assuming
     the original printing functions are compatible with DOT html labels. *)
+module Default (S : Msat.S) :
+  Arg
+  with type atom := S.atom
+   and type hyp := S.clause
+   and type lemma := S.clause
+   and type assumption := S.clause
 
-module Make(S : Msat.S)(A : Arg with type atom := S.atom
-                                and type hyp := S.clause
-                                and type lemma := S.clause
-                                and type assumption := S.clause) : S with type t := S.proof
 (** Functor for making a module to export proofs to the DOT format. *)
+module Make
+    (S : Msat.S)
+    (A : Arg
+         with type atom := S.atom
+          and type hyp := S.clause
+          and type lemma := S.clause
+          and type assumption := S.clause) : S with type t := S.proof
 
-module Simple(S : Msat.S)(A : Arg with type atom := S.formula
-                                  and type hyp = S.formula list
-                                  and type lemma := S.lemma
-                                  and type assumption = S.formula) : S with type t := S.proof
 (** Functor for making a module to export proofs to the DOT format.
     The substitution of the hyp type is non-destructive due to a restriction
     of destructive substitutions on earlier versions of ocaml. *)
-
+module Simple
+    (S : Msat.S)
+    (A : Arg
+         with type atom := S.formula
+          and type hyp = S.formula list
+          and type lemma := S.lemma
+          and type assumption = S.formula) : S with type t := S.proof

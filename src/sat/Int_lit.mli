@@ -1,4 +1,3 @@
-
 (** {1 The module defining formulas} *)
 
 (** SAT Formulas
@@ -8,8 +7,8 @@
     near optimal efficiency (both in terms of space and time).
 *)
 
-include Solver_intf.FORMULA
 (** This modules implements the requirements for implementing an SAT Solver. *)
+include Solver_intf.FORMULA
 
 val make : int -> t
 (** Make a proposition from an integer. *)

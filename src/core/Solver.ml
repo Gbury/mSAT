@@ -9,4 +9,3 @@ module type S = Solver_intf.S
 module Make_cdcl_t = Internal.Make_cdcl_t
 module Make_mcsat = Internal.Make_mcsat
 module Make_pure_sat = Internal.Make_pure_sat
-

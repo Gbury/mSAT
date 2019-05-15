@@ -11,9 +11,9 @@ Copyright 2016 Guillaume Bury
 
 module Int_lit = Int_lit
 
-include Msat.S
+(** A functor that can generate as many solvers as needed. *)
+include
+  Msat.S
   with type Formula.t = Int_lit.t
    and type theory = unit
    and type lemma = unit
-(** A functor that can generate as many solvers as needed. *)
-
