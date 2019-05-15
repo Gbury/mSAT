@@ -45,4 +45,7 @@ WATCH=all
 watch:
 	@dune build @all -w
 
-.PHONY: clean doc all bench install uninstall remove reinstall bin test
+fmt:
+	@dune build @fmt --auto-promote
+
+.PHONY: clean doc all bench install uninstall remove reinstall bin test fmt

@@ -1,10 +1,10 @@
-
 (alias
  (name runtest)
  (package msat)
- (deps README.md src/core/msat.cma src/sat/msat_sat.cma src/sudoku/sudoku_solve.exe)
+ (deps README.md src/core/msat.cma src/sat/msat_sat.cma
+   src/sudoku/sudoku_solve.exe)
  (locks test)
- (action (progn
-          (run mdx test README.md)
-          (diff? README.md README.md.corrected))))
-
+ (action
+  (progn
+   (run mdx test README.md)
+   (diff? README.md README.md.corrected))))
