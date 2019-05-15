@@ -1366,7 +1366,9 @@ module Make(Plugin : PLUGIN)
     assert (decision_level st > 0);
     Vec.clear to_unmark;
     let conflict_level =
-      Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
+      if Plugin.mcsat
+      then Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
+      else decision_level st
     in
     Log.debugf debug
       (fun k -> k "(@[sat.analyze-conflict@ :c-level %d@ :clause %a@])" conflict_level Clause.debug c_clause);
@@ -1613,7 +1615,7 @@ module Make(Plugin : PLUGIN)
             Vec.push ak.neg.watched c;
             assert (Vec.get a.watched i == c);
             Vec.fast_remove a.watched i;
-            raise Exit
+            raise_notrace Exit
           )
         done;
         (* no watch lit found *)
@@ -1816,14 +1818,11 @@ module Make(Plugin : PLUGIN)
     if st.elt_head = Vec.size st.trail then (
       theory_propagate st
     ) else (
-      let num_props = ref 0 in
       match
         while st.elt_head < Vec.size st.trail do
           begin match Vec.get st.trail st.elt_head with
             | Lit _ -> ()
-            | Atom a ->
-              incr num_props;
-              propagate_atom st a
+            | Atom a -> propagate_atom st a
           end;
           st.elt_head <- st.elt_head + 1;
         done;
