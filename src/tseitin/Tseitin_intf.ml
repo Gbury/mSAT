@@ -36,8 +36,7 @@ end
 module type S = sig
   (** CNF conversion
 
-      This modules allows to convert arbitrary boolean formulas
-      into CNF.
+      This modules converts arbitrary boolean formulas into CNF.
   *)
 
   type atom
