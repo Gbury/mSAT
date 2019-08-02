@@ -75,10 +75,10 @@ struct
     let a = Atom.abs atom in
     let h1, h2 =
       if Array.exists (Atom.equal a) (Clause.atoms hyp1) then
-        hyp1, hyp2
+        (hyp1, hyp2)
       else (
         assert (Array.exists (Atom.equal a) (Clause.atoms hyp2));
-        hyp2, hyp1 )
+        (hyp2, hyp1) )
     in
     (* Print some debug info *)
     Format.fprintf fmt "(* Clausal resolution. Goal : %s ; Hyps : %s, %s *)@\n"

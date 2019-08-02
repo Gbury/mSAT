@@ -44,13 +44,13 @@ module type Arg = sig
     assumption ->
     string * string option * (Format.formatter -> unit -> unit) list
   (** Generate some information about the leafs of the proof tree. Currently this backend
-      print each lemma/assumption/hypothesis as a single leaf of the proof tree.
-      These function should return a triplet [(rule, color, l)], such that:
-      - [rule] is a name for the proof (arbitrary, does not need to be unique, but
-        should rather be descriptive)
-      - [color] is a color name (optional) understood by DOT
-      - [l] is a list of printers that will be called to print some additional information
-  *)
+        print each lemma/assumption/hypothesis as a single leaf of the proof tree.
+        These function should return a triplet [(rule, color, l)], such that:
+        - [rule] is a name for the proof (arbitrary, does not need to be unique, but
+          should rather be descriptive)
+        - [color] is a color name (optional) understood by DOT
+        - [l] is a list of printers that will be called to print some additional information
+    *)
 end
 
 (** Provides a reasonnable default to instantiate the [Make] functor, assuming

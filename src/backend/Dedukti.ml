@@ -35,9 +35,9 @@ struct
       | a :: r ->
         let f, pos =
           if S.Atom.sign a then
-            S.Atom.formula a, true
+            (S.Atom.formula a, true)
           else
-            S.Atom.formula (S.Atom.neg a), false
+            (S.Atom.formula (S.Atom.neg a), false)
         in
         fprintf fmt "%s _b %a ->@ %a"
           (if pos then "_pos" else "_neg")

@@ -30,10 +30,9 @@ module Process () = struct
     let check_clause c =
       let l =
         List.map
-          (function
-            | a ->
-              Log.debugf 99 (fun k -> k "Checking value of %a" S.Formula.pp a);
-              sat.Msat.eval a )
+          (fun a ->
+            Log.debugf 99 (fun k -> k "Checking value of %a" S.Formula.pp a);
+            sat.Msat.eval a )
           c
       in
       List.exists (fun x -> x) l
@@ -126,14 +125,14 @@ let argspec =
     [ ( "-bt",
         Arg.Unit (fun () -> Printexc.record_backtrace true),
         " Enable stack traces" );
-      "-cnf", Arg.Set p_cnf, " Prints the cnf used.";
+      ("-cnf", Arg.Set p_cnf, " Prints the cnf used.");
       ( "-check",
         Arg.Set p_check,
         " Build, check and print the proof (if output is set), if unsat" );
       ( "-dot",
         Arg.Set_string p_dot_proof,
         " If provided, print the dot proof in the given file" );
-      "-gc", Arg.Unit setup_gc_stat, " Outputs statistics about the GC";
+      ("-gc", Arg.Unit setup_gc_stat, " Outputs statistics about the GC");
       ( "-size",
         Arg.String (int_arg size_limit),
         "<s>[kMGT] Sets the size limit for the sat solver" );
@@ -143,7 +142,7 @@ let argspec =
       ( "-v",
         Arg.Int (fun i -> Log.set_debug i),
         "<lvl> Sets the debug verbose level" );
-      "-no-proof", Arg.Set no_proof, " disable proof logging" ]
+      ("-no-proof", Arg.Set no_proof, " disable proof logging") ]
 
 (* Limits alarm *)
 let check () =

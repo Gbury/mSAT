@@ -245,23 +245,23 @@ module Make (F : Tseitin_intf.Arg) = struct
      opposite operator. *)
   let rec cnf f =
     match f with
-    | Lit a -> None, [a]
-    | Comb (Not, [Lit a]) -> None, [F.neg a]
+    | Lit a -> (None, [a])
+    | Comb (Not, [Lit a]) -> (None, [F.neg a])
     | Comb (And, l) ->
       List.fold_left
         (fun (_, acc) f ->
           match cnf f with
           | _, [] -> assert false
-          | _cmb, [a] -> Some And, a :: acc
-          | Some And, l -> Some And, l @@ acc
+          | _cmb, [a] -> (Some And, a :: acc)
+          | Some And, l -> (Some And, l @@ acc)
           (* let proxy = mk_proxy () in *)
           (* acc_and := (proxy, l) :: !acc_and; *)
           (* proxy :: acc *)
           | Some Or, l ->
             let proxy = mk_proxy () in
             acc_or := (proxy, l) :: !acc_or;
-            Some And, proxy :: acc
-          | None, l -> Some And, l @@ acc
+            (Some And, proxy :: acc)
+          | None, l -> (Some And, l @@ acc)
           | _ -> assert false )
         (None, []) l
     | Comb (Or, l) ->
@@ -269,16 +269,16 @@ module Make (F : Tseitin_intf.Arg) = struct
         (fun (_, acc) f ->
           match cnf f with
           | _, [] -> assert false
-          | _cmb, [a] -> Some Or, a :: acc
-          | Some Or, l -> Some Or, l @@ acc
+          | _cmb, [a] -> (Some Or, a :: acc)
+          | Some Or, l -> (Some Or, l @@ acc)
           (* let proxy = mk_proxy () in *)
           (* acc_or := (proxy, l) :: !acc_or; *)
           (* proxy :: acc *)
           | Some And, l ->
             let proxy = mk_proxy () in
             acc_and := (proxy, l) :: !acc_and;
-            Some Or, proxy :: acc
-          | None, l -> Some Or, l @@ acc
+            (Some Or, proxy :: acc)
+          | None, l -> (Some Or, l @@ acc)
           | _ -> assert false )
         (None, []) l
     | _ -> assert false
@@ -300,10 +300,10 @@ module Make (F : Tseitin_intf.Arg) = struct
           proxies := p :: !proxies;
           let np = F.neg p in
           (* build clause [cl = l1 & l2 & ... & ln => p] where [l = [l1;l2;..]]
-              also add clauses [p => l1], [p => l2], etc. *)
+               also add clauses [p => l1], [p => l2], etc. *)
           let cl, acc =
             List.fold_left
-              (fun (cl, acc) a -> F.neg a :: cl, [np; a] :: acc)
+              (fun (cl, acc) a -> (F.neg a :: cl, [np; a] :: acc))
               ([p], acc)
               l
           in
@@ -317,7 +317,7 @@ module Make (F : Tseitin_intf.Arg) = struct
         (fun acc (p, l) ->
           proxies := p :: !proxies;
           (* add clause [p => l1 | l2 | ... | ln], and add clauses
-              [l1 => p], [l2 => p], etc. *)
+               [l1 => p], [l2 => p], etc. *)
           let acc = List.fold_left (fun acc a -> [p; F.neg a] :: acc) acc l in
           (F.neg p :: l) :: acc )
         acc !acc_or

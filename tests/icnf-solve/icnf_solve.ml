@@ -145,8 +145,8 @@ let () =
   let debug = ref false in
   let check = ref false in
   let opts =
-    [ "-d", Arg.Set debug, " debug";
-      "--check", Arg.Set check, " check unsat cores" ]
+    [ ("-d", Arg.Set debug, " debug");
+      ("--check", Arg.Set check, " check unsat cores") ]
     |> Arg.align
   in
   Arg.parse opts (fun f -> files := f :: !files) "icnf_solve [options] <file>";

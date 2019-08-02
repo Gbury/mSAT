@@ -66,8 +66,8 @@ type 'term eval_res =
   | Unknown  (** The given formula does not have an evaluation *)
   | Valued of bool * 'term list
       (** The given formula can be evaluated to the given bool.
-                                      The list of terms to give is the list of terms that
-                                      were effectively used for the evaluation. *)
+                                  The list of terms to give is the list of terms that
+                                  were effectively used for the evaluation. *)
 
 (** Asusmptions made by the core SAT solver. *)
 type ('term, 'formula, 'value) assumption =
@@ -121,8 +121,8 @@ type ('term, 'formula, 'value, 'proof) acts = {
   acts_add_clause : ?keep:bool -> 'formula list -> 'proof -> unit;
       (** Add a clause to the solver.
       @param keep if true, the clause will be kept by the solver.
-        Otherwise the solver is allowed to GC the clause and propose this
-        partial model again. 
+      Otherwise the solver is allowed to GC the clause and propose this
+      partial model again. 
   *)
   acts_raise_conflict : 'b. 'formula list -> 'proof -> 'b;
       (** Raise a conflict, yielding control back to the solver.

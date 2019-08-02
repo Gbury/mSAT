@@ -178,7 +178,7 @@ module Make (Plugin : PLUGIN) = struct
 
     let make (st : st) (t : formula) : var * Solver_intf.negated =
       let lit, negated = Formula.norm t in
-      try MF.find st.f_map lit, negated
+      try (MF.find st.f_map lit, negated)
       with Not_found ->
         let cpt_double = st.cpt_mk_var lsl 1 in
         let rec var =
@@ -209,7 +209,7 @@ module Make (Plugin : PLUGIN) = struct
         MF.add st.f_map lit var;
         st.cpt_mk_var <- st.cpt_mk_var + 1;
         Vec.push st.vars (E_var var);
-        var, negated
+        (var, negated)
 
     (* Marking helpers *)
     let[@inline] clear v = v.v_fields <- 0
@@ -473,7 +473,7 @@ module Make (Plugin : PLUGIN) = struct
           l c2.atoms
       in
       Array.iter clear_var_of_ c2.atoms;
-      !pivots, l
+      (!pivots, l)
 
     (* [find_dups c] returns a list of duplicate atoms, and the deduplicated list *)
     let find_dups (c : clause) : atom list * atom list =
@@ -481,10 +481,10 @@ module Make (Plugin : PLUGIN) = struct
         Array.fold_left
           (fun (dups, l) a ->
             if Atom.seen a then
-              a :: dups, l
+              (a :: dups, l)
             else (
               Atom.mark a;
-              dups, a :: l ) )
+              (dups, a :: l) ) )
           ([], []) c.atoms
       in
       Array.iter clear_var_of_ c.atoms;
@@ -613,7 +613,7 @@ module Make (Plugin : PLUGIN) = struct
             Array.iter Atom.mark c.atoms;
             (* add atoms to result *)
             clear_var_of_ pivot;
-            Atom.abs pivot, c )
+            (Atom.abs pivot, c) )
           l
       in
       (* cleanup *)
@@ -625,7 +625,7 @@ module Make (Plugin : PLUGIN) = struct
       in
       Array.iter cleanup_a_ init.atoms;
       List.iter (fun c -> Array.iter cleanup_a_ c.atoms) l;
-      !res, steps
+      (!res, steps)
 
     let expand conclusion =
       Log.debugf 5 (fun k ->
@@ -650,7 +650,7 @@ module Make (Plugin : PLUGIN) = struct
       let {hr_init = c1; hr_steps = l} = hr in
       match l with
       | [] -> assert false
-      | [(a, c2)] -> c1, c2, a (* done *)
+      | [(a, c2)] -> (c1, c2, a) (* done *)
       | (a, c2) :: steps' ->
         (* resolve [c1] with [c2], then resolve that against [steps] *)
         let pivots, l = resolve c1 c2 in
@@ -681,7 +681,7 @@ module Make (Plugin : PLUGIN) = struct
     (* Compute unsat-core by accumulating the leaves *)
     let unsat_core proof =
       let rec aux res acc = function
-        | [] -> res, acc
+        | [] -> (res, acc)
         | c :: r ->
           if not @@ Clause.visited c then (
             Clause.set_visited c true;
@@ -1054,7 +1054,7 @@ module Make (Plugin : PLUGIN) = struct
   let partition atoms : atom list * clause list =
     let rec partition_aux trues unassigned falses history i =
       if i >= Array.length atoms then
-        trues @ unassigned @ falses, history
+        (trues @ unassigned @ falses, history)
       else (
         let a = atoms.(i) in
         if a.is_true then (
@@ -1082,7 +1082,7 @@ module Make (Plugin : PLUGIN) = struct
             | None | Some Decision ->
               assert false
               (* The var must have a reason, and it cannot be a decision/assumption,
-               since its level is 0. *) )
+                 since its level is 0. *) )
           else
             partition_aux trues unassigned (a :: falses) history (i + 1) )
         else
@@ -1212,13 +1212,13 @@ module Make (Plugin : PLUGIN) = struct
       | [_] ->
         if history = [] then
           (* no simplification has been done, so [cl] is actually a clause with only
-               [a], so it is a valid reason for propagating [a]. *)
+                 [a], so it is a valid reason for propagating [a]. *)
           r
         else (
           (* Clauses in [history] have been used to simplify [cl] into a clause [tmp_cl]
-               with only one formula (which is [a]). So we explicitly create that clause
-               and set it as the cause for the propagation of [a], that way we can
-               rebuild the whole resolution tree when we want to prove [a]. *)
+                 with only one formula (which is [a]). So we explicitly create that clause
+                 and set it as the cause for the propagation of [a], that way we can
+                 rebuild the whole resolution tree when we want to prove [a]. *)
           let c' = Clause.make ~flags:cl.flags l (History (cl :: history)) in
           Log.debugf debug (fun k ->
               k "(@[<hv>sat.simplified-reason@ %a@ %a@])" Clause.debug cl
@@ -1335,7 +1335,7 @@ module Make (Plugin : PLUGIN) = struct
      precond: the atom list is sorted by decreasing decision level *)
   let backtrack_lvl _st (arr : atom array) : int * bool =
     if Array.length arr <= 1 then
-      0, true
+      (0, true)
     else (
       let a = arr.(0) in
       let b = arr.(1) in
@@ -1347,7 +1347,7 @@ module Make (Plugin : PLUGIN) = struct
       else (
         assert (a.var.v_level = b.var.v_level);
         assert (a.var.v_level >= 0);
-        max (a.var.v_level - 1) 0, false ) )
+        (max (a.var.v_level - 1) 0, false) ) )
 
   (* result of conflict analysis, containing the learnt clause and some
      additional info.
@@ -1443,7 +1443,7 @@ module Make (Plugin : PLUGIN) = struct
       let p = get_atom st !tr_ind in
       decr pathC;
       decr tr_ind;
-      match !pathC, p.var.reason with
+      match (!pathC, p.var.reason) with
       | 0, _ ->
         cond := false;
         learnt := p.neg :: List.rev !learnt
@@ -1735,11 +1735,11 @@ module Make (Plugin : PLUGIN) = struct
             (let lits, proof = mk_expl () in
              let l = List.rev_map (fun f -> Atom.neg @@ mk_atom st f) lits in
              (* note: we can check that invariant here in the [lazy] block,
-             as conflict analysis will run in an environment where
-             the literals should be true anyway, since it's an extension of the
-             current trail
-             (otherwise the propagated lit would have been backtracked and
-             discarded already.) *)
+                as conflict analysis will run in an environment where
+                the literals should be true anyway, since it's an extension of the
+                current trail
+                (otherwise the propagated lit would have been backtracked and
+                discarded already.) *)
              check_consequence_lits_false_ l;
              Clause.make_removable (p :: l) (Lemma proof))
         in
@@ -1986,9 +1986,9 @@ module Make (Plugin : PLUGIN) = struct
     let lvl = a.var.v_level in
     if Atom.is_true a then (
       assert (lvl >= 0);
-      true, lvl )
+      (true, lvl) )
     else if Atom.is_false a then
-      false, lvl
+      (false, lvl)
     else
       raise UndecidedLit
 

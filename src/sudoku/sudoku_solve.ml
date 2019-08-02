@@ -68,11 +68,11 @@ end = struct
   open Iter.Infix
 
   let all_cells (g : t) =
-    0 -- 8 >>= fun i -> 0 -- 8 >|= fun j -> i, j, get g i j
+    0 -- 8 >>= fun i -> 0 -- 8 >|= fun j -> (i, j, get g i j)
 
-  let rows (g : t) = 0 -- 8 >|= fun i -> 0 -- 8 >|= fun j -> i, j, get g i j
+  let rows (g : t) = 0 -- 8 >|= fun i -> 0 -- 8 >|= fun j -> (i, j, get g i j)
 
-  let cols g = 0 -- 8 >|= fun j -> 0 -- 8 >|= fun i -> i, j, get g i j
+  let cols g = 0 -- 8 >|= fun j -> 0 -- 8 >|= fun i -> (i, j, get g i j)
 
   let squares g =
     0 -- 2 >>= fun sq_i ->
@@ -81,7 +81,7 @@ end = struct
     0 -- 2 >|= fun off_j ->
     let i = (3 * sq_i) + off_i in
     let j = (3 * sq_j) + off_j in
-    i, j, get g i j
+    (i, j, get g i j)
 
   let is_full g = Array.for_all Cell.is_full g
 
@@ -147,12 +147,12 @@ end = struct
         (if sign then "=" else "!=")
         Cell.pp c
 
-    let neg (sign, x, y, c) = not sign, x, y, c
+    let neg (sign, x, y, c) = (not sign, x, y, c)
 
     let norm ((sign, _, _, _) as f) =
-      if sign then f, Same_sign else neg f, Negated
+      if sign then (f, Same_sign) else (neg f, Negated)
 
-    let make sign x y (c : Cell.t) : t = sign, x, y, c
+    let make sign x y (c : Cell.t) : t = (sign, x, y, c)
   end
 
   module Theory = struct
@@ -324,7 +324,8 @@ let () =
   let files = ref [] in
   let debug = ref 0 in
   let opts =
-    ["--debug", Arg.Set_int debug, " debug"; "-d", Arg.Set_int debug, " debug"]
+    [ ("--debug", Arg.Set_int debug, " debug");
+      ("-d", Arg.Set_int debug, " debug") ]
     |> Arg.align
   in
   Arg.parse opts
