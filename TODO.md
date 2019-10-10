@@ -2,6 +2,7 @@
 
 ## Main goals
 
+- push decisions from theory (for th combination)
 - Add a backend to send proofs to dedukti
     * First, pure resolution proofs
     * Then, require theories to output lemma proofs for dedukti (in some format yet to be decided)

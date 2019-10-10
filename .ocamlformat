@@ -10,3 +10,4 @@ cases-exp-indent=2
 leading-nested-match-parens=true
 module-item-spacing=preserve
 doc-comments=after
+break-separators=after-and-docked
