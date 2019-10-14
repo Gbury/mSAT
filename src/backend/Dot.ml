@@ -4,8 +4,8 @@ Copyright 2014 Guillaume Bury
 Copyright 2014 Simon Cruanes
 *)
 
-(** Output interface for the backend *)
 module type S = Backend_intf.S
+(** Output interface for the backend *)
 
 (** Input module for the backend *)
 module type Arg = sig
@@ -16,8 +16,8 @@ module type Arg = sig
   type hyp
   type lemma
 
-  (** Types for hypotheses, lemmas, and assumptions. *)
   type assumption
+  (** Types for hypotheses, lemmas, and assumptions. *)
 
   val print_atom : Format.formatter -> atom -> unit
   (** Printing function for atoms *)
@@ -43,27 +43,27 @@ module Default (S : Msat.S) = struct
   let hyp_info c =
     ( "hypothesis",
       Some "LIGHTBLUE",
-      [(fun fmt () -> Format.fprintf fmt "%s" @@ Clause.name c)] )
+      [ (fun fmt () -> Format.fprintf fmt "%s" @@ Clause.name c) ] )
 
   let lemma_info c =
     ( "lemma",
       Some "BLUE",
-      [(fun fmt () -> Format.fprintf fmt "%s" @@ Clause.name c)] )
+      [ (fun fmt () -> Format.fprintf fmt "%s" @@ Clause.name c) ] )
 
   let assumption_info c =
     ( "assumption",
       Some "PURPLE",
-      [(fun fmt () -> Format.fprintf fmt "%s" @@ Clause.name c)] )
+      [ (fun fmt () -> Format.fprintf fmt "%s" @@ Clause.name c) ] )
 end
 
 (** Functor to provide dot printing *)
 module Make
     (S : Msat.S)
     (A : Arg
-         with type atom := S.atom
-          and type hyp := S.clause
-          and type lemma := S.clause
-          and type assumption := S.clause) =
+           with type atom := S.atom
+            and type hyp := S.clause
+            and type lemma := S.clause
+            and type assumption := S.clause) =
 struct
   module Atom = S.Atom
   module Clause = S.Clause
@@ -82,17 +82,17 @@ struct
       let n = Array.length v in
       for i = 0 to n - 1 do
         Format.fprintf fmt "%a" A.print_atom v.(i);
-        if i < n - 1 then
-          Format.fprintf fmt ", "
-      done )
+        if i < n - 1 then Format.fprintf fmt ", "
+      done
+    )
 
   let print_edge fmt i j = Format.fprintf fmt "%s -> %s;@\n" j i
 
   let print_edges fmt n =
     match P.(n.step) with
-    | P.Hyper_res {P.hr_steps = []; _} ->
+    | P.Hyper_res { P.hr_steps = []; _ } ->
       assert false (* NOTE: should never happen *)
-    | P.Hyper_res {P.hr_init; hr_steps = (_, p0) :: _ as l} ->
+    | P.Hyper_res { P.hr_init; hr_steps = (_, p0) :: _ as l } ->
       print_edge fmt (res_np_id n p0) (proof_id hr_init);
       List.iter
         (fun (_, p2) -> print_edge fmt (res_np_id n p2) (proof_id p2))
@@ -159,15 +159,15 @@ struct
         ( (fun fmt () -> Format.fprintf fmt "%s" (node_id n))
         :: List.map (ttify A.print_atom) l );
       print_edge fmt (node_id n) (node_id (P.expand p))
-    | P.Hyper_res {P.hr_steps = l; _} ->
+    | P.Hyper_res { P.hr_steps = l; _ } ->
       print_dot_node fmt (node_id n) "GREY"
         P.(n.conclusion)
         "Resolution" "GREY"
-        [(fun fmt () -> Format.fprintf fmt "%s" (node_id n))];
+        [ (fun fmt () -> Format.fprintf fmt "%s" (node_id n)) ];
       List.iter
         (fun (a, p2) ->
           print_dot_res_node fmt (res_np_id n p2) a;
-          print_edge fmt (node_id n) (res_np_id n p2) )
+          print_edge fmt (node_id n) (res_np_id n p2))
         l
 
   let print_node fmt n =
@@ -183,10 +183,10 @@ end
 module Simple
     (S : Msat.S)
     (A : Arg
-         with type atom := S.formula
-          and type hyp = S.formula list
-          and type lemma := S.lemma
-          and type assumption = S.formula) =
+           with type atom := S.formula
+            and type hyp = S.formula list
+            and type lemma := S.lemma
+            and type assumption = S.formula) =
   Make
     (S)
     (struct
@@ -199,12 +199,12 @@ module Simple
 
       let get_assumption c =
         match S.Clause.atoms_l c with
-        | [x] -> x
+        | [ x ] -> x
         | _ -> assert false
 
       let get_lemma c =
         match P.expand (P.prove c) with
-        | {P.step = P.Lemma p; _} -> p
+        | { P.step = P.Lemma p; _ } -> p
         | _ -> assert false
 
       (* Actual functions *)

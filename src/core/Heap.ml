@@ -5,11 +5,11 @@ module type S = Heap_intf.S
 module Make (Elt : RANKED) = struct
   type elt = Elt.t
 
-  type t = {heap : elt Vec.t} [@@unboxed]
+  type t = { heap : elt Vec.t } [@@unboxed]
 
   let _absent_index = -1
 
-  let create () = {heap = Vec.create ()}
+  let create () = { heap = Vec.create () }
 
   let[@inline] left i = (i lsl 1) + 1 (* i*2 + 1 *)
 
@@ -28,7 +28,7 @@ module Make (Elt : RANKED) = struct
 
   (* [elt] is above or at its expected position. Move it up the heap
      (towards high indices) to restore the heap property *)
-  let percolate_up {heap} (elt : Elt.t) : unit =
+  let percolate_up { heap } (elt : Elt.t) : unit =
     let pi = ref (parent (Elt.idx elt)) in
     let i = ref (Elt.idx elt) in
     while !i <> 0 && Elt.cmp elt (Vec.get heap !pi) do
@@ -40,7 +40,7 @@ module Make (Elt : RANKED) = struct
     Vec.set heap !i elt;
     Elt.set_idx elt !i
 
-  let percolate_down {heap} (elt : Elt.t) : unit =
+  let percolate_down { heap } (elt : Elt.t) : unit =
     let sz = Vec.size heap in
     let li = ref (left (Elt.idx elt)) in
     let ri = ref (right (Elt.idx elt)) in
@@ -82,8 +82,8 @@ module Make (Elt : RANKED) = struct
       if filt (Vec.get s.heap i) then (
         Vec.set s.heap !j (Vec.get s.heap i);
         Elt.set_idx (Vec.get s.heap i) !j;
-        incr j )
-      else
+        incr j
+      ) else
         Elt.set_idx (Vec.get s.heap i) _absent_index
     done;
     Vec.shrink s.heap (lim - !j);
@@ -95,7 +95,7 @@ module Make (Elt : RANKED) = struct
 
   let is_empty s = Vec.is_empty s.heap
 
-  let clear {heap} =
+  let clear { heap } =
     Vec.iter (fun e -> Elt.set_idx e _absent_index) heap;
     Vec.clear heap;
     ()
@@ -104,7 +104,8 @@ module Make (Elt : RANKED) = struct
     if not (in_heap elt) then (
       Elt.set_idx elt (Vec.size s.heap);
       Vec.push s.heap elt;
-      percolate_up s elt )
+      percolate_up s elt
+    )
 
   (*
   let update cmp s n =
@@ -120,7 +121,7 @@ module Make (Elt : RANKED) = struct
     assert (heap_property cmp s)
   *)
 
-  let remove_min ({heap} as s) =
+  let remove_min ({ heap } as s) =
     if Vec.size heap = 0 then raise Not_found;
     let x = Vec.get heap 0 in
     Elt.set_idx x _absent_index;
@@ -128,9 +129,9 @@ module Make (Elt : RANKED) = struct
     (* new head *)
     Vec.set heap 0 new_hd;
     Elt.set_idx new_hd 0;
+
     (* enforce heap property again *)
-    if Vec.size heap > 1 then
-      percolate_down s new_hd;
+    if Vec.size heap > 1 then percolate_down s new_hd;
     x
 end
 [@@inline]

@@ -13,7 +13,6 @@ Copyright 2016 Simon Cruanes
 
 type 'a printer = Format.formatter -> 'a -> unit
 
-(** The type of values returned when the solver reaches a SAT state. *)
 type ('term, 'form, 'value) sat_state = {
   eval : 'form -> bool;
       (** Returns the valuation of a formula in the current state
@@ -28,25 +27,26 @@ type ('term, 'form, 'value) sat_state = {
   iter_trail : ('form -> unit) -> ('term -> unit) -> unit;
       (** Iter thorugh the formulas and terms in order of decision/propagation
       (starting from the first propagation, to the last propagation). *)
-  model : unit -> ('term * 'value) list
+  model : unit -> ('term * 'value) list;
       (** Returns the model found if the formula is satisfiable. *)
 }
+(** The type of values returned when the solver reaches a SAT state. *)
 
-(** The type of values returned when the solver reaches an UNSAT state. *)
 type ('atom, 'clause, 'proof) unsat_state = {
   unsat_conflict : unit -> 'clause;
       (** Returns the unsat clause found at the toplevel *)
   get_proof : unit -> 'proof;
       (** returns a persistent proof of the empty clause from the Unsat result. *)
-  unsat_assumptions : unit -> 'atom list
+  unsat_assumptions : unit -> 'atom list;
       (** Subset of assumptions responsible for "unsat" *)
 }
+(** The type of values returned when the solver reaches an UNSAT state. *)
 
-(** Export internal state *)
 type 'clause export = {
   hyps : 'clause Vec.t;
-  history : 'clause Vec.t
+  history : 'clause Vec.t;
 }
+(** Export internal state *)
 
 (** This type is used during the normalisation of formulas.
     See {!val:Expr_intf.S.norm} for more details. *)
@@ -105,7 +105,6 @@ type lbool =
 
 (* TODO: find a way to use atoms instead of formulas here *)
 
-(** The type for a slice of assertions to assume/propagate in the theory. *)
 type ('term, 'formula, 'value, 'proof) acts = {
   acts_iter_assumptions :
     (('term, 'formula, 'value) assumption -> unit) -> unit;
@@ -128,23 +127,24 @@ type ('term, 'formula, 'value, 'proof) acts = {
       (** Raise a conflict, yielding control back to the solver.
       The list of atoms must be a valid theory lemma that is false in the
       current trail. *)
-  acts_propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit
+  acts_propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
       (** Propagate a formula, i.e. the theory can evaluate the formula to be true
       (see the definition of {!type:eval_res} *)
 }
+(** The type for a slice of assertions to assume/propagate in the theory. *)
 
 type ('a, 'b) gadt_eq = GADT_EQ : ('a, 'a) gadt_eq
 
-(** A provably empty type *)
 type void = (unit, bool) gadt_eq
+(** A provably empty type *)
 
 exception No_proof
 
 module type FORMULA = sig
   (** formulas *)
 
-  (** The type of atomic formulas over terms. *)
   type t
+  (** The type of atomic formulas over terms. *)
 
   val equal : t -> t -> bool
   (** Equality over formulas. *)
@@ -168,12 +168,12 @@ end
 
 (** Formulas and Terms required for mcSAT *)
 module type EXPR = sig
-  (** An abstract type for proofs *)
   type proof
+  (** An abstract type for proofs *)
 
   module Term : sig
-    (** The type of terms *)
     type t
+    (** The type of terms *)
 
     val equal : t -> t -> bool
     (** Equality over terms. *)
@@ -187,8 +187,8 @@ module type EXPR = sig
   end
 
   module Value : sig
-    (** The type of semantic values (domain elements) *)
     type t
+    (** The type of semantic values (domain elements) *)
 
     val pp : t printer
     (** Printing function used among other for debugging. *)
@@ -199,8 +199,8 @@ end
 
 (** Signature for theories to be given to the CDCL(T) solver *)
 module type PLUGIN_CDCL_T = sig
-  (** The plugin state itself *)
   type t
+  (** The plugin state itself *)
 
   module Formula : FORMULA
 
@@ -226,8 +226,8 @@ end
 
 (** Signature for theories to be given to the Model Constructing Solver. *)
 module type PLUGIN_MCSAT = sig
-  (** The plugin state itself *)
   type t
+  (** The plugin state itself *)
 
   include EXPR
 
@@ -270,25 +270,25 @@ module type PROOF = sig
 
   (** {3 Type declarations} *)
 
-  (** Raised when resolution failed. *)
   exception Resolution_error of string
+  (** Raised when resolution failed. *)
 
   type formula
   type atom
   type lemma
 
-  (** Abstract types for atoms, clauses and theory-specific lemmas *)
   type clause
+  (** Abstract types for atoms, clauses and theory-specific lemmas *)
 
+  type t
   (** Lazy type for proof trees. Proofs are persistent objects, and can be
       extended to proof nodes using functions defined later. *)
-  type t
 
-  (** A proof can be expanded into a proof node, which show the first step of the proof. *)
   and proof_node = {
     conclusion : clause;  (** The conclusion of the proof *)
-    step : step  (** The reasoning step used to prove the conclusion *)
+    step : step;  (** The reasoning step used to prove the conclusion *)
   }
+  (** A proof can be expanded into a proof node, which show the first step of the proof. *)
 
   (** The type of reasoning steps allowed in a proof. *)
   and step =
@@ -303,7 +303,7 @@ module type PROOF = sig
 
   and hyper_res_step = {
     hr_init : t;
-    hr_steps : (atom * t) list
+    hr_steps : (atom * t) list;
         (* list of pivot+clause to resolve against [init] *)
   }
 
@@ -381,23 +381,23 @@ module type S = sig
 
   include EXPR
 
-  (** user terms *)
   type term = Term.t
+  (** user terms *)
 
-  (** user formulas *)
   type formula = Formula.t
+  (** user formulas *)
 
+  type atom
   (** The type of atoms given by the module argument for formulas.
       An atom is a user-defined atomic formula whose truth value is
       picked by Msat. *)
-  type atom
 
   type clause
 
   type theory
 
-  (** A theory lemma or an input axiom *)
   type lemma
+  (** A theory lemma or an input axiom *)
 
   type solver
 
@@ -430,17 +430,17 @@ module type S = sig
   (** A module to manipulate proofs. *)
   module Proof :
     PROOF
-    with type clause = clause
-     and type atom = atom
-     and type formula = formula
-     and type lemma = lemma
-     and type t = proof
+      with type clause = clause
+       and type atom = atom
+       and type formula = formula
+       and type lemma = lemma
+       and type t = proof
 
-  (** Main solver type, containing all state for solving. *)
   type t = solver
+  (** Main solver type, containing all state for solving. *)
 
   val create :
-    ?store_proof:bool -> ?size:[`Tiny | `Small | `Big] -> theory -> t
+    ?store_proof:bool -> ?size:[ `Tiny | `Small | `Big ] -> theory -> t
   (** Create new solver
       @param theory the theory
       @param store_proof if true, stores proof (default [true]). Otherwise
@@ -460,9 +460,9 @@ module type S = sig
     | Unsat of (atom, clause, Proof.t) unsat_state
         (** Returned when the solver reaches UNSAT, with a proof *)
 
+  exception UndecidedLit
   (** Exception raised by the evaluating functions when a literal
       has not yet been assigned a value. *)
-  exception UndecidedLit
 
   (** {2 Base operations} *)
 

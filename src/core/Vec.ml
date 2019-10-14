@@ -1,11 +1,11 @@
 type 'a t = {
   mutable data : 'a array;
-  mutable sz : int
+  mutable sz : int;
 }
 
-let make n x = {data = Array.make n x; sz = 0}
+let make n x = { data = Array.make n x; sz = 0 }
 
-let[@inline] create () = {data = [||]; sz = 0}
+let[@inline] create () = { data = [||]; sz = 0 }
 
 let[@inline] clear s = s.sz <- 0
 
@@ -28,7 +28,7 @@ let[@inline] is_full t = Array.length t.data = t.sz
 
 let[@inline] copy t : _ t =
   let data = Array.copy t.data in
-  {t with data}
+  { t with data }
 
 (* grow the array *)
 let[@inline never] grow_to_double_size t x : unit =
@@ -65,11 +65,19 @@ let[@inline] fast_remove t i =
 let filter_in_place f vec =
   let i = ref 0 in
   while !i < size vec do
-    if f (Array.unsafe_get vec.data !i) then incr i else fast_remove vec !i
+    if f (Array.unsafe_get vec.data !i) then
+      incr i
+    else
+      fast_remove vec !i
   done
 
 let sort t f : unit =
-  let sub_arr = if is_full t then t.data else Array.sub t.data 0 t.sz in
+  let sub_arr =
+    if is_full t then
+      t.data
+    else
+      Array.sub t.data 0 t.sz
+  in
   Array.fast_sort f sub_arr;
   t.data <- sub_arr
 
@@ -103,6 +111,9 @@ let pp ?(sep = ", ") pp out v =
   let first = ref true in
   iter
     (fun x ->
-      if !first then first := false else Format.fprintf out "%s@," sep;
-      pp out x )
+      if !first then
+        first := false
+      else
+        Format.fprintf out "%s@," sep;
+      pp out x)
     v

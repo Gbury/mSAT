@@ -17,8 +17,8 @@ module type S = sig
       according to the conventions of a given format.
   *)
 
-  (** The type of proofs. *)
   type t
+  (** The type of proofs. *)
 
   val pp : Format.formatter -> t -> unit
   (** A function for printing proofs in the desired format. *)

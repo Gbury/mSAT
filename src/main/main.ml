@@ -32,7 +32,7 @@ module Process () = struct
         List.map
           (fun a ->
             Log.debugf 99 (fun k -> k "Checking value of %a" S.Formula.pp a);
-            sat.Msat.eval a )
+            sat.Msat.eval a)
           c
       in
       List.exists (fun x -> x) l
@@ -45,9 +45,7 @@ module Process () = struct
     let t = Sys.time () in
     match res with
     | S.Sat state ->
-      if !p_check then
-        if not (check_model state) then
-          raise Incorrect_model;
+      if !p_check then if not (check_model state) then raise Incorrect_model;
       let t' = Sys.time () -. t in
       Format.printf "Sat (%f/%f)@." t t'
     | S.Unsat state ->
@@ -60,7 +58,9 @@ module Process () = struct
           let fmt = Format.formatter_of_out_channel oc in
           Format.fprintf fmt "%a@?" D.pp p;
           flush oc;
-          close_out_noerr oc ) );
+          close_out_noerr oc
+        )
+      );
       let t' = Sys.time () -. t in
       Format.printf "Unsat (%f/%f)@." t t'
 
@@ -76,12 +76,12 @@ let parse_file f =
       let buf =
         if CCString.suffix ~suf:".gz" f then (
           let gic = Gzip.open_in_chan ic in
-          L.from_function (fun bytes len -> Gzip.input gic bytes 0 len) )
-        else
+          L.from_function (fun bytes len -> Gzip.input gic bytes 0 len)
+        ) else
           L.from_channel ic
       in
-      buf.L.lex_curr_p <- {buf.L.lex_curr_p with L.pos_fname = f};
-      Dimacs_parse.file Dimacs_lex.token buf )
+      buf.L.lex_curr_p <- { buf.L.lex_curr_p with L.pos_fname = f };
+      Dimacs_parse.file Dimacs_lex.token buf)
 
 let error_msg opt arg l =
   Format.fprintf Format.str_formatter
@@ -112,7 +112,8 @@ let int_arg r arg =
       | 'd' -> multiplier 86400.
       | '0' .. '9' -> r := float_of_string arg
       | _ -> raise (Arg.Bad "bad numeric argument")
-    with Failure _ -> raise (Arg.Bad "bad numeric argument") )
+    with Failure _ -> raise (Arg.Bad "bad numeric argument")
+  )
 
 let setup_gc_stat () = at_exit (fun () -> Gc.print_stat stdout)
 
@@ -122,7 +123,8 @@ let usage = "Usage : main [options] <file>"
 
 let argspec =
   Arg.align
-    [ ( "-bt",
+    [
+      ( "-bt",
         Arg.Unit (fun () -> Printexc.record_backtrace true),
         " Enable stack traces" );
       ("-cnf", Arg.Set p_cnf, " Prints the cnf used.");
@@ -142,7 +144,8 @@ let argspec =
       ( "-v",
         Arg.Int (fun i -> Log.set_debug i),
         "<lvl> Sets the debug verbose level" );
-      ("-no-proof", Arg.Set no_proof, " disable proof logging") ]
+      ("-no-proof", Arg.Set no_proof, " disable proof logging");
+    ]
 
 (* Limits alarm *)
 let check () =
@@ -159,7 +162,8 @@ let main () =
   Arg.parse argspec input_file usage;
   if !file = "" then (
     Arg.usage argspec usage;
-    exit 2 );
+    exit 2
+  );
   let al = Gc.create_alarm check in
   let module P = Process () in
   (* Interesting stuff happening *)

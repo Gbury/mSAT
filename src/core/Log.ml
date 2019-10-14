@@ -20,10 +20,8 @@ let set_debug_out f = debug_fmt_ := f
 let debug_real_ l k =
   k (fun fmt ->
       Format.fprintf !debug_fmt_ "@[<2>@{<Blue>[%d|%.3f]@}@ " l (Sys.time ());
-      Format.kfprintf (fun fmt -> Format.fprintf fmt "@]@.") !debug_fmt_ fmt )
+      Format.kfprintf (fun fmt -> Format.fprintf fmt "@]@.") !debug_fmt_ fmt)
 
-let[@inline] debugf l k =
-  if enabled && l <= !debug_level_ then
-    debug_real_ l k
+let[@inline] debugf l k = if enabled && l <= !debug_level_ then debug_real_ l k
 
 let[@inline] debug l msg = debugf l (fun k -> k "%s" msg)

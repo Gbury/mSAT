@@ -10,8 +10,8 @@ Copyright 2014 Simon Cruanes
     Graphs in dot format can be used to generates images using the graphviz tool.
 *)
 
-(** Interface for exporting proofs. *)
 module type S = Backend_intf.S
+(** Interface for exporting proofs. *)
 
 module type Arg = sig
   (** Term printing for DOT
@@ -20,14 +20,14 @@ module type Arg = sig
       a proof to the DOT format.
   *)
 
-  (** The type of atomic formuals *)
   type atom
+  (** The type of atomic formuals *)
 
   type hyp
   type lemma
 
-  (** The type of theory-specifi proofs (also called lemmas). *)
   type assumption
+  (** The type of theory-specifi proofs (also called lemmas). *)
 
   val print_atom : Format.formatter -> atom -> unit
   (** Print the contents of the given atomic formulas.
@@ -57,27 +57,27 @@ end
     the original printing functions are compatible with DOT html labels. *)
 module Default (S : Msat.S) :
   Arg
-  with type atom := S.atom
-   and type hyp := S.clause
-   and type lemma := S.clause
-   and type assumption := S.clause
+    with type atom := S.atom
+     and type hyp := S.clause
+     and type lemma := S.clause
+     and type assumption := S.clause
 
-(** Functor for making a module to export proofs to the DOT format. *)
 module Make
     (S : Msat.S)
     (A : Arg
-         with type atom := S.atom
-          and type hyp := S.clause
-          and type lemma := S.clause
-          and type assumption := S.clause) : S with type t := S.proof
+           with type atom := S.atom
+            and type hyp := S.clause
+            and type lemma := S.clause
+            and type assumption := S.clause) : S with type t := S.proof
+(** Functor for making a module to export proofs to the DOT format. *)
 
-(** Functor for making a module to export proofs to the DOT format.
-    The substitution of the hyp type is non-destructive due to a restriction
-    of destructive substitutions on earlier versions of ocaml. *)
 module Simple
     (S : Msat.S)
     (A : Arg
-         with type atom := S.formula
-          and type hyp = S.formula list
-          and type lemma := S.lemma
-          and type assumption = S.formula) : S with type t := S.proof
+           with type atom := S.formula
+            and type hyp = S.formula list
+            and type lemma := S.lemma
+            and type assumption = S.formula) : S with type t := S.proof
+(** Functor for making a module to export proofs to the DOT format.
+    The substitution of the hyp type is non-destructive due to a restriction
+    of destructive substitutions on earlier versions of ocaml. *)

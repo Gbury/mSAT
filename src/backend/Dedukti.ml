@@ -18,9 +18,9 @@ end
 module Make
     (S : Msat.S)
     (A : Arg
-         with type formula := S.formula
-          and type lemma := S.lemma
-          and type proof := S.proof) =
+           with type formula := S.formula
+            and type lemma := S.lemma
+            and type proof := S.proof) =
 struct
   module P = S.Proof
 
@@ -40,7 +40,10 @@ struct
             (S.Atom.formula (S.Atom.neg a), false)
         in
         fprintf fmt "%s _b %a ->@ %a"
-          (if pos then "_pos" else "_neg")
+          ( if pos then
+            "_pos"
+          else
+            "_neg" )
           A.pp f aux r
     in
     fprintf fmt "_b : Prop ->@ %a ->@ _proof _b" aux (S.Clause.atoms_l c)

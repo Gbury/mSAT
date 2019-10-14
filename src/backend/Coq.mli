@@ -9,8 +9,8 @@ Copyright 2015 Guillaume Bury
     corresponding to the resolution proofs output by the
     sat solver. *)
 
-(** Interface for exporting proofs. *)
 module type S = Backend_intf.S
+(** Interface for exporting proofs. *)
 
 module type Arg = sig
   (** Term printing for Coq *)
@@ -18,8 +18,8 @@ module type Arg = sig
   type hyp
   type lemma
 
-  (** The types of hypotheses, lemmas, and assumptions *)
   type assumption
+  (** The types of hypotheses, lemmas, and assumptions *)
 
   val prove_hyp : Format.formatter -> string -> hyp -> unit
   val prove_lemma : Format.formatter -> string -> lemma -> unit
@@ -34,18 +34,18 @@ module type Arg = sig
       one in the atoms array of the clause. *)
 end
 
-(** Base functor to output Coq proofs *)
 module Make
     (S : Msat.S)
     (A : Arg
-         with type hyp := S.clause
-          and type lemma := S.clause
-          and type assumption := S.clause) : S with type t := S.proof
+           with type hyp := S.clause
+            and type lemma := S.clause
+            and type assumption := S.clause) : S with type t := S.proof
+(** Base functor to output Coq proofs *)
 
-(** Simple functor to output Coq proofs *)
 module Simple
     (S : Msat.S)
     (A : Arg
-         with type hyp = S.formula list
-          and type lemma := S.lemma
-          and type assumption := S.formula) : S with type t := S.proof
+           with type hyp = S.formula list
+            and type lemma := S.lemma
+            and type assumption := S.formula) : S with type t := S.proof
+(** Simple functor to output Coq proofs *)

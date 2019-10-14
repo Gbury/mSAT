@@ -1,10 +1,10 @@
 type 'a t = {
   mutable cur : 'a;
   stack : 'a Vec.t;
-  copy : ('a -> 'a) option
+  copy : ('a -> 'a) option;
 }
 
-let create ?copy x : _ t = {cur = x; stack = Vec.create (); copy}
+let create ?copy x : _ t = { cur = x; stack = Vec.create (); copy }
 
 let[@inline] get self = self.cur
 let[@inline] set self x = self.cur <- x

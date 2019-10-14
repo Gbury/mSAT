@@ -1,5 +1,5 @@
-(** Abstract type of vectors of 'a *)
 type 'a t
+(** Abstract type of vectors of 'a *)
 
 val make : int -> 'a -> 'a t
 (** [make cap dummy] creates a new vector filled with [dummy]. The vector

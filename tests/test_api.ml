@@ -29,9 +29,11 @@ let usage = "Usage : test_api [options]"
 
 let argspec =
   Arg.align
-    [ ( "-v",
+    [
+      ( "-v",
         Arg.Int (fun i -> Log.set_debug i),
-        "<lvl> Sets the debug verbose level" ) ]
+        "<lvl> Sets the debug verbose level" );
+    ]
 
 type solver_res =
   | R_sat
@@ -49,16 +51,16 @@ let errorf msg = Format.ksprintf error msg
 module Test = struct
   type action =
     | A_assume of F.t list list
-    | A_solve of F.t list * [`Expect_sat | `Expect_unsat]
+    | A_solve of F.t list * [ `Expect_sat | `Expect_unsat ]
 
   type t = {
     name : string;
-    actions : action list
+    actions : action list;
   }
 
-  let mk_test name l = {name; actions = l}
+  let mk_test name l = { name; actions = l }
   let assume l = A_assume (List.map (List.map F.make) l)
-  let assume1 c = assume [c]
+  let assume1 c = assume [ c ]
 
   let solve ?(assumptions = []) e =
     let assumptions = List.map F.make assumptions in
@@ -83,65 +85,73 @@ module Test = struct
               let p = us.Msat.get_proof () in
               S.Proof.check p
             | S.Unsat _, `Expect_sat -> error "expect sat, got unsat"
-            | S.Sat _, `Expect_unsat -> error "expect unsat, got sat" ) )
+            | S.Sat _, `Expect_unsat -> error "expect unsat, got sat" ))
         t.actions;
       Pass
     with Error msg -> Fail msg
 
   (* basic test *)
   let test1 =
-    [ assume [[-1; 2]; [-1; 3]];
+    [
+      assume [ [ -1; 2 ]; [ -1; 3 ] ];
       solve `Expect_sat;
-      assume [[-2; 4]; [-3; -4]];
+      assume [ [ -2; 4 ]; [ -3; -4 ] ];
       solve `Expect_sat;
-      assume [[1]];
-      solve `Expect_unsat ]
+      assume [ [ 1 ] ];
+      solve `Expect_unsat;
+    ]
     |> mk_test "test1"
 
   (* same as test1 but with assumptions *)
   let test2 =
-    [ solve `Expect_sat;
-      assume [[-1; 2]; [-1; 3]];
+    [
       solve `Expect_sat;
-      assume [[-2; 4]; [-3; -4]];
+      assume [ [ -1; 2 ]; [ -1; 3 ] ];
       solve `Expect_sat;
-      solve ~assumptions:[1] `Expect_unsat;
-      solve `Expect_sat ]
+      assume [ [ -2; 4 ]; [ -3; -4 ] ];
+      solve `Expect_sat;
+      solve ~assumptions:[ 1 ] `Expect_unsat;
+      solve `Expect_sat;
+    ]
     |> mk_test "test2"
 
   (* repeat assumptions *)
   let test3 =
-    [ assume [[-1; 2]; [-1; 3]];
+    [
+      assume [ [ -1; 2 ]; [ -1; 3 ] ];
       solve `Expect_sat;
-      assume [[-2; 4]; [-3; -4]];
+      assume [ [ -2; 4 ]; [ -3; -4 ] ];
       solve `Expect_sat;
-      solve ~assumptions:[1] `Expect_unsat;
+      solve ~assumptions:[ 1 ] `Expect_unsat;
       solve `Expect_sat;
-      solve ~assumptions:[1] `Expect_unsat;
+      solve ~assumptions:[ 1 ] `Expect_unsat;
       solve `Expect_sat;
-      solve ~assumptions:[1] `Expect_unsat;
+      solve ~assumptions:[ 1 ] `Expect_unsat;
       solve `Expect_sat;
-      solve ~assumptions:[2] `Expect_sat;
-      assume [[1]];
-      solve `Expect_unsat ]
+      solve ~assumptions:[ 2 ] `Expect_sat;
+      assume [ [ 1 ] ];
+      solve `Expect_unsat;
+    ]
     |> mk_test "test3"
 
   (* Conflict at level 0 *)
   let test4 =
-    [ assume [[-1; -2]];
+    [
+      assume [ [ -1; -2 ] ];
       solve `Expect_sat;
-      assume [[1]];
+      assume [ [ 1 ] ];
       solve `Expect_sat;
-      assume [[2]];
-      solve ~assumptions:[3] `Expect_unsat;
+      assume [ [ 2 ] ];
+      solve ~assumptions:[ 3 ] `Expect_unsat;
       solve ~assumptions:[] `Expect_unsat;
-      solve ~assumptions:[] `Expect_unsat ]
+      solve ~assumptions:[] `Expect_unsat;
+    ]
     |> mk_test "conflict0"
 
   (* just check that we do create new solvers *)
-  let test_clean = [solve `Expect_sat] |> mk_test "test_clean"
+  let test_clean = [ solve `Expect_sat ] |> mk_test "test_clean"
 
-  let suite = [test1; test2; test3; test4; test_clean (* after test3 *)]
+  let suite = [ test1; test2; test3; test4; test_clean (* after test3 *) ]
 end
 
 let main () =
@@ -155,7 +165,7 @@ let main () =
       | Test.Pass -> Printf.printf "ok\n%!"
       | Test.Fail msg ->
         failed := true;
-        Printf.printf "fail (%s)\n%!" msg )
+        Printf.printf "fail (%s)\n%!" msg)
     Test.suite;
   if !failed then exit 1
 

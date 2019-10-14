@@ -11,12 +11,12 @@ module type RANKED = sig
 end
 
 module type S = sig
-  (** Type of elements *)
   type elt
+  (** Type of elements *)
 
+  type t
   (** Heap of {!elt}, whose priority is increased or decreased
       incrementally (see {!decrease} for instance) *)
-  type t
 
   val create : unit -> t
   (** Create a heap *)

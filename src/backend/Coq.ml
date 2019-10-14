@@ -18,9 +18,9 @@ end
 module Make
     (S : Msat.S)
     (A : Arg
-         with type hyp := S.clause
-          and type lemma := S.clause
-          and type assumption := S.clause) =
+           with type hyp := S.clause
+            and type lemma := S.clause
+            and type assumption := S.clause) =
 struct
   module Atom = S.Atom
   module Clause = S.Clause
@@ -36,7 +36,8 @@ struct
         acc
       else (
         let name = Format.sprintf "A%d" i in
-        aux (M.add a.(i) name acc) a (i + 1) )
+        aux (M.add a.(i) name acc) a (i + 1)
+      )
     in
     aux M.empty (Clause.atoms c) 0
 
@@ -48,6 +49,7 @@ struct
     (* Printing info comment in coq *)
     Format.fprintf fmt "(* Eliminating doublons. Goal : %s ; Hyp : %s *)@\n"
       (name goal) (name hyp);
+
     (* Prove the goal: intro the atoms, then use them with the hyp *)
     let m = clause_map goal in
     Format.fprintf fmt "pose proof @[<hov>(fun %a=>@ %s%a) as %s@].@\n"
@@ -65,10 +67,10 @@ struct
                       if Atom.equal c (Atom.neg a) then
                         Format.fprintf fmt "@ (fun np => np p)"
                       else
-                        Format.fprintf fmt "@ %s" (M.find c m) ) )
+                        Format.fprintf fmt "@ %s" (M.find c m)))
                 (Clause.atoms h2)
             else
-              Format.fprintf fmt "@ %s" (M.find b m) ) )
+              Format.fprintf fmt "@ %s" (M.find b m)))
       (Clause.atoms h1)
 
   let resolution fmt goal hyp1 hyp2 atom =
@@ -78,22 +80,25 @@ struct
         (hyp1, hyp2)
       else (
         assert (Array.exists (Atom.equal a) (Clause.atoms hyp2));
-        (hyp2, hyp1) )
+        (hyp2, hyp1)
+      )
     in
     (* Print some debug info *)
     Format.fprintf fmt "(* Clausal resolution. Goal : %s ; Hyps : %s, %s *)@\n"
       (name goal) (name h1) (name h2);
+
     (* Prove the goal: intro the axioms, then perform resolution *)
     if Array.length (Clause.atoms goal) = 0 then (
       let m = M.empty in
       Format.fprintf fmt "exact @[<hov 1>(%a)@].@\n" (resolution_aux m a h1 h2)
         ();
-      false )
-    else (
+      false
+    ) else (
       let m = clause_map goal in
       Format.fprintf fmt "pose proof @[<hov>(fun %a=>@ %a)@ as %s.@]@\n"
         (clause_iter m "%s@ ") goal (resolution_aux m a h1 h2) () (name goal);
-      true )
+      true
+    )
 
   (* Count uses of hypotheses *)
   let incr_use h c =
@@ -110,7 +115,7 @@ struct
 
   let rec clean_aux fmt = function
     | [] -> ()
-    | [x] -> Format.fprintf fmt "%a@\n" clear x
+    | [ x ] -> Format.fprintf fmt "%a@\n" clear x
     | x :: (_ :: _ as r) -> Format.fprintf fmt "%a@ %a" clear x clean_aux r
 
   let clean h fmt l =
@@ -128,12 +133,12 @@ struct
     | P.Duplicate (p, l) ->
       let c = P.conclusion p in
       let () = elim_duplicate fmt clause c l in
-      clean t fmt [c]
+      clean t fmt [ c ]
     | P.Hyper_res hr ->
       let p1, p2, a = P.res_of_hyper_res hr in
       let c1 = P.conclusion p1 in
       let c2 = P.conclusion p2 in
-      if resolution fmt clause c1 c2 a then clean t fmt [c1; c2]
+      if resolution fmt clause c1 c2 a then clean t fmt [ c1; c2 ]
 
   let count_uses p =
     let h = C_tbl.create 128 in
@@ -157,9 +162,9 @@ end
 module Simple
     (S : Msat.S)
     (A : Arg
-         with type hyp = S.formula list
-          and type lemma := S.lemma
-          and type assumption := S.formula) =
+           with type hyp = S.formula list
+            and type lemma := S.lemma
+            and type assumption := S.formula) =
   Make
     (S)
     (struct
@@ -170,12 +175,12 @@ module Simple
 
       let get_assumption c =
         match S.Clause.atoms_l c with
-        | [x] -> x
+        | [ x ] -> x
         | _ -> assert false
 
       let get_lemma c =
         match P.expand (P.prove c) with
-        | {P.step = P.Lemma p; _} -> p
+        | { P.step = P.Lemma p; _ } -> p
         | _ -> assert false
 
       let prove_hyp fmt name c =

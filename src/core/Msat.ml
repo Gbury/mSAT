@@ -9,8 +9,8 @@ module type PLUGIN_CDCL_T = Solver_intf.PLUGIN_CDCL_T
 module type PLUGIN_MCSAT = Solver_intf.PLUGIN_MCSAT
 module type PROOF = Solver_intf.PROOF
 
-(** Empty type *)
 type void = (unit, bool) Solver_intf.gadt_eq
+(** Empty type *)
 
 type lbool = Solver_intf.lbool =
   | L_true
@@ -22,19 +22,19 @@ type ('term, 'form, 'value) sat_state =
   eval : 'form -> bool;
   eval_level : 'form -> bool * int;
   iter_trail : ('form -> unit) -> ('term -> unit) -> unit;
-  model : unit -> ('term * 'value) list
+  model : unit -> ('term * 'value) list;
 }
 
 type ('atom, 'clause, 'proof) unsat_state =
       ('atom, 'clause, 'proof) Solver_intf.unsat_state = {
   unsat_conflict : unit -> 'clause;
   get_proof : unit -> 'proof;
-  unsat_assumptions : unit -> 'atom list
+  unsat_assumptions : unit -> 'atom list;
 }
 
 type 'clause export = 'clause Solver_intf.export = {
   hyps : 'clause Vec.t;
-  history : 'clause Vec.t
+  history : 'clause Vec.t;
 }
 
 type ('term, 'formula, 'value) assumption =
@@ -55,7 +55,7 @@ type ('term, 'formula, 'value, 'proof) acts =
   acts_mk_term : 'term -> unit;
   acts_add_clause : ?keep:bool -> 'formula list -> 'proof -> unit;
   acts_raise_conflict : 'b. 'formula list -> 'proof -> 'b;
-  acts_propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit
+  acts_propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
 }
 
 type negated = Solver_intf.negated =

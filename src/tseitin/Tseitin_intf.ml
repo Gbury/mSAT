@@ -19,8 +19,8 @@ module type Arg = sig
       Tseitin's CNF conversion.
   *)
 
-  (** Type of atomic formulas. *)
   type t
+  (** Type of atomic formulas. *)
 
   val neg : t -> t
   (** Negation of atomic formulas. *)
@@ -39,13 +39,13 @@ module type S = sig
       into CNF.
   *)
 
-  (** The type of atomic formulas. *)
   type atom
+  (** The type of atomic formulas. *)
 
+  type t
   (** The type of arbitrary boolean formulas. Arbitrary boolean formulas
       can be built using functions in this module, and then converted
       to a CNF, which is a list of clauses that only use atomic formulas. *)
-  type t
 
   val f_true : t
   (** The [true] formula, i.e a formula that is always satisfied. *)

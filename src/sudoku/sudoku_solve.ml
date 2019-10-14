@@ -29,7 +29,12 @@ end = struct
   let hash = CCHash.int
   let[@inline] equal (a : t) b = a = b
   let[@inline] neq (a : t) b = a <> b
-  let pp out i = if i = 0 then Fmt.char out '.' else Fmt.int out i
+
+  let pp out i =
+    if i = 0 then
+      Fmt.char out '.'
+    else
+      Fmt.int out i
 end
 
 module Grid : sig
@@ -38,8 +43,8 @@ module Grid : sig
   val get : t -> int -> int -> Cell.t
   val set : t -> int -> int -> Cell.t -> t
 
-  (** A set of related cells *)
   type set = (int * int * Cell.t) Iter.t
+  (** A set of related cells *)
 
   val rows : t -> set Iter.t
   val cols : t -> set Iter.t
@@ -62,17 +67,22 @@ end = struct
     s'.((i * 9) + j) <- n;
     s'
 
-  (** A set of related cells *)
   type set = (int * int * Cell.t) Iter.t
+  (** A set of related cells *)
 
   open Iter.Infix
 
   let all_cells (g : t) =
-    0 -- 8 >>= fun i -> 0 -- 8 >|= fun j -> (i, j, get g i j)
+    0 -- 8 >>= fun i ->
+    0 -- 8 >|= fun j -> (i, j, get g i j)
 
-  let rows (g : t) = 0 -- 8 >|= fun i -> 0 -- 8 >|= fun j -> (i, j, get g i j)
+  let rows (g : t) =
+    0 -- 8 >|= fun i ->
+    0 -- 8 >|= fun j -> (i, j, get g i j)
 
-  let cols g = 0 -- 8 >|= fun j -> 0 -- 8 >|= fun i -> (i, j, get g i j)
+  let cols g =
+    0 -- 8 >|= fun j ->
+    0 -- 8 >|= fun i -> (i, j, get g i j)
 
   let squares g =
     0 -- 2 >>= fun sq_i ->
@@ -106,7 +116,7 @@ end = struct
     Array.iteri
       (fun i n ->
         Cell.pp out n;
-        if i mod 9 = 8 then Fmt.fprintf out "@," )
+        if i mod 9 = 8 then Fmt.fprintf out "@,")
       g;
     Fmt.fprintf out "@]"
 
@@ -116,7 +126,12 @@ end = struct
     let a = Array.make 81 Cell.empty in
     for i = 0 to 80 do
       let c = s.[i] in
-      let n = if c = '.' then 0 else Char.code c - Char.code '0' in
+      let n =
+        if c = '.' then
+          0
+        else
+          Char.code c - Char.code '0'
+      in
       if n < 0 || n > 9 then errorf "invalid char %c" c;
       a.(i) <- Cell.make n
     done;
@@ -144,13 +159,19 @@ end = struct
 
     let pp out (sign, x, y, c) =
       Fmt.fprintf out "[@[(%d,%d) %s %a@]]" x y
-        (if sign then "=" else "!=")
+        ( if sign then
+          "="
+        else
+          "!=" )
         Cell.pp c
 
     let neg (sign, x, y, c) = (not sign, x, y, c)
 
     let norm ((sign, _, _, _) as f) =
-      if sign then (f, Same_sign) else (neg f, Negated)
+      if sign then
+        (f, Same_sign)
+      else
+        (neg f, Negated)
 
     let make sign x y (c : Cell.t) : t = (sign, x, y, c)
   end
@@ -159,9 +180,9 @@ end = struct
     type proof = unit
     module Formula = F
 
-    type t = {grid : Grid.t B_ref.t}
+    type t = { grid : Grid.t B_ref.t }
 
-    let create g : t = {grid = B_ref.create g}
+    let create g : t = { grid = B_ref.create g }
     let[@inline] grid self : Grid.t = B_ref.get self.grid
     let[@inline] set_grid self g : unit = B_ref.set self.grid g
 
@@ -181,26 +202,28 @@ end = struct
               CCList.init 9 (fun c -> F.make true x y (Cell.make (c + 1)))
             in
             Log.debugf 4 (fun k -> k "(@[add-clause@ %a@])" pp_c_ c);
-            acts.acts_add_clause ~keep:true c () ) )
+            acts.acts_add_clause ~keep:true c ()
+          ))
 
     (* check constraints *)
     let check_ (self : t) acts : unit =
       Log.debugf 4 (fun k ->
-          k "(@[sudoku.check@ @[:g %a@]@])" Grid.pp (B_ref.get self.grid) );
+          k "(@[sudoku.check@ @[:g %a@]@])" Grid.pp (B_ref.get self.grid));
       let[@inline] all_diff kind f =
         let pairs =
           f (grid self)
           |> Iter.flat_map (fun set ->
                  set
                  |> Iter.filter (fun (_, _, c) -> Cell.is_full c)
-                 |> Iter.diagonal )
+                 |> Iter.diagonal)
         in
         pairs (fun ((x1, y1, c1), (x2, y2, c2)) ->
             if Cell.equal c1 c2 then (
               assert (x1 <> x2 || y1 <> y2);
-              let c = [F.make false x1 y1 c1; F.make false x2 y2 c2] in
+              let c = [ F.make false x1 y1 c1; F.make false x2 y2 c2 ] in
               logs_conflict ("all-diff." ^ kind) c;
-              acts.acts_raise_conflict c () ) )
+              acts.acts_raise_conflict c ()
+            ))
       in
       all_diff "rows" Grid.rows;
       all_diff "cols" Grid.cols;
@@ -211,7 +234,7 @@ end = struct
       acts.acts_iter_assumptions
       |> Iter.map (function
            | Assign _ -> assert false
-           | Lit f -> f )
+           | Lit f -> f)
 
     (* update current grid with the given slice *)
     let add_slice (self : t) acts : unit =
@@ -225,14 +248,15 @@ end = struct
             set_grid self (Grid.set grid x y c)
           else if Cell.neq c c' then (
             (* conflict: at most one value *)
-            let c = [F.make false x y c; F.make false x y c'] in
+            let c = [ F.make false x y c; F.make false x y c' ] in
             logs_conflict "at-most-one" c;
-            acts.acts_raise_conflict c () ) )
+            acts.acts_raise_conflict c ()
+          ))
 
     let partial_check (self : t) acts : unit =
       Log.debugf 4 (fun k ->
           k "(@[sudoku.partial-check@ :trail [@[%a@]]@])" (Fmt.seq F.pp)
-            (trail_ acts) );
+            (trail_ acts));
       add_slice self acts;
       check_ self acts
 
@@ -246,7 +270,7 @@ end = struct
 
   type t = {
     grid0 : Grid.t;
-    solver : S.t
+    solver : S.t;
   }
 
   let solve (self : t) : _ option =
@@ -259,7 +283,7 @@ end = struct
     in
     Log.debugf 2 (fun k ->
         k "(@[sudoku.solve@ :assumptions %a@])" (Fmt.Dump.list S.Atom.pp)
-          assumptions );
+          assumptions);
     let r =
       match S.solve self.solver ~assumptions with
       | S.Sat _ -> Some (Theory.grid (S.theory self.solver))
@@ -269,7 +293,7 @@ end = struct
     r
 
   let create g : t =
-    {solver = S.create ~store_proof:false (Theory.create g); grid0 = g}
+    { solver = S.create ~store_proof:false (Theory.create g); grid0 = g }
 end
 
 let solve_grid (g : Grid.t) : Grid.t option =
@@ -289,8 +313,8 @@ let solve_file file =
              match Grid.parse s with
              | g -> Some g
              | exception e ->
-               errorf "cannot parse sudoku %S: %s@." s (Printexc.to_string e) )
-       )
+               errorf "cannot parse sudoku %S: %s@." s (Printexc.to_string e)
+           ))
   in
   Format.printf "parsed %d grids (in %.3fs)@." (List.length grids)
     (Sys.time () -. start);
@@ -313,7 +337,7 @@ let solve_file file =
         Format.printf
           "@[<v>@[<2>solution (in %.3fs):@ %a@]@,###################@]@."
           (Sys.time () -. start)
-          Grid.pp g' )
+          Grid.pp g')
     grids;
   Format.printf "@.solved %d grids (in %.3fs)@." (List.length grids)
     (Sys.time () -. start);
@@ -324,8 +348,10 @@ let () =
   let files = ref [] in
   let debug = ref 0 in
   let opts =
-    [ ("--debug", Arg.Set_int debug, " debug");
-      ("-d", Arg.Set_int debug, " debug") ]
+    [
+      ("--debug", Arg.Set_int debug, " debug");
+      ("-d", Arg.Set_int debug, " debug");
+    ]
     |> Arg.align
   in
   Arg.parse opts
