@@ -246,6 +246,7 @@ module Make(Plugin : PLUGIN)
     let[@inline] id a = a.aid
     let[@inline] is_true a = a.is_true
     let[@inline] is_false a = a.neg.is_true
+    let has_value a = is_true a || is_false a
 
     let[@inline] seen a =
       if sign a
@@ -1700,8 +1701,10 @@ module Make(Plugin : PLUGIN)
 
   let acts_add_decision_lit (st:t) (f:formula) : unit =
     let a = create_atom st f in
-    Log.debugf 10 (fun k->k "(@[sat.th.add-decision-lit@ %a@])" Atom.debug a);
-    st.next_decisions <- a :: st.next_decisions
+    if not (Atom.has_value a) then (
+      Log.debugf 10 (fun k->k "(@[sat.th.add-decision-lit@ %a@])" Atom.debug a);
+      st.next_decisions <- a :: st.next_decisions
+    )
 
   let acts_raise st (l:formula list) proof : 'a =
     let atoms = List.rev_map (create_atom st) l in
