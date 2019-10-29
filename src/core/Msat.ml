@@ -1,4 +1,3 @@
-
 (** Main API *)
 
 
@@ -49,6 +48,7 @@ type ('term, 'formula, 'value, 'proof) acts = ('term, 'formula, 'value, 'proof) 
   acts_add_clause : ?keep:bool -> 'formula list -> 'proof -> unit;
   acts_raise_conflict: 'b. 'formula list -> 'proof -> 'b;
   acts_propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
+  acts_add_decision_lit: 'formula -> unit;
 }
 
 type negated = Solver_intf.negated = Negated | Same_sign

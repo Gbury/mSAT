@@ -131,6 +131,11 @@ type ('term, 'formula, 'value, 'proof) acts = {
   acts_propagate: 'formula -> ('term, 'formula, 'proof) reason -> unit;
   (** Propagate a formula, i.e. the theory can evaluate the formula to be true
       (see the definition of {!type:eval_res} *)
+
+  acts_add_decision_lit: 'formula -> unit;
+  (** Ask the SAT solver to decide on the given formula before it can
+      answer [SAT]. This will be removed on backtrack.
+      Useful for theory combination. *)
 }
 (** The type for a slice of assertions to assume/propagate in the theory. *)
 
