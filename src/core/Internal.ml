@@ -2041,7 +2041,9 @@ module Make(Plugin : PLUGIN)
             begin match Plugin.final_check st.th (full_slice st) with
               | () ->
                 if st.elt_head = Vec.size st.trail &&
-                   Vec.is_empty st.clauses_to_add then (
+                   Vec.is_empty st.clauses_to_add &&
+                   st.next_decisions = []
+                then (
                   raise_notrace E_sat
                 );
                 (* otherwise, keep on *)
