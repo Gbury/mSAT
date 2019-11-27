@@ -1,0 +1,121 @@
+
+
+{1 mSAT: a Modular SAT Solver}
+
+(The entry point of this library is the module: {!module-Msat}.)
+
+A modular implementation of the SMT algorithm can be found in the {!Msat.Solver} module,
+as a functor which takes two modules :
+
+- A representation of formulas (which implements the `Formula_intf.S` signature)
+
+- A theory (which implements the `Theory_intf.S` signature) to check consistence of assertions.
+
+- A dummy empty module to ensure generativity of the solver (solver modules heavily relies on
+side effects to their internal state)
+
+{3 Sat Solver}
+
+A ready-to-use SAT solver is available in the {!Msat_sat} module
+using the [msat.sat] library (see {!module-Msat_sat}). It can be loaded
+as shown in the following code :
+
+{[
+# #require "msat";;
+# #require "msat.sat";;
+# #print_depth 0;; (* do not print details *)
+]}
+
+Then we can create a solver and create some boolean variables:
+
+{[
+module Sat = Msat_sat
+module E = Sat.Int_lit (* expressions *)
+
+let solver = Sat.create()
+
+(* We create here two distinct atoms *)
+let a = E.fresh ()    (* A 'new_atom' is always distinct from any other atom *)
+let b = E.make 1      (* Atoms can be created from integers *)
+]}
+
+We can try and check the satisfiability of some clauses — here, the clause [a or b].
+[Sat.assume] adds a list of clauses to the solver. Calling [Sat.solve]
+will check the satisfiability of the current set of clauses, here "Sat".
+
+{[
+# a <> b;;
+- : bool = true
+# Sat.assume solver [[a; b]] ();;
+- : unit = ()
+# let res = Sat.solve solver;;
+val res : Sat.res = Sat.Sat ...
+]}
+
+The Sat solver has an incremental mutable state, so we still have
+the clause `a or b` in our assumptions.
+We add `not a` and `not b` to the state, and get "Unsat".
+
+{[
+# Sat.assume solver [[E.neg a]; [E.neg b]] () ;;
+- : unit = ()
+# let res = Sat.solve solver ;;
+val res : Sat.res = Sat.Unsat ...
+]}
+
+{3 Formulas API}
+
+Writing clauses by hand can be tedious and error-prone.
+The functor {!Msat_tseitin.Make} in the library [msat.tseitin] (see {!module-Msat_tseitin}).
+proposes a formula AST (parametrized by
+atoms) and a function to convert these formulas into clauses:
+
+{[
+# #require "msat.tseitin";;
+]}
+
+{[
+(* Module initialization *)
+module F = Msat_tseitin.Make(E)
+
+let solver = Sat.create ()
+
+(* We create here two distinct atoms *)
+let a = E.fresh ()    (* A fresh atom is always distinct from any other atom *)
+let b = E.make 1      (* Atoms can be created from integers *)
+
+(* Let's create some formulas *)
+let p = F.make_atom a
+let q = F.make_atom b
+let r = F.make_and [p; q]
+let s = F.make_or [F.make_not p; F.make_not q]
+]}
+
+We can try and check the satisfiability of the given formulas, by turning
+it into clauses using `make_cnf`:
+
+{[
+# Sat.assume solver (F.make_cnf r) ();;
+- : unit = ()
+# Sat.solve solver;;
+- : Sat.res = Sat.Sat ...
+]}
+
+{[
+# Sat.assume solver (F.make_cnf s) ();;
+- : unit = ()
+# Sat.solve solver ;;
+- : Sat.res = Sat.Unsat ...
+]}
+
+{3 Backtracking utils}
+
+The library {!module-Msat_backtrack} contains some backtrackable
+data structures that are useful for implementing theories.
+
+{3 Library msat.backend}
+
+This is used for proof backends:
+
+The entry point of this library is the module:
+{!module-Msat_backend}.
