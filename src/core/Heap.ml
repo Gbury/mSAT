@@ -126,10 +126,11 @@ module Make(Elt : RANKED) = struct
   let remove_min ({heap} as s) =
     if Vec.size heap=0 then raise Not_found;
     let x = Vec.get heap 0 in
-    Elt.set_idx x _absent_index;
     let new_hd = Vec.pop heap in (* new head *)
     Vec.set heap 0 new_hd;
     Elt.set_idx new_hd 0;
+    (* remove [x]. do it after [new_hd.idx<-0] in case [x==new_hd] *)
+    Elt.set_idx x _absent_index;
     (* enforce heap property again *)
     if Vec.size heap > 1 then (
       percolate_down s new_hd;
