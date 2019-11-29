@@ -44,7 +44,7 @@ let set_sign b i = if b then abs i else neg (abs i)
 
 let hash (a:int) = a land max_int
 let equal (a:int) b = a=b
-let compare (a:int) b = Pervasives.compare a b
+let compare (a:int) b = compare a b
 
 let make i = _make (2 * i)
 

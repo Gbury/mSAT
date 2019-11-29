@@ -232,7 +232,7 @@ module Make(Plugin : PLUGIN)
     let[@inline] equal a b = a == b
     let[@inline] sign a = a == abs a
     let[@inline] hash a = Hashtbl.hash a.aid
-    let[@inline] compare a b = Pervasives.compare a.aid b.aid
+    let[@inline] compare a b = compare a.aid b.aid
     let[@inline] reason a = Var.reason a.var
     let[@inline] id a = a.aid
     let[@inline] is_true a = a.is_true
@@ -1871,7 +1871,7 @@ module Make(Plugin : PLUGIN)
     Log.debugf 3 (fun k->k "(@[sat.gc.start :keep %d :out-of %d@])" n_of_learnts (Vec.size v));
     assert (Vec.size v > n_of_learnts);
     (* sort by decreasing activity *)
-    Vec.sort v (fun c1 c2 -> Pervasives.compare c2.activity c1.activity);
+    Vec.sort v (fun c1 c2 -> compare c2.activity c1.activity);
     let n_collected = ref 0 in
     while Vec.size v > n_of_learnts do
       let c = Vec.pop v in
