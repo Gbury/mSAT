@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>index (msat.index)</title><link rel="stylesheet" href="../odoc.css"/><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body><div class="content"><header><nav><a href="../index.html">Up</a> – msat</nav></header><h2 id="msat:-a-modular-sat-solver"><a href="#msat:-a-modular-sat-solver" class="anchor"></a>mSAT: a Modular SAT Solver</h2><p>(The entry point of this library is the module: <a href="Msat/index.html"><code>Msat</code></a>.)</p><p>A modular implementation of the SMT algorithm can be found in the <span class="xref-unresolved" title="unresolved reference to &quot;Msat.Solver&quot;"><a href="Msat/index.html"><code>Msat</code></a>.Solver</span> module, as a functor which takes two modules :</p><ul><li>A representation of formulas (which implements the `Formula_intf.S` signature)</li></ul><ul><li>A theory (which implements the `Theory_intf.S` signature) to check consistence of assertions.</li></ul><ul><li>A dummy empty module to ensure generativity of the solver (solver modules heavily relies on side effects to their internal state)</li></ul><h4 id="sat-solver"><a href="#sat-solver" class="anchor"></a>Sat Solver</h4><p>A ready-to-use SAT solver is available in the <a href="Msat_sat/index.html"><code>Msat_sat</code></a> module using the <code>msat.sat</code> library (see <a href="Msat_sat/index.html"><code>Msat_sat</code></a>). It can be loaded as shown in the following code :</p><pre><code class="ml"># #require &quot;msat&quot;;;
+# #require &quot;msat.sat&quot;;;
+# #print_depth 0;; (* do not print details *)</code></pre><p>Then we can create a solver and create some boolean variables:</p><pre><code class="ml">module Sat = Msat_sat
+module E = Sat.Int_lit (* expressions *)
+
+let solver = Sat.create()
+
+(* We create here two distinct atoms *)
+let a = E.fresh ()    (* A 'new_atom' is always distinct from any other atom *)
+let b = E.make 1      (* Atoms can be created from integers *)</code></pre><p>We can try and check the satisfiability of some clauses — here, the clause <code>a or b</code>. <code>Sat.assume</code> adds a list of clauses to the solver. Calling <code>Sat.solve</code> will check the satisfiability of the current set of clauses, here &quot;Sat&quot;.</p><pre><code class="ml"># a &lt;&gt; b;;
+- : bool = true
+# Sat.assume solver [[a; b]] ();;
+- : unit = ()
+# let res = Sat.solve solver;;
+val res : Sat.res = Sat.Sat ...</code></pre><p>The Sat solver has an incremental mutable state, so we still have the clause `a or b` in our assumptions. We add `not a` and `not b` to the state, and get &quot;Unsat&quot;.</p><pre><code class="ml"># Sat.assume solver [[E.neg a]; [E.neg b]] () ;;
+- : unit = ()
+# let res = Sat.solve solver ;;
+val res : Sat.res = Sat.Unsat ...</code></pre><h4 id="formulas-api"><a href="#formulas-api" class="anchor"></a>Formulas API</h4><p>Writing clauses by hand can be tedious and error-prone. The functor <a href="Msat_tseitin/Make/index.html"><code>Msat_tseitin.Make</code></a> in the library <code>msat.tseitin</code> (see <a href="Msat_tseitin/index.html"><code>Msat_tseitin</code></a>). proposes a formula AST (parametrized by atoms) and a function to convert these formulas into clauses:</p><pre><code class="ml"># #require &quot;msat.tseitin&quot;;;</code></pre><pre><code class="ml">(* Module initialization *)
+module F = Msat_tseitin.Make(E)
+
+let solver = Sat.create ()
+
+(* We create here two distinct atoms *)
+let a = E.fresh ()    (* A fresh atom is always distinct from any other atom *)
+let b = E.make 1      (* Atoms can be created from integers *)
+
+(* Let's create some formulas *)
+let p = F.make_atom a
+let q = F.make_atom b
+let r = F.make_and [p; q]
+let s = F.make_or [F.make_not p; F.make_not q]</code></pre><p>We can try and check the satisfiability of the given formulas, by turning it into clauses using `make_cnf`:</p><pre><code class="ml"># Sat.assume solver (F.make_cnf r) ();;
+- : unit = ()
+# Sat.solve solver;;
+- : Sat.res = Sat.Sat ...</code></pre><pre><code class="ml"># Sat.assume solver (F.make_cnf s) ();;
+- : unit = ()
+# Sat.solve solver ;;
+- : Sat.res = Sat.Unsat ...</code></pre><h4 id="backtracking-utils"><a href="#backtracking-utils" class="anchor"></a>Backtracking utils</h4><p>The library <a href="Msat_backtrack/index.html"><code>Msat_backtrack</code></a> contains some backtrackable data structures that are useful for implementing theories.</p><h4 id="library-msat.backend"><a href="#library-msat.backend" class="anchor"></a>Library msat.backend</h4><p>This is used for proof backends:</p><p>The entry point of this library is the module: <a href="Msat_backend/index.html"><code>Msat_backend</code></a>.</p></div></body></html>
