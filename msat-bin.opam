@@ -2,7 +2,7 @@ opam-version: "2.0"
 name: "msat-bin"
 synopsis: "SAT solver binary based on the msat library"
 license: "Apache"
-version: "0.8"
+version: "0.8.1"
 author: ["Simon Cruanes" "Guillaume Bury"]
 maintainer: ["guillaume.bury@gmail.com" "simon.cruanes.2007@m4x.org"]
 build: [
@@ -11,8 +11,9 @@ build: [
 ]
 depends: [
   "ocaml" { >= "4.03" }
-  "dune" {build}
-  "msat" { >= "0.8" < "0.9" }
+  "dune" { >= "1.1" }
+  "msat" { = version }
+  "containers" { >= "2.0" }
   "camlzip"
 ]
 tags: [ "sat" ]

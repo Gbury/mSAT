@@ -1,5 +1,17 @@
 # CHANGES
 
+## 0.8.1
+
+- fixes in `Heap`
+- package for `msat-bin`
+- use `iter` instead of `sequence` in dune and opam files
+- more docs
+
+## 0.8
+
+big refactoring, change of API with fewer functions, etc.
+see `git log` for more details.
+
 ## 0.6.1
 
 - add simple functor for DOT backend

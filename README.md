@@ -156,7 +156,7 @@ It's able to parse sudoku grids denoted as 81 integers
 
 Here is a sample grid and the output from the solver (in roughly .5s):
 
-```sh
+```sh non-deterministic=command
 $ echo '..............3.85..1.2.......5.7.....4...1...9.......5......73..2.1........4...9' > sudoku.txt
 $ dune exec src/sudoku/sudoku_solve.exe -- sudoku.txt
 ...
