@@ -134,7 +134,7 @@ type ('term, 'formula, 'value, 'proof) acts = {
 
   acts_add_decision_lit: 'formula -> unit;
   (** Ask the SAT solver to decide on the given formula before it can
-      answer [SAT]. This will be removed on backtrack.
+      answer [SAT]. The order of decisions is still unspecified.
       Useful for theory combination. *)
 }
 (** The type for a slice of assertions to assume/propagate in the theory. *)

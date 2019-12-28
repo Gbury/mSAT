@@ -1493,6 +1493,7 @@ module Make(Plugin : PLUGIN)
           enqueue_bool st fuip ~level:cr.cr_backtrack_lvl (Bcp lclause)
         ) else (
           assert Plugin.mcsat;
+          assert (st.next_decisions = []);
           st.next_decisions <- [fuip.neg];
         )
     end;
@@ -1929,7 +1930,6 @@ module Make(Plugin : PLUGIN)
   and pick_branch_lit st =
     match st.next_decisions with
     | atom :: tl ->
-      assert Plugin.mcsat;
       st.next_decisions <- tl;
       pick_branch_aux st atom
     | [] when decision_level st < Vec.size st.assumptions ->
