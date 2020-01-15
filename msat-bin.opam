@@ -7,7 +7,7 @@ author: ["Simon Cruanes" "Guillaume Bury"]
 maintainer: ["guillaume.bury@gmail.com" "simon.cruanes.2007@m4x.org"]
 build: [
   ["dune" "build" "@install" "-p" name "-j" jobs]
-  ["dune" "runtest" "-p" name "-j" jobs]
+  ["dune" "runtest" "-p" name "-j" jobs] {with-test}
 ]
 depends: [
   "ocaml" { >= "4.03" }
