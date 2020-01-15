@@ -8,6 +8,10 @@ module type PLUGIN = sig
   val mcsat : bool
   (** Is this a mcsat plugin? *)
 
+  val has_theory : bool
+  (** Is this a CDCL(T) plugin or mcsat plugin?
+      i.e does it have theories *)
+
   include Solver_intf.PLUGIN_MCSAT
 end
 
@@ -1366,7 +1370,7 @@ module Make(Plugin : PLUGIN)
     assert (decision_level st > 0);
     Vec.clear to_unmark;
     let conflict_level =
-      if Plugin.mcsat
+      if Plugin.mcsat || Plugin.has_theory
       then Array.fold_left (fun acc p -> max acc p.var.v_level) 0 c_clause.atoms
       else decision_level st
     in
@@ -2194,6 +2198,7 @@ module Make_cdcl_t(Plugin : Solver_intf.PLUGIN_CDCL_T) =
     let eval _ _ = Solver_intf.Unknown
     let assign _ t = t
     let mcsat = false
+    let has_theory = true
     let iter_assignable _ _ _ = ()
   end)
 [@@inline][@@specialise]
@@ -2202,6 +2207,7 @@ module Make_mcsat(Plugin : Solver_intf.PLUGIN_MCSAT) =
   Make(struct
     include Plugin
     let mcsat = true
+    let has_theory = false
   end)
 [@@inline][@@specialise]
 
@@ -2219,6 +2225,7 @@ module Make_pure_sat(Plugin : Solver_intf.PLUGIN_SAT) =
   let eval () _ = Solver_intf.Unknown
   let assign () t = t
   let mcsat = false
+  let has_theory = false
   let iter_assignable () _ _ = ()
   let mcsat = false
 end)
