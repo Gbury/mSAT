@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.8.2
+
+- fix opam file
+- fix: allow conflicts below decision level in `Make_cdcl_t`
+
 ## 0.8.1
 
 - fixes in `Heap`
