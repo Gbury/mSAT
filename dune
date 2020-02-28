@@ -3,6 +3,7 @@
  (name runtest)
  (deps README.md src/core/msat.cma src/sat/msat_sat.cma (source_tree src))
  (locks test)
+ (package msat)
  (action (progn
           (run mdx test README.md)
           (diff? README.md README.md.corrected))))
