@@ -1,5 +1,9 @@
 # CHANGES
 
+## 0.8.3
+
+- support containers 3.0
+
 ## 0.8.2
 
 - fix opam file
