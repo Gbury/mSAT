@@ -206,7 +206,7 @@ end = struct
       all_diff "squares" Grid.squares;
       ()
 
-    let trail_ (acts:_ Msat.acts) = 
+    let trail_ (acts:_ Msat.acts) =
       acts.acts_iter_assumptions
       |> Iter.map
         (function
@@ -234,7 +234,8 @@ end = struct
 
     let partial_check (self:t) acts : unit =
       Log.debugf 4
-        (fun k->k "(@[sudoku.partial-check@ :trail [@[%a@]]@])" (Fmt.iter F.pp) (trail_ acts));
+        (fun k->k "(@[sudoku.partial-check@ :trail [@[%a@]]@])"
+            (Fmt.list F.pp) (trail_ acts |> Iter.to_list));
       add_slice self acts;
       check_ self acts
 
