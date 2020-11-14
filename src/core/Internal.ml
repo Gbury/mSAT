@@ -1700,8 +1700,9 @@ module Make(Plugin : PLUGIN)
     Log.debugf info (fun k->k "(@[sat.th.add-clause@ %a@])" Clause.debug c);
     Vec.push st.clauses_to_add c
 
-  let acts_add_decision_lit (st:t) (f:formula) : unit =
+  let acts_add_decision_lit (st:t) (f:formula) (sign:bool) : unit =
     let a = create_atom st f in
+    let a = if sign then a else Atom.neg a in
     if not (Atom.has_value a) then (
       Log.debugf 10 (fun k->k "(@[sat.th.add-decision-lit@ %a@])" Atom.debug a);
       st.next_decisions <- a :: st.next_decisions
