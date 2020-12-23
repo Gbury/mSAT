@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.9
+
+- feat: allow the theory to ask for some literals to be decided on
+- feat: allow to set the default polarity of variables at creation time
+
 ## 0.8.3
 
 - support containers 3.0
