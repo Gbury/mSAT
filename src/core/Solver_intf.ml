@@ -120,7 +120,7 @@ type ('term, 'formula, 'value, 'proof) acts = {
   (** Add a clause to the solver.
       @param keep if true, the clause will be kept by the solver.
         Otherwise the solver is allowed to GC the clause and propose this
-        partial model again. 
+        partial model again.
   *)
 
   acts_raise_conflict: 'b. 'formula list -> 'proof -> 'b;
@@ -131,6 +131,11 @@ type ('term, 'formula, 'value, 'proof) acts = {
   acts_propagate: 'formula -> ('term, 'formula, 'proof) reason -> unit;
   (** Propagate a formula, i.e. the theory can evaluate the formula to be true
       (see the definition of {!type:eval_res} *)
+
+  acts_add_decision_lit: 'formula -> bool -> unit;
+  (** Ask the SAT solver to decide on the given formula with given sign
+      before it can answer [SAT]. The order of decisions is still unspecified.
+      Useful for theory combination. This will be undone on backtracking. *)
 }
 (** The type for a slice of assertions to assume/propagate in the theory. *)
 

@@ -246,6 +246,7 @@ module Make(Plugin : PLUGIN)
     let[@inline] id a = a.aid
     let[@inline] is_true a = a.is_true
     let[@inline] is_false a = a.neg.is_true
+    let has_value a = is_true a || is_false a
 
     let[@inline] seen a =
       if sign a
@@ -787,9 +788,11 @@ module Make(Plugin : PLUGIN)
     mutable unsat_at_0: clause option;
     (* conflict at level 0, if any *)
 
-    mutable next_decision : atom option;
+    mutable next_decisions : atom list;
     (* When the last conflict was a semantic one (mcsat),
-       this stores the next decision to make *)
+       this stores the next decision to make;
+       if some theory wants atoms to be decided on (for theory combination),
+       store them here. *)
 
     trail : trail_elt Vec.t;
     (* decision stack + propagated elements (atoms or assignments). *)
@@ -841,7 +844,7 @@ module Make(Plugin : PLUGIN)
   let create_ ~st ~store_proof (th:theory) : t = {
     st; th;
     unsat_at_0=None;
-    next_decision = None;
+    next_decisions = [];
 
     clauses_hyps = Vec.create();
     clauses_learnt = Vec.create();
@@ -1175,6 +1178,7 @@ module Make(Plugin : PLUGIN)
       Vec.shrink st.trail !head;
       Vec.shrink st.elt_levels lvl;
       Plugin.pop_levels st.th n;
+      st.next_decisions <- [];
     );
     ()
 
@@ -1489,7 +1493,8 @@ module Make(Plugin : PLUGIN)
           enqueue_bool st fuip ~level:cr.cr_backtrack_lvl (Bcp lclause)
         ) else (
           assert Plugin.mcsat;
-          st.next_decision <- Some fuip.neg
+          assert (st.next_decisions = []);
+          st.next_decisions <- [fuip.neg];
         )
     end;
     var_decay_activity st;
@@ -1502,7 +1507,7 @@ module Make(Plugin : PLUGIN)
   *)
   let add_boolean_conflict st (confl:clause): unit =
     Log.debugf info (fun k -> k "(@[sat.add-bool-conflict@ %a@])" Clause.debug confl);
-    st.next_decision <- None;
+    st.next_decisions <- [];
     assert (decision_level st >= 0);
     if decision_level st = 0 ||
        Array.for_all (fun a -> a.var.v_level <= 0) confl.atoms then (
@@ -1695,6 +1700,14 @@ module Make(Plugin : PLUGIN)
     Log.debugf info (fun k->k "(@[sat.th.add-clause@ %a@])" Clause.debug c);
     Vec.push st.clauses_to_add c
 
+  let acts_add_decision_lit (st:t) (f:formula) (sign:bool) : unit =
+    let a = create_atom st f in
+    let a = if sign then a else Atom.neg a in
+    if not (Atom.has_value a) then (
+      Log.debugf 10 (fun k->k "(@[sat.th.add-decision-lit@ %a@])" Atom.debug a);
+      st.next_decisions <- a :: st.next_decisions
+    )
+
   let acts_raise st (l:formula list) proof : 'a =
     let atoms = List.rev_map (create_atom st) l in
     (* conflicts can be removed *)
@@ -1776,6 +1789,7 @@ module Make(Plugin : PLUGIN)
     acts_add_clause = acts_add_clause st;
     acts_propagate = acts_propagate st;
     acts_raise_conflict=acts_raise st;
+    acts_add_decision_lit=acts_add_decision_lit st;
   }
 
   (* full slice, for [if_sat] final check *)
@@ -1788,6 +1802,7 @@ module Make(Plugin : PLUGIN)
     acts_add_clause = acts_add_clause st;
     acts_propagate = acts_propagate st;
     acts_raise_conflict=acts_raise st;
+    acts_add_decision_lit=acts_add_decision_lit st;
   }
 
   (* Assert that the conflict is indeeed a conflict *)
@@ -1914,12 +1929,11 @@ module Make(Plugin : PLUGIN)
     )
 
   and pick_branch_lit st =
-    match st.next_decision with
-    | Some atom ->
-      assert Plugin.mcsat;
-      st.next_decision <- None;
+    match st.next_decisions with
+    | atom :: tl ->
+      st.next_decisions <- tl;
       pick_branch_aux st atom
-    | None when decision_level st < Vec.size st.assumptions ->
+    | [] when decision_level st < Vec.size st.assumptions ->
       (* use an assumption *)
       let a = Vec.get st.assumptions (decision_level st) in
       if Atom.is_true a then (
@@ -1932,7 +1946,7 @@ module Make(Plugin : PLUGIN)
       ) else (
         pick_branch_aux st a
       )
-    | None ->
+    | [] ->
       begin match H.remove_min st.order with
         | E_lit l ->
           if Lit.level l >= 0 then (
@@ -2031,7 +2045,9 @@ module Make(Plugin : PLUGIN)
             begin match Plugin.final_check st.th (full_slice st) with
               | () ->
                 if st.elt_head = Vec.size st.trail &&
-                   Vec.is_empty st.clauses_to_add then (
+                   Vec.is_empty st.clauses_to_add &&
+                   st.next_decisions = []
+                then (
                   raise_notrace E_sat
                 );
                 (* otherwise, keep on *)
