@@ -168,6 +168,7 @@ module Make(Plugin : PLUGIN)
   let seen_var = 0b1
   let seen_pos = 0b10
   let seen_neg = 0b100
+  let default_pol_true = 0b1000
 
   module Var = struct
     type t = var
@@ -180,8 +181,11 @@ module Make(Plugin : PLUGIN)
     let[@inline] mark v = v.v_fields <- v.v_fields lor seen_var
     let[@inline] unmark v = v.v_fields <- v.v_fields land (lnot seen_var)
     let[@inline] marked v = (v.v_fields land seen_var) <> 0
+    let[@inline] set_default_pol_true v = v.v_fields <- v.v_fields lor default_pol_true
+    let[@inline] set_default_pol_false v = v.v_fields <- v.v_fields land (lnot default_pol_true)
+    let[@inline] default_pol v = (v.v_fields land default_pol_true) <> 0
 
-    let make (st:st) (t:formula) : var * Solver_intf.negated =
+    let make ?(default_pol=true) (st:st) (t:formula) : var * Solver_intf.negated =
       let lit, negated = Formula.norm t in
       try
         MF.find st.f_map lit, negated
@@ -214,6 +218,7 @@ module Make(Plugin : PLUGIN)
             aid = cpt_double + 1 (* aid = vid*2+1 *) } in
         MF.add st.f_map lit var;
         st.cpt_mk_var <- st.cpt_mk_var + 1;
+        if default_pol then set_default_pol_true var;
         Vec.push st.vars (E_var var);
         var, negated
 
@@ -255,8 +260,8 @@ module Make(Plugin : PLUGIN)
         a.var.v_fields <- seen_neg lor a.var.v_fields
       )
 
-    let[@inline] make st lit =
-      let var, negated = Var.make st lit in
+    let[@inline] make ?default_pol st lit =
+      let var, negated = Var.make ?default_pol st lit in
       match negated with
       | Solver_intf.Negated -> var.na
       | Solver_intf.Same_sign -> var.pa
@@ -899,8 +904,8 @@ module Make(Plugin : PLUGIN)
 
   (* When we have a new literal,
      we need to first create the list of its subterms. *)
-  let mk_atom st (f:formula) : atom =
-    let res = Atom.make st.st f in
+  let mk_atom ?default_pol st (f:formula) : atom =
+    let res = Atom.make ?default_pol st.st f in
     if Plugin.mcsat then (
       mk_atom_mcsat_ st res;
     );
@@ -1668,8 +1673,8 @@ module Make(Plugin : PLUGIN)
     aux 0
 
   (* Propagation (boolean and theory) *)
-  let create_atom st f =
-    let a = mk_atom st f in
+  let create_atom ?default_pol st f =
+    let a = mk_atom ?default_pol st f in
     ignore (th_eval st a);
     a
 
@@ -1757,8 +1762,8 @@ module Make(Plugin : PLUGIN)
     let a = create_atom st f in
     eval_atom_ a
 
-  let[@inline] acts_mk_lit st f : unit =
-    ignore (create_atom st f : atom)
+  let[@inline] acts_mk_lit st ?default_pol f : unit =
+    ignore (create_atom ?default_pol st f : atom)
 
   let[@inline] acts_mk_term st t : unit = make_term st t
 
@@ -1939,7 +1944,7 @@ module Make(Plugin : PLUGIN)
             enqueue_assign st l value current_level
           )
         | E_var v ->
-          pick_branch_aux st v.pa
+          pick_branch_aux st (if Var.default_pol v then v.pa else v.na)
         | exception Not_found -> raise_notrace E_sat
       end
 

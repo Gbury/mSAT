@@ -108,7 +108,7 @@ type ('term, 'formula, 'value, 'proof) acts = {
   acts_eval_lit: 'formula -> lbool;
   (** Obtain current value of the given literal *)
 
-  acts_mk_lit: 'formula -> unit;
+  acts_mk_lit: ?default_pol:bool -> 'formula -> unit;
   (** Map the given formula to a literal, which will be decided by the
       SAT solver. *)
 
