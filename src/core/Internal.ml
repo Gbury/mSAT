@@ -1987,7 +1987,7 @@ module Make(Plugin : PLUGIN)
         assert (st.elt_head = st.th_head);
         if Vec.size st.trail = nb_elt st.st then raise_notrace E_sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then (
-          Log.debug info "(@[sat.restarting@])";
+          Log.debug info "(sat.restarting)";
           cancel_until st 0;
           raise_notrace Restart
         );
