@@ -830,6 +830,8 @@ module Make(Plugin : PLUGIN)
 
     mutable clause_incr : float;
     (* increment for clauses' activity *)
+
+    mutable on_conflict : (atom array -> unit);
   }
   type solver = t
 
@@ -839,6 +841,8 @@ module Make(Plugin : PLUGIN)
   (* initial limit for the number of learnt clauses, 1/3 of initial
       number of clauses by default *)
   let learntsize_factor = 1. /. 3.
+
+  let _nop_on_conflict (_:atom array) = ()
 
   (* Starting environment. *)
   let create_ ~st ~store_proof (th:theory) : t = {
@@ -864,6 +868,7 @@ module Make(Plugin : PLUGIN)
     var_incr = 1.;
     clause_incr = 1.;
     store_proof;
+    on_conflict = _nop_on_conflict;
   }
 
   let create ?(store_proof=true) ?(size=`Big) (th:theory) : t =
@@ -1981,6 +1986,7 @@ module Make(Plugin : PLUGIN)
         ) else (
           add_clause_ st confl
         );
+        st.on_conflict confl.atoms;
 
       | None -> (* No Conflict *)
         assert (st.elt_head = Vec.size st.trail);
@@ -2056,6 +2062,7 @@ module Make(Plugin : PLUGIN)
                 check_is_conflict_ c;
                 Array.iter (fun a -> insert_elt_order st (Elt.of_var a.var)) c.atoms;
                 Log.debugf info (fun k -> k "(@[sat.theory-conflict-clause@ %a@])" Clause.debug c);
+                st.on_conflict c.atoms;
                 Vec.push st.clauses_to_add c;
                 flush_clauses st;
             end;
@@ -2179,14 +2186,20 @@ module Make(Plugin : PLUGIN)
     | E_unsat (US_false c) ->
       st.unsat_at_0 <- Some c
 
-  let solve ?(assumptions=[]) (st:t) : res =
+  let solve ?on_conflict ?(assumptions=[]) (st:t) : res =
     cancel_until st 0;
     Vec.clear st.assumptions;
     List.iter (Vec.push st.assumptions) assumptions;
+    begin match on_conflict with
+      | None -> ()
+      | Some f -> st.on_conflict <- f;
+    end;
     try
       solve_ st;
+      st.on_conflict <- _nop_on_conflict;
       Sat (mk_sat st)
     with E_unsat us ->
+      st.on_conflict <- _nop_on_conflict;
       Unsat (mk_unsat st us)
 
   let true_at_level0 st a =
