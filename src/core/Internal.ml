@@ -1991,7 +1991,6 @@ module Make(Plugin : PLUGIN)
       | None -> (* No Conflict *)
         assert (st.elt_head = Vec.size st.trail);
         assert (st.elt_head = st.th_head);
-        if Vec.size st.trail = nb_elt st.st then raise_notrace E_sat;
         if n_of_conflicts > 0 && !conflictC >= n_of_conflicts then (
           Log.debug info "(sat.restarting)";
           cancel_until st 0;
@@ -2047,7 +2046,9 @@ module Make(Plugin : PLUGIN)
             n_of_conflicts := !n_of_conflicts *. restart_inc;
             n_of_learnts   := !n_of_learnts *. learntsize_inc
           | E_sat ->
-            assert (st.elt_head = Vec.size st.trail);
+            assert (st.elt_head = Vec.size st.trail &&
+                    Vec.is_empty st.clauses_to_add &&
+                    st.next_decisions=[]);
             begin match Plugin.final_check st.th (full_slice st) with
               | () ->
                 if st.elt_head = Vec.size st.trail &&
