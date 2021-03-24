@@ -1,5 +1,10 @@
 # CHANGES
 
+## 0.9.1
+
+- add `on_conflit` callback
+- fix termination issue when using `push_decision_lit` from plugin
+
 ## 0.9
 
 - feat: allow the theory to ask for some literals to be decided on
