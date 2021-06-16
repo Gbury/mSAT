@@ -444,6 +444,9 @@ module type S = sig
   (** Main solver type, containing all state for solving. *)
 
   val create :
+    ?on_conflict:(atom array -> unit) ->
+    ?on_decision:(atom -> unit) ->
+    ?on_new_atom:(atom -> unit) ->
     ?store_proof:bool ->
     ?size:[`Tiny|`Small|`Big] ->
     theory ->
@@ -482,7 +485,6 @@ module type S = sig
   (** Lower level addition of clauses *)
 
   val solve :
-    ?on_conflict:(atom array -> unit) ->
     ?assumptions:atom list ->
     t -> res
   (** Try and solves the current set of clauses.
