@@ -1,19 +1,23 @@
 
-module type RANKED = Heap_intf.RANKED
+module type ELEMENTS = Heap_intf.ELEMENTS
 
 module type S = Heap_intf.S
 
-module Make(Elt : RANKED) = struct
-  type elt = Elt.t
+(* TODO: move to Internal
+module A1 = Bigarray.Array1
 
-  type t = {
-    heap : elt Vec.t;
-  } [@@unboxed]
+type int32_arr = (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t
+type f64_arr = (float, Bigarray.float64_elt, Bigarray.c_layout) Bigarray.Array1.t
 
-  let _absent_index = -1
+let mk_int32_arr n = A1.create Bigarray.Int32 Bigarray.C_layout n
+let mk_f64_arr n = A1.create Bigarray.Float64 Bigarray.C_layout n
+   *)
 
-  let create () =
-    { heap = Vec.create(); }
+let _absent_index = -1
+
+module Make(E : ELEMENTS) = struct
+  type t = E.t
+  type elt = E.elt
 
   let[@inline] left i = (i lsl 1) + 1 (* i*2 + 1 *)
   let[@inline] right i = (i + 1) lsl 1 (* (i+1)*2 *)
@@ -30,10 +34,10 @@ module Make(Elt : RANKED) = struct
 
   (* [elt] is above or at its expected position. Move it up the heap
      (towards high indices) to restore the heap property *)
-  let percolate_up {heap} (elt:Elt.t) : unit =
-    let pi = ref (parent (Elt.idx elt)) in
-    let i = ref (Elt.idx elt) in
-    while !i <> 0 && Elt.cmp elt (Vec.get heap !pi) do
+  let percolate_up (self:t) (elt : elt) : unit =
+    let i = ref (E.elt_idx self elt) in
+    let pi = ref (parent !i) in
+    while !i <> 0 && E.cmp_elt self elt (Vec.get heap !pi) do
       Vec.set heap !i (Vec.get heap !pi);
       Elt.set_idx (Vec.get heap !i) !i;
       i  := !pi;
