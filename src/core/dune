@@ -2,6 +2,6 @@
 (library
   (name msat)
   (public_name msat)
-  (libraries iter)
+  (libraries iter bigarray)
   (synopsis "core data structures and algorithms for msat")
   )
