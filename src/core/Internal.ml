@@ -224,7 +224,8 @@ module Make(Plugin : PLUGIN)
 
     (* Marking helpers *)
     let[@inline] clear v =
-      v.v_fields <- 0
+      let pol = default_pol v in
+      v.v_fields <- (if pol then default_pol_true else 0)
 
     let[@inline] seen_both v =
       (seen_pos land v.v_fields <> 0) &&
