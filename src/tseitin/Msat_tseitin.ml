@@ -91,7 +91,7 @@ module Make (F : Tseitin_intf.Arg) = struct
     if List.exists ((=) f_true) l' then
       f_true
     else match l' with
-      | [] -> raise Empty_Or
+      | [] -> f_false
       | [a] -> a
       | _ -> Comb (Or, l')
 
