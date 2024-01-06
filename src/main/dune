@@ -5,9 +5,7 @@
   (public_name msat)
   (package msat-bin)
   (libraries containers camlzip msat msat.sat msat.backend)
-  (flags :standard -warn-error -3 -w +a-4-42-44-48-50-58-32-60@8 -color always -safe-string -open Msat)
-  (ocamlopt_flags :standard -O3 -color always
-                  -unbox-closures -unbox-closures-factor 20)
+  (flags :standard -open Msat)
   )
 
 (ocamlyacc (modules Dimacs_parse))
