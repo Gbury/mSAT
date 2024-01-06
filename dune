@@ -13,7 +13,7 @@
     (flags
       :standard
       -warn-error -a
-      -w +a-4-42-44-48-50-58-32-60@8
+      -w +a-4-42-44-48-50-58-32-60-70@8
       -color always
       -safe-string
     )
