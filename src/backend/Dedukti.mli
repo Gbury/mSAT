@@ -24,7 +24,7 @@ end
 
 module Make :
   functor(S : Msat.S) ->
-  functor(A : Arg
+  functor(_ : Arg
           with type formula := S.formula
            and type lemma := S.lemma
            and type proof := S.proof) ->

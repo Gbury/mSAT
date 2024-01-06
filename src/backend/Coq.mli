@@ -33,13 +33,13 @@ module type Arg = sig
 
 end
 
-module Make(S : Msat.S)(A : Arg with type hyp := S.clause
+module Make(S : Msat.S)(_ : Arg with type hyp := S.clause
                                 and type lemma := S.clause
                                 and type assumption := S.clause) : S with type t := S.proof
 (** Base functor to output Coq proofs *)
 
 
-module Simple(S : Msat.S)(A : Arg with type hyp = S.formula list
+module Simple(S : Msat.S)(_ : Arg with type hyp = S.formula list
                                   and type lemma := S.lemma
                                   and type assumption := S.formula) : S with type t := S.proof
 (** Simple functor to output Coq proofs *)
