@@ -1,6 +1,6 @@
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (deps README.md src/core/msat.cma src/sat/msat_sat.cma (source_tree src))
  (locks test)
  (package msat)
