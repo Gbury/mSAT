@@ -5,7 +5,7 @@
  (locks test)
  (package msat)
  (action (progn
-          (run mdx test README.md)
+          (run ocaml-mdx test README.md)
           (diff? README.md README.md.corrected))))
 
 (env
