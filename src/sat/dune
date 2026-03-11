@@ -1,9 +1,6 @@
-
 (library
-  (name msat_sat)
-  (public_name msat.sat)
-  (synopsis "purely boolean interface to Msat")
-  (libraries msat)
-  (flags :standard -open Msat)
-  )
-
+ (name msat_sat)
+ (public_name msat.sat)
+ (synopsis "purely boolean interface to Msat")
+ (libraries msat)
+ (flags :standard -open Msat))

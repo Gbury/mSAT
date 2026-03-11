@@ -1,34 +1,45 @@
-
 (executable
-  (name test_api)
-  (libraries msat msat_sat)
-  (flags -open Msat)
-  )
+ (name test_api)
+ (libraries msat msat_sat)
+ (flags -open Msat))
 
 (rule
- (alias    runtest)
-  (package msat)
- (deps    test_api.exe)
+ (alias runtest)
+ (package msat)
+ (deps test_api.exe)
  (locks test)
- (action  (run %{deps})))
+ (action
+  (run %{deps})))
 
 (rule
- (alias    runtest)
-  (package msat)
- (deps    ./icnf-solve/icnf_solve.exe Makefile (source_tree regression))
+ (alias runtest)
+ (package msat)
+ (deps
+  ./icnf-solve/icnf_solve.exe
+  Makefile
+  (source_tree regression))
  (locks test)
- (action  (run make test-icnf)))
+ (action
+  (run make test-icnf)))
 
 (rule
- (alias    runtest)
-  (package msat)
- (deps    ./../src/sudoku/sudoku_solve.exe Makefile (source_tree sudoku))
+ (alias runtest)
+ (package msat)
+ (deps
+  ./../src/sudoku/sudoku_solve.exe
+  Makefile
+  (source_tree sudoku))
  (locks test)
- (action  (run make test-sudoku)))
+ (action
+  (run make test-sudoku)))
 
 (rule
-  (alias runtest)
-  (package msat-bin)
-  (deps   ./../src/main/main.exe ./run (source_tree .))
-  (locks test)
-  (action (run /usr/bin/time -f "%e" ./run sat)))
+ (alias runtest)
+ (package msat-bin)
+ (deps
+  ./../src/main/main.exe
+  ./run
+  (source_tree .))
+ (locks test)
+ (action
+  (run /usr/bin/time -f "%e" ./run sat)))

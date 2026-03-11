@@ -1,8 +1,6 @@
-
 (library
-  (name msat_backtrack)
-  (public_name msat.backtrack)
-  (libraries msat)
-  (flags :standard -open Msat)
-  (synopsis "backtrackable data structures for msat")
-  )
+ (name msat_backtrack)
+ (public_name msat.backtrack)
+ (libraries msat)
+ (flags :standard -open Msat)
+ (synopsis "backtrackable data structures for msat"))

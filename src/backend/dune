@@ -1,7 +1,5 @@
 (library
-  (name msat_backend)
-  (public_name msat.backend)
-  (synopsis "proof backends for msat")
-  (libraries msat)
-  )
-
+ (name msat_backend)
+ (public_name msat.backend)
+ (synopsis "proof backends for msat")
+ (libraries msat))

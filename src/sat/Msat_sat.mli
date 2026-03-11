@@ -6,14 +6,13 @@ Copyright 2016 Guillaume Bury
 (** Sat solver
 
     This modules instanciates a pure sat solver using integers to represent
-    atomic propositions.
-*)
+    atomic propositions. *)
 
 module Int_lit = Int_lit
 
-include Msat.S
-  with type Formula.t = Int_lit.t
-   and type theory = unit
-   and type lemma = unit
 (** A functor that can generate as many solvers as needed. *)
-
+include
+  Msat.S
+    with type Formula.t = Int_lit.t
+     and type theory = unit
+     and type lemma = unit

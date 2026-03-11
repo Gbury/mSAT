@@ -1,12 +1,14 @@
-
 ; main binary
-(executable
-  (name main)
-  (public_name msat)
-  (package msat-bin)
-  (libraries containers camlzip msat msat.sat msat.backend)
-  (flags :standard -open Msat)
-  )
 
-(ocamlyacc (modules Dimacs_parse))
-(ocamllex (modules Dimacs_lex))
+(executable
+ (name main)
+ (public_name msat)
+ (package msat-bin)
+ (libraries containers camlzip msat msat.sat msat.backend)
+ (flags :standard -open Msat))
+
+(ocamlyacc
+ (modules Dimacs_parse))
+
+(ocamllex
+ (modules Dimacs_lex))

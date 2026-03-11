@@ -1,7 +1,5 @@
-
 (library
-  (name msat)
-  (public_name msat)
-  (libraries iter)
-  (synopsis "core data structures and algorithms for msat")
-  )
+ (name msat)
+ (public_name msat)
+ (libraries iter)
+ (synopsis "core data structures and algorithms for msat"))

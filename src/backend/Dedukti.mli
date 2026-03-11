@@ -6,13 +6,11 @@ Copyright 2014 Simon Cruanes
 
 (** Deduki backend for proofs
 
-    Work in progress...
-*)
+    Work in progress... *)
 
 module type S = Backend_intf.S
 
 module type Arg = sig
-
   type lemma
   type proof
   type formula
@@ -22,11 +20,12 @@ module type Arg = sig
   val context : Format.formatter -> proof -> unit
 end
 
-module Make :
-  functor(S : Msat.S) ->
-  functor(_ : Arg
-          with type formula := S.formula
-           and type lemma := S.lemma
-           and type proof := S.proof) ->
-    S with type t := S.proof
-(** Functor to generate a backend to output proofs for the dedukti type checker. *)
+(** Functor to generate a backend to output proofs for the dedukti type checker.
+*)
+module Make : functor
+  (S : Msat.S)
+  (_ : Arg
+         with type formula := S.formula
+          and type lemma := S.lemma
+          and type proof := S.proof)
+  -> S with type t := S.proof

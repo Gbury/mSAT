@@ -1,8 +1,5 @@
-
 (library
-  (name msat_tseitin)
-  (public_name msat.tseitin)
-  (synopsis "Tseitin transformation for msat")
-  (libraries msat)
-  )
-
+ (name msat_tseitin)
+ (public_name msat.tseitin)
+ (synopsis "Tseitin transformation for msat")
+ (libraries msat))

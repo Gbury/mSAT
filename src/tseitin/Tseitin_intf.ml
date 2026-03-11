@@ -15,9 +15,8 @@
 module type Arg = sig
   (** Formulas
 
-      This defines what is needed of formulas in order to implement
-      Tseitin's CNF conversion.
-  *)
+      This defines what is needed of formulas in order to implement Tseitin's
+      CNF conversion. *)
 
   type t
   (** Type of atomic formulas. *)
@@ -30,22 +29,20 @@ module type Arg = sig
 
   val pp : Format.formatter -> t -> unit
   (** Print the given formula. *)
-
 end
 
 module type S = sig
   (** CNF conversion
 
-      This modules converts arbitrary boolean formulas into CNF.
-  *)
+      This modules converts arbitrary boolean formulas into CNF. *)
 
   type atom
   (** The type of atomic formulas. *)
 
   type t
-  (** The type of arbitrary boolean formulas. Arbitrary boolean formulas
-      can be built using functions in this module, and then converted
-      to a CNF, which is a list of clauses that only use atomic formulas. *)
+  (** The type of arbitrary boolean formulas. Arbitrary boolean formulas can be
+      built using functions in this module, and then converted to a CNF, which
+      is a list of clauses that only use atomic formulas. *)
 
   val f_true : t
   (** The [true] formula, i.e a formula that is always satisfied. *)
@@ -54,16 +51,19 @@ module type S = sig
   (** The [false] formula, i.e a formula that cannot be satisfied. *)
 
   val make_atom : atom -> t
-  (** [make_atom p] builds the boolean formula equivalent to the atomic formula [p]. *)
+  (** [make_atom p] builds the boolean formula equivalent to the atomic formula
+      [p]. *)
 
   val make_not : t -> t
   (** Creates the negation of a boolean formula. *)
 
   val make_and : t list -> t
-  (** Creates the conjunction of a list of formulas. An empty conjunction is always satisfied. *)
+  (** Creates the conjunction of a list of formulas. An empty conjunction is
+      always satisfied. *)
 
   val make_or : t list -> t
-  (** Creates the disjunction of a list of formulas. An empty disjunction is never satisfied. *)
+  (** Creates the disjunction of a list of formulas. An empty disjunction is
+      never satisfied. *)
 
   val make_xor : t -> t -> t
   (** [make_xor p q] creates the boolean formula "[p] xor [q]". *)
@@ -72,14 +72,14 @@ module type S = sig
   (** [make_imply p q] creates the boolean formula "[p] implies [q]". *)
 
   val make_equiv : t -> t -> t
-  (** [make_equiv p q] creates the boolena formula "[p] is equivalent to [q]". *)
+  (** [make_equiv p q] creates the boolena formula "[p] is equivalent to [q]".
+  *)
 
   val make_cnf : t -> atom list list
   (** [make_cnf f] returns a conjunctive normal form of [f] under the form: a
-      list (which is a conjunction) of lists (which are disjunctions) of
-      atomic formulas. *)
+      list (which is a conjunction) of lists (which are disjunctions) of atomic
+      formulas. *)
 
   val pp : Format.formatter -> t -> unit
   (** [print fmt f] prints the formula on the formatter [fmt].*)
-
 end
