@@ -102,12 +102,12 @@ struct
   (* Count uses of hypotheses *)
   let incr_use h c =
     let i = try C_tbl.find h c with Not_found -> 0 in
-    C_tbl.add h c (i + 1)
+    C_tbl.replace h c (i + 1)
 
   let decr_use h c =
     let i = C_tbl.find h c - 1 in
     assert (i >= 0);
-    let () = C_tbl.add h c i in
+    let () = C_tbl.replace h c i in
     i <= 0
 
   let clear fmt c = Format.fprintf fmt "clear %s." (name c)
