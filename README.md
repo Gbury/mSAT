@@ -1,4 +1,4 @@
-# MSAT  [![Build Status](https://travis-ci.org/Gbury/mSAT.svg?branch=master)](https://travis-ci.org/Gbury/mSAT)
+# MSAT [![Build and Test](https://github.com/Gbury/mSAT/actions/workflows/main.yml/badge.svg)](https://github.com/Gbury/mSAT/actions/workflows/main.yml)
 
 MSAT is an OCaml library that features a modular SAT-solver and some
 extensions (including SMT), derived from [Alt-Ergo Zero](http://cubicle.lri.fr/alt-ergo-zero).
