@@ -1,6 +1,4 @@
-
 (executable
-  (name sudoku_solve)
-  (modes native)
-  (libraries msat msat.backtrack iter containers)
-)
+ (name sudoku_solve)
+ (modes native)
+ (libraries msat msat.backtrack iter containers))

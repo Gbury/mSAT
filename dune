@@ -1,27 +1,32 @@
-
 (rule
  (alias runtest)
- (deps README.md src/core/msat.cma src/sat/msat_sat.cma (source_tree src))
+ (deps
+  README.md
+  src/core/msat.cma
+  src/sat/msat_sat.cma
+  (source_tree src))
  (locks test)
  (package msat)
- (action (progn
-          (run ocaml-mdx test README.md)
-          (diff? README.md README.md.corrected))))
+ (action
+  (progn
+   (run ocaml-mdx test README.md)
+   (diff? README.md README.md.corrected))))
 
 (env
-  (_
-    (flags
-      :standard
-      -warn-error -a
-      -w +a-4-42-44-48-50-58-32-60-70@8
-      -color always
-      -safe-string
-    )
-    (ocamlopt_flags
-      :standard
-      -O3
-      -bin-annot
-      -unbox-closures -unbox-closures-factor 20
-    )
-  )
-)
+ (_
+  (flags
+   :standard
+   -warn-error
+   -a
+   -w
+   +a-4-42-44-48-50-58-32-60-70@8
+   -color
+   always
+   -safe-string)
+  (ocamlopt_flags
+   :standard
+   -O3
+   -bin-annot
+   -unbox-closures
+   -unbox-closures-factor
+   20)))
