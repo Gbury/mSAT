@@ -635,28 +635,41 @@ module Make (Plugin : PLUGIN) = struct
             (Format.pp_print_list Clause.debug)
             l);
       Array.iter Atom.mark init.atoms;
+      let cleanup_marks () =
+        let cleanup_a_ a = if Atom.seen a then clear_var_of_ a in
+        Array.iter cleanup_a_ init.atoms;
+        List.iter (fun c -> Array.iter cleanup_a_ c.atoms) l
+      in
       let steps =
-        List.map
-          (fun c ->
-            let pivot =
-              match
-                Iter.of_array c.atoms
-                |> Iter.filter (fun a -> Atom.seen (Atom.neg a))
-                |> Iter.to_list
-              with
-              | [ a ] -> a
-              | [] ->
-                error_res_f "(@[proof.expand.pivot_missing@ %a@])" Clause.debug
-                  c
-              | pivots ->
-                error_res_f "(@[proof.expand.multiple_pivots@ %a@ :pivots %a@])"
-                  Clause.debug c Atom.debug_l pivots
-            in
-            Array.iter Atom.mark c.atoms;
-            (* add atoms to result *)
-            clear_var_of_ pivot;
-            Atom.abs pivot, c)
-          l
+        match
+          List.map
+            (fun c ->
+              let pivot =
+                match
+                  Iter.of_array c.atoms
+                  |> Iter.filter (fun a -> Atom.seen (Atom.neg a))
+                  |> Iter.to_list
+                with
+                | [ a ] -> a
+                | [] ->
+                  error_res_f "(@[proof.expand.pivot_missing@ %a@])"
+                    Clause.debug c
+                | pivots ->
+                  error_res_f
+                    "(@[proof.expand.multiple_pivots@ %a@ :pivots %a@])"
+                    Clause.debug c Atom.debug_l pivots
+              in
+              Array.iter Atom.mark c.atoms;
+              (* add atoms to result *)
+              clear_var_of_ pivot;
+              Atom.abs pivot, c)
+            l
+        with
+        | steps -> steps
+        | exception e ->
+          let bt = Printexc.get_raw_backtrace () in
+          cleanup_marks ();
+          Printexc.raise_with_backtrace e bt
       in
       (* cleanup *)
       let res = ref [] in
@@ -745,10 +758,22 @@ module Make (Plugin : PLUGIN) = struct
           ) else
             aux res acc r
       in
-      let res, tmp = aux [] [] [ proof ] in
-      List.iter (fun c -> Clause.set_visited c false) res;
-      List.iter (fun c -> Clause.set_visited c false) tmp;
-      res
+      let rec clear_visited c =
+        if Clause.visited c then (
+          Clause.set_visited c false;
+          match c.cpremise with
+          | History h -> List.iter clear_visited h
+          | _ -> ()
+        )
+      in
+      match aux [] [] [ proof ] with
+      | res, tmp ->
+        List.iter (fun c -> Clause.set_visited c false) res;
+        List.iter (fun c -> Clause.set_visited c false) tmp;
+        res
+      | exception e ->
+        clear_visited proof;
+        raise e
 
     module Tbl = Clause.Tbl
 
