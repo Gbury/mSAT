@@ -231,62 +231,57 @@ module Make (F : Tseitin_intf.Arg) = struct
   *)
 
   let mk_proxy = F.fresh
-  let acc_or = ref []
-  let acc_and = ref []
 
   (* build a clause by flattening (if sub-formulas have the
      same combinator) and proxy-ing sub-formulas that have the
      opposite operator. *)
-  let rec cnf f =
-    match f with
-    | Lit a -> None, [ a ]
-    | Comb (Not, [ Lit a ]) -> None, [ F.neg a ]
-    | Comb (And, l) ->
-      List.fold_left
-        (fun (_, acc) f ->
-          match cnf f with
-          | _, [] -> assert false
-          | _cmb, [ a ] -> Some And, a :: acc
-          | Some And, l -> Some And, l @@ acc
-          (* let proxy = mk_proxy () in *)
-          (* acc_and := (proxy, l) :: !acc_and; *)
-          (* proxy :: acc *)
-          | Some Or, l ->
-            let proxy = mk_proxy () in
-            acc_or := (proxy, l) :: !acc_or;
-            Some And, proxy :: acc
-          | None, l -> Some And, l @@ acc
-          | _ -> assert false)
-        (None, []) l
-    | Comb (Or, l) ->
-      List.fold_left
-        (fun (_, acc) f ->
-          match cnf f with
-          | _, [] -> assert false
-          | _cmb, [ a ] -> Some Or, a :: acc
-          | Some Or, l -> Some Or, l @@ acc
-          (* let proxy = mk_proxy () in *)
-          (* acc_or := (proxy, l) :: !acc_or; *)
-          (* proxy :: acc *)
-          | Some And, l ->
-            let proxy = mk_proxy () in
-            acc_and := (proxy, l) :: !acc_and;
-            Some Or, proxy :: acc
-          | None, l -> Some Or, l @@ acc
-          | _ -> assert false)
-        (None, []) l
-    | _ -> assert false
-
-  let cnf f =
-    let acc =
+  let make_cnf f =
+    let acc_or = ref [] in
+    let acc_and = ref [] in
+    let rec cnf f =
       match f with
+      | Lit a -> None, [ a ]
+      | Comb (Not, [ Lit a ]) -> None, [ F.neg a ]
+      | Comb (And, l) ->
+        List.fold_left
+          (fun (_, acc) f ->
+            match cnf f with
+            | _, [] -> assert false
+            | _cmb, [ a ] -> Some And, a :: acc
+            | Some And, l -> Some And, l @@ acc
+            | Some Or, l ->
+              let proxy = mk_proxy () in
+              acc_or := (proxy, l) :: !acc_or;
+              Some And, proxy :: acc
+            | None, l -> Some And, l @@ acc
+            | _ -> assert false)
+          (None, []) l
+      | Comb (Or, l) ->
+        List.fold_left
+          (fun (_, acc) f ->
+            match cnf f with
+            | _, [] -> assert false
+            | _cmb, [ a ] -> Some Or, a :: acc
+            | Some Or, l -> Some Or, l @@ acc
+            | Some And, l ->
+              let proxy = mk_proxy () in
+              acc_and := (proxy, l) :: !acc_and;
+              Some Or, proxy :: acc
+            | None, l -> Some Or, l @@ acc
+            | _ -> assert false)
+          (None, []) l
+      | _ -> assert false
+    in
+    let f' = sform f (fun f' -> f') in
+    let acc =
+      match f' with
       | True -> []
       | Comb (Not, [ True ]) -> [ [] ]
       | Comb (And, l) -> List.rev_map (fun f -> snd (cnf f)) l
-      | _ -> [ snd (cnf f) ]
+      | _ -> [ snd (cnf f') ]
     in
     let proxies = ref [] in
-    (* encore clauses that make proxies in !acc_and equivalent to
+    (* encode clauses that make proxies in !acc_and equivalent to
        their clause *)
     let acc =
       List.fold_left
@@ -303,7 +298,7 @@ module Make (F : Tseitin_intf.Arg) = struct
           cl :: acc)
         acc !acc_and
     in
-    (* encore clauses that make proxies in !acc_or equivalent to
+    (* encode clauses that make proxies in !acc_or equivalent to
        their clause *)
     let acc =
       List.fold_left
@@ -316,11 +311,6 @@ module Make (F : Tseitin_intf.Arg) = struct
         acc !acc_or
     in
     acc
-
-  let make_cnf f =
-    acc_or := [];
-    acc_and := [];
-    cnf (sform f (fun f' -> f'))
 
   (* Naive CNF XXX remove???
      let make_cnf f = mk_cnf (sform f)
