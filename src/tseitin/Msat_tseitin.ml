@@ -80,7 +80,10 @@ module Make (F : Tseitin_intf.Arg) = struct
     if List.exists (( = ) f_false) l' then
       f_false
     else
-      make And l'
+      match l' with
+      | [] -> f_true
+      | [ a ] -> a
+      | _ -> make And l'
 
   let make_or l =
     let l' = remove_false (flatten Or [] l) in
