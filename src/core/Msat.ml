@@ -84,5 +84,7 @@ module Make_pure_sat = Solver.Make_pure_sat
 
 module Vec = Vec
 module Log = Log
+module Heap = Heap
+module Heap_intf = Heap_intf
 
 (**/**)

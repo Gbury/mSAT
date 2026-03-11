@@ -80,8 +80,8 @@ module Make (Elt : RANKED) = struct
       ) else
         Elt.set_idx (Vec.get s.heap i) _absent_index
     done;
-    Vec.shrink s.heap (lim - !j);
-    for i = (lim / 2) - 1 downto 0 do
+    Vec.shrink s.heap !j;
+    for i = (!j / 2) - 1 downto 0 do
       percolate_down s (Vec.get s.heap i)
     done
 
