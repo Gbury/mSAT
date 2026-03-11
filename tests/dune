@@ -1,7 +1,14 @@
-(executable
- (name test_api)
+(executables
+ (names test_api test_heap)
  (libraries msat msat_sat)
  (flags -open Msat))
+
+(rule
+ (alias runtest)
+ (package msat)
+ (deps test_heap.exe)
+ (action
+  (run %{deps})))
 
 (rule
  (alias runtest)
