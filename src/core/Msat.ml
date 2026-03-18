@@ -66,9 +66,9 @@ let pp_lbool out = function
 
 exception No_proof = Solver_intf.No_proof
 
-module Make_mcsat = Solver.Make_mcsat
-module Make_cdcl_t = Solver.Make_cdcl_t
-module Make_pure_sat = Solver.Make_pure_sat
+module Make_mcsat = Internal.Make_mcsat
+module Make_cdcl_t = Internal.Make_cdcl_t
+module Make_pure_sat = Internal.Make_pure_sat
 
 (**/**)
 module Vec = Vec
