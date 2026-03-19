@@ -43,6 +43,6 @@ reindent: ocp-indent
 
 WATCH=all
 watch:
-	@dune build @all -w
+	@dune build $(WATCH) -w
 
 .PHONY: clean doc all bench install uninstall remove reinstall bin test
