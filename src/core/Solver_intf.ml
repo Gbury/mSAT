@@ -100,44 +100,51 @@ type ('term, 'formula, 'proof) reason =
 type lbool = L_true | L_false | L_undefined
 (** Valuation of an atom *)
 
-(* TODO: find a way to use atoms instead of formulas here *)
-type ('term, 'formula, 'value, 'proof) acts = {
-  acts_iter_assumptions: (('term,'formula,'value) assumption -> unit) -> unit;
+type ('st, 'term, 'formula, 'value, 'proof) acts_ops = {
+  acts_iter_assumptions: 'st -> (('term,'formula,'value) assumption -> unit) -> unit;
   (** Traverse the new assumptions on the boolean trail. *)
 
-  acts_eval_lit: 'formula -> lbool;
+  acts_eval_lit: 'st -> 'formula -> lbool;
   (** Obtain current value of the given literal *)
 
-  acts_mk_lit: ?default_pol:bool -> 'formula -> unit;
+  acts_mk_lit: 'st -> ?default_pol:bool -> 'formula -> unit;
   (** Map the given formula to a literal, which will be decided by the
       SAT solver. *)
 
-  acts_mk_term: 'term -> unit;
+  acts_mk_term: 'st -> 'term -> unit;
   (** Map the given term (and its subterms) to decision variables,
       for the MCSAT solver to decide. *)
 
-  acts_add_clause: ?keep:bool -> 'formula list -> 'proof -> unit;
+  acts_add_clause: 'st -> ?keep:bool -> 'formula list -> 'proof -> unit;
   (** Add a clause to the solver.
       @param keep if true, the clause will be kept by the solver.
         Otherwise the solver is allowed to GC the clause and propose this
         partial model again.
   *)
 
-  acts_raise_conflict: 'b. 'formula list -> 'proof -> 'b;
+  acts_raise_conflict: 'b. 'st -> 'formula list -> 'proof -> 'b;
   (** Raise a conflict, yielding control back to the solver.
       The list of atoms must be a valid theory lemma that is false in the
       current trail. *)
 
-  acts_propagate: 'formula -> ('term, 'formula, 'proof) reason -> unit;
+  acts_propagate: 'st -> 'formula -> ('term, 'formula, 'proof) reason -> unit;
   (** Propagate a formula, i.e. the theory can evaluate the formula to be true
       (see the definition of {!type:eval_res} *)
 
-  acts_add_decision_lit: 'formula -> bool -> unit;
+  acts_add_decision_lit: 'st -> 'formula -> bool -> unit;
   (** Ask the SAT solver to decide on the given formula with given sign
       before it can answer [SAT]. The order of decisions is still unspecified.
       Useful for theory combination. This will be undone on backtracking. *)
 }
 (** The type for a slice of assertions to assume/propagate in the theory. *)
+
+
+(* TODO: find a way to use atoms instead of formulas here *)
+
+(** The type for a slice of assertions to assume/propagate in the theory. *)
+type ('term, 'formula, 'value, 'proof) acts =
+  | Acts : 'st * ('st, 'term, 'formula, 'value, 'proof) acts_ops
+    -> ('term, 'formula, 'value, 'proof) acts
 
 type ('a, 'b) gadt_eq = GADT_EQ : ('a, 'a) gadt_eq
 
