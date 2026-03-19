@@ -18,6 +18,18 @@ end
 let invalid_argf fmt =
   Format.kasprintf (fun msg -> invalid_arg ("msat: " ^ msg)) fmt
 
+module Acts = struct
+  open Solver_intf
+  let[@inline] iter_assumptions (Acts a) f = a.ops.acts_iter_assumptions a.st ~head:a.head f
+  let[@inline] eval_lit (Acts a) f = a.ops.acts_eval_lit a.st f
+  let[@inline] mk_lit (Acts a) ?default_pol f = a.ops.acts_mk_lit a.st ?default_pol f
+  let[@inline] mk_term (Acts a) t = a.ops.acts_mk_term a.st t
+  let[@inline] add_clause (Acts a) ?keep f p = a.ops.acts_add_clause a.st ?keep f p
+  let[@inline] raise_conflict (Acts a) f p = a.ops.acts_raise_conflict a.st f p
+  let[@inline] propagate (Acts a) f r = a.ops.acts_propagate a.st f r
+  let[@inline] add_decision_lit (Acts a) f b = a.ops.acts_add_decision_lit a.st f b
+end
+
 module Make(Plugin : PLUGIN)
 = struct
   module Term = Plugin.Term
@@ -1712,7 +1724,7 @@ module Make(Plugin : PLUGIN)
       st.next_decisions <- a :: st.next_decisions
     )
 
-  let acts_raise st (l:formula list) proof : 'a =
+  let acts_raise_conflict st (l:formula list) proof : 'a =
     let atoms = List.rev_map (create_atom st) l in
     (* conflicts can be removed *)
     let c = Clause.make_removable atoms (Lemma proof) in
@@ -1758,8 +1770,9 @@ module Make(Plugin : PLUGIN)
         enqueue_bool st p ~level (Bcp_lazy c)
       )
 
-  let[@specialise] acts_iter st ~full head f : unit =
-    for i = (if full then 0 else head) to Vec.size st.trail-1 do
+  let acts_iter ~full st ~head f : unit =
+    let head = if full then 0 else head in
+    for i = head to Vec.size st.trail-1 do
       let e = match Vec.get st.trail i with
         | Atom a ->
           Solver_intf.Lit a.lit
@@ -1769,6 +1782,8 @@ module Make(Plugin : PLUGIN)
       in
       f e
     done
+  let acts_iter_current st ~head f = acts_iter ~full:false st ~head f
+  let acts_iter_full st ~head f = acts_iter ~full:true st ~head f
 
   let eval_atom_ a =
     if Atom.is_true a then Solver_intf.L_true
@@ -1784,19 +1799,26 @@ module Make(Plugin : PLUGIN)
 
   let[@inline] acts_mk_term st t : unit = make_term st t
 
-  (* TODO: optimize by using a single pre-allocated record, mutating only
-     acts_iter_assumptions between calls *)
-  let[@inline] make_slice st ~full : _ Solver_intf.acts = {
+  let acts_ops_current : _ Solver_intf.acts_ops = {
     Solver_intf.
-    acts_iter_assumptions=acts_iter st ~full st.th_head;
-    acts_eval_lit= acts_eval_lit st;
-    acts_mk_lit=acts_mk_lit st;
-    acts_mk_term=acts_mk_term st;
-    acts_add_clause = acts_add_clause st;
-    acts_propagate = acts_propagate st;
-    acts_raise_conflict=acts_raise st;
-    acts_add_decision_lit=acts_add_decision_lit st;
+    acts_iter_assumptions=acts_iter_current;
+    acts_eval_lit;
+    acts_mk_lit;
+    acts_mk_term;
+    acts_add_clause;
+    acts_propagate;
+    acts_raise_conflict;
+    acts_add_decision_lit;
   }
+  let acts_ops_full =
+    {acts_ops_current with Solver_intf.acts_iter_assumptions=acts_iter_full}
+
+  let[@inline] current_slice st : _ Solver_intf.acts =
+    Solver_intf.Acts {st; ops=acts_ops_current; head=st.th_head}
+
+  (* full slice, for [if_sat] final check *)
+  let[@inline] full_slice st : _ Solver_intf.acts =
+    Solver_intf.Acts {st; ops=acts_ops_full; head=st.th_head}
 
   (* Assert that the conflict is indeeed a conflict *)
   let check_is_conflict_ (c:Clause.t) : unit =
@@ -1813,7 +1835,7 @@ module Make(Plugin : PLUGIN)
     if st.th_head = st.elt_head then (
       None (* fixpoint/no propagation *)
     ) else (
-      let slice = make_slice st ~full:false in
+      let slice = current_slice st in
       st.th_head <- st.elt_head; (* catch up *)
       match Plugin.partial_check st.th slice with
       | () ->
@@ -2039,7 +2061,7 @@ module Make(Plugin : PLUGIN)
             assert (st.elt_head = Vec.size st.trail &&
                     Vec.is_empty st.clauses_to_add &&
                     st.next_decisions=[]);
-            begin match Plugin.final_check st.th (make_slice st ~full:true) with
+            begin match Plugin.final_check st.th (full_slice st) with
               | () ->
                 if st.elt_head = Vec.size st.trail &&
                    Vec.is_empty st.clauses_to_add &&

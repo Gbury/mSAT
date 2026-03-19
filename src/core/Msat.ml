@@ -40,16 +40,25 @@ type ('term, 'formula, 'proof) reason = ('term, 'formula, 'proof) Solver_intf.re
   | Eval of 'term list
   | Consequence of (unit -> 'formula list * 'proof)
 
-type ('term, 'formula, 'value, 'proof) acts = ('term, 'formula, 'value, 'proof) Solver_intf.acts = {
-  acts_iter_assumptions: (('term,'formula,'value) assumption -> unit) -> unit;
-  acts_eval_lit: 'formula -> lbool;
-  acts_mk_lit: ?default_pol:bool -> 'formula -> unit;
-  acts_mk_term: 'term -> unit;
-  acts_add_clause : ?keep:bool -> 'formula list -> 'proof -> unit;
-  acts_raise_conflict: 'b. 'formula list -> 'proof -> 'b;
-  acts_propagate : 'formula -> ('term, 'formula, 'proof) reason -> unit;
-  acts_add_decision_lit: 'formula -> bool -> unit;
+type ('st, 'term, 'formula, 'value, 'proof) acts_ops = ('st, 'term, 'formula, 'value, 'proof) Solver_intf.acts_ops = {
+  acts_iter_assumptions: 'st -> head:int -> (('term,'formula,'value) assumption -> unit) -> unit;
+  acts_eval_lit: 'st -> 'formula -> lbool;
+  acts_mk_lit: 'st -> ?default_pol:bool -> 'formula -> unit;
+  acts_mk_term: 'st -> 'term -> unit;
+  acts_add_clause: 'st -> ?keep:bool -> 'formula list -> 'proof -> unit;
+  acts_raise_conflict: 'b. 'st -> 'formula list -> 'proof -> 'b;
+  acts_propagate: 'st -> 'formula -> ('term, 'formula, 'proof) reason -> unit;
+  acts_add_decision_lit: 'st -> 'formula -> bool -> unit;
 }
+
+type ('term, 'formula, 'value, 'proof) acts = ('term, 'formula, 'value, 'proof) Solver_intf.acts =
+  | Acts : {
+    st : 'st;
+    ops: ('st, 'term, 'formula, 'value, 'proof) acts_ops;
+    head: int;
+  } -> ('term, 'formula, 'value, 'proof) acts
+
+module Acts = Internal.Acts
 
 type negated = Solver_intf.negated = Negated | Same_sign
 
