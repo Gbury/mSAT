@@ -18,6 +18,18 @@ end
 let invalid_argf fmt =
   Format.kasprintf (fun msg -> invalid_arg ("msat: " ^ msg)) fmt
 
+module Acts = struct
+  open Solver_intf
+  let[@inline] iter_assumptions (Acts a) f = a.ops.acts_iter_assumptions a.st ~head:a.head f
+  let[@inline] eval_lit (Acts a) f = a.ops.acts_eval_lit a.st f
+  let[@inline] mk_lit (Acts a) ?default_pol f = a.ops.acts_mk_lit a.st ?default_pol f
+  let[@inline] mk_term (Acts a) t = a.ops.acts_mk_term a.st t
+  let[@inline] add_clause (Acts a) ?keep f p = a.ops.acts_add_clause a.st ?keep f p
+  let[@inline] raise_conflict (Acts a) f p = a.ops.acts_raise_conflict a.st f p
+  let[@inline] propagate (Acts a) f r = a.ops.acts_propagate a.st f r
+  let[@inline] add_decision_lit (Acts a) f b = a.ops.acts_add_decision_lit a.st f b
+end
+
 module Make(Plugin : PLUGIN)
 = struct
   module Term = Plugin.Term
@@ -173,10 +185,7 @@ module Make(Plugin : PLUGIN)
   module Var = struct
     type t = var
     let[@inline] level v = v.v_level
-    let[@inline] pos v = v.pa
-    let[@inline] neg v = v.na
     let[@inline] reason v = v.reason
-    let[@inline] assignable v = v.v_assignable
     let[@inline] weight v = v.v_weight
     let[@inline] mark v = v.v_fields <- v.v_fields lor seen_var
     let[@inline] unmark v = v.v_fields <- v.v_fields land (lnot seen_var)
@@ -319,7 +328,6 @@ module Make(Plugin : PLUGIN)
     let debug_l out l =
       List.iter (fun a -> Format.fprintf out "%a@ " debug a) l
 
-    module Set = Set.Make(struct type t=atom let compare=compare end)
   end
 
   (* Elements *)
@@ -371,7 +379,6 @@ module Make(Plugin : PLUGIN)
 
     let make ~flags l premise = make_a ~flags (Array.of_list l) premise
 
-    let empty = make [] (History [])
     let name = name_of_clause
     let[@inline] equal c1 c2 = c1.cid = c2.cid
     let[@inline] hash c = Hashtbl.hash c.cid
@@ -1702,14 +1709,6 @@ module Make(Plugin : PLUGIN)
 
   exception Th_conflict of Clause.t
 
-  let slice_get st i =
-    match Vec.get st.trail i with
-    | Atom a ->
-      Solver_intf.Lit a.lit
-    | Lit {term; assigned = Some v; _} ->
-      Solver_intf.Assign (term, v)
-    | Lit _ -> assert false
-
   let acts_add_clause st ?(keep=false) (l:formula list) (lemma:lemma): unit =
     let atoms = List.rev_map (create_atom st) l in
     let flags = if keep then 0 else Clause.flag_removable in
@@ -1725,7 +1724,7 @@ module Make(Plugin : PLUGIN)
       st.next_decisions <- a :: st.next_decisions
     )
 
-  let acts_raise st (l:formula list) proof : 'a =
+  let acts_raise_conflict st (l:formula list) proof : 'a =
     let atoms = List.rev_map (create_atom st) l in
     (* conflicts can be removed *)
     let c = Clause.make_removable atoms (Lemma proof) in
@@ -1771,8 +1770,9 @@ module Make(Plugin : PLUGIN)
         enqueue_bool st p ~level (Bcp_lazy c)
       )
 
-  let[@specialise] acts_iter st ~full head f : unit =
-    for i = (if full then 0 else head) to Vec.size st.trail-1 do
+  let acts_iter ~full st ~head f : unit =
+    let head = if full then 0 else head in
+    for i = head to Vec.size st.trail-1 do
       let e = match Vec.get st.trail i with
         | Atom a ->
           Solver_intf.Lit a.lit
@@ -1782,6 +1782,8 @@ module Make(Plugin : PLUGIN)
       in
       f e
     done
+  let acts_iter_current st ~head f = acts_iter ~full:false st ~head f
+  let acts_iter_full st ~head f = acts_iter ~full:true st ~head f
 
   let eval_atom_ a =
     if Atom.is_true a then Solver_intf.L_true
@@ -1797,30 +1799,26 @@ module Make(Plugin : PLUGIN)
 
   let[@inline] acts_mk_term st t : unit = make_term st t
 
-  let[@inline] current_slice st : _ Solver_intf.acts = {
+  let acts_ops_current : _ Solver_intf.acts_ops = {
     Solver_intf.
-    acts_iter_assumptions=acts_iter st ~full:false st.th_head;
-    acts_eval_lit= acts_eval_lit st;
-    acts_mk_lit=acts_mk_lit st;
-    acts_mk_term=acts_mk_term st;
-    acts_add_clause = acts_add_clause st;
-    acts_propagate = acts_propagate st;
-    acts_raise_conflict=acts_raise st;
-    acts_add_decision_lit=acts_add_decision_lit st;
+    acts_iter_assumptions=acts_iter_current;
+    acts_eval_lit;
+    acts_mk_lit;
+    acts_mk_term;
+    acts_add_clause;
+    acts_propagate;
+    acts_raise_conflict;
+    acts_add_decision_lit;
   }
+  let acts_ops_full =
+    {acts_ops_current with Solver_intf.acts_iter_assumptions=acts_iter_full}
+
+  let[@inline] current_slice st : _ Solver_intf.acts =
+    Solver_intf.Acts {st; ops=acts_ops_current; head=st.th_head}
 
   (* full slice, for [if_sat] final check *)
-  let[@inline] full_slice st : _ Solver_intf.acts = {
-    Solver_intf.
-    acts_iter_assumptions=acts_iter st ~full:true st.th_head;
-    acts_eval_lit= acts_eval_lit st;
-    acts_mk_lit=acts_mk_lit st;
-    acts_mk_term=acts_mk_term st;
-    acts_add_clause = acts_add_clause st;
-    acts_propagate = acts_propagate st;
-    acts_raise_conflict=acts_raise st;
-    acts_add_decision_lit=acts_add_decision_lit st;
-  }
+  let[@inline] full_slice st : _ Solver_intf.acts =
+    Solver_intf.Acts {st; ops=acts_ops_full; head=st.th_head}
 
   (* Assert that the conflict is indeeed a conflict *)
   let check_is_conflict_ (c:Clause.t) : unit =
@@ -2270,7 +2268,6 @@ module Make_pure_sat(Plugin : Solver_intf.PLUGIN_SAT) =
   let mcsat = false
   let has_theory = false
   let iter_assignable () _ _ = ()
-  let mcsat = false
 end)
 [@@inline][@@specialise]
 

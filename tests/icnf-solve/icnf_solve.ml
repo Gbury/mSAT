@@ -43,7 +43,7 @@ end = struct
       Add_clause c
   and read_ints ?first self : _ array =
     Vec.clear self.vec; (* reuse local vec *)
-    CCOpt.iter (Vec.push self.vec) first;
+    Option.iter (Vec.push self.vec) first;
     let rec aux() =
       match L.token self.lex with
       | L.I 0 -> Vec.to_array self.vec (* done *)
@@ -60,7 +60,6 @@ end
 module Solver = struct
   module F = Msat_sat.Int_lit
   module S = Msat_sat
-  type t = S.t
 
   let make () = S.create()
   let mklit s i = S.make_atom s (let v = F.make (abs i) in if i>0 then v else F.neg v)

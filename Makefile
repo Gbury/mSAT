@@ -16,6 +16,9 @@ test: build-dev
 	@echo "run tests…"
 	@OCAMLRUNPARAM=b dune runtest --force --no-buffer
 
+benchpress-sat:
+	benchpress run -c tests/benchpress.sexp -t 10 -p msat tests/ -j $(J) --progress
+
 clean:
 	@dune clean
 
@@ -43,6 +46,6 @@ reindent: ocp-indent
 
 WATCH=all
 watch:
-	@dune build @all -w
+	@dune build $(WATCH) -w
 
 .PHONY: clean doc all bench install uninstall remove reinstall bin test
